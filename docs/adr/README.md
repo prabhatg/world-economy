@@ -9,9 +9,9 @@
 | 0005 | Multi-dimensional welfare: health, material, capabilities, sustainability | Accepted |
 | 0006 | Core in Rust + GPU kernels; Python (PyO3) for orchestration/calibration/AI | Accepted |
 | 0007 | Web viewer in TypeScript with deck.gl/CesiumJS; not Flutter/Firebase | Accepted |
-| 0008 | Storage: Zarr (fields), Parquet/Arrow (agents, events) on object storage; DuckDB for queries | Proposed |
-| 0009 | H3 geodesic hex grid with hierarchical refinement | Proposed |
-| 0010 | Bulk-synchronous phased ticks + counter-based RNG for determinism | Proposed |
+| 0008 | Storage: Zarr (fields), Parquet/Arrow (agents, events) on object storage; DuckDB for queries | Accepted |
+| 0009 | H3 geodesic hex grid with hierarchical refinement | Accepted |
+| 0010 | Bulk-synchronous phased ticks + counter-based RNG for determinism | Accepted |
 | 0011 | Cloud-first (spot ensembles), HPC later — amended by 0014 (volunteer tier) | Accepted |
 | 0012 | Open source, open provenance | Accepted |
 | 0013 | First milestone: Neolithic Southwest Asia vertical slice | Accepted |
@@ -26,6 +26,9 @@
 | 0022 | Native client UI shell: Flutter + flutter_rust_bridge, presentation + IPC only; Tauri v2 as desktop fallback | Accepted |
 | 0023 | Per-user Rust daemon (`worldd`) = headless client; sandboxed per-work-unit engine workers with no network; local IPC to UI | Accepted |
 | 0024 | Globe in native clients = embedded TS web viewer; daemon serves it on localhost | Accepted |
+| 0025 | Licenses: Apache-2.0 for code; CC-BY 4.0 for docs and results; datasets per source | Accepted |
+| 0026 | Names: ManyWorlds (project, volunteer network, apps); Oikos (engine, crates `oikos-*`) — pending trademark/domain check | Accepted |
+| 0027 | GPU compute: wgpu first (Vulkan/Metal/DX12/WebGPU), CUDA backend later behind the same trait | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -45,8 +48,7 @@ Converting probabilities to integer thresholds makes every stochastic decision e
 GPU vendors and WGSL do not guarantee correctly rounded division/transcendentals, hence
 integer kernels where bitwise validation is needed.
 
-## Open for decision
+## Notes
 
-- License (proposed: Apache-2.0 code; CC-BY 4.0 results/docs; data per source).
-- GPU backend: CUDA (cudarc) vs wgpu vs both.
-- H3 vs custom icosahedral grid (H3 cells are not exactly equal-area).
+- H3 cells are not exactly equal-area; mechanisms use per-cell areas, never assume
+  uniform cells.

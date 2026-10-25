@@ -1,6 +1,6 @@
 # 12. Project identity & credit
 
-## 12.1 Name (proposal — final choice is the founder's)
+## 12.1 Name (accepted: ManyWorlds / Oikos — pending trademark, domain and app-store checks)
 
 | Candidate | Meaning / fit | Risks |
 |---|---|---|

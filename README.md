@@ -1,4 +1,4 @@
-# World Economy — a simulator of human history as a policy laboratory
+# ManyWorlds — a simulator of human history as a policy laboratory
 
 An evolving, agent-based simulation of humanity from **~12,000 BCE to the present**,
 built on the accumulated knowledge of economics, history, archaeology, climate science,
@@ -51,6 +51,8 @@ health/education and technology — and for finding strategies that are *robust*
   restricted IEEE `f64` with our own math library.
 - **Openness:** nonprofit-style, open-source project with open provenance.
 - **Credit:** every contributor type is credited; each result ships a provenance-generated credit manifest.
-- **Name (proposed):** *ManyWorlds* for the project and volunteer network, *Oikos* for the engine.
+- **Name:** *ManyWorlds* for the project and volunteer network, *Oikos* for the engine (pending trademark check).
+- **Licenses:** Apache-2.0 for code ([LICENSE](LICENSE)); CC-BY 4.0 for docs and results.
+- **GPU:** wgpu first, CUDA later.
 - **Native clients:** thin Flutter shell over a Rust daemon (also the headless client); embedded web globe; Tauri v2 as fallback.
 - **First milestone:** Neolithic Southwest Asia, 12,000–3,000 BCE.

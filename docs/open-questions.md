@@ -17,16 +17,16 @@
 9. Who are the first external users/collaborators (academics, NGOs, policymakers)?
 
 ## Engineering
-10. GPU backend choice; when to introduce MPI.
-11. Grid: H3 vs equal-area icosahedral; refinement policy.
+10. ~~GPU backend~~ — wgpu first (ADR-0027). Remaining: when to introduce MPI.
+11. ~~Grid~~ — H3 (ADR-0009). Remaining: refinement policy.
 12. Checkpoint storage budget; prefix-sharing strategy.
 13. Reproducibility guarantee across CPU↔GPU: bitwise or tolerance-bounded?
-14. License choice.
+14. ~~License~~ — Apache-2.0 / CC-BY 4.0 (ADR-0025).
 
 ## Volunteer computing
 18. ~~Native client UI shell~~ — resolved: Flutter shell over a Rust daemon (doc 13).
     Remaining: verify app-store background-compute policies and Windows sandboxing.
-19. Confirm project name (proposed: ManyWorlds / engine Oikos) after trademark & domain search.
+19. Name accepted (ManyWorlds / Oikos, ADR-0026); trademark, domain and app-store checks still to do.
 20. Which fiscal sponsor (e.g. an established open-source/science foundation)?
 21. Explore-queue design: how much steering do explorers get, and can any explore
     results be reused scientifically (e.g. as importance-weighted samples)?
