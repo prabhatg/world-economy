@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ManyWorlds</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="ManyWorlds simulates human history thousands of times on volunteers' computers, then tests ideas that could make life better for most people in every one of those worlds.">
+<meta property="og:title" content="ManyWorlds">
+<meta property="og:description" content="Run a world. Help find a better one. An open-source, nonprofit simulation of human history.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%2308121A'/%3E%3Ccircle cx='11' cy='13' r='4' fill='%236CC3C9'/%3E%3Ccircle cx='21' cy='12' r='3' fill='%236CC3C9' opacity='.6'/%3E%3Ccircle cx='18' cy='21' r='5' fill='%23F0A23B'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;500&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap">
+<style>
+/* Layout: a dark "deep time" hero band, then a calm light body where each section
+   makes one point with one diagram. Grouping by space and tone, never by borders.
+   Tokens mirror design/tokens.css (source of truth: design/tokens.json). */
+:root {
+  --primary: #F0A23B; --on-primary: #1F1404; --primary-ink: #9A5A0A;
+  --secondary: #16626A; --on-secondary: #FFFFFF;
+  --surface: #F6F8F7; --surface-container-low: #EDF2F1; --surface-container-high: #E2EAE9;
+  --on-surface: #132220; --on-surface-variant: #4A5C59; --outline-variant: #C9D4D2;
+  --night: #08121A; --night-2: #0F2633; --on-night: #EAF2F1; --on-night-variant: #9FB4B6;
+  --welfare-health: #D55E00; --welfare-material: #E69F00; --welfare-freedom: #0072B2; --welfare-sustain: #009E73;
+  --nav-bg: rgba(246, 248, 247, 0.78);
+
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-display: clamp(2.75rem, 1.6rem + 4.6vw, 5.25rem);
+  --text-headline: clamp(1.875rem, 1.4rem + 1.9vw, 2.75rem);
+  --text-title: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  --text-body: 1.0625rem;
+  --text-label: 0.8125rem;
+
+  --radius-s: 8px; --radius-m: 16px; --radius-l: 28px; --radius-full: 999px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --section-gap: clamp(64px, 8vw, 128px);
+  --content: 1120px;
+  --gutter-l: max(20px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(20px, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #F4AE4E; --primary-ink: #F6BA67; --secondary: #6CC3C9; --on-secondary: #06292C;
+    --surface: #0C1618; --surface-container-low: #132124; --surface-container-high: #1B2C30;
+    --on-surface: #E5EEEC; --on-surface-variant: #A3B5B2; --outline-variant: #2C3F42;
+    --night: #060E14; --night-2: #0D2230; --nav-bg: rgba(12, 22, 24, 0.78);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #F4AE4E; --primary-ink: #F6BA67; --secondary: #6CC3C9; --on-secondary: #06292C;
+  --surface: #0C1618; --surface-container-low: #132124; --surface-container-high: #1B2C30;
+  --on-surface: #E5EEEC; --on-surface-variant: #A3B5B2; --outline-variant: #2C3F42;
+  --night: #060E14; --night-2: #0D2230; --nav-bg: rgba(12, 22, 24, 0.78);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--surface); color: var(--on-surface);
+  font: 400 var(--text-body)/1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+img, svg, canvas { max-width: 100%; display: block; }
+a { color: var(--secondary); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; font-optical-sizing: auto; }
+h2 { font-size: var(--text-headline); line-height: 1.1; letter-spacing: -0.02em; font-weight: 300; }
+h2 strong, h1 strong { font-weight: 750; }
+h3 { font-size: var(--text-title); line-height: 1.25; font-weight: 650; letter-spacing: -0.01em; }
+p { margin: 0; }
+.wrap { max-width: var(--content); margin-inline: auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.eyebrow {
+  font: 500 var(--text-label)/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--secondary);
+}
+.lede { font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem); line-height: 1.55; color: var(--on-surface-variant); max-width: 62ch; }
+.muted { color: var(--on-surface-variant); }
+.caption { font-size: 0.9375rem; color: var(--on-surface-variant); max-width: 62ch; }
+.mono { font-family: var(--font-mono); }
+.section { padding-block: var(--section-gap) 0; }
+.section-head { display: grid; gap: 16px; max-width: 760px; margin-bottom: clamp(32px, 4vw, 56px); }
+
+/* Buttons: one filled amber primary per view, text buttons otherwise. */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 26px;
+  border-radius: var(--radius-full); font: 700 1rem/1 var(--font-body); text-decoration: none;
+  transition: transform 200ms var(--ease), background-color 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.btn-primary { background: var(--primary); color: var(--on-primary); box-shadow: 0 8px 28px -10px rgba(240, 162, 59, 0.6); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 32px -10px rgba(240, 162, 59, 0.75); }
+.btn-text { color: inherit; padding-inline: 14px; }
+.btn-text:hover { background: rgba(127, 160, 160, 0.14); }
+.btn .arrow { transition: transform 200ms var(--ease); }
+.btn:hover .arrow { transform: translateX(3px); }
+
+/* Nav */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: var(--nav-bg); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font: 700 1.125rem/1 var(--font-display); color: var(--on-surface); text-decoration: none; letter-spacing: -0.01em; }
+.nav-links { display: flex; gap: 4px; align-items: center; }
+.nav-links a { color: var(--on-surface-variant); text-decoration: none; padding: 10px 12px; border-radius: var(--radius-full); font-size: 0.9375rem; }
+.nav-links a:hover { color: var(--on-surface); background: var(--surface-container-low); }
+.nav-links .gh { color: var(--on-surface); font-weight: 700; }
+@media (max-width: 760px) { .nav-links a:not(.gh) { display: none; } }
+
+/* Hero: the always-dark deep-time band */
+.hero {
+  position: relative; overflow: hidden; color: var(--on-night);
+  background:
+    radial-gradient(60% 70% at 85% 20%, rgba(240, 162, 59, 0.16), transparent 70%),
+    radial-gradient(50% 60% at 10% 90%, rgba(108, 195, 201, 0.14), transparent 70%),
+    linear-gradient(180deg, var(--night), var(--night-2));
+}
+.hero-inner { display: grid; gap: clamp(28px, 4vw, 48px); padding-block: clamp(48px, 7vw, 96px) clamp(40px, 5vw, 72px); }
+.hero .eyebrow { color: #9ED6D9; }
+.hero h1 { font-size: var(--text-display); line-height: 0.98; letter-spacing: -0.035em; font-weight: 300; max-width: 13ch; }
+.hero h1 strong { color: #FFFFFF; }
+.hero .lede { color: var(--on-night-variant); max-width: 58ch; }
+.hero .lede b { color: var(--on-night); font-weight: 700; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.hero .btn-text { color: var(--on-night); }
+.hero .btn-text:hover { background: rgba(234, 242, 241, 0.08); }
+.hero-copy { display: grid; gap: 22px; }
+
+.ensemble { position: relative; margin-top: 8px; }
+.ensemble canvas { width: 100%; height: clamp(240px, 34vw, 380px); }
+.ensemble .tag {
+  position: absolute; font: 500 0.8125rem/1.3 var(--font-body); color: var(--on-night-variant);
+  pointer-events: none; max-width: 22ch;
+}
+.ensemble .tag strong { display: block; color: var(--on-night); font-weight: 700; }
+.ensemble .tag.amber strong { color: #F6BA67; }
+.axis { position: relative; height: 24px; margin-top: 6px; font: 500 0.75rem/1 var(--font-mono); color: var(--on-night-variant); letter-spacing: 0.02em; }
+.axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.axis span.today { color: #F6BA67; }
+@media (max-width: 640px) {
+  .axis span.opt { display: none; }
+  .ensemble .tag.t-hist { display: none; }
+}
+
+/* Why */
+.why { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
+.why-points { display: grid; gap: 28px; }
+.why-point { display: grid; grid-template-columns: 40px 1fr; gap: 16px; align-items: start; }
+.why-point svg { width: 40px; height: 40px; }
+.why-point h3 { font-size: 1.125rem; margin-bottom: 4px; }
+@media (max-width: 860px) { .why { grid-template-columns: 1fr; } }
+
+/* Steps: a real sequence, so it is numbered */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 3vw, 40px); counter-reset: step; }
+.step { display: grid; gap: 14px; align-content: start; }
+.step-visual {
+  background: var(--surface-container-low); border-radius: var(--radius-l);
+  aspect-ratio: 4 / 3; display: grid; place-items: center; padding: 20px; max-width: 100%;
+}
+.step-visual svg { width: 100%; height: 100%; }
+.step-num { font: 500 var(--text-label)/1 var(--font-mono); color: var(--primary-ink); letter-spacing: 0.08em; }
+.step p { color: var(--on-surface-variant); }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } .step-visual { aspect-ratio: 16 / 9; } }
+
+/* Robustness diagram */
+.robust { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(32px, 6vw, 80px); align-items: center; }
+.robust-figure { background: var(--surface-container-low); border-radius: var(--radius-l); padding: clamp(16px, 3vw, 32px); min-width: 0; }
+.robust-figure svg { width: 100%; height: auto; overflow: visible; }
+@media (max-width: 860px) { .robust { grid-template-columns: 1fr; } }
+
+/* Volunteer band */
+.band { background: var(--surface-container-low); border-radius: clamp(28px, 4vw, 48px); padding-block: clamp(40px, 6vw, 80px); }
+.volunteer { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 80px); align-items: center; }
+.volunteer-figure svg { width: 100%; height: auto; }
+.facts { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 12px 40px; margin-top: 8px; }
+.fact b { display: block; font: 700 clamp(1.5rem, 1.2rem + 1vw, 2rem)/1.1 var(--font-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 0.875rem; color: var(--on-surface-variant); }
+@media (max-width: 860px) { .volunteer { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .facts { grid-template-columns: 1fr 1fr; } }
+
+/* Knowledge: nested scales, soft tonal regions */
+.scales { border-radius: 40px; background: var(--surface-container-low); padding: clamp(18px, 3vw, 32px); display: grid; gap: 14px; }
+.scales .ring { border-radius: 32px; padding: clamp(16px, 2.5vw, 28px); display: grid; gap: 14px; }
+.scales .ring.society { background: var(--surface-container-high); }
+.scales .ring.mind { background: var(--surface); }
+.ring-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.ring-head h3 { font-size: 1.0625rem; }
+.ring-head p { color: var(--on-surface-variant); font-size: 0.9375rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 0.875rem; padding: 6px 12px; border-radius: var(--radius-full); background: rgba(127, 160, 160, 0.14); color: var(--on-surface); }
+.person { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.person svg { width: 36px; height: 36px; flex: none; }
+
+/* Welfare */
+.welfare { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(20px, 3vw, 40px); }
+.dim { display: grid; gap: 10px; align-content: start; }
+.dim-icon { width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; }
+.dim-icon svg { width: 28px; height: 28px; }
+.dim p { color: var(--on-surface-variant); font-size: 0.9375rem; }
+.dim h3 { font-size: 1.125rem; }
+@media (max-width: 860px) { .welfare { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 420px) { .welfare { grid-template-columns: 1fr; } }
+
+/* Principles */
+.principles { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(28px, 4vw, 56px) clamp(32px, 6vw, 96px); }
+.principle { display: grid; gap: 8px; }
+.principle p { color: var(--on-surface-variant); }
+.hash {
+  margin-top: 6px; font: 400 0.8125rem/1.5 var(--font-mono); color: var(--on-surface-variant);
+  background: var(--surface-container-low); border-radius: var(--radius-m); padding: 10px 14px;
+  overflow-wrap: anywhere;
+}
+.hash b { color: var(--primary-ink); font-weight: 500; }
+@media (max-width: 760px) { .principles { grid-template-columns: 1fr; } }
+
+/* Roadmap */
+.road { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; }
+.road::before { content: ""; position: absolute; left: 8px; right: 8px; top: 9px; height: 2px; background: linear-gradient(90deg, var(--primary) 0 8%, var(--outline-variant) 8% 100%); border-radius: 2px; }
+.mile { position: relative; display: grid; gap: 6px; align-content: start; padding-top: 32px; min-width: 0; }
+.mile::before { content: ""; position: absolute; top: 3px; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--outline-variant); }
+.mile.now::before { background: var(--primary); box-shadow: 0 0 0 6px rgba(240, 162, 59, 0.22); }
+.mile .m { font: 500 0.75rem/1 var(--font-mono); color: var(--on-surface-variant); letter-spacing: 0.06em; }
+.mile.now .m { color: var(--primary-ink); }
+.mile h3 { font-size: 0.98rem; line-height: 1.3; font-family: var(--font-body); font-weight: 700; letter-spacing: 0; }
+.mile p { font-size: 0.875rem; color: var(--on-surface-variant); line-height: 1.45; }
+@media (max-width: 960px) {
+  .road { grid-template-columns: 1fr; gap: 22px; }
+  .road::before { left: 6px; right: auto; top: 8px; bottom: 8px; width: 2px; height: auto; background: linear-gradient(180deg, var(--primary) 0 10%, var(--outline-variant) 10% 100%); }
+  .mile { padding-top: 0; padding-left: 32px; }
+}
+
+/* Get involved */
+.involve { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(20px, 3vw, 36px); }
+.way { display: grid; gap: 8px; align-content: start; }
+.way p { color: var(--on-surface-variant); font-size: 0.9375rem; }
+.way a { font-weight: 700; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; min-height: 44px; }
+.way a:hover { text-decoration: underline; }
+@media (max-width: 860px) { .involve { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .involve { grid-template-columns: 1fr; } }
+
+/* Closing */
+.closing { text-align: left; display: grid; gap: 22px; justify-items: start; }
+.closing h2 { font-size: clamp(2.25rem, 1.6rem + 2.8vw, 3.75rem); max-width: 16ch; }
+
+footer { margin-top: var(--section-gap); padding-block: 40px; color: var(--on-surface-variant); font-size: 0.875rem; }
+.foot { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; align-items: center; }
+.foot a { color: inherit; }
+
+/* Diagram helpers (SVG uses tokens) */
+.d-teal { stroke: var(--secondary); }
+.d-amber { stroke: var(--primary); }
+.d-muted { stroke: var(--on-surface-variant); }
+.f-teal { fill: var(--secondary); }
+.f-amber { fill: var(--primary); }
+.f-muted { fill: var(--on-surface-variant); }
+.f-surface { fill: var(--surface); }
+.f-low { fill: var(--surface-container-high); }
+.t-label { fill: var(--on-surface-variant); font: 500 13px var(--font-body); }
+.t-strong { fill: var(--on-surface); font: 700 13px var(--font-body); }
+.t-mono { fill: var(--on-surface-variant); font: 500 11px var(--font-mono); letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="ManyWorlds home">
+      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="11" cy="13" r="5" class="f-teal" opacity=".85"></circle>
+        <circle cx="22" cy="10" r="3.2" class="f-teal" opacity=".45"></circle>
+        <circle cx="19" cy="22" r="6.5" class="f-amber"></circle>
+        <circle cx="7" cy="24" r="2.4" class="f-teal" opacity=".35"></circle>
+      </svg>
+      ManyWorlds
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#volunteer">Volunteer</a>
+      <a href="#principles">Principles</a>
+      <a href="#roadmap">Roadmap</a>
+      <a class="gh" href="https://github.com/prabhatg/world-economy">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow">Open science · Nonprofit · Volunteer computing</p>
+      <h1 id="hero-title">Run a world. <strong>Help find a better one.</strong></h1>
+      <p class="lede">ManyWorlds simulates human history, from the first farmers to today, <b>thousands of times over</b> on volunteers' computers. Then it tests ideas that could make life better for most people, in every one of those worlds.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#how">See how it works <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="btn btn-text" href="https://github.com/prabhatg/world-economy">Read the code on GitHub</a>
+      </div>
+    </div>
+
+    <figure class="ensemble" aria-label="Illustration: many simulated histories start 14,000 years ago, are pulled toward the historical record so they meet at today, then fan out into possible futures. One amber path keeps improving across worlds.">
+      <canvas id="ensemble"></canvas>
+      <div class="tag t-hist" style="left: 6%; top: 8%"><strong>Thousands of histories</strong>each one a slightly different past</div>
+      <div class="tag" style="left: 63%; top: 58%"><strong>Today</strong>matched to real data</div>
+      <div class="tag amber" style="right: 1%; top: 4%; text-align: right"><strong>A path that holds up</strong>in nearly every world</div>
+      <div class="axis" aria-hidden="true">
+        <span style="left: 1.5%; transform: none">12,000 BCE</span>
+        <span class="opt" style="left: 26%">3,000 BCE</span>
+        <span style="left: 42%">1 CE</span>
+        <span class="opt" style="left: 58%">1500</span>
+        <span class="today" style="left: 74%">2026</span>
+        <span style="right: 0; transform: none">2076</span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- WHY -->
+<section class="section wrap" aria-labelledby="why-title">
+  <div class="why">
+    <div class="section-head" style="margin-bottom: 0">
+      <p class="eyebrow">Why</p>
+      <h2 id="why-title">We know a lot about what helps people. <strong>We know less about how to make it happen.</strong></h2>
+      <p class="lede">Vaccines, schooling, clean water and cash support all work. Yet billions still go without, because good ideas run into incentives, power and coordination. ManyWorlds models those forces too, so it can search for paths that actually get adopted and last.</p>
+    </div>
+    <div class="why-points">
+      <div class="why-point">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" class="f-low"></circle><path d="M11 24c3-6 6-9 9-9s6 3 9 9" fill="none" class="d-teal" stroke-width="2.2" stroke-linecap="round"></path><circle cx="20" cy="15" r="2.6" class="f-amber"></circle></svg>
+        <div><h3>Learn from all of history</h3><p class="muted">14,000 years of farming, cities, trade, empires and industry are our training data.</p></div>
+      </div>
+      <div class="why-point">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" class="f-low"></circle><path d="M10 27l6-6 5 4 9-11" fill="none" class="d-amber" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div><h3>Test before we try</h3><p class="muted">Ideas meet thousands of simulated worlds before anyone bets real lives on them.</p></div>
+      </div>
+      <div class="why-point">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" class="f-low"></circle><circle cx="14" cy="17" r="3.2" class="f-teal"></circle><circle cx="26" cy="17" r="3.2" class="f-teal"></circle><path d="M9 28c1.5-4 8.5-4 10 0M21 28c1.5-4 8.5-4 10 0" fill="none" class="d-teal" stroke-width="2.2" stroke-linecap="round"></path></svg>
+        <div><h3>Include how people decide</h3><p class="muted">Simulated people follow what psychology and economics know about real choices, not perfect logic.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="section wrap" id="how" aria-labelledby="how-title">
+  <div class="section-head">
+    <p class="eyebrow">How it works</p>
+    <h2 id="how-title">Three steps, <strong>from the first farmers to tomorrow.</strong></h2>
+  </div>
+  <ol class="steps" style="list-style: none; padding: 0; margin: 0">
+    <li class="step">
+      <div class="step-visual">
+        <svg viewBox="0 0 320 240" role="img" aria-label="Timeline from foraging bands to farming villages, cities, industry and today">
+          <line x1="20" y1="150" x2="300" y2="150" class="d-muted" stroke-width="1.5" stroke-linecap="round" opacity=".5"></line>
+          <g class="d-teal" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M34 128l12-22 12 22z"></path>
+            <path d="M92 128v-20M86 112l6-6 6 6M86 120l6-6 6 6"></path>
+            <path d="M140 128v-18h22v18M136 110l15-10 15 10M146 128v-10h10v10"></path>
+            <path d="M196 128v-24l10 6v-6l10 6v-6l10 6v18zM224 104v-12"></path>
+          </g>
+          <circle cx="276" cy="116" r="14" class="f-amber"></circle>
+          <path d="M264 116h24M276 102c6 8 6 20 0 28M276 102c-6 8-6 20 0 28" fill="none" stroke="#1F1404" stroke-width="1.4" opacity=".55"></path>
+          <g class="t-mono" text-anchor="middle">
+            <text x="46" y="176">12,000 BCE</text><text x="151" y="176">3,000 BCE</text><text x="276" y="176">2026</text>
+          </g>
+        </svg>
+      </div>
+      <span class="step-num">STEP 1</span>
+      <h3>Learn from history</h3>
+      <p>Simulated people forage, farm, trade, migrate, fight and invent across a map of the Earth. Their history is compared with real evidence: radiocarbon dates, ancient DNA, census records.</p>
+    </li>
+    <li class="step">
+      <div class="step-visual">
+        <svg viewBox="0 0 320 240" role="img" aria-label="A hexagon grid map where each cell holds groups of simulated people" id="hexmap"></svg>
+      </div>
+      <span class="step-num">STEP 2</span>
+      <h3>Build a twin of today</h3>
+      <p>Pulled toward real data as it runs, the simulation arrives at a detailed model of the world in 2026: its people, wealth, institutions and power.</p>
+    </li>
+    <li class="step">
+      <div class="step-visual">
+        <svg viewBox="0 0 320 240" role="img" aria-label="From today, many futures fan out; one amber path rises steadily" id="fan"></svg>
+      </div>
+      <span class="step-num">STEP 3</span>
+      <h3>Test ideas in many worlds</h3>
+      <p>Each idea, like better schools or fairer taxes, runs in thousands of possible futures. We look for paths that help in nearly all of them, and for how they could be adopted.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ROBUST -->
+<section class="section wrap" aria-labelledby="robust-title">
+  <div class="robust">
+    <div class="section-head" style="margin-bottom: 0">
+      <p class="eyebrow">Many worlds, one answer</p>
+      <h2 id="robust-title">An idea that works on average <strong>can still fail most people.</strong></h2>
+      <p class="lede">History is chaotic, so one run proves nothing. We run every idea in many worlds and favor the ones that help nearly everywhere, especially for the poorest 40%.</p>
+    </div>
+    <figure class="robust-figure" style="margin: 0">
+      <svg id="dots" viewBox="0 0 560 300" role="img" aria-label="Dot strips for three ideas. Idea A has a high average but spreads widely, with many worlds below zero. Idea B has a smaller average but every world improves. Idea C barely changes anything."></svg>
+      <figcaption class="caption" style="margin-top: 12px">Each dot is one simulated world. Illustrative data.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- VOLUNTEER -->
+<section class="section" id="volunteer" aria-labelledby="vol-title">
+  <div class="wrap">
+    <div class="band">
+      <div class="wrap volunteer" style="max-width: none">
+        <div class="volunteer-figure">
+          <svg viewBox="0 0 440 360" role="img" aria-label="Laptops, phones, browsers and servers each receive a slice of history to run and send back a result that a second computer checks.">
+            <g fill="none" class="d-muted" stroke-width="1.5" stroke-dasharray="3 6" stroke-linecap="round" opacity=".55">
+              <path d="M220 180L90 80"></path><path d="M220 180L350 80"></path><path d="M220 180L90 285"></path><path d="M220 180L350 285"></path>
+            </g>
+            <circle cx="220" cy="180" r="62" class="f-surface"></circle>
+            <circle cx="220" cy="180" r="44" class="f-low"></circle>
+            <g transform="translate(220 180)">
+              <circle r="9" class="f-amber" cx="-10" cy="6"></circle>
+              <circle r="6" class="f-teal" cx="12" cy="-6" opacity=".8"></circle>
+              <circle r="4.5" class="f-teal" cx="-8" cy="-14" opacity=".5"></circle>
+              <circle r="3.5" class="f-teal" cx="14" cy="14" opacity=".4"></circle>
+            </g>
+            <text x="220" y="268" text-anchor="middle" class="t-strong">Coordinator</text>
+            <g class="d-teal" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="58" y="52" width="64" height="42" rx="6" class="f-surface"></rect><path d="M48 100h84"></path>
+              <rect x="334" y="44" width="34" height="58" rx="8" class="f-surface"></rect><path d="M346 94h10"></path>
+              <rect x="54" y="258" width="72" height="54" rx="8" class="f-surface"></rect><path d="M54 272h72"></path><circle cx="63" cy="265" r="1.6"></circle><circle cx="70" cy="265" r="1.6"></circle>
+              <rect x="318" y="256" width="64" height="20" rx="5" class="f-surface"></rect><rect x="318" y="282" width="64" height="20" rx="5" class="f-surface"></rect><circle cx="330" cy="266" r="1.8"></circle><circle cx="330" cy="292" r="1.8"></circle>
+            </g>
+            <g class="t-label" text-anchor="middle">
+              <text x="90" y="124">Laptop</text><text x="351" y="124">Phone</text><text x="90" y="334">Browser tab</text><text x="350" y="324">Server</text>
+            </g>
+            <g>
+              <rect x="128" y="112" width="96" height="24" rx="12" class="f-amber"></rect>
+              <text x="176" y="128" text-anchor="middle" style="font: 700 11px var(--font-body); fill: #1F1404">500 years</text>
+              <rect x="242" y="226" width="104" height="24" rx="12" class="f-low"></rect>
+              <text x="294" y="242" text-anchor="middle" class="t-strong" style="font-size: 11px">✓ checked twice</text>
+            </g>
+          </svg>
+        </div>
+        <div class="section-head" style="margin-bottom: 0">
+          <p class="eyebrow">Like SETI@home, for humanity</p>
+          <h2 id="vol-title">Your computer <strong>can run a world.</strong></h2>
+          <p class="lede">When your laptop, phone or browser is idle, it receives a slice of history to simulate, perhaps 500 years of one possible world, and sends back the result. A second computer repeats the work, and the results must match bit for bit.</p>
+          <div class="facts">
+            <div class="fact"><b>~0.4 PFLOP/s</b><span>from 10,000 volunteers</span></div>
+            <div class="fact"><b>0 ads</b><span>no data sold, ever</span></div>
+            <div class="fact"><b>You decide</b><span>pause anytime, battery-aware</span></div>
+          </div>
+          <p class="caption">Volunteer apps for browser, desktop and phone are in design. The first browser alpha comes with milestone M1.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE -->
+<section class="section wrap" aria-labelledby="know-title">
+  <div class="section-head">
+    <p class="eyebrow">Built on what humanity knows</p>
+    <h2 id="know-title">Every simulated person lives inside <strong>a society and a planet.</strong></h2>
+    <p class="lede">Research from many fields enters as tested mechanisms with their sources attached. When experts disagree, we build both theories and let the evidence decide.</p>
+  </div>
+  <div class="scales" role="group" aria-label="Nested scales of knowledge">
+    <div class="ring-head"><h3>Planet</h3><p>where people live and what the land allows</p></div>
+    <div class="chips"><span class="chip">Climate &amp; weather</span><span class="chip">Geology &amp; sea level</span><span class="chip">Ecology &amp; crops</span><span class="chip">Disease</span></div>
+    <div class="ring society">
+      <div class="ring-head"><h3>Society</h3><p>how groups trade, govern and change</p></div>
+      <div class="chips"><span class="chip">Economics</span><span class="chip">History &amp; archaeology</span><span class="chip">Demography</span><span class="chip">Politics &amp; power</span><span class="chip">Culture &amp; technology</span></div>
+      <div class="ring mind">
+        <div class="ring-head"><h3>Mind</h3><p>how each person learns, decides and cooperates</p></div>
+        <div class="chips"><span class="chip">Psychology</span><span class="chip">Neuroscience</span><span class="chip">Behavioral economics</span></div>
+        <div class="person">
+          <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="18" class="f-amber" opacity=".22"></circle><circle cx="18" cy="13" r="5" class="f-amber"></circle><path d="M9 28c1.5-6 16.5-6 18 0" class="f-amber"></path></svg>
+          <p class="muted">One simulated person: often a whole family or band, depending on the era.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WELFARE -->
+<section class="section wrap" aria-labelledby="measure-title">
+  <div class="section-head">
+    <p class="eyebrow">What “better” means</p>
+    <h2 id="measure-title">Four things we measure, <strong>for the many, not the average.</strong></h2>
+  </div>
+  <div class="welfare">
+    <div class="dim">
+      <div class="dim-icon" style="background: color-mix(in srgb, var(--welfare-health) 16%, transparent)"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 23s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 22 12c0 6.2-8 11-8 11z" fill="none" stroke="var(--welfare-health)" stroke-width="2.2" stroke-linejoin="round"></path></svg></div>
+      <h3>Health &amp; longevity</h3><p>Long, healthy lives and children who survive and thrive.</p>
+    </div>
+    <div class="dim">
+      <div class="dim-icon" style="background: color-mix(in srgb, var(--welfare-material) 18%, transparent)"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M5 13l9-7 9 7v9H5z M11 22v-6h6v6" fill="none" stroke="var(--welfare-material)" stroke-width="2.2" stroke-linejoin="round"></path></svg></div>
+      <h3>Material wellbeing</h3><p>Enough food, a safe home, income, and less inequality.</p>
+    </div>
+    <div class="dim">
+      <div class="dim-icon" style="background: color-mix(in srgb, var(--welfare-freedom) 16%, transparent)"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 11l10-5 10 5-10 5z M8 13v5c3 3 9 3 12 0v-5" fill="none" stroke="var(--welfare-freedom)" stroke-width="2.2" stroke-linejoin="round"></path></svg></div>
+      <h3>Capabilities &amp; freedom</h3><p>Learning, a voice in decisions, and safety from violence.</p>
+    </div>
+    <div class="dim">
+      <div class="dim-icon" style="background: color-mix(in srgb, var(--welfare-sustain) 16%, transparent)"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M7 21c0-9 6-14 15-14 0 9-5 15-14 15M7 21l7-7" fill="none" stroke="var(--welfare-sustain)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+      <h3>Sustainability</h3><p>A living planet and fair chances for people not yet born.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section class="section wrap" id="principles" aria-labelledby="pr-title">
+  <div class="section-head">
+    <p class="eyebrow">Honest by design</p>
+    <h2 id="pr-title">Trust has to be <strong>earned and checkable.</strong></h2>
+  </div>
+  <div class="principles">
+    <div class="principle">
+      <h3>Open to everyone</h3>
+      <p>All code, assumptions and results are public. Code is Apache-2.0; documents and results are CC-BY 4.0. A closed oracle would not deserve trust.</p>
+    </div>
+    <div class="principle">
+      <h3>Same result on every computer</h3>
+      <p>Every run can be repeated exactly, on any machine, from its settings and seed. Our reference run of 3,000 simulated years always ends in the same fingerprint:</p>
+      <p class="hash">golden m0-toy · 152,674 people · <b>2c1cabd70cd38af5</b>78f5f4edd599f18f924875de49d5f7a6df397c3c537af53e</p>
+    </div>
+    <div class="principle">
+      <h3>Uncertainty always shown</h3>
+      <p>We report ranges across many worlds, never a single confident line. When a result depends on a contested theory, we say so.</p>
+    </div>
+    <div class="principle">
+      <h3>Credit for everyone</h3>
+      <p>Volunteers, reviewers, researchers whose papers we use and dataset creators are named in every result we publish.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="section wrap" id="roadmap" aria-labelledby="road-title">
+  <div class="section-head">
+    <p class="eyebrow">Where we are</p>
+    <h2 id="road-title">Early, <strong>and building in the open.</strong></h2>
+    <p class="lede">The simulation engine's foundation is running: on a 4-core machine it advances a world at about 13 nanoseconds per simulated group per step.</p>
+  </div>
+  <ol class="road" style="list-style: none; padding: 0; margin: 0">
+    <li class="mile now"><span class="m">M0 · NOW</span><h3>Engine foundations</h3><p>Exact, repeatable, fast core</p></li>
+    <li class="mile"><span class="m">M1</span><h3>First farmers</h3><p>Southwest Asia, 12,000–3,000 BCE; browser alpha</p></li>
+    <li class="mile"><span class="m">M2</span><h3>Public launch</h3><p>Volunteer apps; fitting to evidence</p></li>
+    <li class="mile"><span class="m">M3</span><h3>Whole planet</h3><p>Every continent to 1 CE</p></li>
+    <li class="mile"><span class="m">M4</span><h3>Empires &amp; trade</h3><p>1 CE to 1800</p></li>
+    <li class="mile"><span class="m">M5</span><h3>Twin of today</h3><p>1800 to 2026</p></li>
+    <li class="mile"><span class="m">M6</span><h3>Policy lab</h3><p>Test ideas; find adoptable paths</p></li>
+  </ol>
+</section>
+
+<!-- INVOLVE -->
+<section class="section wrap" aria-labelledby="inv-title">
+  <div class="section-head">
+    <p class="eyebrow">Get involved</p>
+    <h2 id="inv-title">There is a place for you <strong>whatever you know.</strong></h2>
+  </div>
+  <div class="involve">
+    <div class="way"><h3>Volunteers</h3><p>Lend idle computer time when the alpha opens.</p><a href="https://github.com/prabhatg/world-economy">Watch the repository <span aria-hidden="true">→</span></a></div>
+    <div class="way"><h3>Scientists</h3><p>Check our mechanisms, data and assumptions.</p><a href="https://github.com/prabhatg/world-economy/blob/HEAD/docs/04-domain-models.md">Review the model <span aria-hidden="true">→</span></a></div>
+    <div class="way"><h3>Developers</h3><p>Help build a fast, exact engine in Rust.</p><a href="https://github.com/prabhatg/world-economy/tree/HEAD/engine">Read the engine <span aria-hidden="true">→</span></a></div>
+    <div class="way"><h3>Partners &amp; funders</h3><p>Support open science for the public good.</p><a href="https://github.com/prabhatg/world-economy/blob/HEAD/docs/01-vision.md">Read the vision <span aria-hidden="true">→</span></a></div>
+  </div>
+</section>
+
+<section class="section wrap" aria-labelledby="close-title">
+  <div class="closing">
+    <h2 id="close-title">Many worlds to learn from. <strong>One we live in.</strong></h2>
+    <a class="btn btn-primary" href="https://github.com/prabhatg/world-economy/blob/HEAD/docs/01-vision.md">Read the design <span class="arrow" aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>ManyWorlds is an open-source, nonprofit project. Code Apache-2.0 · Docs and results CC-BY 4.0.</span>
+    <span><a href="https://github.com/prabhatg/world-economy/blob/HEAD/CREDITS.md">Credits</a> · <a href="https://github.com/prabhatg/world-economy">GitHub</a></span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Deterministic PRNG so the illustration is identical on every load.
+  const rng = (seed) => () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  /* Hero ensemble: histories (teal) converge on today, futures fan out, one amber path rises. */
+  const canvas = document.getElementById('ensemble');
+  const ctx = canvas.getContext('2d');
+  const TODAY = 0.74;
+  let lines = null, amber = null;
+
+  function build() {
+    const r = rng(20261025);
+    const N = 70, steps = 120;
+    lines = [];
+    for (let k = 0; k < N; k++) {
+      const pts = [];
+      const amp = 0.08 + r() * 0.16, f1 = 1 + r() * 2.5, f2 = 3 + r() * 5, ph = r() * 6.28;
+      let walk = 0;
+      for (let i = 0; i <= steps; i++) {
+        const x = (i / steps) * TODAY;
+        const u = x / TODAY;
+        walk += (r() - 0.5) * 0.02;
+        const bridge = Math.sin(Math.PI * u);              // zero at both ends: starts together, meets today
+        const base = 0.88 - 0.5 * Math.pow(u, 3.2);          // slow rise, faster near the present
+        const y = base - bridge * (amp * Math.sin(f1 * u * 3.1 + ph) + 0.35 * amp * Math.sin(f2 * u * 6 + ph) + walk);
+        pts.push([x, y]);
+      }
+      lines.push({ pts, kind: 'hist', a: 0.18 + r() * 0.22 });
+    }
+    for (let k = 0; k < 56; k++) {
+      const pts = [];
+      const slope = (r() - 0.45) * 0.55, wob = 0.02 + r() * 0.05, ph = r() * 6.28;
+      for (let i = 0; i <= 40; i++) {
+        const u = i / 40, x = TODAY + u * (1 - TODAY);
+        const y = 0.38 - slope * u - Math.sin(u * 9 + ph) * wob * u;
+        pts.push([x, y]);
+      }
+      lines.push({ pts, kind: 'future', a: 0.14 + r() * 0.2 });
+    }
+    amber = [];
+    for (let i = 0; i <= 40; i++) {
+      const u = i / 40, x = TODAY + u * (1 - TODAY);
+      amber.push([x, 0.38 - 0.24 * u - Math.sin(u * 5) * 0.012 * u]);
+    }
+  }
+
+  let W = 0, H = 0, dpr = 1;
+  function size() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const X = (x) => 8 + x * (W - 16);
+  const Y = (y) => 10 + y * (H - 20);
+
+  function path(pts) {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // faint "today" marker
+    ctx.strokeStyle = 'rgba(246, 186, 103, 0.25)'; ctx.lineWidth = 1; ctx.setLineDash([2, 5]);
+    ctx.beginPath(); ctx.moveTo(X(TODAY), Y(0.02)); ctx.lineTo(X(TODAY), Y(0.98)); ctx.stroke(); ctx.setLineDash([]);
+    for (const l of lines) {
+      ctx.strokeStyle = l.kind === 'hist' ? `rgba(108, 195, 201, ${l.a})` : `rgba(159, 180, 182, ${l.a})`;
+      ctx.lineWidth = 1.1; path(l.pts); ctx.stroke();
+    }
+    // amber path with glow
+    ctx.save();
+    ctx.shadowColor = 'rgba(240, 162, 59, 0.75)'; ctx.shadowBlur = 16;
+    ctx.strokeStyle = '#F4AE4E'; ctx.lineWidth = 3; path(amber); ctx.stroke();
+    ctx.restore();
+    // today node
+    ctx.fillStyle = '#F4AE4E';
+    ctx.beginPath(); ctx.arc(X(TODAY), Y(0.38), 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(244, 174, 78, 0.35)'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(X(TODAY), Y(0.38), 10, 0, Math.PI * 2); ctx.stroke();
+    // traveling light along the amber path
+    if (t !== undefined) {
+      const u = (t / 4200) % 1, i = Math.min(amber.length - 1, Math.floor(u * (amber.length - 1)));
+      const [x, y] = amber[i];
+      const g = ctx.createRadialGradient(X(x), Y(y), 0, X(x), Y(y), 18);
+      g.addColorStop(0, 'rgba(255, 230, 190, 0.95)'); g.addColorStop(1, 'rgba(255, 230, 190, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X(x), Y(y), 18, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  build(); size(); draw();
+  let visible = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(canvas);
+  }
+  if (!reduced) {
+    const loop = (t) => { if (visible) draw(t); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { size(); draw(); }, 120); });
+
+  /* Step 2: hexagon map with groups of people (H3-like cells). */
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    parent && parent.appendChild(n);
+    return n;
+  };
+  const hex = document.getElementById('hexmap');
+  {
+    const r = rng(7), R = 22, w = Math.sqrt(3) * R;
+    const cells = [];
+    for (let q = -3; q <= 3; q++) for (let s = -2; s <= 2; s++) {
+      const cx = 160 + (q * w) + (s & 1 ? w / 2 : 0), cy = 118 + s * R * 1.5;
+      if (Math.hypot((cx - 160) / 1.25, cy - 118) > 96) continue;
+      cells.push([cx, cy]);
+    }
+    for (const [cx, cy] of cells) {
+      const pts = [];
+      for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; pts.push(`${(cx + (R - 1.5) * Math.cos(a)).toFixed(1)},${(cy + (R - 1.5) * Math.sin(a)).toFixed(1)}`); }
+      const d = r();
+      el('polygon', { points: pts.join(' '), class: 'f-surface', opacity: (0.55 + d * 0.45).toFixed(2) }, hex);
+      const n = Math.floor(d * 4);
+      for (let j = 0; j < n; j++) {
+        el('circle', { cx: (cx + (r() - 0.5) * 18).toFixed(1), cy: (cy + (r() - 0.5) * 16).toFixed(1), r: (2 + r() * 2.4).toFixed(1), class: 'f-teal', opacity: '.8' }, hex);
+      }
+    }
+    el('circle', { cx: 160 + w, cy: 118, r: 6, class: 'f-amber' }, hex);
+    const t = el('text', { x: 160, y: 228, 'text-anchor': 'middle', class: 't-mono' }, hex);
+    t.textContent = 'EACH CELL ≈ 250 KM²';
+  }
+
+  /* Step 3: small fan of futures. */
+  const fan = document.getElementById('fan');
+  {
+    const r = rng(11);
+    for (let k = 0; k < 22; k++) {
+      const slope = (r() - 0.45) * 150, wob = r() * 10;
+      let d = 'M70 130';
+      for (let i = 1; i <= 10; i++) { const u = i / 10; d += ` L${70 + u * 220} ${(130 - slope * u - Math.sin(u * 7 + k) * wob * u).toFixed(1)}`; }
+      el('path', { d, fill: 'none', class: 'd-muted', 'stroke-width': 1.2, opacity: (0.25 + r() * 0.3).toFixed(2), 'stroke-linecap': 'round' }, fan);
+    }
+    el('path', { d: 'M70 130 C140 118 200 96 290 62', fill: 'none', class: 'd-amber', 'stroke-width': 3.2, 'stroke-linecap': 'round' }, fan);
+    el('path', { d: 'M20 150 C40 140 52 134 70 130', fill: 'none', class: 'd-teal', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, fan);
+    el('circle', { cx: 70, cy: 130, r: 6, class: 'f-amber' }, fan);
+    const a = el('text', { x: 70, y: 214, 'text-anchor': 'middle', class: 't-mono' }, fan); a.textContent = 'TODAY';
+    const b = el('text', { x: 290, y: 214, 'text-anchor': 'end', class: 't-mono' }, fan); b.textContent = '+50 YEARS';
+  }
+
+  /* Robustness dot strips. */
+  const dots = document.getElementById('dots');
+  {
+    const r = rng(3);
+    const x0 = 130, x1 = 540, lo = -3, hi = 6;
+    const sx = (v) => x0 + (v - lo) / (hi - lo) * (x1 - x0);
+    const rows = [
+      { name: 'Idea A', note: 'high average, risky', mean: 2.4, sd: 2.2, y: 70, amber: false },
+      { name: 'Idea B', note: 'helps in nearly every world', mean: 1.9, sd: 0.55, y: 150, amber: true },
+      { name: 'Idea C', note: 'little change', mean: 0.2, sd: 0.5, y: 230, amber: false },
+    ];
+    // zero line
+    el('line', { x1: sx(0), x2: sx(0), y1: 30, y2: 262, class: 'd-muted', 'stroke-width': 1.2, 'stroke-dasharray': '3 5', opacity: '.6' }, dots);
+    const z = el('text', { x: sx(0), y: 286, 'text-anchor': 'middle', class: 't-mono' }, dots); z.textContent = 'NO CHANGE';
+    const better = el('text', { x: x1, y: 286, 'text-anchor': 'end', class: 't-mono' }, dots); better.textContent = 'BETTER →';
+    const worse = el('text', { x: x0, y: 286, 'text-anchor': 'start', class: 't-mono' }, dots); worse.textContent = '← WORSE';
+    const gauss = () => { let u = 0, v = 0; while (!u) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    for (const row of rows) {
+      const n1 = el('text', { x: 0, y: row.y - 4, class: 't-strong', style: 'font-size: 14px' }, dots); n1.textContent = row.name;
+      const n2 = el('text', { x: 0, y: row.y + 14, class: 't-label', style: 'font-size: 12px' }, dots); n2.textContent = row.note;
+      for (let i = 0; i < 48; i++) {
+        const v = Math.max(lo + 0.1, Math.min(hi - 0.1, row.mean + gauss() * row.sd));
+        const below = v < 0;
+        el('circle', {
+          cx: sx(v).toFixed(1), cy: (row.y + (r() - 0.5) * 30).toFixed(1), r: 4,
+          class: row.amber ? 'f-amber' : 'f-muted',
+          opacity: row.amber ? '.9' : (below ? '.75' : '.38'),
+        }, dots);
+      }
+    }
+  }
+})();
+</script>
+</body>
+</html>

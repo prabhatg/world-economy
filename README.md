@@ -30,6 +30,8 @@ health/education and technology — and for finding strategies that are *robust*
 | 12 | [Identity & credit](docs/12-identity-and-credit.md) | Proposed project name; credit for every kind of contributor |
 | 13 | [Native clients](docs/13-native-clients.md) | Rust daemon + sandboxed engine workers + thin Flutter shell; mobile, signing, risks |
 | 14 | [Engineering practices](docs/14-engineering-practices.md) | Mandatory TDD, local verification gate, performance method, targets |
+| — | [Design system](design/DESIGN-SYSTEM.md) | Research-grounded principles, tokens, diagrams, Material 3 / Apple mapping |
+| — | [Project website](docs/index.html) | Public explainer (GitHub Pages from `/docs`) |
 | — | [Decision log](docs/adr/README.md) | Architecture decision records |
 | — | [Open questions](docs/open-questions.md) | Unresolved questions to discuss next |
 | — | [Credits](CREDITS.md) | Everyone who contributes |
@@ -57,5 +59,6 @@ health/education and technology — and for finding strategies that are *robust*
 - **GPU:** wgpu first, CUDA later.
 - **Native clients:** thin Flutter shell over a Rust daemon (also the headless client); embedded web globe; Tauri v2 as fallback.
 - **Engineering:** test-driven development is mandatory; verification runs on our own compute (no hosted CI yet); performance measured and budgeted.
+- **Design:** one design system for web, apps and diagrams ([design/](design/DESIGN-SYSTEM.md)); every user-facing change is reviewed by the `design-reviewer` agent (`.claude/agents/`).
 - **Engine:** M0 under [`engine/`](engine/README.md).
 - **First milestone:** Neolithic Southwest Asia, 12,000–3,000 BCE.

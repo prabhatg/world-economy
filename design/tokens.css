@@ -1,0 +1,47 @@
+/* ManyWorlds design tokens (web). Source of truth: design/tokens.json. */
+:root {
+  --primary: #F0A23B; --on-primary: #1F1404; --primary-ink: #9A5A0A;
+  --secondary: #16626A; --on-secondary: #FFFFFF;
+  --surface: #F6F8F7; --surface-container-low: #EDF2F1; --surface-container-high: #E2EAE9;
+  --on-surface: #132220; --on-surface-variant: #4A5C59; --outline-variant: #C9D4D2;
+  --night: #08121A; --night-2: #0F2633; --on-night: #EAF2F1; --on-night-variant: #9FB4B6;
+  --welfare-health: #D55E00; --welfare-material: #E69F00; --welfare-freedom: #0072B2; --welfare-sustain: #009E73;
+
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-display: clamp(3rem, 1.9rem + 4.6vw, 5.25rem);
+  --text-headline: clamp(1.875rem, 1.4rem + 1.9vw, 2.75rem);
+  --text-title: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  --text-body: 1.0625rem;
+  --text-label: 0.8125rem;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+  --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px; --space-10: 128px;
+
+  --radius-s: 8px; --radius-m: 16px; --radius-l: 28px; --radius-full: 999px;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --dur-short: 150ms; --dur-medium: 250ms; --dur-long: 400ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #F4AE4E; --primary-ink: #F6BA67; --secondary: #6CC3C9; --on-secondary: #06292C;
+    --surface: #0C1618; --surface-container-low: #132124; --surface-container-high: #1B2C30;
+    --on-surface: #E5EEEC; --on-surface-variant: #A3B5B2; --outline-variant: #2C3F42;
+    --night: #060E14; --night-2: #0D2230;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #F4AE4E; --primary-ink: #F6BA67; --secondary: #6CC3C9; --on-secondary: #06292C;
+  --surface: #0C1618; --surface-container-low: #132124; --surface-container-high: #1B2C30;
+  --on-surface: #E5EEEC; --on-surface-variant: #A3B5B2; --outline-variant: #2C3F42;
+  --night: #060E14; --night-2: #0D2230;
+  color-scheme: dark;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-short: 0ms; --dur-medium: 0ms; --dur-long: 0ms; }
+}
