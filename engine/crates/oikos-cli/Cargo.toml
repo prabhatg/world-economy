@@ -1,0 +1,18 @@
+[package]
+name = "oikos-cli"
+description = "Command-line runner for Oikos work units"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "oikos"
+path = "src/main.rs"
+
+[dependencies]
+oikos-sim.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

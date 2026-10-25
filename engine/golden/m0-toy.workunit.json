@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "id": "golden-m0-toy",
+  "world": { "base_cell": 22, "resolution": 4 },
+  "seed": 20261025,
+  "start": { "kind": "initial" },
+  "years": 3000,
+  "partitions": 4,
+  "summary_every_years": 250
+}

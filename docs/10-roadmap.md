@@ -4,6 +4,15 @@ Principle: **vertical slices** — each milestone runs the whole loop (engine �
 → outputs → calibration → viewer) end to end, at increasing breadth.
 
 ## M0 — Foundations
+
+**Status:** first slice implemented in [`engine/`](../engine/README.md) — workspace,
+Philox RNG (Random123 known answers), integer probabilities, pinned deterministic math,
+H3 grid, super-individual agents with split/merge, phased partitioned step,
+checkpoint/fork, JSON work units, `oikos` CLI, golden run reproduced bit-for-bit on
+x86_64 and wasm32 (CI adds aarch64, macOS, Windows). Remaining: PyO3 bindings, Zarr /
+Parquet output, mechanism trait + DAG scheduler, parameter registry, weighted load
+balancing.
+
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).
 - H3 grid, SoA store with super-individuals and split/merge, phase scheduler,
   Philox RNG, checkpoint/fork, Zarr/Parquet output.

@@ -1,0 +1,101 @@
+{
+  "format": 1,
+  "id": "golden-m0-toy",
+  "engine": "oikos 0.1.0",
+  "final_tick": 1095000,
+  "state_hash": "2c1cabd70cd38af578f5f4edd599f18f924875de49d5f7a6df397c3c537af53e",
+  "summaries": [
+    {
+      "tick": 0,
+      "calendar_year": -12000,
+      "population": 360,
+      "agents": 12,
+      "occupied_cells": 5
+    },
+    {
+      "tick": 91250,
+      "calendar_year": -11750,
+      "population": 1147,
+      "agents": 28,
+      "occupied_cells": 17
+    },
+    {
+      "tick": 182500,
+      "calendar_year": -11500,
+      "population": 3544,
+      "agents": 84,
+      "occupied_cells": 39
+    },
+    {
+      "tick": 273750,
+      "calendar_year": -11250,
+      "population": 8358,
+      "agents": 202,
+      "occupied_cells": 82
+    },
+    {
+      "tick": 365000,
+      "calendar_year": -11000,
+      "population": 16914,
+      "agents": 435,
+      "occupied_cells": 128
+    },
+    {
+      "tick": 456250,
+      "calendar_year": -10750,
+      "population": 26675,
+      "agents": 677,
+      "occupied_cells": 188
+    },
+    {
+      "tick": 547500,
+      "calendar_year": -10500,
+      "population": 38807,
+      "agents": 998,
+      "occupied_cells": 263
+    },
+    {
+      "tick": 638750,
+      "calendar_year": -10250,
+      "population": 54426,
+      "agents": 1389,
+      "occupied_cells": 343
+    },
+    {
+      "tick": 730000,
+      "calendar_year": -10000,
+      "population": 70584,
+      "agents": 1828,
+      "occupied_cells": 430
+    },
+    {
+      "tick": 821250,
+      "calendar_year": -9750,
+      "population": 88027,
+      "agents": 2281,
+      "occupied_cells": 531
+    },
+    {
+      "tick": 912500,
+      "calendar_year": -9500,
+      "population": 108447,
+      "agents": 2808,
+      "occupied_cells": 626
+    },
+    {
+      "tick": 1003750,
+      "calendar_year": -9250,
+      "population": 129956,
+      "agents": 3377,
+      "occupied_cells": 746
+    },
+    {
+      "tick": 1095000,
+      "calendar_year": -9000,
+      "population": 152674,
+      "agents": 3977,
+      "occupied_cells": 856
+    }
+  ],
+  "checkpoint": null
+}

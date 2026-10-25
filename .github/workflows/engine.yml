@@ -1,0 +1,45 @@
+name: engine
+
+on:
+  push:
+    paths: ["engine/**", ".github/workflows/engine.yml"]
+  pull_request:
+    paths: ["engine/**", ".github/workflows/engine.yml"]
+
+defaults:
+  run:
+    working-directory: engine
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets -- -D warnings
+
+  # Every target must reproduce golden/m0-toy.json bit-for-bit (tests/determinism.rs).
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - run: cargo test --release
+
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: bytecodealliance/actions/wasmtime/setup@v1
+      - run: cargo test --release --target wasm32-wasip1
+      - name: CLI work unit under wasmtime matches golden
+        run: |
+          cargo build --release --target wasm32-wasip1 -p oikos-cli
+          wasmtime run --dir . target/wasm32-wasip1/release/oikos.wasm run golden/m0-toy.workunit.json > result.json
+          diff <(grep -v '"engine"' golden/m0-toy.json) <(grep -v '"engine"' result.json)

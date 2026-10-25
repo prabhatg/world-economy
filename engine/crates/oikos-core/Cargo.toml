@@ -1,0 +1,10 @@
+[package]
+name = "oikos-core"
+description = "Core types for the Oikos engine: time, ids, deterministic RNG, probabilities"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true

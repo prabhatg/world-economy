@@ -1,0 +1,27 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/prabhatg/world-economy"
+rust-version = "1.85"
+
+[workspace.dependencies]
+oikos-core = { path = "crates/oikos-core" }
+oikos-math = { path = "crates/oikos-math" }
+oikos-grid = { path = "crates/oikos-grid" }
+oikos-sim = { path = "crates/oikos-sim" }
+h3o = "0.11"
+blake3 = "1.8"
+libm = "=0.2.16"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[profile.release]
+debug = 1

@@ -1,0 +1,13 @@
+[package]
+name = "oikos-grid"
+description = "H3 geodesic grid topology for the Oikos engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+h3o.workspace = true
+
+[lints]
+workspace = true

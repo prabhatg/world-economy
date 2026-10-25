@@ -40,7 +40,8 @@ abstraction chosen so that multi-node / multi-GPU is an implementation, not a re
   (band/lineage/clan), Polity, Market, Firm/Workshop, Religion/Ideology, Route.
 - **Relations** (membership, kinship, trade links, alliance, tribute, employment,
   belief) as partitioned edge lists (CSR + delta buffers), owned by source entity.
-- **Stable 64-bit ids** that encode birth partition + counter, never reused.
+- **Stable 64-bit ids** that encode the birth *cell* + a per-cell counter, never reused.
+  Cells (not partitions) own the counters, so ids are independent of partitioning.
 
 ## 3.4 Scheduling & phases
 

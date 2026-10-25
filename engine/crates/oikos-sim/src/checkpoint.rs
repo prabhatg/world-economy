@@ -1,0 +1,130 @@
+//! Canonical binary checkpoints.
+//!
+//! Layout (all integers little-endian):
+//! `magic "OIKOSCK1" | version u32 | base_cell u8 | resolution u8 | seed u64 | tick u64 |
+//!  params_len u32 | params JSON | cells u32 | capacity u64×cells | birth_counter u64×cells |
+//!  agents u64 | (id u64, cell u32, weight u64)×agents`
+//!
+//! The encoding is a pure function of world state, so its BLAKE3 hash is the canonical
+//! state hash used to validate results across hosts.
+
+use crate::agents::Agents;
+use crate::params::Params;
+use crate::world::{World, WorldConfig};
+use oikos_core::{EntityId, Tick};
+use std::sync::Arc;
+
+const MAGIC: &[u8; 8] = b"OIKOSCK1";
+const VERSION: u32 = 1;
+
+pub fn encode(world: &World) -> Vec<u8> {
+    let mut b = Vec::with_capacity(64 + world.capacity.len() * 16 + world.agents.len() * 20);
+    b.extend_from_slice(MAGIC);
+    b.extend_from_slice(&VERSION.to_le_bytes());
+    b.push(world.config.base_cell);
+    b.push(world.config.resolution);
+    b.extend_from_slice(&world.seed.to_le_bytes());
+    b.extend_from_slice(&world.tick.0.to_le_bytes());
+    let params = serde_json::to_vec(&world.params).expect("params serialize");
+    b.extend_from_slice(&(params.len() as u32).to_le_bytes());
+    b.extend_from_slice(&params);
+    b.extend_from_slice(&(world.capacity.len() as u32).to_le_bytes());
+    for v in &world.capacity {
+        b.extend_from_slice(&v.to_le_bytes());
+    }
+    for v in &world.birth_counter {
+        b.extend_from_slice(&v.to_le_bytes());
+    }
+    b.extend_from_slice(&(world.agents.len() as u64).to_le_bytes());
+    for i in 0..world.agents.len() {
+        b.extend_from_slice(&world.agents.id[i].0.to_le_bytes());
+        b.extend_from_slice(&world.agents.cell[i].to_le_bytes());
+        b.extend_from_slice(&world.agents.weight[i].to_le_bytes());
+    }
+    b
+}
+
+/// Hex BLAKE3 hash of the canonical encoding.
+pub fn state_hash(world: &World) -> String {
+    blake3::hash(&encode(world)).to_hex().to_string()
+}
+
+struct Reader<'a> {
+    b: &'a [u8],
+}
+
+impl<'a> Reader<'a> {
+    fn take(&mut self, n: usize) -> Result<&'a [u8], String> {
+        if self.b.len() < n {
+            return Err("checkpoint truncated".into());
+        }
+        let (a, rest) = self.b.split_at(n);
+        self.b = rest;
+        Ok(a)
+    }
+    fn u8(&mut self) -> Result<u8, String> {
+        Ok(self.take(1)?[0])
+    }
+    fn u32(&mut self) -> Result<u32, String> {
+        Ok(u32::from_le_bytes(self.take(4)?.try_into().unwrap()))
+    }
+    fn u64(&mut self) -> Result<u64, String> {
+        Ok(u64::from_le_bytes(self.take(8)?.try_into().unwrap()))
+    }
+}
+
+pub fn decode(bytes: &[u8]) -> Result<World, String> {
+    let mut r = Reader { b: bytes };
+    if r.take(8)? != MAGIC {
+        return Err("not an Oikos checkpoint".into());
+    }
+    let version = r.u32()?;
+    if version != VERSION {
+        return Err(format!("unsupported checkpoint version {version}"));
+    }
+    let config = WorldConfig {
+        base_cell: r.u8()?,
+        resolution: r.u8()?,
+    };
+    let seed = r.u64()?;
+    let tick = Tick(r.u64()?);
+    let plen = r.u32()? as usize;
+    let params: Params = serde_json::from_slice(r.take(plen)?).map_err(|e| e.to_string())?;
+    let grid = Arc::new(config.build_grid()?);
+    let cells = r.u32()? as usize;
+    if cells != grid.len() {
+        return Err(format!("checkpoint has {cells} cells, grid has {}", grid.len()));
+    }
+    let capacity = (0..cells).map(|_| r.u64()).collect::<Result<Vec<_>, _>>()?;
+    let birth_counter = (0..cells).map(|_| r.u64()).collect::<Result<Vec<_>, _>>()?;
+    let n = r.u64()? as usize;
+    let mut agents = Agents::default();
+    for _ in 0..n {
+        let id = EntityId(r.u64()?);
+        let cell = r.u32()?;
+        let weight = r.u64()?;
+        if cell as usize >= cells {
+            return Err("agent cell out of range".into());
+        }
+        agents.push(id, cell, weight);
+    }
+    if !r.b.is_empty() {
+        return Err("trailing bytes in checkpoint".into());
+    }
+    let mut world = World {
+        config,
+        grid,
+        seed,
+        tick,
+        params,
+        capacity,
+        birth_counter,
+        population: vec![0; cells],
+        agents,
+    };
+    world.agents.sort_canonical();
+    for (&c, &w) in world.agents.cell.iter().zip(&world.agents.weight) {
+        world.population[c as usize] += w;
+    }
+    Ok(world)
+}
