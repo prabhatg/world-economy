@@ -8,7 +8,7 @@ Rust workspace for the ManyWorlds simulation engine. Design: [docs/03-engine.md]
 | `oikos-math` | Bit-reproducible transcendental functions (pinned pure-Rust `libm`) |
 | `oikos-grid` | H3 grid topology: regions, neighbor lists, partitions |
 | `oikos-sim` | Super-individual agent store, phased partitioned step, checkpoints, work units |
-| `oikos-cli` | `oikos` binary: runs work units natively or under wasmtime |
+| `oikos-cli` | `oikos` binary: runs work units (natively or under wasmtime) and benchmarks |
 
 The M0 mechanism is a toy (logistic growth, band fission and migration over the
 Southwest Asia H3 base cell). It exists to exercise the engine.
@@ -16,14 +16,28 @@ Southwest Asia H3 base cell). It exists to exercise the engine.
 ## Reproducibility contract
 
 - Results are identical for any partition count and on x86_64, aarch64 and wasm32.
-- `golden/m0-toy.json` is the committed result of `golden/m0-toy.workunit.json`; CI
-  checks it on Linux x86_64/aarch64, macOS, Windows and wasm32-wasip1.
+- `golden/m0-toy.json` is the committed result of `golden/m0-toy.workunit.json`; the
+  local gate checks it natively and on wasm32-wasip1. Run the gate on every machine
+  class and compare reports to confirm cross-host determinism.
 - Changing it is a deliberate, reviewed act:
   `cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json -o golden/m0-toy.json`
+
+## Verification (test-driven; runs on our own compute)
+
+```sh
+scripts/check.sh            # full gate: fmt, clippy, tests (release+debug, native+wasm), golden, determinism
+scripts/check.sh --quick    # inner loop
+scripts/compare-reports.sh a.json b.json   # cross-host determinism (target/check-report.json from each host)
+scripts/bench.sh [res] [years]             # throughput + strong scaling -> target/bench.jsonl
+git config core.hooksPath engine/scripts/hooks   # opt-in pre-push gate
+```
+
+See [docs/14-engineering-practices.md](../docs/14-engineering-practices.md).
 
 ## Usage
 
 ```sh
+cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
 cargo test --release
 cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json
 

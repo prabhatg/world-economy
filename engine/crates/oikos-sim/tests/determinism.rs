@@ -30,7 +30,7 @@ fn people_are_conserved_exactly() {
         let before = w.total_population();
         let s = w.step(4);
         assert_eq!(w.total_population(), before + s.births - s.deaths);
-        assert_eq!(w.agents.total_weight(), w.total_population());
+        assert_eq!(w.total_agent_weight(), w.total_population());
     }
 }
 
@@ -46,10 +46,7 @@ fn checkpoint_restore_continues_identically() {
     assert_eq!(checkpoint::encode(&resumed), bytes, "encode(decode(x)) == x");
     resumed.run_years(600, 1, 1_000);
 
-    assert_eq!(
-        checkpoint::state_hash(&straight),
-        checkpoint::state_hash(&resumed)
-    );
+    assert_eq!(checkpoint::state_hash(&straight), checkpoint::state_hash(&resumed));
 }
 
 #[test]
@@ -63,10 +60,7 @@ fn fork_diverges_from_parent() {
         world: WorldConfig::SOUTHWEST_ASIA,
         seed,
         params: None,
-        start: Start::Checkpoint {
-            path: "parent".into(),
-            fork: true,
-        },
+        start: Start::Checkpoint { path: "parent".into(), fork: true },
         years: 300,
         partitions: 2,
         summary_every_years: 300,
@@ -88,4 +82,21 @@ fn golden_result() {
     let expected: oikos_sim::WorkResult = serde_json::from_str(GOLDEN).unwrap();
     assert_eq!(result.state_hash, expected.state_hash);
     assert_eq!(result.summaries, expected.summaries);
+}
+
+/// Dense world (every cell occupied, many cross-partition migrants).
+#[test]
+fn dense_world_identical_across_partition_counts() {
+    let config = WorldConfig { base_cell: 22, resolution: 5 };
+    let hashes: Vec<String> = [1, 3, 4, 7]
+        .iter()
+        .map(|&p| {
+            let mut w = World::filled(config, 1, Params::default(), 3).unwrap();
+            for _ in 0..15 {
+                w.step(p);
+            }
+            checkpoint::state_hash(&w)
+        })
+        .collect();
+    assert!(hashes.windows(2).all(|h| h[0] == h[1]), "{hashes:?}");
 }

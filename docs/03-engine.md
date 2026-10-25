@@ -96,7 +96,7 @@ Chosen for the best combination of accuracy and verifiable determinism:
    native GPU floats are validated by *homogeneous redundancy* (same platform class)
    and statistical tolerance, and are documented as such.
 
-CI runs golden runs on every target and fails on any hash mismatch.
+The local verification gate runs golden runs on every target and fails on any hash mismatch.
 
 ## 3.6 Distribution & load balancing
 
@@ -131,10 +131,7 @@ CI runs golden runs on every target and fails on any hash mismatch.
 
 ## 3.9 Engineering practices
 
-- Rust workspace, `cargo` + `maturin` for Python wheels; CI with determinism tests
-  (same result across 1/2/4/8 partitions), property tests for conservation laws
-  (people, mass, money), and golden-run regression tests.
-- Units checked at the type level where cheap (`uom` or newtypes).
-- Every mechanism ships with: doc, citations, parameter priors, unit tests, and a
-  small "stylized fact" test (e.g. logistic growth under fixed carrying capacity).
-- Profiling built in (per-mechanism timings feed the load balancer).
+Test-driven development and performance methodology are in
+[doc 14](14-engineering-practices.md). Verification runs on our own compute through a
+local gate (`engine/scripts/check.sh`), not hosted CI. Every mechanism ships with docs,
+citations, parameter priors, unit and property tests, and a stylized-fact test.

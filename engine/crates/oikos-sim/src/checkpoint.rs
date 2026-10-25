@@ -18,7 +18,7 @@ const MAGIC: &[u8; 8] = b"OIKOSCK1";
 const VERSION: u32 = 1;
 
 pub fn encode(world: &World) -> Vec<u8> {
-    let mut b = Vec::with_capacity(64 + world.capacity.len() * 16 + world.agents.len() * 20);
+    let mut b = Vec::with_capacity(64 + world.capacity.len() * 16 + world.agent_count() * 20);
     b.extend_from_slice(MAGIC);
     b.extend_from_slice(&VERSION.to_le_bytes());
     b.push(world.config.base_cell);
@@ -35,11 +35,13 @@ pub fn encode(world: &World) -> Vec<u8> {
     for v in &world.birth_counter {
         b.extend_from_slice(&v.to_le_bytes());
     }
-    b.extend_from_slice(&(world.agents.len() as u64).to_le_bytes());
-    for i in 0..world.agents.len() {
-        b.extend_from_slice(&world.agents.id[i].0.to_le_bytes());
-        b.extend_from_slice(&world.agents.cell[i].to_le_bytes());
-        b.extend_from_slice(&world.agents.weight[i].to_le_bytes());
+    b.extend_from_slice(&(world.agent_count() as u64).to_le_bytes());
+    for a in world.agent_slices() {
+        for i in 0..a.len() {
+            b.extend_from_slice(&a.id[i].0.to_le_bytes());
+            b.extend_from_slice(&a.cell[i].to_le_bytes());
+            b.extend_from_slice(&a.weight[i].to_le_bytes());
+        }
     }
     b
 }
@@ -82,10 +84,7 @@ pub fn decode(bytes: &[u8]) -> Result<World, String> {
     if version != VERSION {
         return Err(format!("unsupported checkpoint version {version}"));
     }
-    let config = WorldConfig {
-        base_cell: r.u8()?,
-        resolution: r.u8()?,
-    };
+    let config = WorldConfig { base_cell: r.u8()?, resolution: r.u8()? };
     let seed = r.u64()?;
     let tick = Tick(r.u64()?);
     let plen = r.u32()? as usize;
@@ -111,20 +110,6 @@ pub fn decode(bytes: &[u8]) -> Result<World, String> {
     if !r.b.is_empty() {
         return Err("trailing bytes in checkpoint".into());
     }
-    let mut world = World {
-        config,
-        grid,
-        seed,
-        tick,
-        params,
-        capacity,
-        birth_counter,
-        population: vec![0; cells],
-        agents,
-    };
-    world.agents.sort_canonical();
-    for (&c, &w) in world.agents.cell.iter().zip(&world.agents.weight) {
-        world.population[c as usize] += w;
-    }
-    Ok(world)
+    agents.sort_canonical();
+    Ok(World::assemble(config, grid, seed, tick, params, capacity, birth_counter, agents))
 }

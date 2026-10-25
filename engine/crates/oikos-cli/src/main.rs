@@ -4,8 +4,9 @@
 //! Usage:
 //!   oikos run <workunit.json> [-o <result.json>]
 //!   oikos hash <checkpoint>
+//!   oikos bench [--base-cell N] [--res N] [--bands N] [--years N] [--parts N]
 
-use oikos_sim::{WorkUnit, checkpoint, run_work_unit};
+use oikos_sim::{Params, WorkUnit, World, WorldConfig, checkpoint, run_work_unit};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -45,8 +46,52 @@ fn run(args: &[String]) -> Result<(), String> {
             println!("{}", checkpoint::state_hash(&world));
             Ok(())
         }
+        Some("bench") => bench(&args[1..]),
         _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint>".into()),
     }
+}
+
+/// Throughput benchmark on a world filled to carrying capacity. Prints JSON, including
+/// the final state hash, which must be identical for every `--parts` and every host.
+fn bench(args: &[String]) -> Result<(), String> {
+    let opt = |name: &str, default: u64| -> Result<u64, String> {
+        match args.iter().position(|a| a == name) {
+            Some(i) => args
+                .get(i + 1)
+                .ok_or(format!("{name}: missing value"))?
+                .parse()
+                .map_err(|e| format!("{name}: {e}")),
+            None => Ok(default),
+        }
+    };
+    let config = WorldConfig { base_cell: opt("--base-cell", 22)? as u8, resolution: opt("--res", 6)? as u8 };
+    let bands = opt("--bands", 4)? as u32;
+    let years = opt("--years", 20)?;
+    let parts = opt("--parts", 1)? as usize;
+
+    let t0 = std::time::Instant::now();
+    let mut world = World::filled(config, 1, Params::default(), bands)?;
+    let setup = t0.elapsed().as_secs_f64();
+    let agents_start = world.agent_count() as u64;
+
+    let mut agent_steps = 0u64;
+    let t1 = std::time::Instant::now();
+    for _ in 0..years {
+        agent_steps += world.agent_count() as u64;
+        world.step(parts);
+    }
+    let secs = t1.elapsed().as_secs_f64();
+    println!(
+        "{{\"cells\": {}, \"partitions\": {parts}, \"steps\": {years}, \"agents_start\": {agents_start}, \
+         \"agents_end\": {}, \"setup_s\": {setup:.3}, \"run_s\": {secs:.3}, \
+         \"agent_steps_per_s\": {:.0}, \"ns_per_agent_step\": {:.2}, \"state_hash\": \"{}\"}}",
+        world.grid.len(),
+        world.agent_count(),
+        agent_steps as f64 / secs,
+        secs * 1e9 / agent_steps as f64,
+        checkpoint::state_hash(&world),
+    );
+    Ok(())
 }
 
 fn read(path: &str) -> Result<Vec<u8>, String> {

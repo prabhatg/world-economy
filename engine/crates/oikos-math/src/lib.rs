@@ -67,15 +67,7 @@ mod tests {
     /// Fixed bit patterns: if these change, results are no longer reproducible.
     #[test]
     fn golden_bits() {
-        let samples = [
-            exp(1.0),
-            ln(10.0),
-            pow(1.5, 2.25),
-            sin(0.5),
-            cos(0.5),
-            tanh(0.3),
-            logistic(0.7),
-        ];
+        let samples = [exp(1.0), ln(10.0), pow(1.5, 2.25), sin(0.5), cos(0.5), tanh(0.3), logistic(0.7)];
         let mut h: u64 = 0xcbf2_9ce4_8422_2325;
         for s in samples {
             for b in s.to_bits().to_le_bytes() {

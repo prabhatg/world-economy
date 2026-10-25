@@ -67,12 +67,7 @@ impl Grid {
             neighbor_targets.extend(ns);
             neighbor_offsets.push(neighbor_targets.len() as u32);
         }
-        Grid {
-            resolution,
-            cells,
-            neighbor_offsets,
-            neighbor_targets,
-        }
+        Grid { resolution, cells, neighbor_offsets, neighbor_targets }
     }
 
     pub fn resolution(&self) -> u8 {
@@ -108,9 +103,7 @@ impl Grid {
 pub fn partition_ranges(n: u32, parts: usize) -> Vec<Range<u32>> {
     assert!(parts > 0);
     let parts = parts as u32;
-    (0..parts)
-        .map(|p| (n * p / parts)..(n * (p + 1) / parts))
-        .collect()
+    (0..parts).map(|p| (n * p / parts)..(n * (p + 1) / parts)).collect()
 }
 
 #[cfg(test)]

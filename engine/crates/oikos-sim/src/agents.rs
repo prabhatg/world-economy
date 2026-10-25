@@ -4,6 +4,7 @@
 //! change resolution while conserving people exactly.
 
 use oikos_core::EntityId;
+use std::ops::Range;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Agents {
@@ -80,6 +81,94 @@ impl Agents {
         *self = out;
     }
 
+    pub fn clear(&mut self) {
+        self.id.clear();
+        self.cell.clear();
+        self.weight.clear();
+    }
+
+    /// Sorts into canonical (cell, id) order. All cells must lie in `cells`.
+    ///
+    /// Stable counting sort by cell (O(n + cells)), then insertion sort by id inside
+    /// each cell. Each step's input is canonical plus a few appended agents, so the
+    /// insertion sorts are near O(n). `scratch` and `counts` are reusable buffers.
+    pub fn sort_in_cells(&mut self, cells: Range<u32>, scratch: &mut Agents, counts: &mut Vec<u32>) {
+        let m = (cells.end - cells.start) as usize;
+        let n = self.len();
+        counts.clear();
+        counts.resize(m + 1, 0);
+        for &c in &self.cell {
+            counts[(c - cells.start) as usize + 1] += 1;
+        }
+        for k in 0..m {
+            counts[k + 1] += counts[k];
+        }
+
+        scratch.id.clear();
+        scratch.id.resize(n, EntityId(0));
+        scratch.cell.clear();
+        scratch.cell.resize(n, 0);
+        scratch.weight.clear();
+        scratch.weight.resize(n, 0);
+        // Scatter; afterwards counts[k] is the end of cell k's group.
+        for i in 0..n {
+            let k = (self.cell[i] - cells.start) as usize;
+            let dst = counts[k] as usize;
+            counts[k] += 1;
+            scratch.id[dst] = self.id[i];
+            scratch.cell[dst] = self.cell[i];
+            scratch.weight[dst] = self.weight[i];
+        }
+
+        let mut start = 0;
+        for &end in &counts[..m] {
+            let end = end as usize;
+            for j in start + 1..end {
+                let (id, w) = (scratch.id[j], scratch.weight[j]);
+                let mut i = j;
+                while i > start && scratch.id[i - 1] > id {
+                    scratch.id[i] = scratch.id[i - 1];
+                    scratch.weight[i] = scratch.weight[i - 1];
+                    i -= 1;
+                }
+                scratch.id[i] = id;
+                scratch.weight[i] = w;
+            }
+            start = end;
+        }
+        std::mem::swap(self, scratch);
+    }
+
+    /// [`Agents::merge_small`] into `out`, also writing per-cell population to `pop`
+    /// (indexed by `cell - cell_base`, zeroed first). Requires canonical order.
+    pub fn merge_small_into(&self, threshold: u64, out: &mut Agents, cell_base: u32, pop: &mut [u64]) {
+        out.clear();
+        pop.iter_mut().for_each(|p| *p = 0);
+        let mut i = 0;
+        while i < self.len() {
+            let cell = self.cell[i];
+            let mut absorber: Option<usize> = None;
+            let mut total = 0;
+            while i < self.len() && self.cell[i] == cell {
+                let w = self.weight[i];
+                total += w;
+                if w > 0 && w < threshold {
+                    match absorber {
+                        Some(a) => out.weight[a] += w,
+                        None => {
+                            absorber = Some(out.len());
+                            out.push(self.id[i], cell, w);
+                        }
+                    }
+                } else if w > 0 {
+                    out.push(self.id[i], cell, w);
+                }
+                i += 1;
+            }
+            pop[(cell - cell_base) as usize] = total;
+        }
+    }
+
     /// Moves up to `take` people out of `weight`; returns how many moved (the weight of
     /// the new agent).
     pub fn split_weight(weight: &mut u64, take: u64) -> u64 {
@@ -114,6 +203,55 @@ mod tests {
         // The two small agents in cell 1 merged into the lower id.
         let i = a.id.iter().position(|&id| id == EntityId::new(1, 1)).unwrap();
         assert_eq!(a.weight[i], 9);
+    }
+
+    use proptest::prelude::*;
+
+    /// Random agents in `cells` cells with unique ids.
+    fn arb_agents(cells: u32) -> impl Strategy<Value = Agents> {
+        prop::collection::vec((0..cells, 0u64..1_000, 0u64..40), 0..300).prop_map(|rows| {
+            let mut a = Agents::default();
+            for (i, (cell, counter, w)) in rows.into_iter().enumerate() {
+                // Unique ids: counter space partitioned by row index.
+                a.push(EntityId::new(cell, counter * 1_000 + i as u64), cell, w);
+            }
+            a
+        })
+    }
+
+    proptest! {
+        #[test]
+        fn counting_sort_matches_canonical(a in arb_agents(16), base in 0u32..4) {
+            // Shift into a partition owning cells base..base+16.
+            let mut a = a;
+            a.cell.iter_mut().for_each(|c| *c += base);
+            let mut expected = a.clone();
+            expected.sort_canonical();
+            let mut scratch = Agents::default();
+            let mut counts = Vec::new();
+            a.sort_in_cells(base..base + 16, &mut scratch, &mut counts);
+            prop_assert_eq!(a, expected);
+        }
+
+        #[test]
+        fn fused_merge_matches_reference(a in arb_agents(8), threshold in 0u64..30) {
+            let mut expected = a.clone();
+            expected.sort_canonical();
+            expected.merge_small(threshold);
+            let mut expected_pop = vec![0u64; 8];
+            for (&c, &w) in expected.cell.iter().zip(&expected.weight) {
+                expected_pop[c as usize] += w;
+            }
+
+            let mut sorted = a.clone();
+            sorted.sort_canonical();
+            let mut out = Agents::default();
+            let mut pop = vec![0u64; 8];
+            sorted.merge_small_into(threshold, &mut out, 0, &mut pop);
+            prop_assert_eq!(&out, &expected);
+            prop_assert_eq!(pop, expected_pop);
+            prop_assert_eq!(out.total_weight(), a.total_weight());
+        }
     }
 
     #[test]

@@ -8,8 +8,10 @@ Principle: **vertical slices** — each milestone runs the whole loop (engine �
 **Status:** first slice implemented in [`engine/`](../engine/README.md) — workspace,
 Philox RNG (Random123 known answers), integer probabilities, pinned deterministic math,
 H3 grid, super-individual agents with split/merge, phased partitioned step,
-checkpoint/fork, JSON work units, `oikos` CLI, golden run reproduced bit-for-bit on
-x86_64 and wasm32 (CI adds aarch64, macOS, Windows). Remaining: PyO3 bindings, Zarr /
+checkpoint/fork, JSON work units, `oikos` CLI + benchmark, persistent partitions on a
+rayon pool (13 ns/agent-step on 4 cores), local verification gate; golden run
+reproduced bit-for-bit on x86_64 and wasm32. Remaining: run the gate on aarch64,
+macOS and Windows hosts; PyO3 bindings, Zarr /
 Parquet output, mechanism trait + DAG scheduler, parameter registry, weighted load
 balancing.
 
@@ -19,8 +21,8 @@ balancing.
 - Two-tier numerics (integer conserved quantities, restricted `f64`), deterministic
   math crate.
 - Build targets: x86_64, aarch64, **wasm32**.
-- CI: determinism across partition counts *and* across targets, conservation property
-  tests, golden-run hashes.
+- Local verification gate on our compute: determinism across partition counts *and*
+  across targets, conservation property tests, golden-run hashes.
 - Work-unit format v0 (segment run: state in → state + summaries out).
 - Toy mechanism: logistic population growth on a grid with diffusion. Python can run,
   fork and read results.

@@ -56,12 +56,8 @@ impl Philox4x32 {
 
     /// Four 32-bit words for `(subject, tick, index)`.
     pub fn block(&self, subject: u64, tick: u64, index: u32) -> [u32; 4] {
-        let ctr = [
-            subject as u32,
-            (subject >> 32) as u32,
-            tick as u32,
-            index ^ (((tick >> 32) as u32) << 16),
-        ];
+        let ctr =
+            [subject as u32, (subject >> 32) as u32, tick as u32, index ^ (((tick >> 32) as u32) << 16)];
         philox4x32_10(ctr, self.key)
     }
 
@@ -85,19 +81,13 @@ mod tests {
     // Known-answer vectors from the Random123 distribution (kat_vectors).
     #[test]
     fn known_answers() {
-        assert_eq!(
-            philox4x32_10([0; 4], [0; 2]),
-            [0x6627_e8d5, 0xe169_c58d, 0xbc57_ac4c, 0x9b00_dbd8]
-        );
+        assert_eq!(philox4x32_10([0; 4], [0; 2]), [0x6627_e8d5, 0xe169_c58d, 0xbc57_ac4c, 0x9b00_dbd8]);
         assert_eq!(
             philox4x32_10([u32::MAX; 4], [u32::MAX; 2]),
             [0x408f_276d, 0x41c8_3b0e, 0xa20b_c7c6, 0x6d54_51fd]
         );
         assert_eq!(
-            philox4x32_10(
-                [0x243f_6a88, 0x85a3_08d3, 0x1319_8a2e, 0x0370_7344],
-                [0xa409_3822, 0x299f_31d0]
-            ),
+            philox4x32_10([0x243f_6a88, 0x85a3_08d3, 0x1319_8a2e, 0x0370_7344], [0xa409_3822, 0x299f_31d0]),
             [0xd16c_fe09, 0x94fd_cceb, 0x5001_e420, 0x2412_6ea1]
         );
     }

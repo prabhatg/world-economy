@@ -19,6 +19,8 @@ blake3 = "1.8"
 libm = "=0.2.16"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
+rayon = "1.12"
+proptest = { version = "1.12", default-features = false, features = ["std", "bit-set"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
