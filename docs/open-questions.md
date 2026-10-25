@@ -26,7 +26,7 @@
 ## Volunteer computing
 18. Native client UI shell: Flutter + flutter_rust_bridge (one codebase, existing
     skills) vs Tauri (web UI reused from the viewer) vs per-platform native.
-19. Project name and identity for the public nonprofit.
+19. Confirm project name (proposed: ManyWorlds / engine Oikos) after trademark & domain search.
 20. Which fiscal sponsor (e.g. an established open-source/science foundation)?
 21. Explore-queue design: how much steering do explorers get, and can any explore
     results be reused scientifically (e.g. as importance-weighted samples)?

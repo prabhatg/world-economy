@@ -27,8 +27,10 @@ health/education and technology — and for finding strategies that are *robust*
 | 9 | [Data sources](docs/09-data-sources.md) | Forcing, calibration and validation datasets |
 | 10 | [Roadmap](docs/10-roadmap.md) | Milestones, starting with the Neolithic Southwest Asia vertical slice |
 | 11 | [Volunteer computing](docs/11-volunteer-computing.md) | SETI@home-style volunteer network: work units, coordinator, validation, clients, governance |
+| 12 | [Identity & credit](docs/12-identity-and-credit.md) | Proposed project name; credit for every kind of contributor |
 | — | [Decision log](docs/adr/README.md) | Architecture decision records |
 | — | [Open questions](docs/open-questions.md) | Unresolved questions to discuss next |
+| — | [Credits](CREDITS.md) | Everyone who contributes |
 
 ## Decisions so far
 
@@ -47,4 +49,6 @@ health/education and technology — and for finding strategies that are *robust*
 - **Numerics:** bitwise cross-platform determinism; integer conserved quantities +
   restricted IEEE `f64` with our own math library.
 - **Openness:** nonprofit-style, open-source project with open provenance.
+- **Credit:** every contributor type is credited; each result ships a provenance-generated credit manifest.
+- **Name (proposed):** *ManyWorlds* for the project and volunteer network, *Oikos* for the engine.
 - **First milestone:** Neolithic Southwest Asia, 12,000–3,000 BCE.
