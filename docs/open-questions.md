@@ -23,6 +23,15 @@
 13. Reproducibility guarantee across CPU↔GPU: bitwise or tolerance-bounded?
 14. License choice.
 
+## Volunteer computing
+18. Native client UI shell: Flutter + flutter_rust_bridge (one codebase, existing
+    skills) vs Tauri (web UI reused from the viewer) vs per-platform native.
+19. Project name and identity for the public nonprofit.
+20. Which fiscal sponsor (e.g. an established open-source/science foundation)?
+21. Explore-queue design: how much steering do explorers get, and can any explore
+    results be reused scientifically (e.g. as importance-weighted samples)?
+22. Credit formula: compute-only, or also credit verified knowledge contributions?
+
 ## Project
 15. Cloud budget envelope per month.
 16. Timeline expectations for M0/M1.

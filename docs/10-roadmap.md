@@ -7,10 +7,16 @@ Principle: **vertical slices** — each milestone runs the whole loop (engine �
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).
 - H3 grid, SoA store with super-individuals and split/merge, phase scheduler,
   Philox RNG, checkpoint/fork, Zarr/Parquet output.
-- CI: determinism across partition counts, conservation property tests.
+- Two-tier numerics (integer conserved quantities, restricted `f64`), deterministic
+  math crate.
+- Build targets: x86_64, aarch64, **wasm32**.
+- CI: determinism across partition counts *and* across targets, conservation property
+  tests, golden-run hashes.
+- Work-unit format v0 (segment run: state in → state + summaries out).
 - Toy mechanism: logistic population growth on a grid with diffusion. Python can run,
   fork and read results.
-- **Exit:** bit-identical results across 1/2/4/8 partitions; fork/restore works.
+- **Exit:** bit-identical results across 1/2/4/8 partitions and across x86_64 /
+  aarch64 / wasm32; fork/restore works; a work unit runs in a browser tab.
 
 ## M1 — Neolithic Southwest Asia (12,000–3,000 BCE)
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3).
@@ -23,12 +29,21 @@ Principle: **vertical slices** — each milestone runs the whole loop (engine �
   distance-decay, domestication timing.
 - Calibration: sensitivity analysis + first history-matching waves on cloud batch.
 - Viewer v0: TS + deck.gl map playing back fields and settlements over time.
+- **Coordinator v0** (work generator, dispatcher, result ingest, validator) with cloud
+  spot workers as the first client class.
+- **Browser client v0**: closed alpha, runs M1 work units and shows "your world".
 - **Exit:** plausible emergence of farming and villages in the right windows across
-  ensembles, with quantified fit; competing domestication hypotheses compared.
+  ensembles, with quantified fit; competing domestication hypotheses compared;
+  first calibration wave computed partly by alpha volunteers.
 
-## M2 — Calibration & assimilation machinery
+## M2 — Calibration & assimilation machinery + public volunteer launch
 - Emulators (GP/NN), SBI pipeline, localized particle-filter assimilation on M1.
-- Knowledge-ingestion pipeline v1 feeding the parameter registry.
+- Knowledge-ingestion pipeline v1 feeding the parameter registry; citizen-science
+  review tool for extracted parameters.
+- Desktop clients (Win/macOS/Linux) and headless/Docker client; accounts, teams,
+  credits; adaptive replication.
+- Nonprofit set up (fiscal sponsor), charter, advisory board; **public launch**.
+- Android client (charging + Wi-Fi); iOS explore-first client.
 
 ## M3 — Global Holocene to 1 CE
 - All continents at res 4; independent agricultural origins (Fertile Crescent, China,

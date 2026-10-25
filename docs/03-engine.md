@@ -60,12 +60,42 @@ mechanisms run concurrently (Rayon on CPU, kernels on GPU).
 
 ## 3.5 Determinism & reproducibility
 
+Volunteer computing (doc 11) validates results by comparing hashes from independent
+hosts, so **bitwise reproducibility across platforms is a hard requirement** for the
+CPU/WASM path: x86_64, aarch64, wasm32; Windows/macOS/Linux/Android/iOS; any partition
+or thread count.
+
 - **Counter-based RNG** (Philox4x32-10): `rng(run_seed, stream_id, entity_id, tick)`
   — no RNG state to carry, independent of partitioning and thread count.
-- **Order-independent reductions:** sorted or fixed-point / compensated summation so
-  results are identical across partition counts and devices (target: bitwise across
-  CPU partition counts; tolerance-bounded across CPU↔GPU, documented).
+- **Order-independent reductions:** sorted or integer/fixed-point accumulation, never
+  arrival-order floating-point sums.
 - Run identity = hash(code version, config, parameter set, seed, input data manifest).
+
+### Numeric model (two tiers)
+
+Chosen for the best combination of accuracy and verifiable determinism:
+
+1. **Conserved quantities in integers.** People (agent weights, cohort counts), food
+   and goods stocks (fixed-point grams/units in `i64`), money (fixed-point micro-units
+   in `i64`/`i128`), land area. Conservation is exact by construction and checked
+   every tick — no drift over 14,000 simulated years.
+2. **Continuous dynamics in IEEE `f64`, restricted to bit-reproducible operations.**
+   - Only `+ − × ÷ √` (correctly rounded by IEEE 754 on every platform and in WASM);
+     no fused multiply-add unless explicit and uniform; no fast-math; no x87.
+   - Transcendentals (`exp`, `ln`, `pow`, `sin`, …) from our own pure-Rust
+     deterministic math crate (fixed polynomial algorithms, or correctly-rounded
+     implementations), never the platform libm.
+   - NaN is a bug: checked and rejected (NaN payload bits differ across platforms).
+3. **Stochastic decisions are integer comparisons.** A probability `p` computed in tier 2
+   is converted once to a `u32` threshold and compared with a Philox `u32` draw, so
+   decisions are exact and cheap on any device.
+4. **GPU kernels.** WebGPU/WGSL and vendor float division/transcendentals are not
+   guaranteed correctly rounded, so GPU kernels needing bitwise validation use integer
+   / fixed-point arithmetic (64-bit emulated where WGSL lacks `i64`). Kernels that use
+   native GPU floats are validated by *homogeneous redundancy* (same platform class)
+   and statistical tolerance, and are documented as such.
+
+CI runs golden runs on every target and fails on any hash mismatch.
 
 ## 3.6 Distribution & load balancing
 

@@ -26,6 +26,7 @@ health/education and technology — and for finding strategies that are *robust*
 | 8 | [Compute & scaling](docs/08-compute-and-scaling.md) | Cost model, cloud-first plan, path to supercomputers |
 | 9 | [Data sources](docs/09-data-sources.md) | Forcing, calibration and validation datasets |
 | 10 | [Roadmap](docs/10-roadmap.md) | Milestones, starting with the Neolithic Southwest Asia vertical slice |
+| 11 | [Volunteer computing](docs/11-volunteer-computing.md) | SETI@home-style volunteer network: work units, coordinator, validation, clients, governance |
 | — | [Decision log](docs/adr/README.md) | Architecture decision records |
 | — | [Open questions](docs/open-questions.md) | Unresolved questions to discuss next |
 
@@ -39,5 +40,11 @@ health/education and technology — and for finding strategies that are *robust*
 - **Policy levers:** economic/fiscal, governance, health & education, technology & AI.
 - **Stack:** Rust core + GPU kernels, Python (PyO3) for orchestration/calibration/emulators, TypeScript + deck.gl/CesiumJS web viewer, Zarr + Parquet on object storage.
 - **Resources:** solo + AI coding agents on cloud; designed to scale to HPC later.
-- **Openness:** open source, open provenance.
+- **Volunteer computing:** SETI@home-style network for ensemble workloads, with our own
+  cloud-native coordinator; browser, desktop, mobile and headless clients; all
+  volunteer types (compute, explorers, citizen scientists, experts, developers,
+  institutions).
+- **Numerics:** bitwise cross-platform determinism; integer conserved quantities +
+  restricted IEEE `f64` with our own math library.
+- **Openness:** nonprofit-style, open-source project with open provenance.
 - **First milestone:** Neolithic Southwest Asia, 12,000–3,000 BCE.

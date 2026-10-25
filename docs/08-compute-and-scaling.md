@@ -31,7 +31,17 @@ Fits a few hundred GPUs/nodes; trivial for leadership-class machines.
 Deep-past runs are strong-scaling-limited (few agents, many ticks): use coarse ticks,
 super-individuals, and run thousands concurrently rather than one run fast.
 
-## 8.3 Cloud-first plan (solo + AI, modest budget)
+## 8.3 Volunteer tier
+
+Ensemble work (axis 1 above) is the dominant compute need and the ideal fit for
+volunteer computing (doc 11). Rough capacity: 10,000 active volunteers × ~4 cores ×
+~10 GFLOP/s effective (memory-bound agent code) ≈ 0.4 PFLOP/s sustained ≈ 3e19
+FLOP/day, i.e. tens to hundreds of thousands of M1-scale runs per day, at near-zero
+marginal cost; volunteer GPUs raise this by an order of magnitude. Folding@home briefly exceeded
+1 EFLOP/s in 2020 with a compelling mission. The central cluster then only needs to
+handle coupled runs, assimilation and analysis.
+
+## 8.4 Cloud-first plan (solo + AI, modest budget)
 
 - **Phase 1:** single workstation/VM with one GPU; CPU-parallel engine (Rayon).
   M1 runs in minutes → thousands of calibration runs per day.
@@ -42,7 +52,10 @@ super-individuals, and run thousands concurrently rather than one run fast.
 - **Phase 4:** HPC allocations (NSF ACCESS → DOE INCITE / EuroHPC) once validated
   results justify it; the engine's MPI + GPU design ports directly.
 
-## 8.4 Cost controls
+The volunteer coordinator (doc 11) treats cloud spot workers and HPC nodes as just
+another client class, so capacity can shift between tiers without code changes.
+
+## 8.5 Cost controls
 
 - Adaptive resolution (era, region) and adaptive output.
 - Emulator-first experiment design; full runs only where emulators are uncertain.
