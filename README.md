@@ -12,6 +12,8 @@ health/education and technology — and for finding strategies that are *robust*
 
 > Status: **design phase**. No engine code yet. Everything here is open for discussion.
 
+Contributors and AI coding agents: start with [AGENTS.md](AGENTS.md) (TDD, determinism, performance, design review and workflow rules).
+
 ## Design documents
 
 | # | Document | Contents |
