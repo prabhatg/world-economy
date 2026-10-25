@@ -23,7 +23,9 @@
 | 0019 | All client types: browser, desktop, mobile, headless | Accepted |
 | 0020 | All volunteer types, with separate `science` / `explore` queues | Accepted |
 | 0021 | Nonprofit, open-source governance (fiscal sponsor → foundation) | Accepted |
-| 0022 | Native client UI shell: Flutter + flutter_rust_bridge | Proposed |
+| 0022 | Native client UI shell: Flutter + flutter_rust_bridge, presentation + IPC only; Tauri v2 as desktop fallback | Accepted |
+| 0023 | Per-user Rust daemon (`worldd`) = headless client; sandboxed per-work-unit engine workers with no network; local IPC to UI | Accepted |
+| 0024 | Globe in native clients = embedded TS web viewer; daemon serves it on localhost | Accepted |
 
 ## ADR-0007 rationale (frontend)
 

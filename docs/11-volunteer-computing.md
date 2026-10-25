@@ -108,9 +108,9 @@ Shared Rust engine everywhere; thin platform shells.
 | **Mobile** (Android, iOS) | native Rust engine + UI shell | Android: while charging + Wi-Fi (WorkManager). iOS: limited by background rules — mainly explore/visualize, short compute windows |
 | **Headless** | CLI / Docker / Apptainer | servers, university clusters, data-center and cloud-credit donors |
 
-UI shell choice for desktop + mobile is open (see open questions): Flutter with
-`flutter_rust_bridge` gives one codebase for all native clients and fits existing
-skills; the heavy globe renderer stays web (deck.gl/CesiumJS), embeddable via webview.
+Native client architecture (thin Flutter shell over a Rust daemon that is also the
+headless client, sandboxed engine workers, embedded web globe) is in
+[doc 13](13-native-clients.md).
 
 ## 11.6 Volunteer types (all)
 
