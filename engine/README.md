@@ -7,8 +7,9 @@ Rust workspace for the ManyWorlds simulation engine. Design: [docs/03-engine.md]
 | `oikos-core` | Time, entity ids, Philox4x32-10 counter-based RNG, integer probabilities (`no_std`) |
 | `oikos-math` | Bit-reproducible transcendental functions (pinned pure-Rust `libm`) |
 | `oikos-grid` | H3 grid topology: regions, neighbor lists, partitions |
+| `oikos-params` | Parameter registry: units, ranges, priors, status and sources, loaded from `params/*.toml` |
 | `oikos-sim` | Super-individual agent store, phased partitioned step, checkpoints, work units |
-| `oikos-cli` | `oikos` binary: runs work units (natively or under wasmtime) and benchmarks |
+| `oikos-cli` | `oikos` binary: runs work units (natively or under wasmtime), benchmarks, exports the parameter registry (`oikos params`) |
 
 The M0 mechanism is a toy (logistic growth, band fission and migration over the
 Southwest Asia H3 base cell). It exists to exercise the engine.

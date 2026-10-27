@@ -1,71 +1,102 @@
-use serde::{Deserialize, Serialize};
+//! Engine parameters, built from and checked against the parameter registry
+//! (`engine/params/m0-toy.toml`, see `oikos-params`).
 
-/// Parameters of the M0 toy mechanisms. In later milestones parameters come from the
-/// parameter registry with priors and citations (docs/05).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
+use oikos_params::{Registry, Value};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::sync::OnceLock;
+
+/// The registry for the current model, embedded at build time so every host runs the
+/// same parameter definitions.
+pub fn registry() -> &'static Registry {
+    static REGISTRY: OnceLock<Registry> = OnceLock::new();
+    REGISTRY.get_or_init(|| {
+        Registry::from_toml(include_str!("../../../params/m0-toy.toml")).expect("embedded registry is valid")
+    })
+}
+
+/// Parameters of the M0 toy mechanisms. Field names are registry keys; units, ranges,
+/// priors and sources live in the registry, not here.
+///
+/// Deserializing (work units, checkpoints) reads the given keys as overrides of the
+/// registry defaults, so partial parameter sets are allowed and every value is checked.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Params {
-    /// Mechanism period in ticks (365 = yearly).
     pub period_ticks: u64,
-    /// Intrinsic growth rate per period.
     pub growth_rate: f64,
-    /// Carrying capacity range per cell (people), drawn once per cell.
     pub capacity_min: u64,
     pub capacity_max: u64,
-    /// Bands at least this large may split.
     pub fission_threshold: u64,
-    /// Probability per period that an eligible band splits.
     pub fission_probability: f64,
-    /// Probability that a daughter band picks a random neighbor instead of the
-    /// least crowded one.
     pub exploration_probability: f64,
-    /// Bands smaller than this merge with other small bands in their cell.
     pub merge_threshold: u64,
-    /// Initial bands and their size.
     pub initial_bands: u32,
     pub initial_weight: u64,
 }
 
 impl Default for Params {
     fn default() -> Params {
-        Params {
-            period_ticks: 365,
-            growth_rate: 0.01,
-            capacity_min: 20,
-            capacity_max: 400,
-            fission_threshold: 60,
-            fission_probability: 0.2,
-            exploration_probability: 0.3,
-            merge_threshold: 10,
-            initial_bands: 12,
-            initial_weight: 30,
-        }
+        Params::from_registry(registry(), &BTreeMap::new()).expect("registry defaults are valid")
     }
 }
 
 impl Params {
-    pub fn validate(&self) -> Result<(), String> {
-        let unit = |name: &str, v: f64| {
-            if v.is_finite() && (0.0..=1.0).contains(&v) {
-                Ok(())
-            } else {
-                Err(format!("{name} must be in [0, 1], got {v}"))
+    /// Registry defaults with `overrides` applied; every value is range-checked.
+    pub fn from_registry(registry: &Registry, overrides: &BTreeMap<String, Value>) -> Result<Params, String> {
+        let v = registry.resolve(overrides)?;
+        let int = |k: &str| match v.get(k) {
+            Some(Value::Int(i)) => Ok(*i),
+            other => {
+                Err(format!("registry {}: {k} must be an integer parameter, found {other:?}", registry.name))
             }
         };
-        if self.period_ticks == 0 {
-            return Err("period_ticks must be > 0".into());
+        let real = |k: &str| match v.get(k) {
+            Some(Value::Real(r)) => Ok(*r),
+            other => {
+                Err(format!("registry {}: {k} must be a real parameter, found {other:?}", registry.name))
+            }
+        };
+        let params = Params {
+            period_ticks: int("period_ticks")?,
+            growth_rate: real("growth_rate")?,
+            capacity_min: int("capacity_min")?,
+            capacity_max: int("capacity_max")?,
+            fission_threshold: int("fission_threshold")?,
+            fission_probability: real("fission_probability")?,
+            exploration_probability: real("exploration_probability")?,
+            merge_threshold: int("merge_threshold")?,
+            initial_bands: u32::try_from(int("initial_bands")?).map_err(|e| format!("initial_bands: {e}"))?,
+            initial_weight: int("initial_weight")?,
+        };
+        params.validate()?;
+        Ok(params)
+    }
+
+    /// Checks every field against the registry, plus relations between fields.
+    pub fn validate(&self) -> Result<(), String> {
+        let serde_json::Value::Object(fields) = serde_json::to_value(self).expect("params serialize") else {
+            unreachable!("params serialize to an object")
+        };
+        for (key, v) in &fields {
+            let value = match v.as_u64() {
+                Some(i) if !v.is_f64() => Value::Int(i),
+                _ => Value::Real(v.as_f64().expect("numeric parameter")),
+            };
+            registry().check(key, value)?;
         }
-        if !self.growth_rate.is_finite() || self.growth_rate < 0.0 {
-            return Err("growth_rate must be finite and >= 0".into());
+        if self.capacity_min > self.capacity_max {
+            return Err(format!(
+                "capacity_min ({}) must not exceed capacity_max ({})",
+                self.capacity_min, self.capacity_max
+            ));
         }
-        if self.capacity_min == 0 || self.capacity_max < self.capacity_min {
-            return Err("need 0 < capacity_min <= capacity_max".into());
-        }
-        if self.fission_threshold < 2 {
-            return Err("fission_threshold must be >= 2".into());
-        }
-        unit("fission_probability", self.fission_probability)?;
-        unit("exploration_probability", self.exploration_probability)?;
         Ok(())
+    }
+}
+
+impl<'de> Deserialize<'de> for Params {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Params, D::Error> {
+        let overrides = BTreeMap::<String, Value>::deserialize(d)?;
+        Params::from_registry(registry(), &overrides).map_err(serde::de::Error::custom)
     }
 }

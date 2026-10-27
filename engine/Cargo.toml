@@ -14,12 +14,14 @@ oikos-core = { path = "crates/oikos-core" }
 oikos-math = { path = "crates/oikos-math" }
 oikos-grid = { path = "crates/oikos-grid" }
 oikos-sim = { path = "crates/oikos-sim" }
+oikos-params = { path = "crates/oikos-params" }
 h3o = "0.11"
 blake3 = "1.8"
 libm = "=0.2.16"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 rayon = "1.12"
+toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
 proptest = { version = "1.12", default-features = false, features = ["std", "bit-set"] }
 
 [workspace.lints.rust]

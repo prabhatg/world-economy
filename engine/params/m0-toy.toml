@@ -1,0 +1,119 @@
+# Parameter registry for the M0 toy mechanisms (growth, band fission, migration).
+#
+# Every parameter declares its unit, valid range, calibration prior, status and
+# sources. Status "placeholder" means an engine-test value with no empirical claim;
+# M1 replaces these with literature-based or calibrated values.
+#
+# Changing a default changes the golden hash (engine/golden/m0-toy.json).
+
+name = "m0-toy"
+version = 1
+
+[params.period_ticks]
+group = "time"
+unit = "days"
+description = "Period of the growth and fission mechanisms."
+kind = { type = "integer", min = 1, max = 3650 }
+default = 365
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Yearly steps suit slow prehistoric dynamics; finer periods arrive with seasonal mechanisms in M1."
+
+[params.growth_rate]
+group = "demography"
+unit = "1/period"
+description = "Intrinsic growth rate r in logistic growth dw = r w (1 - N/K)."
+kind = { type = "real", min = 0.0, max = 0.1 }
+default = 0.01
+prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
+status = "placeholder"
+note = "Order of magnitude of local growth during the Neolithic demographic transition; not calibrated."
+sources = [
+  { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
+]
+
+[params.capacity_min]
+group = "environment"
+unit = "people per cell"
+description = "Lower bound of the toy carrying capacity drawn per cell."
+kind = { type = "integer", min = 1, max = 100000 }
+default = 20
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Toy environment; M1 derives carrying capacity from climate, soils and biomes."
+
+[params.capacity_max]
+group = "environment"
+unit = "people per cell"
+description = "Upper bound of the toy carrying capacity drawn per cell."
+kind = { type = "integer", min = 1, max = 100000 }
+default = 400
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Toy environment; M1 derives carrying capacity from climate, soils and biomes."
+
+[params.fission_threshold]
+group = "social"
+unit = "people"
+description = "Bands at least this large may split."
+kind = { type = "integer", min = 2, max = 10000 }
+default = 60
+prior = { dist = "uniform", lo = 30.0, hi = 150.0 }
+status = "placeholder"
+note = "About twice a typical forager residential group size; scalar-stress fission theory to be added in M1."
+sources = [
+  { citation = "Marlowe, F. W. (2005). Hunter-gatherers and human evolution. Evolutionary Anthropology 14, 54-67.", doi = "10.1002/evan.20046" },
+]
+
+[params.fission_probability]
+group = "social"
+unit = "probability per period"
+description = "Probability that an eligible band splits in one period."
+kind = { type = "probability" }
+default = 0.2
+prior = { dist = "uniform", lo = 0.05, hi = 0.5 }
+status = "placeholder"
+note = "Engine-test value."
+
+[params.exploration_probability]
+group = "migration"
+unit = "probability"
+description = "Probability that a daughter band moves to a random neighbor instead of the least crowded one."
+kind = { type = "probability" }
+default = 0.3
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Engine-test value."
+
+[params.merge_threshold]
+group = "resolution"
+unit = "people"
+description = "Agents smaller than this merge with other small agents in their cell (super-individual resolution control)."
+kind = { type = "integer", min = 0, max = 1000 }
+default = 10
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Numerical resolution setting, not a behavioral claim."
+
+[params.initial_bands]
+group = "initial"
+unit = "bands"
+description = "Number of bands placed around the seed-chosen start cell."
+kind = { type = "integer", min = 1, max = 100000 }
+default = 12
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Engine-test value; M1 starts from reconstructed late-Pleistocene population estimates."
+
+[params.initial_weight]
+group = "initial"
+unit = "people"
+description = "People per initial band."
+kind = { type = "integer", min = 1, max = 1000 }
+default = 30
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Close to typical forager residential group sizes."
+sources = [
+  { citation = "Marlowe, F. W. (2005). Hunter-gatherers and human evolution. Evolutionary Anthropology 14, 54-67.", doi = "10.1002/evan.20046" },
+]

@@ -36,6 +36,7 @@
 | 0032 | Every user-facing change is reviewed by the `design-reviewer` agent before it ships | Accepted |
 | 0033 | Project website is a static page in `docs/index.html`, served by GitHub Pages from `/docs` (no build step) | Accepted |
 | 0034 | Mechanism API: declared reads/writes/period/after; schedule rejects ambiguous order; multi-rate via gcd base period; cache-tiled, cell-local decide phase | Accepted |
+| 0035 | Parameter registry: one versioned TOML per model declaring unit, range, prior, status and sources for every parameter; engine embeds it and validates all overrides; placeholders must say so | Accepted |
 
 ## ADR-0007 rationale (frontend)
 

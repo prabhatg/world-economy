@@ -5,6 +5,7 @@
 //!   oikos run <workunit.json> [-o <result.json>]
 //!   oikos hash <checkpoint>
 //!   oikos bench [--base-cell N] [--res N] [--bands N] [--years N] [--parts N]
+//!   oikos params    (parameter registry as JSON: units, ranges, priors, sources)
 
 use oikos_sim::{Params, WorkUnit, World, WorldConfig, checkpoint, run_work_unit};
 use std::process::ExitCode;
@@ -47,7 +48,11 @@ fn run(args: &[String]) -> Result<(), String> {
             Ok(())
         }
         Some("bench") => bench(&args[1..]),
-        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint>".into()),
+        Some("params") => {
+            println!("{}", oikos_sim::params::registry().to_json());
+            Ok(())
+        }
+        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint> | oikos bench | oikos params".into()),
     }
 }
 

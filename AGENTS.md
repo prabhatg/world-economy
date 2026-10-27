@@ -21,7 +21,8 @@ volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start wit
 | [README.md](README.md) | Overview, decision summary, index of design docs |
 | [docs/](docs/) | Design documents 01–14, [ADR log](docs/adr/README.md), [open questions](docs/open-questions.md) |
 | [docs/index.html](docs/index.html) | Public website (GitHub Pages from `/docs` on `main`) |
-| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-sim`, `oikos-cli` |
+| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-sim`, `oikos-cli` |
+| [engine/params/](engine/params/m0-toy.toml) | Parameter registry: every parameter's unit, range, prior, status and sources |
 | [engine/golden/](engine/golden/) | Golden work unit and its committed result (reproducibility oracle) |
 | [engine/scripts/](engine/scripts/) | `check.sh` (verification gate), `bench.sh`, `compare-reports.sh`, git hooks |
 | [design/](design/DESIGN-SYSTEM.md) | Design system, [tokens.json](design/tokens.json) (source of truth), [tokens.css](design/tokens.css) |
@@ -97,6 +98,8 @@ Results must be **bit-identical** for any partition count, thread count and targ
 - Entity ids come from the birth cell's counter (`EntityId::new(cell, counter)`),
   never from partition or thread.
 - Grid geometry from `h3o` (areas, lat/lng, trig) must not be used inside a run.
+- Every parameter comes from the registry; overrides are range-checked. Changing a
+  registry default changes the golden hash.
 
 ### 3. Golden files change only on purpose
 
@@ -166,8 +169,12 @@ as they grow). See [docs/03-engine.md](docs/03-engine.md) §3.4.
    `PartitionView::spawn`.
 3. Use a new `Stream` (appended at the end) for its random draws; count statistics in
    local variables and add them to `part.stats` once per tile (avoids false sharing).
-4. Take parameters from `Params` (later: the parameter registry) with units, priors
-   and citations; register it in `mechanisms::defaults` if it is part of the model.
+4. Declare every parameter in the registry (`engine/params/m0-toy.toml`): group, unit,
+   range (`kind`), default, prior, status and sources (`placeholder` needs a `note`;
+   `literature`/`calibrated` need a source). Add the field to `Params` and to
+   `Params::from_registry`; the registry/`Params` coverage test enforces the match.
+   No magic numbers in mechanism code. Register the mechanism in
+   `mechanisms::defaults` if it is part of the model.
 5. Run the gate. Adding a default mechanism changes the golden hash: regenerate it
    deliberately and say why. Benchmark before and after.
 

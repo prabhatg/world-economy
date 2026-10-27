@@ -12,9 +12,10 @@ checkpoint/fork, JSON work units, `oikos` CLI + benchmark, persistent partitions
 rayon pool (13 ns/agent-step on 4 cores), local verification gate; golden run
 reproduced bit-for-bit on x86_64 and wasm32; pluggable mechanisms with a validated,
 multi-rate schedule and cache-tiled decide phase (no performance cost vs. the hard-coded
-step, golden unchanged). Remaining: run the gate on aarch64,
+step, golden unchanged); parameter registry with units, ranges, priors, status and
+sources, enforced on every override. Remaining: run the gate on aarch64,
 macOS and Windows hosts; PyO3 bindings, Zarr /
-Parquet output, parameter registry, weighted load
+Parquet output, weighted load
 balancing.
 
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).

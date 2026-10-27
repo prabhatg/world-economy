@@ -21,6 +21,14 @@ state to what an instrument/record actually measures, including its biases:
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
 
+## 5.1a Parameter registry (implemented)
+
+`engine/params/*.toml` declares every parameter once: group, unit, valid range, default,
+prior (`fixed`, `uniform`, `log_uniform`, `normal`), status (`placeholder`, `literature`,
+`calibrated`) and sources. The engine embeds it, builds its parameters from it and
+rejects out-of-range overrides in work units and checkpoints. `oikos params` exports
+it as JSON for calibration tools, which sample priors from the same definitions.
+
 ## 5.2 Calibration (Mode A — free runs)
 
 Goal: posterior over mechanism parameters θ (and over *which* competing modules fit).
