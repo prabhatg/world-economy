@@ -85,8 +85,7 @@ pub fn run_work_unit(
             if *fork {
                 w.seed = wu.seed;
                 if let Some(p) = &wu.params {
-                    p.validate()?;
-                    w.params = p.clone();
+                    w.set_params(p.clone())?;
                 }
             }
             w

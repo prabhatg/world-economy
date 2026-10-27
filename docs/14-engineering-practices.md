@@ -64,6 +64,12 @@ scalability**. Verification runs on our own compute (no hosted CI for now).
 
 Results are bit-identical between the two versions (golden hash unchanged).
 
+Moving growth and fission into pluggable mechanisms first cost ~20% at 4 cores (a
+second pass over memory, then false sharing on per-partition statistics). Cache tiling
+across mechanisms, per-tile local counters and cache-line-aligned partitions brought it
+back to parity (median 22.2 vs 23.0 ns/agent-step over six alternating runs; single
+thread equal). Lesson: never update shared or adjacent per-thread state per agent.
+
 ### Targets
 
 - Single core: ≤ 10 ns per agent-step for simple mechanisms (memory-bandwidth bound:

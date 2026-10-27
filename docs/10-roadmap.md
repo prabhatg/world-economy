@@ -10,9 +10,11 @@ Philox RNG (Random123 known answers), integer probabilities, pinned deterministi
 H3 grid, super-individual agents with split/merge, phased partitioned step,
 checkpoint/fork, JSON work units, `oikos` CLI + benchmark, persistent partitions on a
 rayon pool (13 ns/agent-step on 4 cores), local verification gate; golden run
-reproduced bit-for-bit on x86_64 and wasm32. Remaining: run the gate on aarch64,
+reproduced bit-for-bit on x86_64 and wasm32; pluggable mechanisms with a validated,
+multi-rate schedule and cache-tiled decide phase (no performance cost vs. the hard-coded
+step, golden unchanged). Remaining: run the gate on aarch64,
 macOS and Windows hosts; PyO3 bindings, Zarr /
-Parquet output, mechanism trait + DAG scheduler, parameter registry, weighted load
+Parquet output, parameter registry, weighted load
 balancing.
 
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).

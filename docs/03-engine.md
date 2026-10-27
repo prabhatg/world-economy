@@ -59,6 +59,20 @@ determinism without locks:
 Mechanisms are nodes in a DAG built from declared read/write sets; independent
 mechanisms run concurrently (Rayon on CPU, kernels on GPU).
 
+**Implemented (M0):** `oikos_sim::mechanisms::Mechanism` declares a `MechanismSpec`
+(name, period in ticks, components read and written, `after` dependencies) and a
+`decide` method. `oikos_sim::schedule::Schedule::build` orders mechanisms
+deterministically and **rejects** any pair that touches the same component (at least
+one writing it) without an explicit order, as well as cycles, unknown dependencies,
+duplicate names and zero periods. Multi-rate: the world advances by the gcd of all
+periods and runs each mechanism on ticks that are multiples of its own period.
+Decide runs **tile by tile**: each due mechanism processes a cache-sized run of agents
+ending on a cell boundary before the next tile starts, so adding mechanisms does not add
+passes over memory. Mechanisms must therefore be local to the cells of their tile and
+read everything else through the read-only `Sense` snapshot. New agents are created only
+through `PartitionView::spawn`, which assigns birth-cell ids and routes them to the
+owning partition.
+
 ## 3.5 Determinism & reproducibility
 
 Volunteer computing (doc 11) validates results by comparing hashes from independent

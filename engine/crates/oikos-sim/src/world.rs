@@ -15,9 +15,10 @@
 //! so a step allocates nothing in steady state.
 
 use crate::agents::Agents;
+use crate::mechanisms::{self, Mechanism, PartitionView, Sense};
 use crate::params::Params;
-use oikos_core::prob::stochastic_round;
-use oikos_core::{EntityId, Philox4x32, Probability, Stream, Tick};
+use crate::schedule::Schedule;
+use oikos_core::{EntityId, Philox4x32, Stream, Tick};
 use oikos_grid::Grid;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
@@ -39,8 +40,10 @@ impl WorldConfig {
     }
 }
 
-/// A contiguous range of cells and the agents living in them.
+/// A contiguous range of cells and the agents living in them. Cache-line aligned so
+/// threads updating neighboring partitions never share a line.
 #[derive(Default)]
+#[repr(align(128))]
 pub(crate) struct Partition {
     pub(crate) cells: Range<u32>,
     /// Agents in canonical (cell, id) order between steps.
@@ -65,6 +68,8 @@ pub struct World {
     /// Population per cell after the last commit.
     pub population: Vec<u64>,
     pub(crate) parts: Vec<Partition>,
+    mechanisms: Arc<Vec<Box<dyn Mechanism>>>,
+    schedule: Schedule,
 }
 
 /// Exact accounting for one step (used by conservation checks).
@@ -166,7 +171,40 @@ impl World {
             population[c as usize] += w;
         }
         let part = Partition { cells: 0..n as u32, agents, ..Partition::default() };
-        World { config, grid, seed, tick, params, capacity, birth_counter, population, parts: vec![part] }
+        let mechanisms = mechanisms::defaults(&params);
+        let schedule = schedule_of(&mechanisms).expect("default mechanisms form a valid schedule");
+        World {
+            config,
+            grid,
+            seed,
+            tick,
+            params,
+            capacity,
+            birth_counter,
+            population,
+            parts: vec![part],
+            mechanisms: Arc::new(mechanisms),
+            schedule,
+        }
+    }
+
+    /// Replaces the mechanisms; fails if their declared accesses are ambiguous.
+    pub fn set_mechanisms(&mut self, mechanisms: Vec<Box<dyn Mechanism>>) -> Result<(), String> {
+        self.schedule = schedule_of(&mechanisms)?;
+        self.mechanisms = Arc::new(mechanisms);
+        Ok(())
+    }
+
+    /// Replaces the parameters and rebuilds the default mechanisms from them.
+    pub fn set_params(&mut self, params: Params) -> Result<(), String> {
+        params.validate()?;
+        self.set_mechanisms(mechanisms::defaults(&params))?;
+        self.params = params;
+        Ok(())
+    }
+
+    pub fn schedule(&self) -> &Schedule {
+        &self.schedule
     }
 
     pub fn partitions(&self) -> usize {
@@ -226,28 +264,51 @@ impl World {
         }
     }
 
-    /// Advances one mechanism period using `parts` spatial partitions.
+    /// Advances one base period (gcd of mechanism periods) using `parts` spatial partitions.
     pub fn step(&mut self, parts: usize) -> StepStats {
         self.set_partitions(parts);
         let ranges: Vec<Range<u32>> = self.parts.iter().map(|p| p.cells.clone()).collect();
         let nparts = ranges.len();
 
-        // Sense + decide (parallel over partitions).
+        // Sense + decide (parallel over partitions), running due mechanisms in order.
         {
-            let ctx = StepCtx {
+            let sense = Sense {
                 grid: &self.grid,
-                params: &self.params,
                 capacity: &self.capacity,
                 population: &self.population,
-                ranges: &ranges,
                 tick: self.tick,
-                growth: Philox4x32::new(self.seed, Stream::Growth),
-                fission: Philox4x32::new(self.seed, Stream::Fission),
-                migration: Philox4x32::new(self.seed, Stream::Migration),
+                seed: self.seed,
             };
+            let due: Vec<&dyn Mechanism> =
+                self.schedule.due(self.tick.0).map(|i| self.mechanisms[i].as_ref()).collect();
             let counters = split_by_ranges(&mut self.birth_counter, &ranges);
             let items: Vec<_> = self.parts.iter_mut().zip(counters).collect();
-            par_for_each(items, |(part, counters)| decide(&ctx, part, counters));
+            par_for_each(items, |(part, counters)| {
+                part.outbox.resize_with(ranges.len(), Agents::default);
+                part.outbox.iter_mut().for_each(Agents::clear);
+                part.stats = StepStats::default();
+                let mut view = PartitionView {
+                    cells: part.cells.clone(),
+                    agents: &mut part.agents,
+                    stats: &mut part.stats,
+                    counters,
+                    outbox: &mut part.outbox,
+                    ranges: &ranges,
+                };
+                // Tiles end on cell boundaries; agents spawned during the step lie past `n`.
+                let n = view.agents.len();
+                let mut start = 0;
+                while start < n {
+                    let mut end = (start + TILE_AGENTS).min(n);
+                    while end < n && view.agents.cell[end] == view.agents.cell[end - 1] {
+                        end += 1;
+                    }
+                    for m in &due {
+                        m.decide(&sense, &mut view, start..end);
+                    }
+                    start = end;
+                }
+            });
         }
 
         // Exchange: move outboxes to their destination partitions (buffers keep capacity).
@@ -277,14 +338,15 @@ impl World {
         for p in &self.parts {
             stats.add(p.stats);
         }
-        self.tick = self.tick.advance(self.params.period_ticks);
+        self.tick = self.tick.advance(self.schedule.base_period());
         stats
     }
 
     /// Runs `years` simulated years, recording a summary every `summary_every` years.
     pub fn run_years(&mut self, years: u64, parts: usize, summary_every: u64) -> Vec<Summary> {
-        let steps = years * oikos_core::time::TICKS_PER_YEAR / self.params.period_ticks;
-        let every = (summary_every * oikos_core::time::TICKS_PER_YEAR / self.params.period_ticks).max(1);
+        let base = self.schedule.base_period();
+        let steps = years * oikos_core::time::TICKS_PER_YEAR / base;
+        let every = (summary_every * oikos_core::time::TICKS_PER_YEAR / base).max(1);
         let mut out = vec![self.summary()];
         for s in 1..=steps {
             self.step(parts);
@@ -314,103 +376,11 @@ fn split_by_ranges<'a, T>(mut data: &'a mut [T], ranges: &[Range<u32>]) -> Vec<&
     out
 }
 
-struct StepCtx<'a> {
-    grid: &'a Grid,
-    params: &'a Params,
-    capacity: &'a [u64],
-    population: &'a [u64],
-    ranges: &'a [Range<u32>],
-    tick: Tick,
-    growth: Philox4x32,
-    fission: Philox4x32,
-    migration: Philox4x32,
-}
+/// Agents per decide tile: a few tens of KB of hot state, comfortably cache-resident.
+const TILE_AGENTS: usize = 2048;
 
-/// Decide phase for one partition, in place. `counters` are the birth counters of the
-/// partition's cells. Daughters that stay are appended to the partition's agents;
-/// daughters that leave go to the outbox of the destination partition.
-fn decide(ctx: &StepCtx, part: &mut Partition, counters: &mut [u64]) {
-    let p = ctx.params;
-    let t = ctx.tick.0;
-    let fission_p = Probability::from_f64(p.fission_probability);
-    let explore_p = Probability::from_f64(p.exploration_probability);
-    let base = part.cells.start;
-    let mut stats = StepStats::default();
-    part.outbox.resize_with(ctx.ranges.len(), Agents::default);
-    part.outbox.iter_mut().for_each(Agents::clear);
-    let agents = &mut part.agents;
-
-    let n = agents.len();
-    for i in 0..n {
-        let id = agents.id[i];
-        let cell = agents.cell[i];
-        let mut w = agents.weight[i];
-
-        // Logistic growth: dw = r w (1 - N/K), stochastically rounded.
-        let pop = ctx.population[cell as usize] as f64;
-        let k = ctx.capacity[cell as usize] as f64;
-        let dw = oikos_math::finite(p.growth_rate * w as f64 * (1.0 - pop / k));
-        let draw = ctx.growth.u32(id.0, t, 0, 0);
-        if dw >= 0.0 {
-            let b = stochastic_round(dw, draw);
-            w += b;
-            stats.births += b;
-        } else {
-            let d = stochastic_round(-dw, draw).min(w);
-            w -= d;
-            stats.deaths += d;
-        }
-
-        // Fission: large bands split; the daughter moves to a less crowded neighbor.
-        if w >= p.fission_threshold && fission_p.hit(ctx.fission.u32(id.0, t, 0, 0)) {
-            let take = w / 2;
-            let half = Agents::split_weight(&mut w, take);
-            let child = next_id_local(counters, base, cell);
-            stats.fissions += 1;
-            let dest = choose_destination(ctx, id, cell, explore_p);
-            if dest == cell {
-                agents.push(child, cell, half);
-            } else {
-                let owner = ctx.ranges.partition_point(|r| r.end <= dest);
-                part.outbox[owner].push(child, dest, half);
-                stats.migrants += half;
-            }
-        }
-        agents.weight[i] = w;
-    }
-    part.stats = stats;
-}
-
-fn next_id_local(counters: &mut [u64], base: u32, cell: u32) -> EntityId {
-    let c = &mut counters[(cell - base) as usize];
-    let id = EntityId::new(cell, *c);
-    *c += 1;
-    id
-}
-
-/// Least crowded neighbor (by N/K), or a random one with the exploration probability.
-/// Returns `cell` itself if no neighbor is less crowded.
-fn choose_destination(ctx: &StepCtx, id: EntityId, cell: u32, explore_p: Probability) -> u32 {
-    let ns = ctx.grid.neighbors(cell);
-    if ns.is_empty() {
-        return cell;
-    }
-    let draws = ctx.migration.block(id.0, ctx.tick.0, 0);
-    if explore_p.hit(draws[0]) {
-        return ns[(((draws[1] as u64) * (ns.len() as u64)) >> 32) as usize];
-    }
-    // Compare N_a / K_a < N_b / K_b exactly as N_a K_b < N_b K_a.
-    let crowd = |c: u32| (ctx.population[c as usize] as u128, ctx.capacity[c as usize] as u128);
-    let mut best = cell;
-    let (mut bn, mut bk) = crowd(cell);
-    for &c in ns {
-        let (n, k) = crowd(c);
-        if n * bk < bn * k {
-            best = c;
-            (bn, bk) = (n, k);
-        }
-    }
-    best
+fn schedule_of(mechanisms: &[Box<dyn Mechanism>]) -> Result<Schedule, String> {
+    Schedule::build(&mechanisms.iter().map(|m| m.spec()).collect::<Vec<_>>())
 }
 
 /// Runs `f` on every item: on the rayon pool natively, sequentially on wasm.

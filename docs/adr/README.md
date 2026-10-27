@@ -35,6 +35,7 @@
 | 0031 | ManyWorlds Design System (design/): research-grounded principles, shared tokens for web and Flutter, no harsh boxes, diagrams first | Accepted |
 | 0032 | Every user-facing change is reviewed by the `design-reviewer` agent before it ships | Accepted |
 | 0033 | Project website is a static page in `docs/index.html`, served by GitHub Pages from `/docs` (no build step) | Accepted |
+| 0034 | Mechanism API: declared reads/writes/period/after; schedule rejects ambiguous order; multi-rate via gcd base period; cache-tiled, cell-local decide phase | Accepted |
 
 ## ADR-0007 rationale (frontend)
 

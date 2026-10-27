@@ -153,6 +153,24 @@ inlined (mirroring `design/tokens.css`). No build step.
 - Every mechanism ships with: doc comment, citations, parameter priors, unit and
   property tests, and a stylized-fact test.
 
+## Adding a mechanism
+
+Mechanisms live in `engine/crates/oikos-sim/src/mechanisms.rs` (one module per domain
+as they grow). See [docs/03-engine.md](docs/03-engine.md) §3.4.
+
+1. Write the tests first: a unit or stylized-fact test of the behavior, and a world-level
+   test in `engine/crates/oikos-sim/tests/` (see `tests/mechanisms.rs`).
+2. Implement `Mechanism`: an honest `spec()` (every component read and written; `after`
+   for anything it must follow) and `decide(sense, part, tile)`. Only touch agents in
+   `tile`; read shared state only through `Sense`; create agents only via
+   `PartitionView::spawn`.
+3. Use a new `Stream` (appended at the end) for its random draws; count statistics in
+   local variables and add them to `part.stats` once per tile (avoids false sharing).
+4. Take parameters from `Params` (later: the parameter registry) with units, priors
+   and citations; register it in `mechanisms::defaults` if it is part of the model.
+5. Run the gate. Adding a default mechanism changes the golden hash: regenerate it
+   deliberately and say why. Benchmark before and after.
+
 ## Code style
 
 - Rust edition 2024, `rustfmt` (`engine/rustfmt.toml`: width 110, Max heuristics),
