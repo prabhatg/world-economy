@@ -82,7 +82,7 @@ pub struct StepStats {
 }
 
 impl StepStats {
-    fn add(&mut self, o: StepStats) {
+    pub fn add(&mut self, o: StepStats) {
         self.births += o.births;
         self.deaths += o.deaths;
         self.fissions += o.fissions;
@@ -344,17 +344,30 @@ impl World {
 
     /// Runs `years` simulated years, recording a summary every `summary_every` years.
     pub fn run_years(&mut self, years: u64, parts: usize, summary_every: u64) -> Vec<Summary> {
+        self.run_years_observed(years, parts, summary_every, &mut |_, _| Ok(())).expect("no-op observer")
+    }
+
+    /// [`World::run_years`], calling `observe` after every step (outputs, diagnostics).
+    /// Observers get read-only access, so they cannot change the simulation.
+    pub fn run_years_observed(
+        &mut self,
+        years: u64,
+        parts: usize,
+        summary_every: u64,
+        observe: &mut dyn FnMut(&World, StepStats) -> Result<(), String>,
+    ) -> Result<Vec<Summary>, String> {
         let base = self.schedule.base_period();
         let steps = years * oikos_core::time::TICKS_PER_YEAR / base;
         let every = (summary_every * oikos_core::time::TICKS_PER_YEAR / base).max(1);
         let mut out = vec![self.summary()];
         for s in 1..=steps {
-            self.step(parts);
+            let stats = self.step(parts);
+            observe(self, stats)?;
             if s % every == 0 {
                 out.push(self.summary());
             }
         }
-        out
+        Ok(out)
     }
 }
 

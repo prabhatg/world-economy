@@ -11,6 +11,7 @@ oikos-core.workspace = true
 oikos-math.workspace = true
 oikos-grid.workspace = true
 oikos-params.workspace = true
+oikos-io.workspace = true
 blake3.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -20,6 +21,10 @@ rayon.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
+flate2.workspace = true
+parquet.workspace = true
+bytes = "1"
+oikos-core.workspace = true
 
 [lints]
 workspace = true

@@ -21,7 +21,7 @@ volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start wit
 | [README.md](README.md) | Overview, decision summary, index of design docs |
 | [docs/](docs/) | Design documents 01–14, [ADR log](docs/adr/README.md), [open questions](docs/open-questions.md) |
 | [docs/index.html](docs/index.html) | Public website (GitHub Pages from `/docs` on `main`) |
-| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-sim`, `oikos-cli` |
+| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli` |
 | [engine/params/](engine/params/m0-toy.toml) | Parameter registry: every parameter's unit, range, prior, status and sources |
 | [engine/golden/](engine/golden/) | Golden work unit and its committed result (reproducibility oracle) |
 | [engine/scripts/](engine/scripts/) | `check.sh` (verification gate), `bench.sh`, `compare-reports.sh`, git hooks |
@@ -55,7 +55,13 @@ cargo test --release --test determinism golden    # one test
 cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json
 cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
 scripts/bench.sh               # throughput + scaling sweep -> target/bench.jsonl
+cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
+cargo run --release -p oikos-cli -- params        # registry as JSON
 ```
+
+The gate's output check runs zarr-python and pyarrow when available; point
+`OIKOS_PYTHON` at a Python with `zarr`, `pyarrow` and `numpy` (e.g. a venv), otherwise
+it is skipped with a notice.
 
 WebAssembly tests need `wasmtime` (`cargo install wasmtime-cli --locked`); the gate
 skips them with a notice if it is missing. `cargo test` does **not** rebuild the
@@ -98,6 +104,8 @@ Results must be **bit-identical** for any partition count, thread count and targ
 - Entity ids come from the birth cell's counter (`EntityId::new(cell, counter)`),
   never from partition or thread.
 - Grid geometry from `h3o` (areas, lat/lng, trig) must not be used inside a run.
+- Outputs only read the world (observers get `&World`); recording must never change
+  the state hash, and output bytes must be identical for any partition count.
 - Every parameter comes from the registry; overrides are range-checked. Changing a
   registry default changes the golden hash.
 

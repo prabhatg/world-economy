@@ -104,5 +104,8 @@ fn read(path: &str) -> Result<Vec<u8>, String> {
 }
 
 fn write(path: &str, bytes: &[u8]) -> Result<(), String> {
+    if let Some(dir) = std::path::Path::new(path).parent() {
+        std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    }
     std::fs::write(path, bytes).map_err(|e| format!("{path}: {e}"))
 }

@@ -51,6 +51,21 @@ else
   echo "SKIP wasm: wasmtime not installed (cargo install wasmtime-cli --locked)"
 fi
 
+step "outputs: native vs wasm byte-identical, readable by zarr-python and pyarrow"
+rm -rf target/example-outputs target/example-outputs-native
+./target/release/oikos run examples/outputs.workunit.json -o target/example-result.json
+if [[ "$wasm_hash" != "skipped" ]]; then
+  mv target/example-outputs target/example-outputs-native
+  wasmtime run --dir . target/wasm32-wasip1/release/oikos.wasm run examples/outputs.workunit.json -o target/example-result-wasm.json
+  diff -r target/example-outputs-native target/example-outputs
+fi
+py=${OIKOS_PYTHON:-python3}
+if "$py" -c "import zarr, pyarrow, numpy" 2>/dev/null; then
+  "$py" scripts/verify-outputs.py target/example-result.json
+else
+  echo "SKIP python verification: needs zarr, pyarrow, numpy (set OIKOS_PYTHON to a venv python)"
+fi
+
 step "dense determinism smoke (bench hashes across partition counts)"
 h1=$(./target/release/oikos bench --res 5 --years 10 --parts 1 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')
 h7=$(./target/release/oikos bench --res 5 --years 10 --parts 7 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')

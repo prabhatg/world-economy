@@ -65,6 +65,7 @@ fn fork_diverges_from_parent() {
         partitions: 2,
         summary_every_years: 300,
         checkpoint_out: None,
+        outputs: None,
     };
     let read = |_: &str| Ok(ckpt.clone());
     let write = |_: &str, _: &[u8]| Ok(());

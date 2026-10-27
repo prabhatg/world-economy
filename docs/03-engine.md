@@ -143,6 +143,14 @@ The local verification gate runs golden runs on every target and fails on any ha
   - **Observation-operator outputs** for calibration → compact arrays.
 - In-situ reductions only; raw state only at checkpoints.
 
+**Implemented (M0):** a work unit's optional `outputs` block writes, through the host's
+`write(path, bytes)` callback, `fields.zarr` (Zarr v3: `population[time, cell]`, `tick`,
+`cell_h3`, `capacity`; group attributes record engine, seed, H3 base cell/resolution,
+registry and parameters), `summary.parquet` (totals and flows per output time) and
+`panel.parquet` (agents sampled by id hash). Recording only reads the world: the state
+hash is unchanged and output bytes are identical across partition counts and between
+native and wasm32. The gate verifies them with zarr-python and pyarrow.
+
 ## 3.9 Engineering practices
 
 Test-driven development and performance methodology are in

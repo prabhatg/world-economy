@@ -14,6 +14,7 @@
 pub mod agents;
 pub mod checkpoint;
 pub mod mechanisms;
+pub mod output;
 pub mod params;
 pub mod schedule;
 pub mod workunit;

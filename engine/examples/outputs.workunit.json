@@ -1,0 +1,11 @@
+{
+  "format": 1,
+  "id": "example-outputs",
+  "world": { "base_cell": 22, "resolution": 4 },
+  "seed": 7,
+  "start": { "kind": "initial" },
+  "years": 1000,
+  "partitions": 4,
+  "summary_every_years": 250,
+  "outputs": { "dir": "target/example-outputs", "every_years": 50, "panel_one_in": 16 }
+}

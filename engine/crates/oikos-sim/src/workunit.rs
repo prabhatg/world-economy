@@ -4,6 +4,7 @@
 //! or HPC node. Results contain only integers and hashes so they compare exactly.
 
 use crate::checkpoint;
+use crate::output::{OutputSpec, Recorder};
 use crate::params::Params;
 use crate::world::{Summary, World, WorldConfig};
 use serde::{Deserialize, Serialize};
@@ -43,6 +44,9 @@ pub struct WorkUnit {
     pub summary_every_years: u64,
     #[serde(default)]
     pub checkpoint_out: Option<String>,
+    /// Zarr fields and Parquet tables to record during the run.
+    #[serde(default)]
+    pub outputs: Option<OutputSpec>,
 }
 
 fn default_partitions() -> usize {
@@ -63,6 +67,9 @@ pub struct WorkResult {
     pub state_hash: String,
     pub summaries: Vec<Summary>,
     pub checkpoint: Option<String>,
+    /// Output files written (empty when no outputs were requested).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<String>,
 }
 
 /// Runs a work unit. `read`/`write` abstract storage so hosts (browser, CLI, server)
@@ -91,7 +98,19 @@ pub fn run_work_unit(
             w
         }
     };
-    let summaries = world.run_years(wu.years, wu.partitions.max(1), wu.summary_every_years.max(1));
+    let mut sink = |p: &str, b: &[u8]| write(p, b);
+    let (parts, every) = (wu.partitions.max(1), wu.summary_every_years.max(1));
+    let (summaries, files) = match &wu.outputs {
+        None => (world.run_years(wu.years, parts, every), Vec::new()),
+        Some(spec) => {
+            let mut rec = Recorder::start(&world, spec.clone(), &mut sink)?;
+            let summaries = world.run_years_observed(wu.years, parts, every, &mut |w, stats| {
+                rec.observe(w, stats, &mut sink)
+            })?;
+            let files = rec.finish(&world, &mut sink)?;
+            (summaries, files)
+        }
+    };
     if let Some(path) = &wu.checkpoint_out {
         write(path, &checkpoint::encode(&world))?;
     }
@@ -103,5 +122,6 @@ pub fn run_work_unit(
         state_hash: checkpoint::state_hash(&world),
         summaries,
         checkpoint: wu.checkpoint_out.clone(),
+        files,
     })
 }

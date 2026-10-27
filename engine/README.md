@@ -8,6 +8,7 @@ Rust workspace for the ManyWorlds simulation engine. Design: [docs/03-engine.md]
 | `oikos-math` | Bit-reproducible transcendental functions (pinned pure-Rust `libm`) |
 | `oikos-grid` | H3 grid topology: regions, neighbor lists, partitions |
 | `oikos-params` | Parameter registry: units, ranges, priors, status and sources, loaded from `params/*.toml` |
+| `oikos-io` | Output formats: minimal Zarr v3 writer (gzip, deterministic bytes) and Parquet tables |
 | `oikos-sim` | Super-individual agent store, phased partitioned step, checkpoints, work units |
 | `oikos-cli` | `oikos` binary: runs work units (natively or under wasmtime), benchmarks, exports the parameter registry (`oikos params`) |
 
@@ -38,6 +39,9 @@ See [docs/14-engineering-practices.md](../docs/14-engineering-practices.md).
 ## Usage
 
 ```sh
+# Run with outputs (Zarr fields + Parquet tables) and verify them with zarr-python/pyarrow
+cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
+python3 scripts/verify-outputs.py target/example-result.json   # needs zarr, pyarrow, numpy
 cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
 cargo test --release
 cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json
