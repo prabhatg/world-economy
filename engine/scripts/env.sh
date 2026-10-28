@@ -3,9 +3,10 @@
 #   source engine/scripts/env.sh
 #
 # Puts rustup's cargo on PATH, creates or refreshes engine/.venv from the pinned
-# requirements.txt (only when they changed), and exports OIKOS_PYTHON so the gate's
-# output check uses it. Warns about missing tools instead of failing: it runs in your
-# interactive shell, so it never calls `exit` or `set -e`.
+# requirements.txt (only when they changed), activates it (`deactivate` undoes that)
+# and exports OIKOS_PYTHON so the gate's output check uses it. Warns about missing
+# tools instead of failing: it runs in your interactive shell, so it never calls
+# `exit` or `set -e`.
 
 if [ -n "${ZSH_VERSION:-}" ]; then
   eval '_oikos_src=${(%):-%x}'
@@ -33,7 +34,7 @@ _oikos_setup() {
     fi
     echo "oikos: installing pinned Python packages into $venv"
     if [ ! -x "$venv/bin/python" ]; then
-      "$py" -m venv "$venv" || return 1
+      "$py" -m venv --prompt oikos "$venv" || return 1
     fi
     "$venv/bin/python" -m pip install --quiet --disable-pip-version-check --require-virtualenv -r "$req" &&
       cp "$req" "$venv/.oikos-requirements.txt" || {
@@ -41,6 +42,7 @@ _oikos_setup() {
       return 1
     }
   fi
+  . "$venv/bin/activate"
   export OIKOS_PYTHON="$venv/bin/python"
 }
 

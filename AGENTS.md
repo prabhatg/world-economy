@@ -49,7 +49,7 @@ tools: [rustup](https://rustup.rs) and `wasmtime` (`brew install wasmtime`, or
 `cargo install wasmtime-cli --locked`).
 
 ```sh
-source engine/scripts/env.sh   # per shell: cargo on PATH, pinned Python venv, OIKOS_PYTHON
+source engine/scripts/env.sh   # per shell: cargo on PATH, activates the pinned Python venv
 cd engine
 scripts/check.sh --quick       # inner loop: fmt, clippy -D warnings, release tests
 scripts/check.sh               # full gate: + debug tests, wasm tests, golden runs, partition determinism
@@ -64,9 +64,9 @@ cargo run --release -p oikos-cli -- params        # registry as JSON
 
 The gate's output check reads our outputs with zarr-python and pyarrow, pinned exactly
 (transitive dependencies included) in `engine/requirements.txt`. `scripts/env.sh`
-installs them into `engine/.venv` and reinstalls when the pins change; the gate uses
-`OIKOS_PYTHON`, else `engine/.venv`, else skips the check with a notice. Change a pin
-only on purpose and commit the full `pip freeze`.
+installs them into `engine/.venv`, reinstalls when the pins change and activates the
+venv; the gate uses `OIKOS_PYTHON`, else `engine/.venv`, else skips the check with a
+notice. Change a pin only on purpose and commit the full `pip freeze`.
 
 WebAssembly tests need `wasmtime`; the gate skips them with a notice if it is missing.
 `cargo test` does **not** rebuild the `oikos` binary: run
