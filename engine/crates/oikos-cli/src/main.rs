@@ -4,7 +4,7 @@
 //! Usage:
 //!   oikos run <workunit.json> [-o <result.json>]
 //!   oikos hash <checkpoint>
-//!   oikos bench [--base-cell N] [--res N] [--bands N] [--years N] [--parts N]
+//!   oikos bench [--base-cell N] [--res N] [--bands N] [--years N] [--parts N] [--occupied PCT] [--no-timing]
 //!   oikos params    (parameter registry as JSON: units, ranges, priors, sources)
 
 use oikos_sim::{Params, WorkUnit, World, WorldConfig, checkpoint, run_work_unit};
@@ -73,27 +73,43 @@ fn bench(args: &[String]) -> Result<(), String> {
     let bands = opt("--bands", 4)? as u32;
     let years = opt("--years", 20)?;
     let parts = opt("--parts", 1)? as usize;
+    // Percentage of cells occupied, as one compact block (a hotspot); 100 = uniform.
+    let occupied = opt("--occupied", 100)?.clamp(1, 100);
 
-    let t0 = std::time::Instant::now();
-    let mut world = World::filled(config, 1, Params::default(), bands)?;
-    let setup = t0.elapsed().as_secs_f64();
+    // Without timings the run is a pure function of its arguments, down to the number
+    // of instructions executed (scripts/instructions.sh counts them).
+    let timing = !args.iter().any(|a| a == "--no-timing");
+    let clock = || timing.then(std::time::Instant::now);
+    let since = |t: Option<std::time::Instant>| t.map_or(0.0, |t| t.elapsed().as_secs_f64());
+
+    let t0 = clock();
+    let n = config.build_grid()?.len() as u64;
+    let hot = 0..(n * occupied).div_ceil(100) as u32;
+    let mut world = World::filled_cells(config, 1, Params::default(), bands, hot)?;
+    let setup = since(t0);
     let agents_start = world.agent_count() as u64;
 
     let mut agent_steps = 0u64;
-    let t1 = std::time::Instant::now();
+    let t1 = clock();
     for _ in 0..years {
         agent_steps += world.agent_count() as u64;
         world.step(parts);
     }
-    let secs = t1.elapsed().as_secs_f64();
+    let secs = since(t1);
+    let timings = if timing {
+        format!(
+            "\"setup_s\": {setup:.3}, \"run_s\": {secs:.3}, \"agent_steps_per_s\": {:.0}, \"ns_per_agent_step\": {:.2}, ",
+            agent_steps as f64 / secs,
+            secs * 1e9 / agent_steps as f64,
+        )
+    } else {
+        String::new()
+    };
     println!(
-        "{{\"cells\": {}, \"partitions\": {parts}, \"steps\": {years}, \"agents_start\": {agents_start}, \
-         \"agents_end\": {}, \"setup_s\": {setup:.3}, \"run_s\": {secs:.3}, \
-         \"agent_steps_per_s\": {:.0}, \"ns_per_agent_step\": {:.2}, \"state_hash\": \"{}\"}}",
+        "{{\"cells\": {}, \"occupied_pct\": {occupied}, \"partitions\": {parts}, \"steps\": {years}, \"agents_start\": {agents_start}, \
+         \"agents_end\": {}, \"agent_steps\": {agent_steps}, {timings}\"state_hash\": \"{}\"}}",
         world.grid.len(),
         world.agent_count(),
-        agent_steps as f64 / secs,
-        secs * 1e9 / agent_steps as f64,
         checkpoint::state_hash(&world),
     );
     Ok(())

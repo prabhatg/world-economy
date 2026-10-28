@@ -34,6 +34,13 @@ impl Agents {
         self.weight.append(&mut other.weight);
     }
 
+    /// Appends copies of `other`'s agents at indices `span`.
+    pub fn extend_from(&mut self, other: &Agents, span: Range<usize>) {
+        self.id.extend_from_slice(&other.id[span.clone()]);
+        self.cell.extend_from_slice(&other.cell[span.clone()]);
+        self.weight.extend_from_slice(&other.weight[span]);
+    }
+
     pub fn total_weight(&self) -> u64 {
         self.weight.iter().sum()
     }

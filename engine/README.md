@@ -37,6 +37,7 @@ scripts/check.sh            # full gate: fmt, clippy, tests (release+debug, nati
 scripts/check.sh --quick    # inner loop
 scripts/compare-reports.sh a.json b.json   # cross-host determinism (target/check-report.json from each host)
 scripts/bench.sh [res] [years]             # throughput + strong scaling -> target/bench.jsonl
+scripts/instructions.sh [res] [years] [occupied_pct] [parts]   # exact wasm instruction count -> target/instructions.jsonl
 git config core.hooksPath engine/scripts/hooks   # opt-in pre-push gate
 ```
 
@@ -49,6 +50,7 @@ See [docs/14-engineering-practices.md](../docs/14-engineering-practices.md).
 cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
 python scripts/verify-outputs.py target/example-result.json   # venv from source scripts/env.sh
 cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
+cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4 --occupied 25   # hotspot: load balance
 cargo test --release
 cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json
 

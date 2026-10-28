@@ -118,6 +118,12 @@ The local verification gate runs golden runs on every target and fails on any ha
   partitions are contiguous curve segments, weighted by measured cost (agents × work).
   Re-balanced periodically — population is extremely non-uniform and shifts over
   millennia (and cities are hotspots).
+  *Implemented (M0, ADR-0038):* contiguous ranges in H3 index order (hierarchical,
+  so spatially compact; Hilbert ordering may follow) of near-equal cost, with cost =
+  8 × agents + 1 × cells (measured per-agent vs per-cell step work). Every 16 steps the
+  world re-splits if the costliest partition is more than 10% above the mean,
+  reusing all buffers. Results never depend on the split, so these are performance
+  settings, not registry parameters.
 - **Halo exchange** for local interactions; **message batches** for long-range ones
   (trade routes, empires, finance, internet), which in the modern era dominate.
 - **Agent migration** between partitions at commit.

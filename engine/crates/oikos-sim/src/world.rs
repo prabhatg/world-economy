@@ -13,6 +13,12 @@
 //!
 //! Partitions are persistent: each owns its agents and reusable buffers across steps,
 //! so a step allocates nothing in steady state.
+//!
+//! Partitions are contiguous cell ranges of near-equal *cost* (agents and cells, see
+//! [`AGENT_COST`]), not of equal cell count: population is very uneven and moves over
+//! millennia, so every [`BALANCE_EVERY`] steps the world re-splits if one partition has
+//! drifted more than [`IMBALANCE_TOLERANCE_PCT`] above the mean. Results never depend
+//! on the partitioning, so these are performance settings, not model parameters.
 
 use crate::agents::Agents;
 use crate::mechanisms::{self, Mechanism, PartitionView, Sense};
@@ -70,7 +76,21 @@ pub struct World {
     pub(crate) parts: Vec<Partition>,
     mechanisms: Arc<Vec<Box<dyn Mechanism>>>,
     schedule: Schedule,
+    steps_since_balance: u64,
+    /// Reused buffers for re-partitioning (per-cell cost, all agents in order).
+    cell_costs: Vec<u64>,
+    gathered: Agents,
 }
+
+/// Relative step cost of one agent and of one cell (empty or not: sorting and recounting
+/// touch every cell). Measured on the M0 toy, single thread: ~22 ns per agent-step,
+/// ~2.6 ns per empty cell-step.
+pub const AGENT_COST: u64 = 8;
+pub const CELL_COST: u64 = 1;
+/// Steps between balance checks.
+pub const BALANCE_EVERY: u64 = 16;
+/// Re-split when the costliest partition exceeds the mean by more than this.
+pub const IMBALANCE_TOLERANCE_PCT: u64 = 10;
 
 /// Exact accounting for one step (used by conservation checks).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -139,11 +159,27 @@ impl World {
         params: Params,
         bands_per_cell: u32,
     ) -> Result<World, String> {
+        let n = config.build_grid()?.len() as u32;
+        World::filled_cells(config, seed, params, bands_per_cell, 0..n)
+    }
+
+    /// [`World::filled`], but only `cells` are occupied: a hotspot for load-balancing
+    /// benchmarks and tests.
+    pub fn filled_cells(
+        config: WorldConfig,
+        seed: u64,
+        params: Params,
+        bands_per_cell: u32,
+        cells: Range<u32>,
+    ) -> Result<World, String> {
         let w = World::new(config, seed, params)?;
+        if cells.end as usize > w.grid.len() {
+            return Err(format!("cells {cells:?} exceed the grid's {} cells", w.grid.len()));
+        }
         let mut birth_counter = vec![0; w.grid.len()];
         let mut agents = Agents::default();
         let bands = bands_per_cell.max(1) as u64;
-        for cell in 0..w.grid.len() as u32 {
+        for cell in cells {
             let per_band = (w.capacity[cell as usize] / bands).max(1);
             for _ in 0..bands {
                 let id = next_id(&mut birth_counter, cell);
@@ -185,6 +221,9 @@ impl World {
             parts: vec![part],
             mechanisms: Arc::new(mechanisms),
             schedule,
+            steps_since_balance: 0,
+            cell_costs: Vec::new(),
+            gathered: Agents::default(),
         }
     }
 
@@ -211,30 +250,69 @@ impl World {
         self.parts.len()
     }
 
-    /// Re-splits agents into `n` contiguous cell ranges (no-op if already `n`).
+    /// Re-splits agents into `n` contiguous cell ranges of near-equal cost (no-op if
+    /// already `n`).
     pub fn set_partitions(&mut self, n: usize) {
         let n = n.max(1);
-        if n == self.parts.len() {
+        if n != self.parts.len() {
+            self.repartition(n);
+        }
+    }
+
+    /// The cell range of each partition, in order.
+    pub fn partition_ranges(&self) -> Vec<Range<u32>> {
+        self.parts.iter().map(|p| p.cells.clone()).collect()
+    }
+
+    /// Estimated step cost of each partition ([`AGENT_COST`], [`CELL_COST`]).
+    pub fn partition_costs(&self) -> Vec<u64> {
+        self.parts.iter().map(partition_cost).collect()
+    }
+
+    /// Uses `n` partitions; every [`BALANCE_EVERY`] steps re-splits if they drifted
+    /// out of balance.
+    fn balance(&mut self, n: usize) {
+        let n = n.max(1);
+        self.steps_since_balance += 1;
+        if n != self.parts.len() {
+            return self.repartition(n);
+        }
+        if n == 1 || self.steps_since_balance < BALANCE_EVERY {
             return;
         }
-        let mut all = Agents::default();
+        self.steps_since_balance = 0;
+        let (max, total) = self.parts.iter().map(partition_cost).fold((0, 0), |(m, t), c| (m.max(c), t + c));
+        if max * n as u64 * 100 > total * (100 + IMBALANCE_TOLERANCE_PCT) {
+            self.repartition(n);
+        }
+    }
+
+    /// Splits cells into `n` ranges of near-equal cost and moves agents to match,
+    /// reusing every buffer (no allocation once capacities have grown).
+    fn repartition(&mut self, n: usize) {
+        self.steps_since_balance = 0;
+        let costs = &mut self.cell_costs;
+        costs.clear();
+        costs.resize(self.grid.len(), CELL_COST);
+        for p in &self.parts {
+            for &c in &p.agents.cell {
+                costs[c as usize] += AGENT_COST;
+            }
+        }
+        let ranges = oikos_grid::partition_weighted(costs, n);
+        if ranges.iter().eq(self.parts.iter().map(|p| &p.cells)) {
+            return;
+        }
+        let all = &mut self.gathered;
+        all.clear();
         for p in &mut self.parts {
             all.append(&mut p.agents);
         }
-        self.parts = self
-            .grid
-            .partition(n)
-            .into_iter()
-            .map(|cells| {
-                let span = all.cell_range(cells.clone());
-                let agents = Agents {
-                    id: all.id[span.clone()].to_vec(),
-                    cell: all.cell[span.clone()].to_vec(),
-                    weight: all.weight[span].to_vec(),
-                };
-                Partition { cells, agents, ..Partition::default() }
-            })
-            .collect();
+        self.parts.resize_with(n, Partition::default);
+        for (p, cells) in self.parts.iter_mut().zip(ranges) {
+            p.agents.extend_from(all, all.cell_range(cells.clone()));
+            p.cells = cells;
+        }
     }
 
     /// Agents of every partition, in canonical global order.
@@ -266,7 +344,7 @@ impl World {
 
     /// Advances one base period (gcd of mechanism periods) using `parts` spatial partitions.
     pub fn step(&mut self, parts: usize) -> StepStats {
-        self.set_partitions(parts);
+        self.balance(parts);
         let ranges: Vec<Range<u32>> = self.parts.iter().map(|p| p.cells.clone()).collect();
         let nparts = ranges.len();
 
@@ -369,6 +447,10 @@ impl World {
         }
         Ok(out)
     }
+}
+
+fn partition_cost(p: &Partition) -> u64 {
+    CELL_COST * (p.cells.end - p.cells.start) as u64 + AGENT_COST * p.agents.len() as u64
 }
 
 fn next_id(counters: &mut [u64], cell: u32) -> EntityId {

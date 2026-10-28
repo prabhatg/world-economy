@@ -517,6 +517,7 @@ name = "oikos-grid"
 version = "0.1.0"
 dependencies = [
  "h3o",
+ "proptest",
 ]
 
 [[package]]

@@ -18,7 +18,9 @@ wasm and verified with zarr-python and pyarrow. Cross-host verified: x86_64 Linu
 and aarch64 macOS (Apple Silicon) give identical golden, wasm and dense hashes.
 Python bindings (`oikos` module, PyO3 + maturin, abi3): create, run, fork, checkpoint
 and read worlds, run work units, sample priors; tested in the gate to reproduce the
-golden hash. Remaining: run the gate on Windows; cost-weighted load balancing.
+golden hash. Cost-weighted partitions, re-balanced as population moves (up to 2.8×
+faster on hotspot worlds, results unchanged), and an exact instruction-count metric
+(wasm fuel). Remaining: run the gate on Windows.
 
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).
 - H3 grid, SoA store with super-individuals and split/merge, phase scheduler,

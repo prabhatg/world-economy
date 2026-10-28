@@ -56,8 +56,15 @@ scalability**. Verification runs on our own compute (no hosted CI for now).
   ns per agent-step, agent-steps/s and the final state hash (which must be identical
   for every partition count and host). `scripts/bench.sh` sweeps partition counts and
   appends results to `target/bench.jsonl`.
-- **Deterministic performance metric (planned):** instruction counts per agent-step
-  under callgrind, so regressions are detected without noisy wall-clock timing.
+- **Deterministic performance metric:** `scripts/instructions.sh [res] [years]
+  [occupied_pct] [parts]` counts the WebAssembly instructions `oikos bench --no-timing`
+  executes, exactly, as wasmtime fuel (ADR-0039). The count repeats bit for bit
+  (the script checks), so changes far below wall-clock noise show up. It depends on
+  the code, pinned toolchain and wasmtime version (recorded), not on host load.
+  Baseline when introduced (wasmtime 50): 876 instructions per agent-step
+  at `4 50 100 1`. It measures total work, not parallel balance; use `oikos bench`
+  for that. `oikos bench --occupied PCT` fills only a compact block of cells (a
+  hotspot) to measure load balance.
 - **Profile before optimizing** (perf / samply flamegraphs).
 
 ### Measured (M0, toy mechanism, 117,649 cells, ~0.5M agents, 4-core container)
@@ -68,6 +75,15 @@ scalability**. Verification runs on our own compute (no hosted CI for now).
 | Persistent partitions, rayon pool, counting sort, fused merge + recount, zero steady-state allocation | 42 ns | 13 ns (~76M agent-steps/s) |
 
 Results are bit-identical between the two versions (golden hash unchanged).
+
+Cost-weighted partitioning (res 6, 100 years, median of 3, ns/agent-step, Apple M-series
+8P+4E cores; equal cell-count partitions before, cost-weighted after; hashes unchanged):
+
+| Occupied cells | parts | Before | After |
+|---|---|---|---|
+| 100% (uniform) | 4 / 8 / 12 | 5.93 / 4.60 / 4.02 | 5.92 / 4.90 / 4.26 (noise: 10 alternating runs at 12 give medians 4.38 before, 4.18 after) |
+| 25% (hotspot) | 4 / 8 / 12 | 22.32 / 12.10 / 8.42 | 7.91 / 5.77 / 5.94 |
+| 10% (hotspot) | 4 / 8 / 12 | 23.43 / 22.81 / 19.25 | 11.92 / 8.22 / 7.98 |
 
 Moving growth and fission into pluggable mechanisms first cost ~20% at 4 cores (a
 second pass over memory, then false sharing on per-partition statistics). Cache tiling
@@ -93,7 +109,8 @@ thread equal). Lesson: never update shared or adjacent per-thread state per agen
 3. Batched/SIMD Philox (AVX2, NEON, wasm simd128).
 4. Narrower hot state: partition-local `u16`/`u32` cell indices, `u32` weights where
    safe; cold components in side tables.
-5. Cost-weighted partitioning along a Hilbert curve; overdecomposition; NUMA pinning.
+5. ~~Cost-weighted partitioning~~ (done, H3 order); Hilbert ordering;
+   overdecomposition; NUMA pinning; cost model from measured per-partition time.
 6. Distributed: halo of boundary-cell state only; batched migrant messages (MPI);
    compute/communication overlap.
 7. GPU decide-phase kernels (wgpu, integer arithmetic for bitwise validation).

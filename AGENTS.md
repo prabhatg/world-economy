@@ -59,6 +59,7 @@ cargo test --release --test determinism golden    # one test
 cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json
 cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
 scripts/bench.sh               # throughput + scaling sweep -> target/bench.jsonl
+scripts/instructions.sh        # exact wasm instruction count per agent-step (deterministic)
 cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
 cargo run --release -p oikos-cli -- params        # registry as JSON
 maturin develop --release -m crates/oikos-py/Cargo.toml   # Python module `oikos` into the venv
@@ -141,7 +142,8 @@ changes the golden hash.
 
 See [docs/14-engineering-practices.md](docs/14-engineering-practices.md) §14.3.
 
-- Measure before and after with `oikos bench` (same `--res`, `--years`, `--parts`);
+- Measure before and after with `oikos bench` (same `--res`, `--years`, `--parts`;
+  `--occupied` for uneven worlds) and `scripts/instructions.sh` (exact, noise-free);
   include the numbers in the commit message for performance work.
 - Hot paths: structure-of-arrays, no allocation per step in steady state, reuse
   partition buffers, no per-step thread spawning (use the rayon pool via
