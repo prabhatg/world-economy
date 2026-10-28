@@ -17,6 +17,9 @@ enters the model, and the starting mechanisms.
   they flood (to the least crowded habitable neighbor, or they are lost). ADR-0043.
 - **Volcanism & solar forcing:** eruption records (aerosol effects on harvests).
 - **Hydrology:** rivers, floodplains, aquifers, irrigation potential.
+  *Implemented (M1):* a static `hydrology` pack (modern proxy) with river length,
+  discharge and order, floodplain and lake fractions per cell; lakes are not habitable
+  (ADR-0044).
 - **Soils & terrain:** fertility, erosion, salinization (feedback from irrigation).
 - **Coupling (later):** land use → regional climate/erosion; industrial emissions →
   global temperature via a reduced-complexity climate emulator (FaIR-like) post-1750.

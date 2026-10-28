@@ -1,0 +1,57 @@
+# RiverATLAS v1.0 (HydroATLAS): HydroRIVERS reaches with hydro-environmental attributes.
+dataset = "riveratlas"
+title = "RiverATLAS v1.0: global river reaches with hydro-environmental attributes"
+version = "1.0"
+homepage = "https://www.hydrosheds.org/hydroatlas"
+citation = "Linke, S., Lehner, B., Ouellet Dallaire, C., Ariwi, J., Grill, G., Anand, M., Beames, P., Burchard-Levine, V., Maxwell, S., Moidu, H., Tan, F., Thieme, M. (2019). Global hydro-environmental sub-basin and river reach characteristics at high spatial resolution. Scientific Data 6: 283. Reach geometry: Lehner, B., Grill, G. (2013), Hydrological Processes 27(15): 2171-2186. Data: https://doi.org/10.6084/m9.figshare.9890531"
+doi = "10.6084/m9.figshare.9890531"
+notes = """
+Reaches (upstream area >= 10 km2 or discharge >= 0.1 m3/s) of the HydroSHEDS 15 arcsec
+network, with HydroRIVERS fields (DIS_AV_CMS: long-term mean natural discharge from
+WaterGAP, ORD_STRA: Strahler order, CATCH_SKM: reach catchment) and HydroATLAS
+attributes (inu_pc_cmx: maximum inundation extent in the reach catchment, %, from
+GIEMS-D15). Modern hydrography as a proxy: Holocene channel shifts (e.g. the
+Mesopotamian Tigris and Euphrates) are not represented. RiverATLAS is CC BY 4.0;
+the standalone HydroRIVERS product is under the more restrictive HydroSHEDS licence,
+so we use RiverATLAS. Downloaded through the figshare API (the hydrosheds.org host
+needs a browser), verified by the MD5 figshare publishes.
+"""
+
+[license]
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains data derived from RiverATLAS v1.0 (Linke et al. 2019, https://doi.org/10.6084/m9.figshare.9890531; www.hydrosheds.org), licensed under CC BY 4.0; aggregated to H3 cells by ManyWorlds."
+verified = "2026-10-28"
+
+[access]
+kind = "figshare_vector"
+url = "https://ndownloader.figshare.com/files/20087321"
+file = "RiverATLAS_Data_v10.gdb.zip"
+md5 = "f6f1cbf80b422710b78947137f7fd4e8"
+member = "RiverATLAS_v10.gdb"
+layer = "RiverATLAS_v10"
+
+[coverage]
+spatial = "global, rivers with upstream area >= 10 km2"
+temporal = "modern (HydroSHEDS from SRTM 2000; WaterGAP 1971-2000 climate)"
+
+[[variables]]
+name = "DIS_AV_CMS"
+unit = "m3/s"
+description = "Long-term average natural discharge of the reach."
+
+[[variables]]
+name = "ORD_STRA"
+unit = "1"
+description = "Strahler stream order."
+
+[[variables]]
+name = "CATCH_SKM"
+unit = "km2"
+description = "Area of the reach's own catchment."
+
+[[variables]]
+name = "inu_pc_cmx"
+unit = "%"
+description = "Maximum inundation extent in the reach catchment (GIEMS-D15)."

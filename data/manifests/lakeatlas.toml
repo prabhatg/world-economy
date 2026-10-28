@@ -1,0 +1,37 @@
+# LakeATLAS v1.0 (HydroATLAS): HydroLAKES polygons with hydro-environmental attributes.
+dataset = "lakeatlas"
+title = "LakeATLAS v1.0: global lakes (HydroLAKES polygons) with hydro-environmental attributes"
+version = "1.0"
+homepage = "https://www.hydrosheds.org/hydroatlas"
+citation = "Lehner, B., Messager, M.L., Korver, M.C., Linke, S. (2022). Global hydro-environmental lake characteristics at high spatial resolution. Scientific Data 9: 351. Lake polygons: Messager, M.L., Lehner, B., Grill, G., Nedeva, I., Schmitt, O. (2016), Nature Communications 7: 13603. Data: https://doi.org/10.6084/m9.figshare.19312001"
+doi = "10.6084/m9.figshare.19312001"
+notes = """
+HydroLAKES polygons (lakes >= 10 ha, including the Caspian Sea) with Lake_type (1 lake,
+2 reservoir, 3 regulated lake). Reservoirs are modern and left out. Modern extents as a
+proxy (the Caspian's Holocene level varied by tens of metres). Downloaded through the
+figshare API, verified by the MD5 figshare publishes.
+"""
+
+[license]
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains data derived from LakeATLAS v1.0 / HydroLAKES (Lehner et al. 2022; Messager et al. 2016; https://doi.org/10.6084/m9.figshare.19312001; www.hydrosheds.org), licensed under CC BY 4.0; aggregated to H3 cells by ManyWorlds."
+verified = "2026-10-28"
+
+[access]
+kind = "figshare_vector"
+url = "https://ndownloader.figshare.com/files/35959544"
+file = "LakeATLAS_Data_v10.gdb.zip"
+md5 = "952e0724afc96d3a5899f08935d4a094"
+member = "LakeATLAS_v10.gdb"
+layer = "LakeATLAS_v10_pol"
+
+[coverage]
+spatial = "global, lakes >= 10 ha"
+temporal = "modern"
+
+[[variables]]
+name = "Lake_type"
+unit = "1"
+description = "1 lake, 2 reservoir, 3 lake control (regulated natural lake)."

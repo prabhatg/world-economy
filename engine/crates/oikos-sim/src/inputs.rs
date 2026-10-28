@@ -6,14 +6,17 @@
 //! "elev")` without ambiguity. The sorted ids are part of run identity and are recorded
 //! in checkpoints, so a run can only resume with the packs it started with.
 //!
-//! A `coastline` pack's `land_fraction` decides which cells are habitable in each year
-//! (ADR-0043); without one, every cell is.
+//! A cell is habitable while it has dry land: the `coastline` pack's `land_fraction` in
+//! that year minus the `hydrology` pack's `lake_fraction` (ADR-0043); without either
+//! pack, every cell is.
 
 use oikos_io::pack::{FieldView, Pack};
 use serde::{Deserialize, Serialize};
 
 /// Pack kind and field holding each cell's land fraction over time.
 pub const COASTLINE: (&str, &str) = ("coastline", "land_fraction");
+/// Pack kind and field holding each cell's (static) lake fraction.
+pub const LAKES: (&str, &str) = ("hydrology", "lake_fraction");
 
 /// A pack named by id, with where this host finds its bytes.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,8 +73,10 @@ impl Inputs {
             }
         }
         let inputs = Inputs { packs };
-        if inputs.pack(COASTLINE.0).is_ok() {
-            inputs.field(COASTLINE.0, COASTLINE.1)?;
+        for (kind, field) in [COASTLINE, LAKES] {
+            if inputs.pack(kind).is_ok() {
+                inputs.field(kind, field)?;
+            }
         }
         Ok(inputs)
     }
@@ -96,18 +101,24 @@ impl Inputs {
             .ok_or_else(|| format!("no {kind} pack among the inputs"))
     }
 
-    /// Whether each of `out.len()` cells is habitable in `calendar_year`: it has land
-    /// (land fraction above zero, interpolated under the pack's time rule), or there is
-    /// no coastline pack. Returns whether there is one.
+    /// Whether each of `out.len()` cells is habitable in `calendar_year`: its land
+    /// fraction (interpolated under the coastline pack's time rule; 1 without one) minus
+    /// its lake fraction (0 without a hydrology pack) is above zero. Returns whether any
+    /// pack restricts habitability; without one every cell is habitable.
     pub fn habitable_into(&self, calendar_year: i64, out: &mut [bool]) -> bool {
-        let Ok(coast) = self.pack(COASTLINE.0) else {
+        let coast = self
+            .pack(COASTLINE.0)
+            .ok()
+            .map(|p| (p.field(COASTLINE.1).expect("validated in from_packs"), p.slice_at(calendar_year)));
+        let lakes = self.field(LAKES.0, LAKES.1).ok();
+        if coast.is_none() && lakes.is_none() {
             out.fill(true);
             return false;
-        };
-        let land = coast.field(COASTLINE.1).expect("validated in from_packs");
-        let s = coast.slice_at(calendar_year);
+        }
         for (c, h) in out.iter_mut().enumerate() {
-            *h = land.at(s, c).is_some_and(|f| f > 0.0);
+            let land = coast.as_ref().map_or(Some(1.0), |(f, s)| f.at(*s, c)).unwrap_or(0.0);
+            let lake = lakes.as_ref().map_or(Some(0.0), |f| f.get(0, c)).unwrap_or(0.0);
+            *h = land - lake > 0.0;
         }
         true
     }

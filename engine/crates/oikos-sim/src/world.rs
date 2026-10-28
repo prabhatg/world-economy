@@ -142,10 +142,11 @@ pub struct World {
     pub(crate) parts: Vec<Partition>,
     /// Forcing packs (empty for base-cell worlds).
     pub inputs: Arc<Inputs>,
-    /// Whether each cell is habitable this step (land under the coastline pack; all
-    /// cells without one). Derived from `inputs` and `tick`, so never checkpointed.
+    /// Whether each cell is habitable this step (dry land under the coastline and
+    /// hydrology packs; all cells without them). Derived from `inputs` and `tick`, so
+    /// never checkpointed.
     pub habitable: Vec<bool>,
-    coastline: bool,
+    restricted: bool,
     mechanisms: Arc<Vec<Box<dyn Mechanism>>>,
     schedule: Schedule,
     steps_since_balance: u64,
@@ -228,7 +229,7 @@ impl World {
         let land: Vec<u32> = (0..n as u32).filter(|&c| habitable[c as usize]).collect();
         if land.is_empty() {
             return Err(format!(
-                "no habitable cell in {}: the coastline pack has no land at the start",
+                "no habitable cell in {}: the forcing packs leave no dry land at the start",
                 Tick::EPOCH.calendar_year()
             ));
         }
@@ -313,7 +314,7 @@ impl World {
         }
         let part = Partition { cells: 0..n as u32, agents, ..Partition::default() };
         let mut habitable = vec![true; n];
-        let coastline = inputs.habitable_into(tick.calendar_year(), &mut habitable);
+        let restricted = inputs.habitable_into(tick.calendar_year(), &mut habitable);
         let mechanisms = mechanisms::defaults(&params);
         let schedule = schedule_of(&mechanisms).expect("default mechanisms form a valid schedule");
         World {
@@ -328,7 +329,7 @@ impl World {
             parts: vec![part],
             inputs,
             habitable,
-            coastline,
+            restricted,
             mechanisms: Arc::new(mechanisms),
             schedule,
             steps_since_balance: 0,
@@ -458,7 +459,7 @@ impl World {
         let ranges: Vec<Range<u32>> = self.parts.iter().map(|p| p.cells.clone()).collect();
         let nparts = ranges.len();
 
-        if self.coastline {
+        if self.restricted {
             self.inputs.habitable_into(self.tick.calendar_year(), &mut self.habitable);
         }
 
@@ -468,7 +469,7 @@ impl World {
                 grid: &self.grid,
                 inputs: &self.inputs,
                 habitable: &self.habitable,
-                coastline: self.coastline,
+                restricted: self.restricted,
                 capacity: &self.capacity,
                 population: &self.population,
                 tick: self.tick,

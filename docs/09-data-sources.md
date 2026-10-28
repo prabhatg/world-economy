@@ -18,8 +18,12 @@ read as row windows of the strip-stored global GeoTIFFs (licence checked 2026-10
 EnviDat lists CC BY-SA 4.0 in its licence field and CC BY 2.0 in its description; we
 follow the stricter, so the climate pack is shared under CC BY-SA 4.0 with its
 attribution; open question 23). The coastline pack (ADR-0043) uses the same dataset's
-paleo-DEM ocean mask per slice; inland waters (Caspian, lakes, Sea of Marmara) still
-count as land until hydrology adds a lake mask.
+paleo-DEM ocean mask per slice; the hydrology pack (ADR-0044) supplies the lakes
+(Caspian included) that it counts as land, so only the Sea of Marmara remains as a
+known gap. Hydrology uses RiverATLAS and LakeATLAS (HydroATLAS, CC BY 4.0, checked
+2026-10-28) rather than the standalone HydroRIVERS, whose HydroSHEDS licence requires
+end-user agreements and forbids stand-alone redistribution; they are fetched through
+the figshare API and checked against its published MD5.
 
 ## Forcing (inputs)
 

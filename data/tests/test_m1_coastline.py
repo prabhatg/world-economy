@@ -53,8 +53,9 @@ def test_the_gulf_floods_in_the_early_holocene(m1):
 
 def test_known_gaps_inland_waters_count_as_land(m1):
     """The paleo-DEM masks only the ocean: the Caspian (flat at 0 m) and the Sea of
-    Marmara (kept as bathymetry) count as land, as lakes do in the terrain pack. A lake
-    mask (hydrology, #9) must remove them; this test fails once it does."""
+    Marmara (kept as bathymetry) count as land, as lakes do in the terrain pack. The
+    engine subtracts the hydrology pack's lakes (Caspian included); the Sea of Marmara
+    is in no lake dataset and remains a known gap."""
     _, _, at = m1
     assert at(39.5, 51.5, -3050) == 1 and at(40.75, 28.0, -3050) == 1
 

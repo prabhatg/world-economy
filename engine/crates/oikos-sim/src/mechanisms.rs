@@ -38,8 +38,8 @@ pub struct Sense<'a> {
     /// Whether each cell is habitable now (see [`crate::inputs::Inputs::habitable_into`]);
     /// derived from forcing, so readers declare [`Component::Forcing`].
     pub habitable: &'a [bool],
-    /// Whether a coastline pack restricts `habitable` (false: every cell is habitable).
-    pub coastline: bool,
+    /// Whether forcing packs restrict `habitable` (false: every cell is habitable).
+    pub restricted: bool,
     pub capacity: &'a [u64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],
@@ -246,7 +246,7 @@ impl Mechanism for Fission {
 /// Bands in a cell the sea has flooded move to the least crowded habitable neighbor
 /// (by N/K) as new agents born there, or are lost if no neighbor is habitable. A
 /// res-5 cell floods only when none of it is land, so a neighbor is usually open.
-/// Without a coastline pack every cell is habitable and this does nothing.
+/// Without coastline or hydrology packs every cell is habitable and this does nothing.
 #[derive(Clone, Debug)]
 pub struct Inundation {
     pub period_ticks: u64,
@@ -271,7 +271,7 @@ impl Mechanism for Inundation {
     }
 
     fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
-        if !sense.coastline {
+        if !sense.restricted {
             return;
         }
         let mut lost = 0;

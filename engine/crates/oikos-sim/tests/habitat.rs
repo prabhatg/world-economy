@@ -1,6 +1,6 @@
-//! Moving coastlines: a `coastline` pack's `land_fraction` decides which cells are
-//! habitable in each year. Bands start on land, never move into the sea, and leave
-//! cells the sea floods (docs/04 §4.1, ADR-0043).
+//! Habitat: a cell is habitable while it has dry land, its `coastline` land fraction in
+//! that year minus its `hydrology` lake fraction. Bands start on dry land, never move
+//! into the sea or a lake, and leave cells the sea floods (docs/04 §4.1, ADR-0043).
 
 use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
@@ -209,4 +209,48 @@ fn a_flooded_island_is_emptied() {
     .unwrap();
     assert!(fissions > 0, "bands must be splitting when the sea arrives");
     assert_eq!(before + births, deaths, "everyone on the island is lost and counted");
+}
+
+/// Lake fraction per cell from `lake(cell)`.
+fn hydrology_pack(h3: &[u64], lake: impl Fn(usize) -> f64) -> Vec<u8> {
+    let mut b = PackBuilder::new("hydrology", region(h3));
+    let v = (0..h3.len()).map(|c| (lake(c) * 10_000.0) as u16).collect();
+    b.field(spec("lake_fraction", "1", Dims::Cell, 1e-4), Data::U16(v)).unwrap();
+    b.build()
+}
+
+fn lake(c: usize) -> bool {
+    c % 7 == 3
+}
+
+#[test]
+fn lakes_are_uninhabitable_with_or_without_a_coastline() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let hydro = hydrology_pack(&h3, |c| {
+        if lake(c) {
+            1.0
+        } else if c % 7 == 4 {
+            0.4
+        } else {
+            0.0
+        }
+    });
+    let coast = coastline_pack(&h3, &[-12_000], |_, c| if sea(c) { 0.0 } else { 1.0 });
+    for packs in [vec![&g[..], &hydro[..]], vec![&g[..], &hydro[..], &coast[..]]] {
+        let with_coast = packs.len() == 3;
+        for seed in 0..4 {
+            let mut w =
+                World::with_inputs(WorldConfig::geometry(&id(&g)), seed, Params::default(), inputs(&packs))
+                    .unwrap();
+            let wet = |c: usize| lake(c) || (with_coast && sea(c));
+            assert_eq!(people(&w, wet), 0);
+            assert!(w.habitable.iter().enumerate().all(|(c, &h)| h != wet(c)));
+            w.run_years_observed(300, 2, 300, &mut |w, _| {
+                assert_eq!(people(w, wet), 0, "people in lakes or the sea in {}", w.tick.calendar_year());
+                Ok(())
+            })
+            .unwrap();
+        }
+    }
 }

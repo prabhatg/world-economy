@@ -35,7 +35,13 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   coastline from its paleo-orography, whose ice comes from ICE-6G_C, Peltier, Argus &
   Drummond 2015, JGR Solid Earth 120, 450–487) and shared under the same
   license.
-- **GDAL** (via rasterio) reads raster data in the pipelines.
+- **RiverATLAS and LakeATLAS v1.0 / HydroATLAS** (hydrology pack): Linke, S. et al.
+  (2019), Scientific Data 6: 283; Lehner, B., Messager, M.L., Korver, M.C., Linke, S.
+  (2022), Scientific Data 9: 351; river reaches from HydroRIVERS (Lehner & Grill 2013,
+  Hydrological Processes 27: 2171–2186) and lakes from HydroLAKES (Messager et al. 2016,
+  Nature Communications 7: 13603); inundation from GIEMS-D15 (Fluet-Chouinard et al.
+  2015). CC BY 4.0, www.hydrosheds.org.
+- **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 
 ## Volunteers, reviewers, contributors, institutions
 *Your name here.*
