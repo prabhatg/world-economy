@@ -6,6 +6,7 @@
 //!   oikos hash <checkpoint>
 //!   oikos bench [--base-cell N] [--res N] [--bands N] [--years N] [--parts N] [--occupied PCT] [--no-timing]
 //!   oikos params    (parameter registry as JSON: units, ranges, priors, sources)
+//!   oikos pack <file>   (forcing pack id, header and per-field value ranges)
 
 use oikos_sim::{Params, WorkUnit, World, WorldConfig, checkpoint, run_work_unit};
 use std::process::ExitCode;
@@ -48,11 +49,17 @@ fn run(args: &[String]) -> Result<(), String> {
             Ok(())
         }
         Some("bench") => bench(&args[1..]),
+        Some("pack") => {
+            let path = args.get(1).ok_or("pack: missing pack path")?;
+            let pack = oikos_io::pack::Pack::parse(read(path)?).map_err(|e| format!("{path}: {e}"))?;
+            println!("{}", serde_json::to_string_pretty(&pack.summary()).map_err(|e| e.to_string())?);
+            Ok(())
+        }
         Some("params") => {
             println!("{}", oikos_sim::params::registry().to_json());
             Ok(())
         }
-        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint> | oikos bench | oikos params".into()),
+        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint> | oikos bench | oikos params | oikos pack <file>".into()),
     }
 }
 

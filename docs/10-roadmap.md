@@ -37,7 +37,8 @@ faster on hotspot worlds, results unchanged), and an exact instruction-count met
   aarch64 / wasm32; fork/restore works; a work unit runs in a browser tab.
 
 ## M1 — Neolithic Southwest Asia (12,000–3,000 BCE)
-- Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3).
+- Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers
+  in 24–42°N, 26–58°E, 22,198 cells incl. Cyprus and the paleo-Gulf basin (ADR-0040).
 - Forcing: CHELSA-TraCE21k climate, sea level, terrain, hydrology, soils.
 - Mechanisms: foraging ecology; cultivation & domestication co-evolution; sedentism and
   storage; Neolithic demographic transition; band/village formation and fission;

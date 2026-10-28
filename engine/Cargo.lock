@@ -504,6 +504,7 @@ dependencies = [
 name = "oikos-cli"
 version = "0.1.0"
 dependencies = [
+ "oikos-io",
  "oikos-sim",
  "serde_json",
 ]
@@ -524,9 +525,11 @@ dependencies = [
 name = "oikos-io"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "bytes",
  "flate2",
  "parquet",
+ "serde",
  "serde_json",
 ]
 

@@ -157,6 +157,40 @@ registry and parameters), `summary.parquet` (totals and flows per output time) a
 hash is unchanged and output bytes are identical across partition counts and between
 native and wasm32. The gate verifies them with zarr-python and pyarrow.
 
+## 3.8a Inputs: forcing packs
+
+Environmental inputs (geometry, climate, terrain, soils, hydrology, sea level) reach a
+run as **forcing packs** built offline by `data/` pipelines from dataset manifests
+(doc 9). A pack is one file, so it can be content-addressed, cached and fetched by any
+host (ADR-0041):
+
+```
+"OIKOSPK1" | header_len u32 | header (UTF-8 JSON, canonical) | zero padding to 8 bytes | arrays
+```
+
+- **Identity:** the pack id is the BLAKE3 hash of the whole file. Work units list pack
+  ids; the engine refuses a pack whose bytes hash differently, and the ids are part of
+  run identity (§3.5).
+- **Header:** `format`, `kind`, `region` (`name`, `resolution`, `cells`, and
+  `cells_hash`, the BLAKE3 of the ascending H3 indices as little-endian `u64`), `time`
+  (ascending `calendar_year` list and the rule `step` or `linear`), `fields`, `sources`
+  (dataset, version, license, citation, manifest hash) and `builder` (tool, git rev).
+  Keys are sorted, without insignificant whitespace, so a header has one encoding.
+- **Fields:** `name`, `unit`, `description`, `dtype` (`u8`…`u64`, `i16`…`i64`, `f32`,
+  `f64`), `dims` (`["cell"]` or `["time", "cell"]`, time-major), `scale_factor` and
+  `add_offset` (physical = stored × scale_factor + add_offset, in `f64`, as in the CF
+  conventions), optional integer `nodata`, and the array's byte `offset` and `len`
+  (8-byte aligned, after the header). A `geometry` pack must contain `h3`.
+- **Region:** the geometry pack carries `h3` (`u64` per cell), `lat`, `lng` and
+  `area_km2`, computed offline, so runs never use `h3o` geometry; every pack of a
+  region carries the same `cells_hash`, and the engine checks it against the world.
+  The M1 region is res-5 cells with centers in 24–42°N, 26–58°E (ADR-0040).
+- **Time:** `step` holds the last slice at or before the current year; `linear`
+  interpolates between slices with `+ - * /` only; outside the covered years the
+  nearest slice holds.
+- Size target: ≤ ~50 MB per work unit (doc 11 §11.2); a seeded weather generator from
+  per-cell statistics replaces raw climate fields later.
+
 ## 3.9 Engineering practices
 
 Test-driven development and performance methodology are in
