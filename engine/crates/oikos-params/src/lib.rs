@@ -137,6 +137,22 @@ impl Registry {
         Ok(out)
     }
 
+    /// Maps unit-interval coordinates `u[key] ∈ [0, 1]` onto each parameter's prior:
+    /// the inverse CDF of its uniform or log-uniform prior, rounded to the nearest
+    /// integer for integer parameters. Calibration samplers (Latin hypercube, Sobol,
+    /// ABC proposals) work in the unit cube and use this to get overrides. Only the
+    /// requested keys are returned. Uses `oikos_math`, so the same `u` gives the same
+    /// overrides on every host.
+    pub fn sample(&self, u: &BTreeMap<String, f64>) -> Result<BTreeMap<String, Value>, String> {
+        u.iter()
+            .map(|(key, &x)| {
+                let def = self.params.get(key).ok_or_else(|| format!("unknown parameter {key}"))?;
+                let v = def.sample(x).map_err(|e| format!("parameter {key}: {e}"))?;
+                Ok((key.clone(), v))
+            })
+            .collect()
+    }
+
     /// Values as a JSON object (integers as JSON integers, reals as JSON floats).
     pub fn values_json(&self, values: &BTreeMap<String, Value>) -> serde_json::Value {
         let map = values
@@ -189,6 +205,31 @@ impl ParamDef {
                 Ok(Value::Real(x))
             }
         }
+    }
+
+    fn sample(&self, u: f64) -> Result<Value, String> {
+        if !(0.0..=1.0).contains(&u) {
+            return Err(format!("unit-interval value must be in [0, 1], got {u}"));
+        }
+        let (lo, hi) = match self.prior {
+            Prior::Fixed => return Err("prior is fixed (not calibrated), so it cannot be sampled".into()),
+            Prior::Normal { .. } => return Err("sampling normal priors is not supported yet".into()),
+            Prior::Uniform { lo, hi } | Prior::LogUniform { lo, hi } => (lo, hi),
+        };
+        // The endpoints map exactly onto the prior bounds; rounding could miss them.
+        let x = match self.prior {
+            _ if u == 0.0 => lo,
+            _ if u == 1.0 => hi,
+            Prior::LogUniform { .. } => lo * oikos_math::exp(u * oikos_math::ln(hi / lo)),
+            _ => lo + u * (hi - lo),
+        }
+        .clamp(lo, hi);
+        let value = match self.kind {
+            // Round half up; floor is exact on every IEEE 754 target.
+            Kind::Integer { .. } => Value::Int((x + 0.5).floor() as u64),
+            _ => Value::Real(x),
+        };
+        self.check(value)
     }
 
     fn validate(&self) -> Result<(), String> {
