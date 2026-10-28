@@ -214,6 +214,18 @@ as they grow). See [docs/03-engine.md](docs/03-engine.md) §3.4.
 - New dependencies: prefer pure-Rust crates that build for `wasm32-wasip1`; pin exact
   versions for anything that affects numerics.
 
+## Task tracking
+
+- **GitHub issues** track remaining project work: one issue per roadmap item, under
+  the milestone it belongs to (`M0 — Foundations`, `M1 — Neolithic Southwest Asia`)
+  and labeled by area (`engine`, `data`, `mechanisms`, `calibration`, `viewer`,
+  `volunteer`, `performance`; `blocked` when waiting on something outside the repo).
+  Reference the issue in commits (`Refs #3`, `Closes #3`) and close it when done.
+- **Beads** (`bd`) is for local, step-level task management on a maintainer's machine.
+  Its database (`.beads/`) is kept out of git (`.git/info/exclude`), so cloud sessions
+  use the GitHub issues. Link beads to their issue with `--external-ref gh-<n>`;
+  `bd ready` lists what is unblocked.
+
 ## Git workflow
 
 - Develop on a feature branch; `main` is updated only when the maintainer asks.
