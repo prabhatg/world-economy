@@ -11,6 +11,9 @@ use std::ops::Range;
 pub enum GridError {
     InvalidBaseCell(u8),
     InvalidResolution(u8),
+    InvalidCell(u64),
+    WrongResolution { cell: u64, expected: u8 },
+    NotAscending,
 }
 
 impl std::fmt::Display for GridError {
@@ -18,6 +21,11 @@ impl std::fmt::Display for GridError {
         match self {
             GridError::InvalidBaseCell(b) => write!(f, "invalid H3 base cell {b}"),
             GridError::InvalidResolution(r) => write!(f, "invalid H3 resolution {r}"),
+            GridError::InvalidCell(c) => write!(f, "invalid H3 cell index {c:#x}"),
+            GridError::WrongResolution { cell, expected } => {
+                write!(f, "H3 cell {cell:#x} is not at resolution {expected}")
+            }
+            GridError::NotAscending => write!(f, "H3 cells must be strictly ascending"),
         }
     }
 }
@@ -44,6 +52,26 @@ impl Grid {
             .find(|c| c.base_cell() == base)
             .ok_or(GridError::InvalidBaseCell(base_cell))?;
         Ok(Grid::from_cells(res, root.children(res).collect()))
+    }
+
+    /// A region given as strictly ascending H3 indices at `resolution` (the cell list of
+    /// a geometry pack). Only topology is derived from them.
+    pub fn from_h3(resolution: u8, cells: &[u64]) -> Result<Grid, GridError> {
+        let res = Resolution::try_from(resolution).map_err(|_| GridError::InvalidResolution(resolution))?;
+        if cells.windows(2).any(|w| w[0] >= w[1]) {
+            return Err(GridError::NotAscending);
+        }
+        let cells = cells
+            .iter()
+            .map(|&c| {
+                let cell = CellIndex::try_from(c).map_err(|_| GridError::InvalidCell(c))?;
+                if cell.resolution() != res {
+                    return Err(GridError::WrongResolution { cell: c, expected: resolution });
+                }
+                Ok(cell)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Grid::from_cells(res, cells))
     }
 
     /// Builds a grid from arbitrary cells (all at `resolution`).
@@ -155,6 +183,20 @@ mod tests {
         // Interior cells have six neighbors; only the region boundary has fewer.
         let interior = (0..g.len() as u32).filter(|&c| g.neighbors(c).len() == 6).count();
         assert!(interior > g.len() * 9 / 10, "interior = {interior}");
+    }
+
+    #[test]
+    fn grid_from_h3_indices_matches_the_base_cell_grid() {
+        let g = Grid::from_base_cell(22, 3).unwrap();
+        let ids: Vec<u64> = (0..g.len() as u32).map(|c| g.h3(c)).collect();
+        let h = Grid::from_h3(3, &ids).unwrap();
+        assert_eq!(h.len(), g.len());
+        for c in 0..g.len() as u32 {
+            assert_eq!((h.h3(c), h.neighbors(c)), (g.h3(c), g.neighbors(c)));
+        }
+        assert!(matches!(Grid::from_h3(4, &ids), Err(GridError::WrongResolution { .. })));
+        assert!(matches!(Grid::from_h3(3, &[ids[1], ids[0]]), Err(GridError::NotAscending)));
+        assert!(matches!(Grid::from_h3(3, &[0]), Err(GridError::InvalidCell(0))));
     }
 
     #[test]

@@ -195,14 +195,20 @@ impl Recorder {
             json!({ "unit": "days since 12000 BCE", "description": "Simulation tick of each output time" });
         self.write(out, |o| zarr::write_1d("fields.zarr/tick", &ticks, chunk, "time", attrs, o))?;
         let registry = crate::params::registry();
-        let attrs = json!({
+        let mut attrs = json!({
             "engine": crate::ENGINE,
             "seed": world.seed,
-            "h3_base_cell": world.config.base_cell,
-            "h3_resolution": world.config.resolution,
+            "h3_resolution": world.grid.resolution(),
             "parameter_registry": format!("{} v{}", registry.name, registry.version),
             "params": world.params,
         });
+        match &world.config {
+            crate::WorldConfig::BaseCell(r) => attrs["h3_base_cell"] = r.base_cell.into(),
+            crate::WorldConfig::Geometry(r) => {
+                attrs["geometry_pack"] = r.geometry.clone().into();
+                attrs["forcing_packs"] = world.inputs.ids().into();
+            }
+        }
         self.write(out, |o| zarr::write_group("fields.zarr", attrs, o))?;
 
         let sm = std::mem::take(&mut self.summary);

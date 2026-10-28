@@ -19,6 +19,8 @@ pub enum Component {
     AgentCell,
     /// Creation of new agents (and the per-cell birth counters that name them).
     AgentSpawn,
+    /// Forcing-pack fields (read-only inputs: climate, terrain, soils, ...).
+    Forcing,
 }
 
 /// What a mechanism declares about itself.

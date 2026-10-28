@@ -191,6 +191,17 @@ host (ADR-0041):
 - Size target: ≤ ~50 MB per work unit (doc 11 §11.2); a seeded weather generator from
   per-cell statistics replaces raw climate fields later.
 
+**Implemented:** `oikos-io::pack` (reader, writer, `oikos pack <file>`) and
+`data/oikos_data` (Python writer, M1 geometry pack). A world's `WorldConfig` is either
+`{"base_cell", "resolution"}` (M0 toy worlds) or `{"geometry": "<pack id>"}`, whose
+grid comes from the pack's `h3` list (topology only). Work units list
+`inputs: [{"id", "path"}]`; `Inputs` checks every id, one geometry pack, unique kinds
+and one region. Mechanisms read fields through `Sense::inputs` and declare
+`Component::Forcing`. Checkpoints of geometry-pack worlds use version 2, which records
+the geometry pack and all input ids, so they restore only with those packs;
+base-cell checkpoints keep version 1 byte for byte (golden unchanged). Python:
+`oikos.World.from_packs(paths, seed=...)`, `World.from_checkpoint(data, packs=...)`.
+
 ## 3.9 Engineering practices
 
 Test-driven development and performance methodology are in

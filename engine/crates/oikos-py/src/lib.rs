@@ -14,6 +14,7 @@
 //!   independent worlds in parallel.
 
 use oikos_params::Value;
+use oikos_sim::inputs::Inputs;
 use oikos_sim::{World, WorldConfig, checkpoint, params::registry};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -92,14 +93,28 @@ impl PyWorld {
     #[new]
     #[pyo3(signature = (base_cell = 22, resolution = 4, *, seed, params = None))]
     fn new(base_cell: u8, resolution: u8, seed: u64, params: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
-        let config = WorldConfig { base_cell, resolution };
+        let config = WorldConfig::base_cell(base_cell, resolution);
         World::new(config, seed, params_from(params)?).map(PyWorld).map_err(value_err)
     }
 
-    /// Restores a world from `checkpoint()` bytes.
+    /// A fresh world on the region of a geometry pack, with its forcing packs (paths
+    /// to `.oikospack` files: exactly one geometry pack, at most one of each kind).
     #[staticmethod]
-    fn from_checkpoint(data: &[u8]) -> PyResult<Self> {
-        checkpoint::decode(data).map(PyWorld).map_err(value_err)
+    #[pyo3(signature = (packs, *, seed, params = None))]
+    fn from_packs(packs: Vec<PathBuf>, seed: u64, params: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
+        let inputs = load_packs(&packs)?;
+        let geometry = inputs.geometry().map(|g| g.id().to_string()).unwrap_or_default();
+        let config = WorldConfig::geometry(&geometry);
+        World::with_inputs(config, seed, params_from(params)?, inputs).map(PyWorld).map_err(value_err)
+    }
+
+    /// Restores a world from `checkpoint()` bytes, with the forcing packs it was made
+    /// with (paths), if any.
+    #[staticmethod]
+    #[pyo3(signature = (data, packs = None))]
+    fn from_checkpoint(data: &[u8], packs: Option<Vec<PathBuf>>) -> PyResult<Self> {
+        let inputs = load_packs(&packs.unwrap_or_default())?;
+        checkpoint::decode_with(data, inputs).map(PyWorld).map_err(value_err)
     }
 
     /// Canonical binary snapshot; `World.from_checkpoint` restores it exactly.
@@ -111,7 +126,8 @@ impl PyWorld {
     /// seed and optionally new parameters (as a work unit's checkpoint `fork`).
     #[pyo3(signature = (seed, params = None))]
     fn fork(&self, seed: u64, params: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
-        let mut w = checkpoint::decode(&checkpoint::encode(&self.0)).map_err(value_err)?;
+        let mut w = checkpoint::decode_with(&checkpoint::encode(&self.0), self.0.inputs.clone())
+            .map_err(value_err)?;
         w.seed = seed;
         if params.is_some() {
             w.set_params(params_from(params)?).map_err(value_err)?;
@@ -188,14 +204,33 @@ impl PyWorld {
         to_py(py, &self.0.params)
     }
 
+    /// H3 base cell of a base-cell world; `None` for a geometry-pack region.
     #[getter]
-    fn base_cell(&self) -> u8 {
-        self.0.config.base_cell
+    fn base_cell(&self) -> Option<u8> {
+        match &self.0.config {
+            WorldConfig::BaseCell(r) => Some(r.base_cell),
+            WorldConfig::Geometry(_) => None,
+        }
+    }
+
+    /// Id of the geometry pack defining the region; `None` for a base-cell world.
+    #[getter]
+    fn geometry(&self) -> Option<String> {
+        match &self.0.config {
+            WorldConfig::BaseCell(_) => None,
+            WorldConfig::Geometry(r) => Some(r.geometry.clone()),
+        }
+    }
+
+    /// Ids of the forcing packs this world reads (sorted).
+    #[getter]
+    fn inputs(&self) -> Vec<String> {
+        self.0.inputs.ids().into_iter().map(String::from).collect()
     }
 
     #[getter]
     fn resolution(&self) -> u8 {
-        self.0.config.resolution
+        self.0.grid.resolution()
     }
 
     /// Number of grid cells.
@@ -206,9 +241,16 @@ impl PyWorld {
 
     fn __repr__(&self) -> String {
         let w = &self.0;
+        let region = match &w.config {
+            WorldConfig::BaseCell(r) => format!("base_cell={}", r.base_cell),
+            WorldConfig::Geometry(r) => format!("geometry={}", &r.geometry[..12]),
+        };
         format!(
-            "World(base_cell={}, resolution={}, seed={}, tick={})",
-            w.config.base_cell, w.config.resolution, w.seed, w.tick.0
+            "World({region}, resolution={}, cells={}, seed={}, tick={})",
+            w.grid.resolution(),
+            w.grid.len(),
+            w.seed,
+            w.tick.0
         )
     }
 }
@@ -256,6 +298,16 @@ fn sample_params<'py>(py: Python<'py>, u: &Bound<'py, PyDict>) -> PyResult<Bound
     }
     let values = registry().sample(&unit).map_err(value_err)?;
     to_py(py, &registry().values_json(&values))
+}
+
+/// Forcing packs from files (each pack's id is the hash of its bytes).
+fn load_packs(paths: &[PathBuf]) -> PyResult<Inputs> {
+    let packs = paths
+        .iter()
+        .map(|p| oikos_io::pack::Pack::parse(read(p)?).map_err(|e| format!("{}: {e}", p.display())))
+        .collect::<Result<Vec<_>, String>>()
+        .map_err(value_err)?;
+    Inputs::from_packs(packs).map_err(value_err)
 }
 
 fn read(path: &Path) -> Result<Vec<u8>, String> {

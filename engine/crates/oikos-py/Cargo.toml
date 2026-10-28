@@ -16,6 +16,7 @@ crate-type = ["cdylib"]
 [dependencies]
 oikos-sim.workspace = true
 oikos-params.workspace = true
+oikos-io.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 pyo3 = { version = "0.30", features = ["abi3-py310"] }

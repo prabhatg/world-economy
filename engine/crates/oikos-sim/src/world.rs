@@ -21,6 +21,7 @@
 //! on the partitioning, so these are performance settings, not model parameters.
 
 use crate::agents::Agents;
+use crate::inputs::Inputs;
 use crate::mechanisms::{self, Mechanism, PartitionView, Sense};
 use crate::params::Params;
 use crate::schedule::Schedule;
@@ -30,19 +31,84 @@ use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use std::sync::Arc;
 
+/// Which cells a world simulates: every descendant of one H3 base cell (M0 toy worlds,
+/// benchmarks), or the cells listed by a geometry pack (`{"geometry": "<pack id>"}`,
+/// e.g. the M1 region; ADR-0040).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
+pub enum WorldConfig {
+    BaseCell(BaseCellRegion),
+    Geometry(GeometryRegion),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct WorldConfig {
+pub struct BaseCellRegion {
     pub base_cell: u8,
     pub resolution: u8,
 }
 
-impl WorldConfig {
-    /// The M0/M1 default: base cell 22 (Fertile Crescent) at H3 resolution 4.
-    pub const SOUTHWEST_ASIA: WorldConfig = WorldConfig { base_cell: 22, resolution: 4 };
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GeometryRegion {
+    /// Id of the geometry pack listing the region's cells.
+    pub geometry: String,
+}
 
-    pub fn build_grid(&self) -> Result<Grid, String> {
-        Grid::from_base_cell(self.base_cell, self.resolution).map_err(|e| e.to_string())
+impl<'de> Deserialize<'de> for WorldConfig {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<WorldConfig, D::Error> {
+        use serde::de::Error;
+        let v = serde_json::Value::deserialize(d)?;
+        // Pick the form by its key, so a typo gets that form's own error message.
+        if v.get("geometry").is_some() {
+            serde_json::from_value(v).map(WorldConfig::Geometry).map_err(D::Error::custom)
+        } else {
+            serde_json::from_value(v).map(WorldConfig::BaseCell).map_err(D::Error::custom)
+        }
+    }
+}
+
+impl WorldConfig {
+    /// The M0 default: base cell 22 (Fertile Crescent) at H3 resolution 4.
+    pub const SOUTHWEST_ASIA: WorldConfig = WorldConfig::base_cell(22, 4);
+
+    pub const fn base_cell(base_cell: u8, resolution: u8) -> WorldConfig {
+        WorldConfig::BaseCell(BaseCellRegion { base_cell, resolution })
+    }
+
+    pub fn geometry(pack_id: &str) -> WorldConfig {
+        WorldConfig::Geometry(GeometryRegion { geometry: pack_id.to_string() })
+    }
+
+    /// The grid, from H3 topology only. A geometry region needs its pack in `inputs`;
+    /// forcing packs need a geometry region (their cells are the pack's).
+    pub fn build_grid(&self, inputs: &Inputs) -> Result<Grid, String> {
+        match self {
+            WorldConfig::BaseCell(r) => {
+                if !inputs.is_empty() {
+                    return Err(
+                        "forcing packs need a world defined by its geometry pack ({\"geometry\": \"<id>\"})"
+                            .into(),
+                    );
+                }
+                Grid::from_base_cell(r.base_cell, r.resolution).map_err(|e| e.to_string())
+            }
+            WorldConfig::Geometry(r) => {
+                let g = inputs.geometry().ok_or_else(|| {
+                    format!("world needs its geometry pack {} among the inputs", r.geometry)
+                })?;
+                if g.id() != r.geometry {
+                    return Err(format!(
+                        "world names geometry pack {}, but the inputs' geometry pack is {}",
+                        r.geometry,
+                        g.id()
+                    ));
+                }
+                let h3 = g.field("h3")?.raw_u64().ok_or("geometry pack: h3 must be u64")?;
+                Grid::from_h3(g.header().region.resolution, &h3)
+                    .map_err(|e| format!("geometry pack {}: {e}", g.id()))
+            }
+        }
     }
 }
 
@@ -74,6 +140,8 @@ pub struct World {
     /// Population per cell after the last commit.
     pub population: Vec<u64>,
     pub(crate) parts: Vec<Partition>,
+    /// Forcing packs (empty for base-cell worlds).
+    pub inputs: Arc<Inputs>,
     mechanisms: Arc<Vec<Box<dyn Mechanism>>>,
     schedule: Schedule,
     steps_since_balance: u64,
@@ -120,10 +188,22 @@ pub struct Summary {
 }
 
 impl World {
-    /// A fresh world: environment and initial bands drawn from the seed.
+    /// A fresh world without forcing packs: environment and initial bands drawn from
+    /// the seed.
     pub fn new(config: WorldConfig, seed: u64, params: Params) -> Result<World, String> {
+        World::with_inputs(config, seed, params, Inputs::none())
+    }
+
+    /// [`World::new`] with forcing packs (a geometry-pack region and its fields).
+    pub fn with_inputs(
+        config: WorldConfig,
+        seed: u64,
+        params: Params,
+        inputs: impl Into<Arc<Inputs>>,
+    ) -> Result<World, String> {
         params.validate()?;
-        let grid = Arc::new(config.build_grid()?);
+        let inputs = inputs.into();
+        let grid = Arc::new(config.build_grid(&inputs)?);
         let n = grid.len();
         let env = Philox4x32::new(seed, Stream::Environment);
         let span = params.capacity_max - params.capacity_min + 1;
@@ -148,7 +228,7 @@ impl World {
             agents.push(id, cell, params.initial_weight);
         }
         agents.sort_canonical();
-        Ok(World::assemble(config, grid, seed, Tick::EPOCH, params, capacity, birth_counter, agents))
+        Ok(World::assemble(config, grid, inputs, seed, Tick::EPOCH, params, capacity, birth_counter, agents))
     }
 
     /// A world with `bands_per_cell` bands in every cell, at carrying capacity.
@@ -159,7 +239,7 @@ impl World {
         params: Params,
         bands_per_cell: u32,
     ) -> Result<World, String> {
-        let n = config.build_grid()?.len() as u32;
+        let n = config.build_grid(&Inputs::none())?.len() as u32;
         World::filled_cells(config, seed, params, bands_per_cell, 0..n)
     }
 
@@ -186,7 +266,17 @@ impl World {
                 agents.push(id, cell, per_band);
             }
         }
-        Ok(World::assemble(w.config, w.grid, w.seed, w.tick, w.params, w.capacity, birth_counter, agents))
+        Ok(World::assemble(
+            w.config,
+            w.grid,
+            w.inputs,
+            w.seed,
+            w.tick,
+            w.params,
+            w.capacity,
+            birth_counter,
+            agents,
+        ))
     }
 
     /// Builds a world from canonical-order agents (one partition).
@@ -194,6 +284,7 @@ impl World {
     pub(crate) fn assemble(
         config: WorldConfig,
         grid: Arc<Grid>,
+        inputs: Arc<Inputs>,
         seed: u64,
         tick: Tick,
         params: Params,
@@ -219,6 +310,7 @@ impl World {
             birth_counter,
             population,
             parts: vec![part],
+            inputs,
             mechanisms: Arc::new(mechanisms),
             schedule,
             steps_since_balance: 0,
@@ -352,6 +444,7 @@ impl World {
         {
             let sense = Sense {
                 grid: &self.grid,
+                inputs: &self.inputs,
                 capacity: &self.capacity,
                 population: &self.population,
                 tick: self.tick,

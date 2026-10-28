@@ -4,6 +4,7 @@
 //! or HPC node. Results contain only integers and hashes so they compare exactly.
 
 use crate::checkpoint;
+use crate::inputs::{Inputs, PackRef};
 use crate::output::{OutputSpec, Recorder};
 use crate::params::Params;
 use crate::world::{Summary, World, WorldConfig};
@@ -47,6 +48,9 @@ pub struct WorkUnit {
     /// Zarr fields and Parquet tables to record during the run.
     #[serde(default)]
     pub outputs: Option<OutputSpec>,
+    /// Forcing packs, by id (a geometry-pack `world` needs its geometry pack here).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inputs: Vec<PackRef>,
 }
 
 fn default_partitions() -> usize {
@@ -82,10 +86,13 @@ pub fn run_work_unit(
     if wu.format != FORMAT {
         return Err(format!("unsupported work unit format {}", wu.format));
     }
+    let inputs = std::sync::Arc::new(Inputs::load(&wu.inputs, &read)?);
     let mut world = match &wu.start {
-        Start::Initial => World::new(wu.world, wu.seed, wu.params.clone().unwrap_or_default())?,
+        Start::Initial => {
+            World::with_inputs(wu.world.clone(), wu.seed, wu.params.clone().unwrap_or_default(), inputs)?
+        }
         Start::Checkpoint { path, fork } => {
-            let mut w = checkpoint::decode(&read(path)?)?;
+            let mut w = checkpoint::decode_with(&read(path)?, inputs)?;
             if w.config != wu.world {
                 return Err("checkpoint world does not match work unit".into());
             }

@@ -3,7 +3,7 @@
 use oikos_sim::mechanisms::{Fission, Growth, Mechanism};
 use oikos_sim::{Params, World, WorldConfig};
 
-const DENSE: WorldConfig = WorldConfig { base_cell: 22, resolution: 5 };
+const DENSE: WorldConfig = WorldConfig::base_cell(22, 5);
 
 #[test]
 fn growth_alone_never_creates_agents() {

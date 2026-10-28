@@ -197,7 +197,9 @@ as they grow). See [docs/03-engine.md](docs/03-engine.md) §3.4.
 2. Implement `Mechanism`: an honest `spec()` (every component read and written; `after`
    for anything it must follow) and `decide(sense, part, tile)`. Only touch agents in
    `tile`; read shared state only through `Sense`; create agents only via
-   `PartitionView::spawn`.
+   `PartitionView::spawn`. Environmental inputs come from forcing packs via
+   `sense.inputs.field(kind, name)` (declare `Component::Forcing`), never from files or
+   `h3o` geometry.
 3. Use a new `Stream` (appended at the end) for its random draws; count statistics in
    local variables and add them to `part.stats` once per tile (avoids false sharing).
 4. Declare every parameter in the registry (`engine/params/m0-toy.toml`): group, unit,

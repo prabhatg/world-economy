@@ -555,6 +555,7 @@ dependencies = [
 name = "oikos-py"
 version = "0.1.0"
 dependencies = [
+ "oikos-io",
  "oikos-params",
  "oikos-sim",
  "pyo3",

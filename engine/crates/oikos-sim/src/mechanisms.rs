@@ -33,6 +33,8 @@ pub trait Mechanism: Send + Sync {
 /// Read-only world state for the decide phase (the halo in a distributed run).
 pub struct Sense<'a> {
     pub grid: &'a Grid,
+    /// Forcing-pack fields (declare [`Component::Forcing`] to read them).
+    pub inputs: &'a crate::inputs::Inputs,
     pub capacity: &'a [u64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],

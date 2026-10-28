@@ -25,6 +25,7 @@ fn unit(partitions: usize, outputs: Option<OutputSpec>) -> WorkUnit {
         summary_every_years: 100,
         checkpoint_out: None,
         outputs,
+        inputs: vec![],
     }
 }
 

@@ -3,7 +3,7 @@
 //!
 //! Usage:
 //!   oikos run <workunit.json> [-o <result.json>]
-//!   oikos hash <checkpoint>
+//!   oikos hash <checkpoint> [pack...]   (forcing packs the checkpoint was made with)
 //!   oikos bench [--base-cell N] [--res N] [--bands N] [--years N] [--parts N] [--occupied PCT] [--no-timing]
 //!   oikos params    (parameter registry as JSON: units, ranges, priors, sources)
 //!   oikos pack <file>   (forcing pack id, header and per-field value ranges)
@@ -44,7 +44,12 @@ fn run(args: &[String]) -> Result<(), String> {
         }
         Some("hash") => {
             let path = args.get(1).ok_or("hash: missing checkpoint path")?;
-            let world = checkpoint::decode(&read(path)?)?;
+            let packs = args[2..]
+                .iter()
+                .map(|p| oikos_io::pack::Pack::parse(read(p)?).map_err(|e| format!("{p}: {e}")))
+                .collect::<Result<Vec<_>, String>>()?;
+            let inputs = oikos_sim::inputs::Inputs::from_packs(packs)?;
+            let world = checkpoint::decode_with(&read(path)?, inputs)?;
             println!("{}", checkpoint::state_hash(&world));
             Ok(())
         }
@@ -59,7 +64,7 @@ fn run(args: &[String]) -> Result<(), String> {
             println!("{}", oikos_sim::params::registry().to_json());
             Ok(())
         }
-        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint> | oikos bench | oikos params | oikos pack <file>".into()),
+        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint> [pack...] | oikos bench | oikos params | oikos pack <file>".into()),
     }
 }
 
@@ -76,7 +81,7 @@ fn bench(args: &[String]) -> Result<(), String> {
             None => Ok(default),
         }
     };
-    let config = WorldConfig { base_cell: opt("--base-cell", 22)? as u8, resolution: opt("--res", 6)? as u8 };
+    let config = WorldConfig::base_cell(opt("--base-cell", 22)? as u8, opt("--res", 6)? as u8);
     let bands = opt("--bands", 4)? as u32;
     let years = opt("--years", 20)?;
     let parts = opt("--parts", 1)? as usize;
@@ -90,7 +95,7 @@ fn bench(args: &[String]) -> Result<(), String> {
     let since = |t: Option<std::time::Instant>| t.map_or(0.0, |t| t.elapsed().as_secs_f64());
 
     let t0 = clock();
-    let n = config.build_grid()?.len() as u64;
+    let n = config.build_grid(&oikos_sim::inputs::Inputs::none())?.len() as u64;
     let hot = 0..(n * occupied).div_ceil(100) as u32;
     let mut world = World::filled_cells(config, 1, Params::default(), bands, hot)?;
     let setup = since(t0);

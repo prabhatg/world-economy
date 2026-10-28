@@ -7,12 +7,14 @@
 //! - [`checkpoint`]: canonical binary snapshots; their BLAKE3 hash is the state hash
 //!   volunteers' results are validated against.
 //! - [`workunit`]: backend-neutral work units and results (docs/11 §11.2).
+//! - [`inputs`]: the forcing packs a run reads, verified by id (docs/03 §3.8a).
 //!
 //! The M0 mechanism is a toy (logistic growth + band fission and migration); it
 //! exists to exercise the engine, not to model history.
 
 pub mod agents;
 pub mod checkpoint;
+pub mod inputs;
 pub mod mechanisms;
 pub mod output;
 pub mod params;

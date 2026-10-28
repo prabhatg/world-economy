@@ -40,7 +40,8 @@ Calibration code drives the engine in-process through the `oikos` Python module
 `state_hash`, `population()` and `agents()` (NumPy arrays), `checkpoint()` /
 `World.from_checkpoint`, and `fork(seed, params)` for branching ensembles (the
 resampling step of §5.3); plus `run_work_unit` (same result as `oikos run`),
-`registry()` and `sample_params(u)` (unit cube → prior, via `Registry::sample`).
+`registry()` and `sample_params(u)` (unit cube → prior, via `Registry::sample`);
+`World.from_packs(paths, seed=)` runs on a forcing-pack region such as M1.
 The bindings contain no simulation logic and are tested to reproduce the golden hash,
 so an ensemble run from Python is the same computation a volunteer would validate.
 Long runs release the GIL, so a thread pool runs ensemble members in parallel.

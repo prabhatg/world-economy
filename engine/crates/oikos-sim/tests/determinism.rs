@@ -66,6 +66,7 @@ fn fork_diverges_from_parent() {
         summary_every_years: 300,
         checkpoint_out: None,
         outputs: None,
+        inputs: vec![],
     };
     let read = |_: &str| Ok(ckpt.clone());
     let write = |_: &str, _: &[u8]| Ok(());
@@ -88,11 +89,11 @@ fn golden_result() {
 /// Dense world (every cell occupied, many cross-partition migrants).
 #[test]
 fn dense_world_identical_across_partition_counts() {
-    let config = WorldConfig { base_cell: 22, resolution: 5 };
+    let config = WorldConfig::base_cell(22, 5);
     let hashes: Vec<String> = [1, 3, 4, 7]
         .iter()
         .map(|&p| {
-            let mut w = World::filled(config, 1, Params::default(), 3).unwrap();
+            let mut w = World::filled(config.clone(), 1, Params::default(), 3).unwrap();
             for _ in 0..15 {
                 w.step(p);
             }

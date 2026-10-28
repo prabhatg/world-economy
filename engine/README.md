@@ -85,5 +85,11 @@ oikos.registry()                               # same as `oikos params`
 Engine errors raise `ValueError` with the engine's message. `run_years` and
 `run_work_unit` release the GIL, so a thread pool runs independent worlds in parallel.
 
+A work unit can run on a region defined by a geometry pack, naming its forcing packs
+by id (the engine checks each file hashes to its id):
+`"world": {"geometry": "<id>"}, "inputs": [{"id": "<id>", "path": "m1.geometry.oikospack"}]`.
+Build packs with `data/` (`python -m oikos_data build geometry m1-swasia`), inspect them
+with `oikos pack <file>`; in Python, `oikos.World.from_packs([paths], seed=1)`.
+
 A work unit can start from a checkpoint (`"start": {"kind": "checkpoint", "path": "...", "fork": true}`);
 with `fork: true` the run continues under a new seed (and optionally new params), creating a new branch.
