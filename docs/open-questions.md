@@ -36,3 +36,7 @@
 15. Cloud budget envelope per month.
 16. Timeline expectations for M0/M1.
 17. Seeking grants/HPC allocations — when, and with which collaborators?
+23. CHELSA-TraCE21k licence: EnviDat's record (doi:10.16904/envidat.211) gives CC BY-SA
+    4.0 in its licence field and CC BY 2.0 in its description. We follow CC BY-SA 4.0,
+    so the climate pack is ShareAlike, unlike our CC-BY 4.0 default for data
+    (ADR-0025). Ask the dataset maintainers (WSL) which applies.

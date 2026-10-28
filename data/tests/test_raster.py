@@ -53,3 +53,40 @@ def test_input_lock_records_then_enforces(tmp_path):
     with pytest.raises(ValueError, match="a"):
         raster.check_inputs(lock, {"a": "9"}, update=False)
     raster.check_inputs(lock, {"a": "9"}, update=True)
+
+
+def write_strips(path, data, west=40.0, north=36.0):
+    """A strip-organized GeoTIFF (one row per strip), as CHELSA ships."""
+    res = 1.0 / 100
+    profile = dict(driver="GTiff", width=data.shape[1], height=data.shape[0], count=1, dtype="float32",
+                   crs="EPSG:4326", transform=from_origin(west, north, res, res), blockysize=1, compress="deflate")
+    with rasterio.open(path, "w", **profile) as ds:
+        ds.write(data.astype(np.float32), 1)
+
+
+def test_reads_a_window_averaged_over_blocks_and_caches_it(tmp_path, cache):
+    f = tmp_path / "s.tif"
+    data = np.arange(200 * 300, dtype=np.float32).reshape(200, 300)  # 2 x 3 degrees from 40E, 36N
+    write_strips(f, data)
+    t = raster.read_window(str(f), (34.5, 35.43, 40.51, 41.0), 2)
+    # Snapped outward to whole 2x2 blocks of the file grid: rows 56..150, columns 50..100.
+    assert (t.north, t.west) == pytest.approx((35.44, 40.50)) and t.dlat == pytest.approx(0.02)
+    assert t.data.shape == (47, 25) and t.data.dtype == np.float32
+    want = data[56:150, 50:100].reshape(47, 2, 25, 2).mean(axis=(1, 3))
+    np.testing.assert_array_equal(t.data, want)
+    f.unlink()
+    again = raster.read_window(str(f), (34.5, 35.43, 40.51, 41.0), 2)
+    assert raster.fingerprint(again) == raster.fingerprint(t)
+    with pytest.raises(raster.MissingInputs):
+        raster.read_window(str(f), (34.5, 35.0, 40.5, 41.0), 2, offline=True)
+
+
+def test_window_block_means_skip_nan(tmp_path, cache):
+    f = tmp_path / "s.tif"
+    data = np.ones((100, 100), dtype=np.float32)
+    data[0, 0] = 5.0
+    data[0, 1] = data[1, 0] = data[1, 1] = np.nan
+    data[2:4, 2:4] = np.nan
+    write_strips(f, data)
+    t = raster.read_window(str(f), (35.0, 36.0, 40.0, 41.0), 2)
+    assert t.data[0, 0] == 5.0 and np.isnan(t.data[1, 1]) and t.data[1, 2] == 1.0

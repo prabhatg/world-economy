@@ -27,6 +27,12 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   charge of the Copernicus programme by law or by delegation do not incur any liability
   for any use of the Copernicus WorldDEM-90. (doi:10.5270/ESA-c5d3d65; read from AWS
   Open Data.)
+- **CHELSA-TraCE21k v1.0** (climate pack): Karger, D.N., Nobis, M.P., Normand, S.,
+  Graham, C.H., Zimmermann, N.E. (2023), Climate of the Past 19, 439–456; data
+  doi:10.16904/envidat.211 (WSL, EnviDat), licensed under CC BY-SA 4.0. It downscales the
+  CCSM3 TraCE-21ka simulation (Liu et al. 2009, Science 325, 310–314; He 2011). The
+  climate pack is derived from it (aggregated to H3 cells) and shared under the same
+  license.
 - **GDAL** (via rasterio) reads raster data in the pipelines.
 
 ## Volunteers, reviewers, contributors, institutions

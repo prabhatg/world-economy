@@ -43,6 +43,7 @@
 | 0039 | Deterministic performance metric: exact wasm instruction counts (wasmtime fuel, found by bisection) of `oikos bench --no-timing`, instead of callgrind (not on every host) | Accepted |
 | 0040 | M1 region: H3 res-5 cells whose centers lie in 24–42°N, 26–58°E (22,198 cells over base cells 15, 16, 22, 31, 33, 41; includes Cyprus, the paleo-Gulf basin and the Nile valley and delta), chosen offline from a manifest; a run gets its cell list from the geometry pack and uses only H3 topology | Accepted |
 | 0041 | Forcing packs: one little-endian file (magic, canonical JSON header, aligned arrays), identified by its BLAKE3 hash; per-cell static and time-sliced fields with unit, dtype, scale/offset, nodata and sources; packs of a region share a cell-list hash | Accepted |
+| 0042 | M1 climate: CHELSA-TraCE21k v1.0 bioclim (bio1, bio4, bio12, bio15) as per-cell means of 2×2-block-averaged 30″ pixels, land and sea alike, for century slices placed at their midpoint years and interpolated linearly; the pack follows the stricter of the dataset's two licence statements (CC BY-SA 4.0) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -61,6 +62,21 @@ transcendental functions makes it bit-reproducible on x86_64, aarch64 and wasm32
 Converting probabilities to integer thresholds makes every stochastic decision exact.
 GPU vendors and WGSL do not guarantee correctly rounded division/transcendentals, hence
 integer kernels where bitwise validation is needed.
+
+## ADR-0042 rationale (M1 climate)
+
+CHELSA-TraCE21k is the only transient climate reconstruction at ~1 km covering the whole
+M1 window, so terrain-driven contrasts (Zagros foothills against the alluvium) survive
+aggregation to ~250 km² cells. Its four bioclimatic summaries are what the first
+foraging and cultivation mechanisms need (warmth, water, and how seasonal both are);
+monthly fields would cost 12× the bytes for detail those mechanisms do not yet use.
+The files are stored in one-row strips, not tiles, so a region costs whole rows (~58 MB
+per file, ~21 GB for M1 once); 2×2 block means keep the cache at ~2 GB while leaving
+~85 samples per cell. Slices are 100-year means, so a slice is placed at its midpoint
+and the engine interpolates linearly between midpoints; events shorter than a century
+(the 8.2 ka event) are smoothed out, and the climate is a single model run (CCSM3), a
+structural uncertainty to carry into calibration. A seeded weather generator from
+per-cell statistics replaces raw fields later (doc 11 §11.2).
 
 ## Notes
 

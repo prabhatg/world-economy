@@ -11,7 +11,13 @@ Packs so far: M1 geometry (22,198 res-5 cells, ADR-0040) and M1 terrain from
 Copernicus DEM GLO-90 (licence checked 2026-10-28: the GLO-90 "Full, Free & Open"
 licence allows redistributing modified data with its attribution and liability notice,
 which the pack carries), read as cloud-optimized GeoTIFF overviews with every input
-tile fingerprinted in `data/locks/`.
+tile fingerprinted in `data/locks/`. M1 climate comes from CHELSA-TraCE21k v1.0
+(ADR-0042): annual mean temperature, temperature seasonality, annual precipitation and
+precipitation seasonality per cell for 92 century slices (12,050–2,950 BCE midpoints),
+read as row windows of the strip-stored global GeoTIFFs (licence checked 2026-10-28:
+EnviDat lists CC BY-SA 4.0 in its licence field and CC BY 2.0 in its description; we
+follow the stricter, so the climate pack is shared under CC BY-SA 4.0 with its
+attribution; open question 23).
 
 ## Forcing (inputs)
 

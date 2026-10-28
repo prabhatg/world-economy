@@ -1,0 +1,59 @@
+# CHELSA-TraCE21k v1.0: CCSM3 TraCE-21ka climate downscaled to 30 arcsec, 100-year steps.
+dataset = "chelsa-trace21k"
+title = "CHELSA-TraCE21k: downscaled transient temperature and precipitation since the Last Glacial Maximum"
+version = "1.0"
+homepage = "https://www.envidat.ch/dataset/chelsa_trace"
+citation = "Karger, D.N., Nobis, M.P., Normand, S., Graham, C.H., Zimmermann, N.E. (2023). CHELSA-TraCE21k - high-resolution (1 km) downscaled transient temperature and precipitation data since the Last Glacial Maximum. Climate of the Past 19, 439-456. Data: Karger et al. (2020), EnviDat, https://doi.org/10.16904/envidat.211"
+doi = "10.16904/envidat.211"
+notes = """
+Bioclimatic variables (bio1-bio19) per 100-year time slice, as global float32 GeoTIFFs
+(43,200 x 20,880 pixels) stored in deflate-compressed one-row strips, so a region is
+read as whole rows (~10% of each ~550 MB file for M1). Values cover land and sea
+(the paleo coastline moves). File naming: CHELSA_TraCE21k_<var>_<timeID>_V1.0.tif;
+timeID t averages calendar years 100(t-1) to 100t-1 (t = 20 is 1900-1990 CE, t = -100
+is 10,100-10,001 BCE), per Table 4 of the technical specification v1.1 (2023):
+https://www.envidat.ch/dataset/c88baa58-dbae-452c-8c2c-343e4c9fb885/resource/613fcb27-3649-4b5f-8880-984403cccd62/download/chelsa-trace21k_technical_documentation.pdf
+Climate is CCSM3 TraCE-21ka (Liu et al. 2009; He 2011): one model run, 100-year means,
+so short events (8.2 ka) are smoothed or absent.
+"""
+
+[license]
+# EnviDat's license field for this record is CC BY-SA 4.0; its description text says
+# CC BY 2.0. We follow the stricter reading: derived packs carry this attribution and
+# are shared under CC BY-SA 4.0. Both allow redistributing adapted data.
+id = "CC-BY-SA-4.0"
+url = "https://creativecommons.org/licenses/by-sa/4.0/"
+derived_redistribution = true
+attribution = "Contains data derived from CHELSA-TraCE21k v1.0 (Karger et al. 2023, https://doi.org/10.16904/envidat.211), licensed under CC BY-SA 4.0; aggregated to H3 cells by ManyWorlds. Derived data are shared under the same license."
+verified = "2026-10-28"
+
+[access]
+kind = "strip_windows"
+url_template = "https://os.zhdk.cloud.switch.ch/chelsav1/chelsa_trace/bio/CHELSA_TraCE21k_{var}_{time_id}_V1.0.tif"
+block_factor = 2
+# timeIDs -120..-29: slice midpoints 12,050 BCE to 2,950 BCE, bracketing M1 (12,000-3,000 BCE).
+time_ids = [-120, -29]
+
+[coverage]
+spatial = "global, 30 arcsec (land and sea)"
+temporal = "21,000 years before 1990 CE to 1990 CE in 100-year slices"
+
+[[variables]]
+name = "bio01"
+unit = "degC"
+description = "Annual mean temperature: mean of monthly (tasmax + tasmin) / 2."
+
+[[variables]]
+name = "bio04"
+unit = "degC/100"
+description = "Temperature seasonality: standard deviation of monthly mean temperatures x 100."
+
+[[variables]]
+name = "bio12"
+unit = "kg m-2 year-1"
+description = "Annual precipitation (mm per year)."
+
+[[variables]]
+name = "bio15"
+unit = "%"
+description = "Precipitation seasonality: coefficient of variation of monthly precipitation; undefined (NaN) where it never rains."

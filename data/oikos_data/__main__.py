@@ -13,12 +13,13 @@ import json
 import sys
 from pathlib import Path
 
-from . import DATA, geometry, pack, raster, region, terrain
+from . import DATA, climate, geometry, pack, raster, region, terrain
 
 LOCK = DATA / "packs.lock.json"
 BUILDERS = {
     "geometry": lambda r, update=False, offline=False: geometry.build(r),
     "terrain": terrain.build_pack,
+    "climate": climate.build_pack,
 }
 
 

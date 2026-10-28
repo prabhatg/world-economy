@@ -67,6 +67,47 @@ def read_overview(src, factor, offline=False):
     return tile
 
 
+def read_window(src, bounds, factor=1, offline=False):
+    """Band 1 of a GeoTIFF inside `bounds` (south, north, west, east), averaged over
+    `factor` x `factor` blocks of the file's grid (NaN pixels skipped; all-NaN blocks are
+    NaN). For files stored in strips rather than tiles, where only whole rows can be
+    fetched; the window is snapped outward to whole blocks."""
+    f = cache_dir() / "windows" / (hashlib.sha256(f"{src}|{bounds}|{factor}".encode()).hexdigest()[:32] + ".npz")
+    if f.exists():
+        z = np.load(f)
+        north, west, dlat, dlng = z["geo"].tolist()
+        return Tile(z["data"], north, west, dlat, dlng)
+    if offline:
+        raise MissingInputs(f"{src} (window {bounds}) is not cached")
+    import math
+
+    import rasterio
+    from rasterio.windows import Window
+
+    s, n, w, e = bounds
+    path = f"/vsicurl/{src}" if src.startswith(("http://", "https://")) else src
+    with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif"):
+        with rasterio.open(path) as ds:
+            t = ds.transform
+            r0, r1 = (n - t.f) / t.e, (s - t.f) / t.e
+            c0, c1 = (w - t.c) / t.a, (e - t.c) / t.a
+            r0, c0 = (max(0, math.floor(x + 1e-6) // factor * factor) for x in (r0, c0))
+            r1 = min(ds.height // factor * factor, -(-math.ceil(r1 - 1e-6) // factor) * factor)
+            c1 = min(ds.width // factor * factor, -(-math.ceil(c1 - 1e-6) // factor) * factor)
+            data = ds.read(1, window=Window(c0, r0, c1 - c0, r1 - r0)).astype(np.float64)
+    blocks = data.reshape((r1 - r0) // factor, factor, (c1 - c0) // factor, factor)
+    ok = np.isfinite(blocks)
+    count = ok.sum(axis=(1, 3))
+    total = np.where(ok, blocks, 0).sum(axis=(1, 3))
+    mean = np.where(count > 0, total / np.maximum(count, 1), np.nan).astype(np.float32)
+    tile = Tile(mean, t.f + r0 * t.e, t.c + c0 * t.a, -t.e * factor, t.a * factor)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_suffix(".tmp.npz")
+    np.savez_compressed(tmp, data=mean, geo=np.array([tile.north, tile.west, tile.dlat, tile.dlng]))
+    tmp.replace(f)
+    return tile
+
+
 def read_text(url, offline=False):
     """A small text file (e.g. a tile list), cached like rasters."""
     f = cache_dir() / "text" / (hashlib.sha256(url.encode()).hexdigest()[:32] + ".txt")
