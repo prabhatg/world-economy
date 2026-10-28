@@ -1,2 +1,3 @@
 /engine/target/
 *.ckpt
+/engine/.venv/

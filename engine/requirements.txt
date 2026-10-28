@@ -1,0 +1,20 @@
+# Python tools for the gate's output check (scripts/verify-outputs.py): zarr-python and
+# pyarrow read our Zarr v3 fields and Parquet tables as an independent consumer would.
+# Every package is pinned exactly, transitive dependencies included, so every machine
+# verifies against the same readers. `source scripts/env.sh` installs these into
+# engine/.venv. To upgrade: change the direct pins, reinstall, then copy the full
+# `pip freeze` output here.
+
+# Direct
+numpy==2.5.4
+pyarrow==26.0.0
+zarr==3.4.2
+
+# Transitive (from zarr)
+donfig==0.8.1.post1
+google-crc32c==1.9.0
+msgspec==0.22.0
+numcodecs==0.17.1
+packaging==26.3
+PyYAML==6.0.3
+typing_extensions==4.16.0
