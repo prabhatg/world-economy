@@ -35,8 +35,10 @@ scalability**. Verification runs on our own compute (no hosted CI for now).
 
 - `engine/scripts/check.sh` runs format, clippy (`-D warnings`), release and debug
   tests (debug has overflow checks on), the wasm32 test suite under wasmtime, both
-  golden work units (native and wasm), and a dense-world partition-determinism smoke
-  test. It writes `target/check-report.json`.
+  golden work units (native and wasm), the output check (zarr-python, pyarrow), the
+  Python bindings (clippy, maturin build, pytest, the sensitivity example) and a
+  dense-world partition-determinism smoke test. Python steps are skipped with a notice
+  when the venv lacks their tools. It writes `target/check-report.json`.
 - `engine/scripts/check.sh --quick` for the inner loop.
 - Opt-in pre-push hook: `git config core.hooksPath engine/scripts/hooks`.
 - **Cross-host determinism:** run the gate on each machine class (x86_64 / aarch64,

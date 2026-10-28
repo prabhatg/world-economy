@@ -73,7 +73,7 @@ pub struct World {
 }
 
 /// Exact accounting for one step (used by conservation checks).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StepStats {
     pub births: u64,
     pub deaths: u64,

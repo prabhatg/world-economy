@@ -16,8 +16,9 @@ step, golden unchanged); parameter registry with units, ranges, priors, status a
 sources, enforced on every override; Zarr/Parquet outputs, byte-identical native vs
 wasm and verified with zarr-python and pyarrow. Cross-host verified: x86_64 Linux
 and aarch64 macOS (Apple Silicon) give identical golden, wasm and dense hashes.
-Remaining: run the gate on Windows; PyO3 bindings, weighted load
-balancing.
+Python bindings (`oikos` module, PyO3 + maturin, abi3): create, run, fork, checkpoint
+and read worlds, run work units, sample priors; tested in the gate to reproduce the
+golden hash. Remaining: run the gate on Windows; cost-weighted load balancing.
 
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).
 - H3 grid, SoA store with super-individuals and split/merge, phase scheduler,

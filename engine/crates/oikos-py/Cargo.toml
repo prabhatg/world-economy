@@ -1,0 +1,24 @@
+[package]
+name = "oikos-py"
+description = "Python bindings for the Oikos engine: create, run, fork and read worlds from calibration code"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+# Not `oikos`: on Windows its .pdb would collide with the `oikos` CLI's. The Python
+# module is still named `oikos` (#[pymodule] name and pyproject `module-name`).
+name = "oikos_py"
+crate-type = ["cdylib"]
+
+[dependencies]
+oikos-sim.workspace = true
+oikos-params.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+pyo3 = { version = "0.30", features = ["abi3-py310"] }
+
+[lints]
+workspace = true

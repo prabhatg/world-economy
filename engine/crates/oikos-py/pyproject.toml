@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "oikos"
+description = "Python bindings for the Oikos engine (ManyWorlds)"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = ["numpy>=1.22"]
+dynamic = ["version"]
+
+[tool.maturin]
+module-name = "oikos"

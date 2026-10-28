@@ -67,6 +67,17 @@ else
   echo "SKIP python verification: needs zarr, pyarrow, numpy (source scripts/env.sh)"
 fi
 
+step "python bindings: build with maturin, run pytest"
+if "$py" -c "import maturin, pytest, numpy" 2>/dev/null; then
+  PYO3_PYTHON="$py" cargo clippy -p oikos-py --all-targets -- -D warnings
+  VIRTUAL_ENV=$("$py" -c "import sys; print(sys.prefix)") \
+    "$py" -m maturin develop --release --quiet -m crates/oikos-py/Cargo.toml
+  "$py" -m pytest -q python/tests
+  "$py" python/examples/sensitivity.py >/dev/null
+else
+  echo "SKIP python bindings: needs maturin, pytest, numpy (source scripts/env.sh)"
+fi
+
 step "dense determinism smoke (bench hashes across partition counts)"
 h1=$(./target/release/oikos bench --res 5 --years 10 --parts 1 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')
 h7=$(./target/release/oikos bench --res 5 --years 10 --parts 7 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')

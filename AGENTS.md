@@ -21,7 +21,8 @@ volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start wit
 | [README.md](README.md) | Overview, decision summary, index of design docs |
 | [docs/](docs/) | Design documents 01–14, [ADR log](docs/adr/README.md), [open questions](docs/open-questions.md) |
 | [docs/index.html](docs/index.html) | Public website (GitHub Pages from `/docs` on `main`) |
-| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli` |
+| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli`, `oikos-py` (Python bindings) |
+| [engine/python/](engine/python/tests/test_bindings.py) | Python binding tests (pytest) and examples |
 | [engine/params/](engine/params/m0-toy.toml) | Parameter registry: every parameter's unit, range, prior, status and sources |
 | [engine/golden/](engine/golden/) | Golden work unit and its committed result (reproducibility oracle) |
 | [engine/scripts/](engine/scripts/) | `check.sh` (verification gate), `bench.sh`, `compare-reports.sh`, git hooks |
@@ -60,13 +61,22 @@ cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
 scripts/bench.sh               # throughput + scaling sweep -> target/bench.jsonl
 cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
 cargo run --release -p oikos-cli -- params        # registry as JSON
+maturin develop --release -m crates/oikos-py/Cargo.toml   # Python module `oikos` into the venv
+pytest python/tests                               # Python binding tests
 ```
 
-The gate's output check reads our outputs with zarr-python and pyarrow, pinned exactly
-(transitive dependencies included) in `engine/requirements.txt`. `scripts/env.sh`
-installs them into `engine/.venv`, reinstalls when the pins change and activates the
-venv; the gate uses `OIKOS_PYTHON`, else `engine/.venv`, else skips the check with a
-notice. Change a pin only on purpose and commit the full `pip freeze`.
+The gate's Python steps (zarr-python and pyarrow read our outputs; maturin builds the
+bindings and pytest tests them) use tools pinned exactly (transitive dependencies
+included) in `engine/requirements.txt`. `scripts/env.sh` installs them into
+`engine/.venv`, reinstalls when the pins change and activates the venv; the gate uses
+`OIKOS_PYTHON`, else `engine/.venv`, else skips those steps with a notice. Change a pin
+only on purpose and commit the full `pip freeze`.
+
+`oikos-py` links against Python, so it is not a workspace default member: `cargo test`,
+`cargo clippy` and the wasm build skip it, and the gate builds it with maturin. New
+crates must be added to `default-members` in `engine/Cargo.toml`. The bindings are thin
+wrappers: simulation logic belongs in `oikos-sim`, and Python must see the same hashes
+as the CLI.
 
 WebAssembly tests need `wasmtime`; the gate skips them with a notice if it is missing.
 `cargo test` does **not** rebuild the `oikos` binary: run

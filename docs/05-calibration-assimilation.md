@@ -28,6 +28,23 @@ prior (`fixed`, `uniform`, `log_uniform`, `normal`), status (`placeholder`, `lit
 `calibrated`) and sources. The engine embeds it, builds its parameters from it and
 rejects out-of-range overrides in work units and checkpoints. `oikos params` exports
 it as JSON for calibration tools, which sample priors from the same definitions.
+`Registry::sample` maps unit-cube coordinates onto each prior (inverse CDF of uniform
+and log-uniform priors, integers rounded; normal priors to follow) with the engine's
+reproducible math, so a sampler's design points give the same overrides on every host.
+
+## 5.1b Python bindings (implemented)
+
+Calibration code drives the engine in-process through the `oikos` Python module
+(`engine/crates/oikos-py`, PyO3, ADR-0037) instead of shelling out to the CLI:
+`World(base_cell, resolution, seed=, params=)` with `step`, `run_years`, `summary`,
+`state_hash`, `population()` and `agents()` (NumPy arrays), `checkpoint()` /
+`World.from_checkpoint`, and `fork(seed, params)` for branching ensembles (the
+resampling step of §5.3); plus `run_work_unit` (same result as `oikos run`),
+`registry()` and `sample_params(u)` (unit cube → prior, via `Registry::sample`).
+The bindings contain no simulation logic and are tested to reproduce the golden hash,
+so an ensemble run from Python is the same computation a volunteer would validate.
+Long runs release the GIL, so a thread pool runs ensemble members in parallel.
+`engine/python/examples/sensitivity.py` is a minimal parameter sweep.
 
 ## 5.2 Calibration (Mode A — free runs)
 

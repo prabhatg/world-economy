@@ -1,3 +1,5 @@
 /engine/target/
 *.ckpt
 /engine/.venv/
+__pycache__/
+.pytest_cache/
