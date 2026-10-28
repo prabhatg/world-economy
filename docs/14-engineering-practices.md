@@ -42,6 +42,9 @@ scalability**. Verification runs on our own compute (no hosted CI for now).
 - **Cross-host determinism:** run the gate on each machine class (x86_64 / aarch64,
   Linux / macOS / Windows) and compare with
   `engine/scripts/compare-reports.sh report-*.json` — every hash must match.
+- Verified so far (identical `golden_native`, `golden_wasm`, `dense_hash`):
+  `x86_64-unknown-linux-gnu` and `aarch64-apple-darwin` (macOS 27, rev 60840aa).
+  Still to run: Windows.
 - Later the coordinator itself runs test work units on cluster and volunteer hosts
   (dogfooding the validation path).
 

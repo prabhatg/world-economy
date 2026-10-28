@@ -14,8 +14,9 @@ reproduced bit-for-bit on x86_64 and wasm32; pluggable mechanisms with a validat
 multi-rate schedule and cache-tiled decide phase (no performance cost vs. the hard-coded
 step, golden unchanged); parameter registry with units, ranges, priors, status and
 sources, enforced on every override; Zarr/Parquet outputs, byte-identical native vs
-wasm and verified with zarr-python and pyarrow. Remaining: run the gate on aarch64,
-macOS and Windows hosts; PyO3 bindings, weighted load
+wasm and verified with zarr-python and pyarrow. Cross-host verified: x86_64 Linux
+and aarch64 macOS (Apple Silicon) give identical golden, wasm and dense hashes.
+Remaining: run the gate on Windows; PyO3 bindings, weighted load
 balancing.
 
 - Rust workspace skeleton (core, grid, store, sched, io, params, sim, py).
