@@ -44,9 +44,12 @@ Key design documents by topic:
 ## Commands
 
 All engine commands run from `engine/`. The Rust toolchain is pinned in
-`engine/rust-toolchain.toml` (includes `wasm32-wasip1`, rustfmt, clippy).
+`engine/rust-toolchain.toml` (includes `wasm32-wasip1`, rustfmt, clippy). One-time
+tools: [rustup](https://rustup.rs) and `wasmtime` (`brew install wasmtime`, or
+`cargo install wasmtime-cli --locked`).
 
 ```sh
+source engine/scripts/env.sh   # per shell: cargo on PATH, activates the pinned Python venv
 cd engine
 scripts/check.sh --quick       # inner loop: fmt, clippy -D warnings, release tests
 scripts/check.sh               # full gate: + debug tests, wasm tests, golden runs, partition determinism
@@ -59,13 +62,15 @@ cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target
 cargo run --release -p oikos-cli -- params        # registry as JSON
 ```
 
-The gate's output check runs zarr-python and pyarrow when available; point
-`OIKOS_PYTHON` at a Python with `zarr`, `pyarrow` and `numpy` (e.g. a venv), otherwise
-it is skipped with a notice.
+The gate's output check reads our outputs with zarr-python and pyarrow, pinned exactly
+(transitive dependencies included) in `engine/requirements.txt`. `scripts/env.sh`
+installs them into `engine/.venv`, reinstalls when the pins change and activates the
+venv; the gate uses `OIKOS_PYTHON`, else `engine/.venv`, else skips the check with a
+notice. Change a pin only on purpose and commit the full `pip freeze`.
 
-WebAssembly tests need `wasmtime` (`cargo install wasmtime-cli --locked`); the gate
-skips them with a notice if it is missing. `cargo test` does **not** rebuild the
-`oikos` binary: run `cargo build --release -p oikos-cli` before benchmarking.
+WebAssembly tests need `wasmtime`; the gate skips them with a notice if it is missing.
+`cargo test` does **not** rebuild the `oikos` binary: run
+`cargo build --release -p oikos-cli` before benchmarking.
 
 There is **no hosted CI**. The gate runs on our own machines
 ([ADR-0029](docs/adr/README.md)). Do not add GitHub Actions workflows.

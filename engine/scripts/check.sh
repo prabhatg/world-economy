@@ -60,10 +60,11 @@ if [[ "$wasm_hash" != "skipped" ]]; then
   diff -r target/example-outputs-native target/example-outputs
 fi
 py=${OIKOS_PYTHON:-python3}
+[[ -z "${OIKOS_PYTHON:-}" && -x .venv/bin/python ]] && py=.venv/bin/python
 if "$py" -c "import zarr, pyarrow, numpy" 2>/dev/null; then
   "$py" scripts/verify-outputs.py target/example-result.json
 else
-  echo "SKIP python verification: needs zarr, pyarrow, numpy (set OIKOS_PYTHON to a venv python)"
+  echo "SKIP python verification: needs zarr, pyarrow, numpy (source scripts/env.sh)"
 fi
 
 step "dense determinism smoke (bench hashes across partition counts)"

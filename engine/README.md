@@ -26,6 +26,10 @@ Southwest Asia H3 base cell). It exists to exercise the engine.
 
 ## Verification (test-driven; runs on our own compute)
 
+Needs [rustup](https://rustup.rs) and `wasmtime` (`brew install wasmtime`). Then, once
+per shell, `source scripts/env.sh`: it puts cargo on PATH, installs the pinned Python
+readers (`requirements.txt`) into `.venv` for the gate's output check, and activates it.
+
 ```sh
 scripts/check.sh            # full gate: fmt, clippy, tests (release+debug, native+wasm), golden, determinism
 scripts/check.sh --quick    # inner loop
@@ -41,7 +45,7 @@ See [docs/14-engineering-practices.md](../docs/14-engineering-practices.md).
 ```sh
 # Run with outputs (Zarr fields + Parquet tables) and verify them with zarr-python/pyarrow
 cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
-python3 scripts/verify-outputs.py target/example-result.json   # needs zarr, pyarrow, numpy
+python scripts/verify-outputs.py target/example-result.json   # venv from source scripts/env.sh
 cargo run --release -p oikos-cli -- bench --res 6 --years 20 --parts 4
 cargo test --release
 cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json
