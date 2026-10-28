@@ -1,0 +1,38 @@
+# Copernicus DEM GLO-90 (WorldDEM-90): global 90 m digital surface model.
+dataset = "copernicus-dem-glo90"
+title = "Copernicus DEM GLO-90 (Copernicus WorldDEM-90)"
+version = "2022_1"
+homepage = "https://registry.opendata.aws/copernicus-dem/"
+citation = "European Space Agency, Sinergise (2021). Copernicus Global Digital Elevation Model. Distributed by OpenTopography / AWS Open Data."
+doi = "10.5270/ESA-c5d3d65"
+notes = """
+Digital surface model (heights include vegetation and buildings), referenced to the
+EGM2008 geoid. Tiles exist only where there is land; within tiles, open sea is exactly
+0 m. Read from AWS Open Data as cloud-optimized GeoTIFFs at 1/4 resolution (~360 m).
+"""
+
+[license]
+id = "Copernicus-WorldDEM-90-FFO"
+url = "https://dataspace.copernicus.eu/sites/default/files/media/files/2025-06/copernicus_contributing_mission_data_access_v2_cop_dem_licenses.pdf"
+# "Licence for COP-DEM-GLO-90-F Global 90m Full, Free & Open", Art. 4: reproduction,
+# distribution, communication to the public, adaptation, modification and combination
+# with other data, free of charge. Art. 6(b) notice for modified data, 6(c) liability
+# sentence for anyone distributing it, 6(e) subsequent users are bound by both.
+derived_redistribution = true
+attribution = "Produced using Copernicus WorldDEM-90 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-90."
+verified = "2026-10-28"
+
+[access]
+kind = "cog_tiles"
+tile_list = "https://copernicus-dem-90m.s3.amazonaws.com/tileList.txt"
+url_template = "https://copernicus-dem-90m.s3.amazonaws.com/{name}/{name}.tif"
+overview_factor = 4
+
+[coverage]
+spatial = "global land, 1-degree tiles"
+temporal = "2011-2015 acquisitions (TanDEM-X); a modern surface used as a proxy for Holocene terrain"
+
+[[variables]]
+name = "elevation"
+unit = "m"
+description = "Surface height above the EGM2008 geoid."

@@ -7,7 +7,11 @@ Licenses must be checked per dataset before redistribution; the repo stores
 including whether derived data may be redistributed and when that was checked;
 citation; access; coverage; variables and units) and the Python pipelines that build
 forcing packs (doc 3 §3.8a), with every pack id locked in `data/packs.lock.json`.
-First pack: M1 geometry (22,198 res-5 cells, ADR-0040).
+Packs so far: M1 geometry (22,198 res-5 cells, ADR-0040) and M1 terrain from
+Copernicus DEM GLO-90 (licence checked 2026-10-28: the GLO-90 "Full, Free & Open"
+licence allows redistributing modified data with its attribution and liability notice,
+which the pack carries), read as cloud-optimized GeoTIFF overviews with every input
+tile fingerprinted in `data/locks/`.
 
 ## Forcing (inputs)
 

@@ -45,8 +45,11 @@ class Builder:
         self.time_ = {"calendar_year": years, "rule": rule}
         return self
 
-    def source(self, *, dataset, version, license, citation, manifest_sha256):
-        self.sources.append(dict(dataset=dataset, version=version, license=license, citation=citation, manifest_sha256=manifest_sha256))
+    def source(self, *, dataset, version, license, citation, manifest_sha256, attribution=None):
+        s = dict(dataset=dataset, version=version, license=license, citation=citation, manifest_sha256=manifest_sha256)
+        if attribution is not None:
+            s["attribution"] = attribution  # notice the dataset's license requires on derived data
+        self.sources.append(s)
         return self
 
     def field(self, name, unit, description, values, *, scale=1.0, offset=0.0, nodata=None):

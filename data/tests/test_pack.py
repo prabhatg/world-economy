@@ -45,6 +45,13 @@ def test_values_round_trip_with_scale_offset_and_nodata():
     np.testing.assert_array_equal(p.raw("elev"), [20, 65535, 40])
 
 
+def test_sources_carry_attribution_only_when_given():
+    b = pack.Builder("terrain", pack.region("test", 5, H3))
+    b.source(dataset="d", version="1", license="L", citation="C", manifest_sha256="00" * 32, attribution="produced using X")
+    assert pack.read(b.build()).header["sources"][0]["attribution"] == "produced using X"
+    assert "attribution" not in pack.read(sample()).header["sources"][0]
+
+
 def test_builder_rejects_inconsistent_fields():
     b = pack.Builder("terrain", pack.region("test", 5, H3))
     with pytest.raises(ValueError, match="3 cells"):

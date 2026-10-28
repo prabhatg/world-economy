@@ -86,6 +86,9 @@ pub struct Source {
     pub license: String,
     pub citation: String,
     pub manifest_sha256: String,
+    /// Notice the dataset's license requires on derived data.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attribution: Option<String>,
 }
 
 /// What a field means; the builder adds its type and placement.

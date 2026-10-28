@@ -174,7 +174,8 @@ host (ADR-0041):
 - **Header:** `format`, `kind`, `region` (`name`, `resolution`, `cells`, and
   `cells_hash`, the BLAKE3 of the ascending H3 indices as little-endian `u64`), `time`
   (ascending `calendar_year` list and the rule `step` or `linear`), `fields`, `sources`
-  (dataset, version, license, citation, manifest hash) and `builder` (tool, git rev).
+  (dataset, version, license, citation, manifest hash, and the `attribution` notice the
+  license requires, if any) and `builder` (tool, format).
   Keys are sorted, without insignificant whitespace, so a header has one encoding.
 - **Fields:** `name`, `unit`, `description`, `dtype` (`u8`…`u64`, `i16`…`i64`, `f32`,
   `f64`), `dims` (`["cell"]` or `["time", "cell"]`, time-major), `scale_factor` and

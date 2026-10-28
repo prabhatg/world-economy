@@ -1,7 +1,7 @@
 """Build and check forcing packs.
 
     python -m oikos_data build <kind> <region> [--out DIR] [--update-lock]
-    python -m oikos_data check        # rebuild every locked pack, compare ids
+    python -m oikos_data check        # rebuild every locked pack from cached inputs, compare ids
 
 Packs go to data/build/ (not committed). data/packs.lock.json records each pack's id:
 a build that differs from the lock fails unless --update-lock says the change is on
@@ -13,25 +13,28 @@ import json
 import sys
 from pathlib import Path
 
-from . import DATA, geometry, pack, region
+from . import DATA, geometry, pack, raster, region, terrain
 
 LOCK = DATA / "packs.lock.json"
-BUILDERS = {"geometry": geometry.build}
+BUILDERS = {
+    "geometry": lambda r, update=False, offline=False: geometry.build(r),
+    "terrain": terrain.build_pack,
+}
 
 
 def load_lock():
     return json.loads(LOCK.read_text()) if LOCK.exists() else {}
 
 
-def build(kind, region_name):
+def build(kind, region_name, update=False, offline=False):
     if kind not in BUILDERS:
         raise SystemExit(f"unknown pack kind {kind} (known: {', '.join(BUILDERS)})")
-    data = BUILDERS[kind](region.load(region_name))
+    data = BUILDERS[kind](region.load(region_name), update=update, offline=offline)
     return data, pack.read(data).id
 
 
 def cmd_build(args):
-    data, pid = build(args.kind, args.region)
+    data, pid = build(args.kind, args.region, update=args.update_lock)
     key = f"{args.region}/{args.kind}"
     lock = load_lock()
     locked = lock.get(key, {}).get("id")
@@ -50,7 +53,11 @@ def cmd_check(_args):
     bad = 0
     for key, want in sorted(load_lock().items()):
         region_name, kind = key.split("/")
-        _, pid = build(kind, region_name)
+        try:
+            _, pid = build(kind, region_name, offline=True)
+        except raster.MissingInputs as e:
+            print(f"{key:32s} SKIP (inputs not cached: {e}; run build to fetch)")
+            continue
         ok = pid == want["id"]
         bad += not ok
         print(f"{key:32s} {pid[:16]} {'OK' if ok else 'MISMATCH (lock ' + want['id'][:16] + ')'}")

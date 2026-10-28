@@ -27,6 +27,7 @@ fn sample() -> Vec<u8> {
         license: "CC-BY-4.0".into(),
         citation: "Test (2026)".into(),
         manifest_sha256: "00".repeat(32),
+        attribution: None,
     });
     b.field(
         FieldSpec { scale: 0.5, offset: -10.0, nodata: Some(65535), ..field("elev", Dims::Cell) },
@@ -172,6 +173,24 @@ fn malformed_packs_are_rejected_with_a_reason() {
             .contains("ascending")
     );
     assert!(err(with_header(&good, |h| h["time"] = serde_json::Value::Null)).contains("time"));
+}
+
+#[test]
+fn sources_may_carry_required_attribution() {
+    let mut b = PackBuilder::new("terrain", region());
+    b.source(Source {
+        dataset: "dem".into(),
+        version: "1".into(),
+        license: "L".into(),
+        citation: "C".into(),
+        manifest_sha256: "00".repeat(32),
+        attribution: Some("produced using X".into()),
+    });
+    let p = Pack::parse(b.build()).unwrap();
+    assert_eq!(p.header().sources[0].attribution.as_deref(), Some("produced using X"));
+    assert_eq!(p.summary()["sources"][0]["attribution"], "produced using X");
+    let plain = Pack::parse(sample()).unwrap();
+    assert!(plain.header().sources[0].attribution.is_none());
 }
 
 #[test]

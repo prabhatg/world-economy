@@ -1,7 +1,8 @@
 # Python tools for the gate: zarr-python and pyarrow read our Zarr v3 fields and Parquet
 # tables as an independent consumer would (scripts/verify-outputs.py); maturin builds the
-# Python bindings (crates/oikos-py) and pytest runs their tests (python/tests); h3 and
-# blake3 run the data pipelines (../data: regions, geometry, forcing packs).
+# Python bindings (crates/oikos-py) and pytest runs their tests (python/tests); h3,
+# blake3 and rasterio (GDAL) run the data pipelines (../data: regions, geometry, rasters,
+# forcing packs).
 # Every package is pinned exactly, transitive dependencies included, so every machine
 # verifies with the same tools. `source scripts/env.sh` installs these into
 # engine/.venv. To upgrade: change the direct pins, reinstall, then copy the full
@@ -14,6 +15,7 @@ maturin==1.15.0
 numpy==2.5.4
 pyarrow==26.0.0
 pytest==9.2.0
+rasterio==1.5.2
 zarr==3.4.2
 
 # Transitive (from zarr)
@@ -24,6 +26,13 @@ numcodecs==0.17.1
 packaging==26.3
 PyYAML==6.0.3
 typing_extensions==4.16.0
+
+# Transitive (from rasterio)
+affine==3.0.1
+attrs==26.1.0
+certifi==2026.10.23
+click==8.5.0
+pyparsing==3.3.3
 
 # Transitive (from pytest)
 iniconfig==2.3.1

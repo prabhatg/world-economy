@@ -37,6 +37,12 @@ faster on hotspot worlds, results unchanged), and an exact instruction-count met
   aarch64 / wasm32; fork/restore works; a work unit runs in a browser tab.
 
 ## M1 — Neolithic Southwest Asia (12,000–3,000 BCE)
+
+**Status:** started. Region chosen (ADR-0040); forcing-pack format and engine inputs
+(ADR-0041: worlds on a geometry-pack region, work units and checkpoints naming their
+packs); `data/` pipelines with locked pack ids; geometry and terrain packs for M1.
+Work items are GitHub issues under the M1 milestone.
+
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers
   in 24–42°N, 26–58°E, 22,198 cells incl. Cyprus, the paleo-Gulf basin and the Nile valley (ADR-0040).
 - Forcing: CHELSA-TraCE21k climate, sea level, terrain, hydrology, soils.
