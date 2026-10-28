@@ -40,8 +40,9 @@ faster on hotspot worlds, results unchanged), and an exact instruction-count met
 
 **Status:** started. Region chosen (ADR-0040); forcing-pack format and engine inputs
 (ADR-0041: worlds on a geometry-pack region, work units and checkpoints naming their
-packs); `data/` pipelines with locked pack ids; geometry, terrain and climate
-(CHELSA-TraCE21k, ADR-0042) packs for M1.
+packs); `data/` pipelines with locked pack ids; geometry, terrain, climate
+(CHELSA-TraCE21k, ADR-0042) and coastline (ADR-0043: moving coastlines; flooded cells
+are uninhabitable) packs for M1.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

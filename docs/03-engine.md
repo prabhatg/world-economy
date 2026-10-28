@@ -202,8 +202,10 @@ and one region. Mechanisms read fields through `Sense::inputs` and declare
 the geometry pack and all input ids, so they restore only with those packs;
 base-cell checkpoints keep version 1 byte for byte (golden unchanged). Python:
 `oikos.World.from_packs(paths, seed=...)`, `World.from_checkpoint(data, packs=...)`.
-M1 packs: geometry and terrain (static) and climate (92 century slices × 4 fields,
-~16 MB, `linear`; ADR-0042).
+M1 packs: geometry and terrain (static), climate (92 century slices × 4 fields,
+~16 MB, `linear`; ADR-0042) and coastline (`land_fraction` per slice, ~4 MB). With a
+`coastline` pack, `World::habitable` (also `Sense::habitable`) marks the cells with
+land in the current year, rebuilt each step from the pack and the tick (ADR-0043).
 
 ## 3.9 Engineering practices
 

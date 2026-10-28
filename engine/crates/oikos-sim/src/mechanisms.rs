@@ -35,6 +35,11 @@ pub struct Sense<'a> {
     pub grid: &'a Grid,
     /// Forcing-pack fields (declare [`Component::Forcing`] to read them).
     pub inputs: &'a crate::inputs::Inputs,
+    /// Whether each cell is habitable now (see [`crate::inputs::Inputs::habitable_into`]);
+    /// derived from forcing, so readers declare [`Component::Forcing`].
+    pub habitable: &'a [bool],
+    /// Whether a coastline pack restricts `habitable` (false: every cell is habitable).
+    pub coastline: bool,
     pub capacity: &'a [u64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],
@@ -75,7 +80,29 @@ impl PartitionView<'_> {
 
 /// The M0 toy mechanisms, configured from `params`, in registration order.
 pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
-    vec![Box::new(Growth::from_params(params)), Box::new(Fission::from_params(params))]
+    vec![
+        Box::new(Growth::from_params(params)),
+        Box::new(Fission::from_params(params)),
+        Box::new(Inundation::from_params(params)),
+    ]
+}
+
+/// The least crowded of `cells` by N/K (the first on ties), compared exactly as
+/// N_a K_b < N_b K_a.
+fn least_crowded(sense: &Sense<'_>, cells: impl IntoIterator<Item = u32>) -> Option<u32> {
+    let crowd = |c: u32| (sense.population[c as usize] as u128, sense.capacity[c as usize] as u128);
+    let mut best: Option<(u32, u128, u128)> = None;
+    for c in cells {
+        let (n, k) = crowd(c);
+        if best.is_none_or(|(_, bn, bk)| n * bk < bn * k) {
+            best = Some((c, n, k));
+        }
+    }
+    best.map(|(c, _, _)| c)
+}
+
+fn habitable_neighbors<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u32> + Clone + 'a {
+    sense.grid.neighbors(cell).iter().copied().filter(|&c| sense.habitable[c as usize])
 }
 
 /// Logistic growth toward each cell's carrying capacity: dw = r w (1 - N/K),
@@ -161,26 +188,16 @@ impl Fission {
         id: EntityId,
         cell: u32,
     ) -> u32 {
-        let ns = sense.grid.neighbors(cell);
-        if ns.is_empty() {
+        let ns = habitable_neighbors(sense, cell);
+        let open = ns.clone().count();
+        if open == 0 {
             return cell;
         }
         let draws = rng.block(id.0, sense.tick.0, 0);
         if explore.hit(draws[0]) {
-            return ns[(((draws[1] as u64) * (ns.len() as u64)) >> 32) as usize];
+            return ns.clone().nth((((draws[1] as u64) * (open as u64)) >> 32) as usize).unwrap();
         }
-        // Compare N_a / K_a < N_b / K_b exactly as N_a K_b < N_b K_a.
-        let crowd = |c: u32| (sense.population[c as usize] as u128, sense.capacity[c as usize] as u128);
-        let mut best = cell;
-        let (mut bn, mut bk) = crowd(cell);
-        for &c in ns {
-            let (n, k) = crowd(c);
-            if n * bk < bn * k {
-                best = c;
-                (bn, bk) = (n, k);
-            }
-        }
-        best
+        least_crowded(sense, std::iter::once(cell).chain(ns)).unwrap()
     }
 }
 
@@ -189,7 +206,7 @@ impl Mechanism for Fission {
         MechanismSpec {
             name: "fission",
             period_ticks: self.period_ticks,
-            reads: vec![Component::Population, Component::Capacity],
+            reads: vec![Component::Population, Component::Capacity, Component::Forcing],
             writes: vec![Component::AgentWeight, Component::AgentSpawn],
             after: self.after.clone(),
         }
@@ -207,11 +224,15 @@ impl Mechanism for Fission {
             if w < self.threshold {
                 continue;
             }
+            let cell = part.agents.cell[i];
+            // Bands the sea has flooded do not split; inundation moves them this step.
+            if !sense.habitable[cell as usize] {
+                continue;
+            }
             let id = part.agents.id[i];
             if !split.hit(fission_rng.u32(id.0, t, 0, 0)) {
                 continue;
             }
-            let cell = part.agents.cell[i];
             let take = w / 2;
             let half = Agents::split_weight(&mut w, take);
             part.agents.weight[i] = w;
@@ -219,5 +240,54 @@ impl Mechanism for Fission {
             let dest = self.destination(sense, &migration_rng, explore, id, cell);
             part.spawn(cell, dest, half);
         }
+    }
+}
+
+/// Bands in a cell the sea has flooded move to the least crowded habitable neighbor
+/// (by N/K) as new agents born there, or are lost if no neighbor is habitable. A
+/// res-5 cell floods only when none of it is land, so a neighbor is usually open.
+/// Without a coastline pack every cell is habitable and this does nothing.
+#[derive(Clone, Debug)]
+pub struct Inundation {
+    pub period_ticks: u64,
+    pub after: Vec<&'static str>,
+}
+
+impl Inundation {
+    pub fn from_params(p: &Params) -> Inundation {
+        Inundation { period_ticks: p.period_ticks, after: vec!["growth", "fission"] }
+    }
+}
+
+impl Mechanism for Inundation {
+    fn spec(&self) -> MechanismSpec {
+        MechanismSpec {
+            name: "inundation",
+            period_ticks: self.period_ticks,
+            reads: vec![Component::Population, Component::Capacity, Component::Forcing],
+            writes: vec![Component::AgentWeight, Component::AgentSpawn],
+            after: self.after.clone(),
+        }
+    }
+
+    fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
+        if !sense.coastline {
+            return;
+        }
+        let mut lost = 0;
+        for i in tile {
+            let (cell, w) = (part.agents.cell[i], part.agents.weight[i]);
+            if sense.habitable[cell as usize] || w == 0 {
+                continue;
+            }
+            part.agents.weight[i] = 0;
+            match least_crowded(sense, habitable_neighbors(sense, cell)) {
+                Some(dest) => {
+                    part.spawn(cell, dest, w);
+                }
+                None => lost += w,
+            }
+        }
+        part.stats.deaths += lost;
     }
 }

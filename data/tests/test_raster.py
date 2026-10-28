@@ -90,3 +90,18 @@ def test_window_block_means_skip_nan(tmp_path, cache):
     write_strips(f, data)
     t = raster.read_window(str(f), (35.0, 36.0, 40.0, 41.0), 2)
     assert t.data[0, 0] == 5.0 and np.isnan(t.data[1, 1]) and t.data[1, 2] == 1.0
+
+
+def test_window_nodata_is_nan_and_valid_fractions(tmp_path, cache):
+    f = tmp_path / "m.tif"
+    data = np.full((100, 100), 7, dtype=np.int16)
+    data[0, :3] = -32768  # sea
+    profile = dict(driver="GTiff", width=100, height=100, count=1, dtype="int16", nodata=-32768,
+                   crs="EPSG:4326", transform=from_origin(40.0, 36.0, 0.01, 0.01), blockysize=1, compress="deflate")
+    with rasterio.open(f, "w", **profile) as ds:
+        ds.write(data, 1)
+    mean = raster.read_window(str(f), (35.0, 36.0, 40.0, 41.0), 2)
+    assert mean.data[0, 0] == 7 and mean.data[0, 1] == 7
+    land = raster.read_window(str(f), (35.0, 36.0, 40.0, 41.0), 2, valid=True)
+    assert land.data[0, 0] == 0.5 and land.data[0, 1] == 0.75 and land.data[0, 2] == 1.0
+    assert raster.fingerprint(land) != raster.fingerprint(mean)

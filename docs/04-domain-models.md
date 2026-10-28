@@ -11,6 +11,10 @@ enters the model, and the starting mechanisms.
   (Younger Dryas, 8.2 ka, 4.2 ka events, Little Ice Age) come from data, not scripts.
 - **Sea level & coastlines:** glacial isostatic adjustment reconstructions
   (Doggerland, Sunda shelf, Persian Gulf flooding).
+  *Implemented (M1):* a `coastline` pack gives each cell's land fraction per century;
+  cells with none are uninhabitable. Bands start on land, fission never sends
+  daughters to the sea, and the `inundation` mechanism moves bands out of cells as
+  they flood (to the least crowded habitable neighbor, or they are lost). ADR-0043.
 - **Volcanism & solar forcing:** eruption records (aerosol effects on harvests).
 - **Hydrology:** rivers, floodplains, aquifers, irrigation potential.
 - **Soils & terrain:** fertility, erosion, salinization (feedback from irrigation).

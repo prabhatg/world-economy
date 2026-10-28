@@ -5,9 +5,15 @@
 //! geometry pack, and each kind appears once, so a mechanism asks for `("terrain",
 //! "elev")` without ambiguity. The sorted ids are part of run identity and are recorded
 //! in checkpoints, so a run can only resume with the packs it started with.
+//!
+//! A `coastline` pack's `land_fraction` decides which cells are habitable in each year
+//! (ADR-0043); without one, every cell is.
 
 use oikos_io::pack::{FieldView, Pack};
 use serde::{Deserialize, Serialize};
+
+/// Pack kind and field holding each cell's land fraction over time.
+pub const COASTLINE: (&str, &str) = ("coastline", "land_fraction");
 
 /// A pack named by id, with where this host finds its bytes.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -63,7 +69,11 @@ impl Inputs {
                 ));
             }
         }
-        Ok(Inputs { packs })
+        let inputs = Inputs { packs };
+        if inputs.pack(COASTLINE.0).is_ok() {
+            inputs.field(COASTLINE.0, COASTLINE.1)?;
+        }
+        Ok(inputs)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -84,6 +94,22 @@ impl Inputs {
             .iter()
             .find(|p| p.header().kind == kind)
             .ok_or_else(|| format!("no {kind} pack among the inputs"))
+    }
+
+    /// Whether each of `out.len()` cells is habitable in `calendar_year`: it has land
+    /// (land fraction above zero, interpolated under the pack's time rule), or there is
+    /// no coastline pack. Returns whether there is one.
+    pub fn habitable_into(&self, calendar_year: i64, out: &mut [bool]) -> bool {
+        let Ok(coast) = self.pack(COASTLINE.0) else {
+            out.fill(true);
+            return false;
+        };
+        let land = coast.field(COASTLINE.1).expect("validated in from_packs");
+        let s = coast.slice_at(calendar_year);
+        for (c, h) in out.iter_mut().enumerate() {
+            *h = land.at(s, c).is_some_and(|f| f > 0.0);
+        }
+        true
     }
 
     /// Field `name` of the pack of `kind`.

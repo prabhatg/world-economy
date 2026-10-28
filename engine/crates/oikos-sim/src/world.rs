@@ -142,6 +142,10 @@ pub struct World {
     pub(crate) parts: Vec<Partition>,
     /// Forcing packs (empty for base-cell worlds).
     pub inputs: Arc<Inputs>,
+    /// Whether each cell is habitable this step (land under the coastline pack; all
+    /// cells without one). Derived from `inputs` and `tick`, so never checkpointed.
+    pub habitable: Vec<bool>,
+    coastline: bool,
     mechanisms: Arc<Vec<Box<dyn Mechanism>>>,
     schedule: Schedule,
     steps_since_balance: u64,
@@ -217,11 +221,21 @@ impl World {
 
         let mut birth_counter = vec![0; n];
         let mut agents = Agents::default();
-        // Initial bands cluster around one seed-chosen cell and its neighbors.
+        // Initial bands cluster around one seed-chosen habitable cell and its habitable
+        // neighbors.
+        let mut habitable = vec![true; n];
+        inputs.habitable_into(Tick::EPOCH.calendar_year(), &mut habitable);
+        let land: Vec<u32> = (0..n as u32).filter(|&c| habitable[c as usize]).collect();
+        if land.is_empty() {
+            return Err(format!(
+                "no habitable cell in {}: the coastline pack has no land at the start",
+                Tick::EPOCH.calendar_year()
+            ));
+        }
         let init = Philox4x32::new(seed, Stream::Initialization);
-        let center = init.below(0, 0, 0, 0, n as u32);
+        let center = land[init.below(0, 0, 0, 0, land.len() as u32) as usize];
         let mut home: Vec<u32> = vec![center];
-        home.extend_from_slice(grid.neighbors(center));
+        home.extend(grid.neighbors(center).iter().filter(|&&c| habitable[c as usize]));
         for b in 0..params.initial_bands {
             let cell = home[init.below(1, 0, b, 0, home.len() as u32) as usize];
             let id = next_id(&mut birth_counter, cell);
@@ -298,6 +312,8 @@ impl World {
             population[c as usize] += w;
         }
         let part = Partition { cells: 0..n as u32, agents, ..Partition::default() };
+        let mut habitable = vec![true; n];
+        let coastline = inputs.habitable_into(tick.calendar_year(), &mut habitable);
         let mechanisms = mechanisms::defaults(&params);
         let schedule = schedule_of(&mechanisms).expect("default mechanisms form a valid schedule");
         World {
@@ -311,6 +327,8 @@ impl World {
             population,
             parts: vec![part],
             inputs,
+            habitable,
+            coastline,
             mechanisms: Arc::new(mechanisms),
             schedule,
             steps_since_balance: 0,
@@ -440,11 +458,17 @@ impl World {
         let ranges: Vec<Range<u32>> = self.parts.iter().map(|p| p.cells.clone()).collect();
         let nparts = ranges.len();
 
+        if self.coastline {
+            self.inputs.habitable_into(self.tick.calendar_year(), &mut self.habitable);
+        }
+
         // Sense + decide (parallel over partitions), running due mechanisms in order.
         {
             let sense = Sense {
                 grid: &self.grid,
                 inputs: &self.inputs,
+                habitable: &self.habitable,
+                coastline: self.coastline,
                 capacity: &self.capacity,
                 population: &self.population,
                 tick: self.tick,

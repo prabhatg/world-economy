@@ -17,7 +17,9 @@ precipitation seasonality per cell for 92 century slices (12,050–2,950 BCE mid
 read as row windows of the strip-stored global GeoTIFFs (licence checked 2026-10-28:
 EnviDat lists CC BY-SA 4.0 in its licence field and CC BY 2.0 in its description; we
 follow the stricter, so the climate pack is shared under CC BY-SA 4.0 with its
-attribution; open question 23).
+attribution; open question 23). The coastline pack (ADR-0043) uses the same dataset's
+paleo-DEM ocean mask per slice; inland waters (Caspian, lakes, Sea of Marmara) still
+count as land until hydrology adds a lake mask.
 
 ## Forcing (inputs)
 

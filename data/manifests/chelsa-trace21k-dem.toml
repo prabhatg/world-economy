@@ -1,0 +1,43 @@
+# CHELSA-TraCE21k v1.0 paleo-orography: land and sea per 100-year slice.
+dataset = "chelsa-trace21k-dem"
+title = "CHELSA-TraCE21k paleo-orography (dem): surface elevation with the coastline of each 100-year slice"
+version = "1.0"
+homepage = "https://www.envidat.ch/dataset/chelsa_trace"
+citation = "Karger, D.N., Nobis, M.P., Normand, S., Graham, C.H., Zimmermann, N.E. (2023). CHELSA-TraCE21k - high-resolution (1 km) downscaled transient temperature and precipitation data since the Last Glacial Maximum. Climate of the Past 19, 439-456. Data: Karger et al. (2020), EnviDat, https://doi.org/10.16904/envidat.211"
+doi = "10.16904/envidat.211"
+notes = """
+The paleo-orography CHELSA-TraCE21k downscales with: modern GMTED2010 topography and
+bathymetry with one global sea level per slice (Table 5 of the technical
+specification, linearly interpolated) and ice from the ICE-6G ice-sheet reconstruction
+and glacier databases. int16 GeoTIFFs (43,200 x 20,880) in one-row strips; sea is nodata
+(-32768), so the land mask of each slice is the coastline. Land values are offset
+(about +122 m: heights above the Last Glacial Maximum sea level) and identical across
+slices, so only the mask is used. A bathtub model: no regional isostatic adjustment.
+File naming: CHELSA_TraCE21k_dem_<timeID>_V1.0.tif, timeID as for the climate files.
+"""
+
+[license]
+# EnviDat's license field for this record is CC BY-SA 4.0; its description text says
+# CC BY 2.0. We follow the stricter reading: derived packs carry this attribution and
+# are shared under CC BY-SA 4.0. Both allow redistributing adapted data.
+id = "CC-BY-SA-4.0"
+url = "https://creativecommons.org/licenses/by-sa/4.0/"
+derived_redistribution = true
+attribution = "Contains data derived from CHELSA-TraCE21k v1.0 (Karger et al. 2023, https://doi.org/10.16904/envidat.211), licensed under CC BY-SA 4.0; aggregated to H3 cells by ManyWorlds. Derived data are shared under the same license."
+verified = "2026-10-28"
+
+[access]
+kind = "strip_windows"
+url_template = "https://os.zhdk.cloud.switch.ch/chelsav1/chelsa_trace/orog/CHELSA_TraCE21k_dem_{time_id}_V1.0.tif"
+block_factor = 2
+# Same slices as the climate pack: midpoints 12,050 BCE to 2,950 BCE.
+time_ids = [-120, -29]
+
+[coverage]
+spatial = "global, 30 arcsec"
+temporal = "21,000 years before 1990 CE to 1990 CE in 100-year slices"
+
+[[variables]]
+name = "dem"
+unit = "m"
+description = "Surface elevation; nodata at sea in that slice."

@@ -67,12 +67,15 @@ def read_overview(src, factor, offline=False):
     return tile
 
 
-def read_window(src, bounds, factor=1, offline=False):
+def read_window(src, bounds, factor=1, offline=False, valid=False):
     """Band 1 of a GeoTIFF inside `bounds` (south, north, west, east), averaged over
-    `factor` x `factor` blocks of the file's grid (NaN pixels skipped; all-NaN blocks are
-    NaN). For files stored in strips rather than tiles, where only whole rows can be
-    fetched; the window is snapped outward to whole blocks."""
-    f = cache_dir() / "windows" / (hashlib.sha256(f"{src}|{bounds}|{factor}".encode()).hexdigest()[:32] + ".npz")
+    `factor` x `factor` blocks of the file's grid (NaN and nodata pixels skipped; blocks
+    without data are NaN), or with `valid` the fraction of each block's pixels that have
+    data (e.g. land in a DEM whose sea is nodata). For files stored in strips rather than
+    tiles, where only whole rows can be fetched; the window is snapped outward to whole
+    blocks."""
+    key = f"{src}|{bounds}|{factor}" + ("|valid" if valid else "")
+    f = cache_dir() / "windows" / (hashlib.sha256(key.encode()).hexdigest()[:32] + ".npz")
     if f.exists():
         z = np.load(f)
         north, west, dlat, dlng = z["geo"].tolist()
@@ -95,11 +98,16 @@ def read_window(src, bounds, factor=1, offline=False):
             r1 = min(ds.height // factor * factor, -(-math.ceil(r1 - 1e-6) // factor) * factor)
             c1 = min(ds.width // factor * factor, -(-math.ceil(c1 - 1e-6) // factor) * factor)
             data = ds.read(1, window=Window(c0, r0, c1 - c0, r1 - r0)).astype(np.float64)
+            if ds.nodata is not None:
+                data[data == ds.nodata] = np.nan
     blocks = data.reshape((r1 - r0) // factor, factor, (c1 - c0) // factor, factor)
     ok = np.isfinite(blocks)
     count = ok.sum(axis=(1, 3))
     total = np.where(ok, blocks, 0).sum(axis=(1, 3))
-    mean = np.where(count > 0, total / np.maximum(count, 1), np.nan).astype(np.float32)
+    if valid:
+        mean = (count / factor**2).astype(np.float32)
+    else:
+        mean = np.where(count > 0, total / np.maximum(count, 1), np.nan).astype(np.float32)
     tile = Tile(mean, t.f + r0 * t.e, t.c + c0 * t.a, -t.e * factor, t.a * factor)
     f.parent.mkdir(parents=True, exist_ok=True)
     tmp = f.with_suffix(".tmp.npz")

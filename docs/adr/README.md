@@ -44,6 +44,7 @@
 | 0040 | M1 region: H3 res-5 cells whose centers lie in 24–42°N, 26–58°E (22,198 cells over base cells 15, 16, 22, 31, 33, 41; includes Cyprus, the paleo-Gulf basin and the Nile valley and delta), chosen offline from a manifest; a run gets its cell list from the geometry pack and uses only H3 topology | Accepted |
 | 0041 | Forcing packs: one little-endian file (magic, canonical JSON header, aligned arrays), identified by its BLAKE3 hash; per-cell static and time-sliced fields with unit, dtype, scale/offset, nodata and sources; packs of a region share a cell-list hash | Accepted |
 | 0042 | M1 climate: CHELSA-TraCE21k v1.0 bioclim (bio1, bio4, bio12, bio15) as per-cell means of 2×2-block-averaged 30″ pixels, land and sea alike, for century slices placed at their midpoint years and interpolated linearly; the pack follows the stricter of the dataset's two licence statements (CC BY-SA 4.0) | Accepted |
+| 0043 | Coastlines: a `coastline` pack (`land_fraction[time, cell]`) from the CHELSA-TraCE21k paleo-DEM's per-century ocean mask (a bathtub model: one global sea level per slice on modern topography and bathymetry) rather than regional ICE-6G_C relative sea level; a cell is habitable while its interpolated land fraction is above zero; worlds without the pack treat every cell as habitable (golden unchanged) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -77,6 +78,19 @@ and the engine interpolates linearly between midpoints; events shorter than a ce
 (the 8.2 ka event) are smoothed out, and the climate is a single model run (CCSM3), a
 structural uncertainty to carry into calibration. A seeded weather generator from
 per-cell statistics replaces raw fields later (doc 11 §11.2).
+
+## ADR-0043 rationale (coastlines)
+
+ICE-6G_C gives relative sea level on a ~1° grid; turning it into coastlines needs
+high-resolution bathymetry, which CHELSA-TraCE21k has already combined with a global
+sea-level curve (and ICE-6G ice) for every century slice. Using its mask keeps the coastline
+consistent with the climate pack (same slices, same licence, same reader) at the cost
+of regional isostatic and tectonic effects, which are metres against the ~120 m
+postglacial rise. The mask covers only the ocean: the Caspian, lakes and the Sea of
+Marmara count as land until a lake mask arrives with hydrology (#9). Habitability is a
+mask the engine derives each step from the pack and the year, never checkpointed, so a
+restored run rebuilds it; bands in flooded cells do not split, and the `inundation`
+mechanism (last in the step) moves them.
 
 ## Notes
 

@@ -31,7 +31,9 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Graham, C.H., Zimmermann, N.E. (2023), Climate of the Past 19, 439–456; data
   doi:10.16904/envidat.211 (WSL, EnviDat), licensed under CC BY-SA 4.0. It downscales the
   CCSM3 TraCE-21ka simulation (Liu et al. 2009, Science 325, 310–314; He 2011). The
-  climate pack is derived from it (aggregated to H3 cells) and shared under the same
+  climate and coastline packs are derived from it (aggregated to H3 cells; the
+  coastline from its paleo-orography, whose ice comes from ICE-6G_C, Peltier, Argus &
+  Drummond 2015, JGR Solid Earth 120, 450–487) and shared under the same
   license.
 - **GDAL** (via rasterio) reads raster data in the pipelines.
 
