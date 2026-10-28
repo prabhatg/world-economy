@@ -23,6 +23,7 @@ volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start wit
 | [docs/index.html](docs/index.html) | Public website (GitHub Pages from `/docs` on `main`) |
 | [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli`, `oikos-py` (Python bindings) |
 | [engine/python/](engine/python/tests/test_bindings.py) | Python binding tests (pytest) and examples |
+| [data/](data/README.md) | Regions, dataset manifests, ingestion pipelines (`oikos_data`), forcing-pack lock file |
 | [engine/params/](engine/params/m0-toy.toml) | Parameter registry: every parameter's unit, range, prior, status and sources |
 | [engine/golden/](engine/golden/) | Golden work unit and its committed result (reproducibility oracle) |
 | [engine/scripts/](engine/scripts/) | `check.sh` (verification gate), `bench.sh`, `compare-reports.sh`, git hooks |
@@ -64,6 +65,7 @@ cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target
 cargo run --release -p oikos-cli -- params        # registry as JSON
 maturin develop --release -m crates/oikos-py/Cargo.toml   # Python module `oikos` into the venv
 pytest python/tests                               # Python binding tests
+(cd ../data && python -m oikos_data check)        # rebuild locked forcing packs, compare ids
 ```
 
 The gate's Python steps (zarr-python and pyarrow read our outputs; maturin builds the
@@ -137,6 +139,10 @@ cargo run --release -p oikos-cli -- run golden/m0-toy.workunit.json -o golden/m0
 
 Changing the pinned `libm` version, RNG layout, checkpoint format or params schema
 changes the golden hash.
+
+The same holds for forcing packs: `data/packs.lock.json` records every pack's id, and
+`python -m oikos_data build ... --update-lock` is a deliberate act with its reason in
+the commit message.
 
 ### 4. Performance is a requirement
 

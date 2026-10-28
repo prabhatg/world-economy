@@ -3,6 +3,12 @@
 Licenses must be checked per dataset before redistribution; the repo stores
 **manifests and ingestion code**, not raw data.
 
+**Implemented:** [`data/`](../data/README.md) holds regions, dataset manifests (license,
+including whether derived data may be redistributed and when that was checked;
+citation; access; coverage; variables and units) and the Python pipelines that build
+forcing packs (doc 3 §3.8a), with every pack id locked in `data/packs.lock.json`.
+First pack: M1 geometry (22,198 res-5 cells, ADR-0040).
+
 ## Forcing (inputs)
 
 | Domain | Candidates |

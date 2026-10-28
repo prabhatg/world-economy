@@ -18,5 +18,9 @@ neuroscience and the social sciences. Every source is cited in the knowledge bas
 in the credit manifest of each result. Datasets surveyed so far are listed in
 [docs/09-data-sources.md](docs/09-data-sources.md).
 
+### Data and libraries in our forcing packs
+- **H3** (Uber Technologies, Apache-2.0, https://h3geo.org): the grid, and the cell
+  centroids and areas of the geometry pack (via h3-py and h3o).
+
 ## Volunteers, reviewers, contributors, institutions
 *Your name here.*

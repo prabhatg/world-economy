@@ -1,0 +1,14 @@
+# M1 region (ADR-0040): Neolithic Southwest Asia and its margins, 12,000-3,000 BCE.
+# H3 resolution-5 cells whose centers lie inside the box: the Levant, Cyprus,
+# Anatolia, the Zagros, Mesopotamia, the paleo-Gulf basin and the Nile valley.
+# Changing this file changes every pack built for the region.
+
+name = "m1-swasia"
+resolution = 5
+rule = "cell centers inside bbox"
+
+[bbox]
+south = 24.0
+north = 42.0
+west = 26.0
+east = 58.0

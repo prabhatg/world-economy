@@ -78,6 +78,14 @@ else
   echo "SKIP python bindings: needs maturin, pytest, numpy (source scripts/env.sh)"
 fi
 
+step "data pipelines: pytest, locked packs rebuild identically"
+if "$py" -c "import h3, blake3, numpy, pytest" 2>/dev/null; then
+  "$py" -m pytest -q ../data/tests
+  (cd ../data && "$py" -m oikos_data check)
+else
+  echo "SKIP data pipelines: needs h3, blake3, numpy, pytest (source scripts/env.sh)"
+fi
+
 step "dense determinism smoke (bench hashes across partition counts)"
 h1=$(./target/release/oikos bench --res 5 --years 10 --parts 1 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')
 h7=$(./target/release/oikos bench --res 5 --years 10 --parts 7 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')
