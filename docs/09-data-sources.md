@@ -23,7 +23,8 @@ paleo-DEM ocean mask per slice; the hydrology pack (ADR-0044) supplies the lakes
 known gap. Hydrology uses RiverATLAS and LakeATLAS (HydroATLAS, CC BY 4.0, checked
 2026-10-28) rather than the standalone HydroRIVERS, whose HydroSHEDS licence requires
 end-user agreements and forbids stand-alone redistribution; they are fetched through
-the figshare API and checked against its published MD5.
+the figshare API and checked against its published MD5. Soils come from SoilGrids 2.0
+(ADR-0045; CC BY 4.0 per Poggio et al. 2021, checked 2026-10-28), 1 km aggregates.
 
 ## Forcing (inputs)
 

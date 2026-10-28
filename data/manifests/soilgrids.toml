@@ -1,0 +1,64 @@
+# SoilGrids 2.0 (ISRIC): soil properties at six depths, here its 1 km aggregates.
+dataset = "soilgrids"
+title = "SoilGrids 2.0: global soil property maps (1 km aggregates of the 250 m predictions)"
+version = "2.0"
+homepage = "https://soilgrids.org"
+citation = "Poggio, L., de Sousa, L.M., Batjes, N.H., Heuvelink, G.B.M., Kempen, B., Ribeiro, E., Rossiter, D. (2021). SoilGrids 2.0: producing soil information for the globe with quantified spatial uncertainty. SOIL 7, 217-240. https://doi.org/10.5194/soil-7-217-2021"
+doi = "10.5194/soil-7-217-2021"
+notes = """
+Mean predictions (quantile regression forests) aggregated by ISRIC from 250 m to 1 km,
+as cloud-optimized GeoTIFFs in the Interrupted Goode Homolosine projection (ESRI:54052),
+int16 with nodata -32768. Values are stored integers; divide by 10 for %, g/kg or pH
+(SoilGrids conversion factors). Built-up, water and glacier areas are not mapped (ESA
+Land Cover 2015 mask). Modern soils as a proxy for Holocene soils. Per-file SHA-256
+checksums are published next to the files (checksum.sha256.txt).
+"""
+
+[license]
+# Poggio et al. 2021, Code and data availability: "SoilGrids predictions themselves are
+# available to the public under the Creative Commons CC-BY 4.0 licence".
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains data derived from SoilGrids 2.0 (ISRIC - World Soil Information; Poggio et al. 2021, https://doi.org/10.5194/soil-7-217-2021), licensed under CC BY 4.0; aggregated to H3 cells by ManyWorlds."
+verified = "2026-10-28"
+
+[access]
+kind = "cog_projected"
+url_template = "https://files.isric.org/soilgrids/latest/data_aggregated/1000m/{prop}/{prop}_{depth}_mean_1000.tif"
+crs = "ESRI:54052"
+block_factor = 2
+
+[coverage]
+spatial = "global land (soil), 1 km"
+temporal = "modern (soil profiles mostly 1950-2020)"
+
+[[variables]]
+name = "clay"
+unit = "g/kg"
+description = "Clay content of the fine earth fraction."
+
+[[variables]]
+name = "sand"
+unit = "g/kg"
+description = "Sand content of the fine earth fraction."
+
+[[variables]]
+name = "silt"
+unit = "g/kg"
+description = "Silt content of the fine earth fraction."
+
+[[variables]]
+name = "soc"
+unit = "dg/kg"
+description = "Soil organic carbon content of the fine earth fraction."
+
+[[variables]]
+name = "phh2o"
+unit = "pH x 10"
+description = "Soil pH in water."
+
+[[variables]]
+name = "cfvo"
+unit = "cm3/dm3"
+description = "Volumetric fraction of coarse fragments (> 2 mm)."

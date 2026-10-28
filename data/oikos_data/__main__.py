@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import DATA, climate, coastline, geometry, hydrology, pack, raster, region, terrain
+from . import DATA, climate, coastline, geometry, hydrology, pack, raster, region, soils, terrain
 
 LOCK = DATA / "packs.lock.json"
 BUILDERS = {
@@ -22,6 +22,7 @@ BUILDERS = {
     "climate": climate.build_pack,
     "coastline": coastline.build_pack,
     "hydrology": hydrology.build_pack,
+    "soils": soils.build_pack,
 }
 
 

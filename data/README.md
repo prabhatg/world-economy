@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils` |
 | `packs.lock.json` | Id (BLAKE3) of every pack we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -23,6 +23,7 @@ python -m oikos_data build terrain m1-swasia      # fetches ~170 MB of DEM overv
 python -m oikos_data build climate m1-swasia      # reads ~21 GB of CHELSA rows once (~1 h), caches ~2 GB
 python -m oikos_data build coastline m1-swasia    # reads ~1 GB of paleo-DEM rows once (~5 min)
 python -m oikos_data build hydrology m1-swasia    # downloads RiverATLAS + LakeATLAS (~4 GB) once
+python -m oikos_data build soils m1-swasia        # reads SoilGrids 1 km windows once (~1 min)
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -40,6 +41,7 @@ a notice. The cache lives in `$OIKOS_DATA_CACHE` (default `~/.cache/manyworlds`)
 | `climate` | `temp_mean`, `temp_seasonality` (°C; SD of monthly means), `precip` (mm/year), `precip_cv` (%) per (time, cell), 92 century slices at midpoint years 12,050–2,950 BCE, linear in time | CHELSA-TraCE21k v1.0 bio1/bio4/bio12/bio15, 2×2-block means of 30″ pixels, land and sea; CC BY-SA 4.0 (open question 23) |
 | `coastline` | `land_fraction` per (time, cell), same slices as `climate`, linear in time; cells at 0 are uninhabitable in the engine | CHELSA-TraCE21k paleo-DEM ocean mask (one global sea level per slice on modern topography and bathymetry, no regional isostasy); the Caspian, lakes and the Sea of Marmara count as land (the hydrology pack's lakes are subtracted in the engine) |
 | `hydrology` | `river_length` (km of reaches with ≥ 1 m³/s), `river_discharge` (m³/s, largest reach), `river_order` (Strahler), `floodplain_fraction`, `lake_fraction` | RiverATLAS / LakeATLAS v1.0 (HydroATLAS, CC BY 4.0): modern hydrography as a proxy; floodplain from GIEMS-D15 maximum inundation per reach catchment; reservoirs excluded from lakes |
+| `soils` | `clay`, `sand`, `silt` (%), `organic_carbon` (g/kg), `ph`, `coarse_fragments` (vol %), 0–30 cm depth-weighted | SoilGrids 2.0 1 km aggregates (CC BY 4.0), Homolosine samples located per cell; built-up, water and glaciers unmapped (nodata); modern soils as a proxy |
 
 Rules:
 

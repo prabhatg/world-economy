@@ -41,6 +41,9 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Hydrological Processes 27: 2171–2186) and lakes from HydroLAKES (Messager et al. 2016,
   Nature Communications 7: 13603); inundation from GIEMS-D15 (Fluet-Chouinard et al.
   2015). CC BY 4.0, www.hydrosheds.org.
+- **SoilGrids 2.0** (soils pack): ISRIC – World Soil Information; Poggio, L. et al. (2021),
+  SOIL 7, 217–240, doi:10.5194/soil-7-217-2021. CC BY 4.0.
+- **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 
 ## Volunteers, reviewers, contributors, institutions

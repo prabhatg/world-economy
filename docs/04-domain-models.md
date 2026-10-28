@@ -21,6 +21,8 @@ enters the model, and the starting mechanisms.
   discharge and order, floodplain and lake fractions per cell; lakes are not habitable
   (ADR-0044).
 - **Soils & terrain:** fertility, erosion, salinization (feedback from irrigation).
+  *Implemented (M1):* static terrain and `soils` packs (topsoil texture, organic carbon,
+  pH, coarse fragments; modern proxy, ADR-0045).
 - **Coupling (later):** land use → regional climate/erosion; industrial emissions →
   global temperature via a reduced-complexity climate emulator (FaIR-like) post-1750.
 
