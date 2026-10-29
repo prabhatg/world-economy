@@ -60,7 +60,9 @@ domestication; radiocarbon summaries do not yet constrain. Neolithic demographic
 (ADR-0053) as a nested hypothesis; it does not explain the radiocarbon rise. Stable-
 climate hypothesis of cultivation (ADR-0054), nested and off: untestable on
 century-resolution climate. Land degradation (ADR-0055), nested and off: fields wear
-soils down, turning the farming boom into a bust.
+soils down, turning the farming boom into a bust. Calibration round 2 (ADR-0056): finer
+radiocarbon eras judged together; 4.7% of the prior space survives, and the best
+worlds erode their soils.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

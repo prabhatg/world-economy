@@ -13,7 +13,7 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
 | `oikos_cal/screening.py` | Morris elementary-effects screening of the registry's free parameters (ADR-0052) |
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
-| `oikos_cal/history.py` | History matching: targets, implausibility, waves, sampling the space not yet ruled out |
+| `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
 | `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras |
 | `oikos_cal/m1.py` | The M1 problem: operators, targets, worlds run in worker processes |
 | `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / report` |
@@ -50,6 +50,9 @@ python -m oikos_cal wave --runs 220 --screening runs/m1/screening.json --out run
 python -m oikos_cal wave --runs 220 --previous runs/m1/wave1.json --out runs/m1/wave2.json
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
 ```
+
+Round 1 (ADR-0052) is in `runs/m1/`, round 2 (ten radiocarbon eras judged one by one
+and together, 27 free parameters; ADR-0056) in `runs/m1/round2/`.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
 validated by the engine's state hash, never by an operator's output.

@@ -41,6 +41,14 @@ def _targets(js):
     return [history.Target(t["name"], t["observed"], t["variance"], t["discrepancy"]) for t in js]
 
 
+def _groups_json(gs):
+    return [{"indices": g.indices, "covariance": g.covariance.tolist(), "dof": g.dof} for g in gs]
+
+
+def _groups(js):
+    return [history.Group(g["indices"], g["covariance"], g["dof"]) for g in js or []]
+
+
 def _run(jobs, workers):
     from . import m1
 
@@ -54,7 +62,7 @@ def _problem_targets():
     from . import m1
 
     p = m1.Problem()
-    return p.targets, p.names
+    return p.targets, p.names, p.groups
 
 
 def _write(path, doc):
@@ -72,7 +80,7 @@ def screen(args):
     points = design.reshape(-1, len(factors))
     params = [oikos.sample_params(dict(zip(factors, u))) for u in points]
     noise = list(range(args.seed, args.seed + args.noise_seeds))
-    ts, names = _problem_targets()
+    ts, names, _ = _problem_targets()
     out = _run([(p, args.seed) for p in params] + [({}, s) for s in noise], args.workers)
     runs, noisy = out[: len(params)], out[len(params) :]
     _write(args.out, {"command": "screen", "revision": _revision(), "seed": args.seed, "levels": args.levels,
@@ -108,7 +116,7 @@ def report_screening(doc):
 def _fit_wave(doc, rng):
     ts = _targets(doc["targets"])
     y = np.array(doc["outputs"])[:, : len(ts)]
-    return history.Wave.fit(np.array(doc["u"]), y, ts, active=doc["active"], rng=rng)
+    return history.Wave.fit(np.array(doc["u"]), y, ts, active=doc["active"], rng=rng, groups=_groups(doc.get("groups")))
 
 
 def wave(args):
@@ -136,11 +144,12 @@ def wave(args):
     number = len(previous) + 1
     params = [oikos.sample_params(dict(zip(factors, x))) for x in u]
     seeds = [1000 * number + i for i in range(len(u))]
-    ts, names = _problem_targets()
+    ts, names, groups = _problem_targets()
     out = _run(list(zip(params, seeds)), args.workers)
     doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": args.seed, "factors": factors,
            "active": active, "u": u.tolist(), "params": params, "seeds": seeds, "names": names,
-           "outputs": out.tolist(), "targets": _targets_json(ts), "previous": [str(p) for p in args.previous]}
+           "outputs": out.tolist(), "targets": _targets_json(ts), "groups": _groups_json(groups),
+           "previous": [str(p) for p in args.previous]}
     _write(args.out, doc)
     report_wave(previous + [doc])
 
@@ -157,6 +166,9 @@ def report_wave(docs):
     test = history.Wave.fit(u[:cut], y[:cut], ts, active=doc["active"], rng=np.random.default_rng(0))
     x = u[cut:][:, doc["active"]]
     run_i = history.implausibility(y, 0.0, ts)
+    gs = _groups(doc.get("groups"))
+    run_g = np.stack([g.implausibility(y, 0.0, ts) for g in gs], axis=1) if gs else np.zeros((len(y), 0))
+    fails_group = (run_g > np.array([history.chi2_cutoff(g.dof) for g in gs])).any(axis=1)
     print(f"{'target':36} {'observed':>9} {'tol':>6} {'runs in 3 tol':>13} {'emulator |z|<3':>14}")
     for j, t in enumerate(ts):
         m, v = test.emulators[j].predict(x, noise=True)
@@ -164,8 +176,12 @@ def report_wave(docs):
         print(f"{t.name:36} {t.observed:9.3f} {np.sqrt(t.variance + t.discrepancy):6.3f} "
               f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {(np.abs(z) < 3).mean():14.2f}")
     best = int(run_i.max(axis=1).argmin())
+    kept = (run_i.max(axis=1) <= CUTOFF) & ~fails_group
     print(f"best run {best}: max implausibility {run_i[best].max():.2f} ({ts[int(run_i[best].argmax())].name}); "
-          f"runs not ruled out by their own outputs: {(run_i.max(axis=1) <= CUTOFF).sum()}")
+          f"runs not ruled out by their own outputs: {kept.sum()} ({(run_i.max(axis=1) <= CUTOFF).sum()} one by one)")
+    for k, g in enumerate(gs):
+        print(f"  group {k} ({len(g.indices)} targets, dof {g.dof}): cutoff {history.chi2_cutoff(g.dof):.1f}, "
+              f"runs within {(run_g[:, k] <= history.chi2_cutoff(g.dof)).mean():.2f}, best {run_g[:, k].min():.1f}")
     print("  " + ", ".join(f"{k}={v:.4g}" for k, v in sorted(doc["params"][best].items())))
     waves = [_fit_wave(d, np.random.default_rng(0)) for d in docs]
     space = np.random.default_rng(1).random((200_000, len(doc["factors"])))

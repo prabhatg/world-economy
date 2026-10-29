@@ -96,6 +96,11 @@ Screening found eight of 22 free parameters that move the summaries; two waves o
 worlds leave 22% of the prior space, with selection the one sharply constrained
 parameter (0.001-0.01 per year). Radiocarbon eras do not constrain at their present
 tolerances (open question 25); late domestication is the binding summary (question 24).
+Round 2 (ADR-0056) judges ten 800-year radiocarbon eras one by one and together
+(multivariate implausibility with their bootstrap covariance) over 27 free parameters,
+including the nested demographic, climate and land-degradation hypotheses: 4.7% of the
+prior space survives two waves, the radiocarbon record binds, and the worlds that fit
+both records best erode their soils at 1.1-1.6e-4 per year.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

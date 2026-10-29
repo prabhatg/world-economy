@@ -33,3 +33,17 @@ def test_a_wave_file_refits_to_the_same_emulators():
     x = rng.random((50, 3))
     assert (a.implausibility(x) == b.implausibility(x)).all()
     assert a.active == [0, 1] and len(a.emulators) == 2
+
+
+def test_a_wave_file_keeps_its_groups():
+    rng = np.random.default_rng(3)
+    u = emulator.latin_hypercube(30, 2, rng)
+    y = np.stack([u[:, 0], -u[:, 0]], axis=1)
+    ts = [history.Target("a", 0.5, 0.01, 0.0), history.Target("b", -0.5, 0.01, 0.0)]
+    g = history.Group([0, 1], [[0.01, -0.01], [-0.01, 0.01]], dof=1)
+    doc = json.loads(json.dumps({"u": u.tolist(), "outputs": y.tolist(), "targets": cli._targets_json(ts),
+                                 "groups": cli._groups_json([g]), "active": [0, 1]}))
+    w = cli._fit_wave(doc, np.random.default_rng(0))
+    assert len(w.groups) == 1 and w.groups[0].dof == 1
+    assert np.array_equal(w.groups[0].covariance, g.covariance)
+    assert cli._fit_wave({**doc, "groups": None}, np.random.default_rng(0)).groups == [], "round-1 files have none"

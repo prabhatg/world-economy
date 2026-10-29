@@ -106,3 +106,17 @@ def test_an_era_without_assemblages_is_refused():
     op = dom.Operator(t, CELLS, WINDOW)
     with pytest.raises(ValueError, match="no assemblages"):
         targets.DomesticationEras(op, t, edges=(-9_000, -8_000, -7_600, -7_000))
+
+
+def test_radiocarbon_eras_are_judged_together_by_their_bootstrap_covariance(radiocarbon):
+    cells, truth, eras = radiocarbon
+    g = eras.group(4)
+    assert g.indices == [4, 5, 6] and g.dof == 2, "centered log shares: one degree of freedom fewer"
+    assert np.allclose(np.diag(g.covariance), [t.variance for t in eras.targets])
+    assert np.allclose(g.covariance.sum(axis=1), 0, atol=1e-12), "shares that sum to zero co-vary to zero"
+    m = np.zeros((1, 7))
+    m[0, 4:] = eras.model(truth)
+    padded = [None] * 4 + eras.targets
+    assert g.implausibility(m, 0.0, padded)[0] < history.chi2_cutoff(2)
+    m[0, 4:] = eras.model(growth(cells, 0.0))
+    assert g.implausibility(m, 0.0, padded)[0] > history.chi2_cutoff(2)

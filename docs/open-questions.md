@@ -49,12 +49,15 @@
     Neolithic? Land degradation (ADR-0055) can lower capacity after the boom, and an
     imposed decline improves the radiocarbon fit by 24-44 log-units; whether erosion
     at plausible rates, a later onset and faster selection reproduce the whole record
-    together is for the next calibration wave.
+    together is for the next calibration wave. Round 2 (ADR-0056): the best-fitting
+    consistent worlds erode at 1.1-1.6e-4 per year and do rise and fall, but by about
+    half the record's amplitude.
 26. How large is the M1 model discrepancy (ADR-0052)? The first waves used 0.25 on
     radiocarbon era log shares and 0.1 on domestic shares, and at those values the
     radiocarbon record rules out nothing. Tighter values would make it bind but must
     be justified independently (e.g. by held-out regions or by a second dates
-    database), not chosen to make it bind.
+    database), not chosen to make it bind. With 800-year eras judged together
+    (ADR-0056) the record binds at the same discrepancy.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

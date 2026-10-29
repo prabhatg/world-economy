@@ -8,7 +8,8 @@ M1 packs with those overrides, recorded every 10 years, and its summaries (`targ
 plus diagnostics: each operator's log-likelihood and the population at the end. Runs
 are independent, so they go to worker processes, each building the operators once.
 
-Discrepancy: 0.25 on each radiocarbon era's centered log share (dated activity off by
+Radiocarbon eras are 800 years and judged one by one and together (their bootstrap
+covariance; ADR-0056). Discrepancy: 0.25 on each radiocarbon era's centered log share (dated activity off by
 about a quarter in an era) and 0.1 on each era's domestic share - judgments, recorded
 with every wave so later waves can revisit them.
 """
@@ -30,6 +31,7 @@ __all__ = ["PACKS", "END", "DISCREPANCY", "packs", "Problem", "evaluate"]
 PACKS = ("geometry", "climate", "coastline", "hydrology")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1}
+RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
 DIAGNOSTICS = ["log-likelihood radiocarbon", "log-likelihood domestication", "people 3000 BCE"]
 
 
@@ -54,11 +56,12 @@ class Problem:
         if self.radiocarbon.settings.true.end != END:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
         self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true)
-        self.eras = [targets.RadiocarbonEras(self.radiocarbon, discrepancy_sd=DISCREPANCY["radiocarbon"],
-                                             rng=np.random.default_rng(0)),
+        self.eras = [targets.RadiocarbonEras(self.radiocarbon, eras=RADIOCARBON_ERAS,
+                                             discrepancy_sd=DISCREPANCY["radiocarbon"], rng=np.random.default_rng(0)),
                      targets.DomesticationEras(self.domestication, barley,
                                                discrepancy_sd=DISCREPANCY["domestication"])]
         self.targets = [t for e in self.eras for t in e.targets]
+        self.groups = [self.eras[0].group(0)]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def outputs(self, activity):

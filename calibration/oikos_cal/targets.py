@@ -12,7 +12,8 @@ likelihoods use:
   the operator's expected mass, which keeps each block's observed total, so research
   intensity across blocks still cancels. Observation variance is a bootstrap over
   blocks: it covers the counting noise and how differently regions were occupied and
-  studied;
+  studied. The bootstrap also gives the eras' covariance, so history matching can judge
+  their shape together (`group`);
 - domestication eras: the mean domestic share of barley assemblages in each era,
   weighted by n / (n + φ), the share of an assemblage's information that beta-binomial
   overdispersion φ leaves (ADR-0051). Observation variance is that of the weighted mean
@@ -24,7 +25,7 @@ recorded with each wave: how far a good world may honestly sit from these summar
 
 import numpy as np
 
-from .history import Target
+from .history import Group, Target
 from .radiocarbon import SUROVELL_2009
 
 __all__ = ["RadiocarbonEras", "DomesticationEras"]
@@ -52,10 +53,17 @@ class RadiocarbonEras:
         z = self._summary(per_block.sum(axis=0))
         rng = rng or np.random.default_rng(0)
         pick = rng.integers(0, len(per_block), size=(replicates, len(per_block)))
-        var = self._summary(per_block[pick].sum(axis=1)).var(axis=0, ddof=1)
+        boot = self._summary(per_block[pick].sum(axis=1))
+        self.covariance = np.cov(boot, rowvar=False)
+        var = np.diag(self.covariance)
         span = 100 * w.centuries // eras
         self.targets = [_target(f"radiocarbon {_era(w.first + e * span, w.first + (e + 1) * span)}", z[e], var[e],
                                 discrepancy_sd**2) for e in range(eras)]
+
+    def group(self, first):
+        """These eras as a `history.Group`, their targets starting at index `first`
+        (centered log shares sum to zero: one degree of freedom fewer)."""
+        return Group(list(range(first, first + self.eras)), self.covariance, dof=self.eras - 1)
 
     def _summary(self, mass):
         return _clr(mass.reshape(mass.shape[:-1] + (self.eras, -1)).sum(axis=-1))

@@ -23,8 +23,11 @@ def problem():
 def test_the_record_summaries(problem):
     ts = {t.name: t for t in problem.targets}
     rc = [t for t in problem.targets if t.name.startswith("radiocarbon")]
-    assert len(rc) == 5 and rc[0].observed < rc[2].observed, "dates rise into the Neolithic"
-    assert all(0 < t.variance < 0.25 for t in rc)
+    assert len(rc) == 10 and rc[0].observed < rc[4].observed, "dates rise into the Neolithic"
+    g = problem.groups[0]
+    assert g.indices == list(range(10)) and g.dof == 9
+    assert np.allclose(np.diag(g.covariance), [t.variance for t in rc])
+    assert all(0 < t.variance < 0.3 for t in rc)
     assert ts["domestic barley before 9000 BCE"].observed < 0.05 < 0.7 < ts["domestic barley after 7000 BCE"].observed
     assert problem.names[: len(problem.targets)] == list(ts)
 

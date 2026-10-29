@@ -57,6 +57,7 @@
 | 0053 | Neolithic demographic transition as a nested hypothesis: a band's intrinsic growth rate moves linearly with its cultivation effort from `growth_rate` (mobile foragers) to `sedentary_growth_rate` (sedentary cultivators); the default sets them equal (no transition) until calibration says otherwise; the golden hash changes only because the parameter set grew (summaries identical) | Accepted |
 | 0054 | Stable-climate hypothesis of cultivation (Richerson, Boyd and Bettinger 2001) as a fourth nested driver: the cultivation target is scaled by 1 - `cultivation_variability_weight` × climate variability (mean change of wild-cereal suitability per century over the stress window, between century boundaries, recomputed once per century); weight 0 (the default) switches it off; with century-resolution forcing it does not delay the onset | Accepted |
 | 0055 | Land degradation as a nested hypothesis: cells keep a fixed-point soil share, eroded at `soil_erosion_rate` × effort per year and re-forming at `soil_formation_rate` × what is missing, updated each capacity period; field yields scale by min(1, soil / `soil_critical`); checkpoint layout `OIKOSCK3` (soil per cell; `OIKOSCK2` restores with whole soil); erosion 0 (the default) switches it off | Accepted |
+| 0056 | Calibration round 2: radiocarbon eras of 800 years (10), judged one by one and together by a multivariate implausibility (Mahalanobis distance with the block-bootstrap covariance plus discrepancy and emulator variances, against the 99.5% chi-square quantile, Vernon et al. 2010); 27 free parameters including the nested hypotheses of ADR-0053-0055; runs in `calibration/runs/m1/round2/` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -364,6 +365,31 @@ unchanged (-94 against -93); 5e-4 is too much (-4,145). With faster selection (0
 a critical share of 0.3 the radiocarbon fit reaches -3,991, but with the onset as early
 as it is, faster selection makes Natufian barley 54% domestic. Decline, onset and
 selection have to be calibrated together; the default stays off until they are.
+
+## ADR-0056 rationale (calibration round 2)
+
+Round 1's five radiocarbon eras ruled out nothing (ADR-0052): 1,600-year eras averaged
+the peak and the fall away, and judging each era alone ignores that a record's eras
+err together (they share sites, blocks and research history). Eras of 800 years resolve
+the plateau at 6,700-5,100 BCE and the fall after it with observation errors of 0.12-0.27
+(0.50 for the first); the block bootstrap gives their full covariance, so the shape is
+also judged as a whole. Both checks must pass.
+
+Screening (288 worlds, 27 free parameters): selection (11.5 tolerances), then soil
+erosion (3.2), the abundance weight (2.5) and soil formation (1.7); the emulators see the
+12 most influential. Two waves of 300 worlds leave 4.7% of the prior space (round 1:
+22%), and 99 of the 600 worlds are consistent with all 14 summaries and the group. The
+radiocarbon record now binds: in wave 1 only 45-48% of the worlds pass the two earliest
+eras. Selection stays at 0.0017-0.0067 per year (10-90%); erosion above about 8.6e-4 of the
+soil per year is ruled out.
+
+History matching does not require erosion (13 consistent worlds have almost none),
+but the likelihoods favour it: the consistent worlds that fit both records best all
+erode at 1.1-1.6e-4 per year with slow soil formation (~2e-5), scoring -3,980 to -3,990
+on radiocarbon and -84 to -91 on domestication, better on both than the default world
+(-4,028, -93) and than any world of round 1. Their dated activity rises to a plateau and
+falls, but by less than the record (peak era 0.41 against 0.80), and barley after
+7,000 BCE is 64% domestic against 80%.
 
 ## Notes
 
