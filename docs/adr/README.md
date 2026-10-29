@@ -50,6 +50,7 @@
 | 0046 | Radiocarbon observations: p3k14c (public release, MIT compendium) dates in the region, de-duplicated by lab id and calibrated with IntCal20 (annual grid, curve error in quadrature, normalized), as two locked Parquet tables (dates; probability per cell and century for LocAccuracy ≥ 2), built like forcing packs and identified by BLAKE3 | Accepted |
 | 0047 | Foraging carrying capacity: with a climate pack, capacity = dry-land area × (terrestrial density from Miami-model NPP, `ref × (NPP/NPP_ref)^elasticity`, + an aquatic density where a perennial river, lake shore or sea coast is at hand), recomputed every `capacity_period_ticks`; all coefficients in the registry; toy worlds keep the random capacity (golden trajectory unchanged, hash changed by the new parameters) | Accepted |
 | 0048 | Forager dispersal: a default mechanism after fission; a cell at least `dispersal_crowding` full (N/K) buds off one group with `dispersal_probability` per year (draw keyed by cell and tick): `dispersal_fraction` of its first band whose share fits moves to the least crowded habitable neighbor if it is less crowded and has room (as of last step); new `Stream::Dispersal` | Accepted |
+| 0049 | Cultivation and domestication: agents carry practice (`cultivation` effort and `domestication` share of the sown crop, fixed-point parts per billion), inherited by split-off groups and people-weighted on merge; a deterministic `cultivation` mechanism (last in the step) moves effort toward a target that nests three competing drivers as weights (population pressure beyond `cultivation_crowding` × forager capacity, climate stress = decline of forager capacity over `stress_window_years`, wild-cereal abundance) and selects for domestic traits logistically at `selection_coefficient` × effort against wild gene flow; capacity = forager capacity × (1 − effort) + farm capacity × (wild yield × effort + domestic gain × effort × domestication); climate worlds start peopled (`initial_occupancy`); checkpoint magic `OIKOSCK2` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -128,6 +129,54 @@ logistic decline corrects it, and reserving room across partitions within a step
 break partition independence. Group-size (scalar-stress) fission, the Neolithic
 demographic transition and village aggregation remain in #14; they need sedentism and
 cultivation (#13).
+
+## ADR-0049 rationale (cultivation and domestication)
+
+Domestication was a co-evolution of plants and practice, not a switch (Rindos 1984):
+people cultivated wild cereals for centuries to millennia while domestic traits such as
+non-shattering ears spread through the sown crop (Fuller et al. 2014). Two quantities
+carry that: how much effort a band puts into cultivation, and how domestic its crop is.
+Both belong to bands, not cells, so they travel with migrants: farming spreads by people
+moving (demic diffusion) without a separate rule, and a desert or a forest a band moves
+into does not inherit a crop it never sowed. Domestic cereals cannot reseed themselves,
+so a crop with no one cultivating it reverts to the wild type.
+
+Where the literature disagrees, the model nests the hypotheses instead of choosing
+(docs/04 §4.2; open question 2): why people began to cultivate is a sum of three drivers
+with separate weights (population pressure: Binford 1968, Cohen 1977; climate stress
+such as the Younger Dryas: Moore and Hillman 1992, Bar-Yosef 1998; abundance and niche
+construction: Smith 2007, Zeder 2016), so a weight of zero switches one off and
+calibration weighs them against the record; how fast crops domesticated is the range of
+the selection coefficient, whose prior spans the protracted estimate from the
+archaeobotanical record (s ~ 0.003; Purugganan and Fuller 2011; Allaby et al. 2008) and
+the rapid one from experimental cultivation (decades to two centuries; Hillman and
+Davies 1990). Gene flow from wild stands opposes selection in proportion to the effort
+not spent cultivating, so light cultivation never domesticates.
+
+Pressure is measured against forager capacity with a tolerance above 1: foragers at
+equilibrium feel none, and dispersal absorbs small local overshoots, so pressure comes
+when the climate or a rising sea cuts capacity under people, or when cultivation has let
+people outgrow it. Because any cultivation of rich wild stands raises capacity, effort
+then ratchets up; that feedback is the hypothesis' content, and how readily it ignites
+is open question 24. Capacity blends land use linearly by effort, a first-order
+approximation; wild crops yield `wild_yield_ratio` of domestic ones, and early
+cultivation was not more productive per hour than foraging (Bowles 2011).
+
+Traits are fixed-point integers so merging (integer weighted means, rounded down) and
+checkpoints are exact on every host, and updates round in the direction of change so a
+decaying practice reaches zero instead of stalling at a rounding floor. The mechanism
+draws no random numbers. It runs last (after inundation), and split-off groups copy
+their parent's traits, so `fission`, `dispersal` and `inundation` read `AgentTraits` and
+`cultivation` writes it. Worlds without a climate pack never cultivate, so the M0 toy's
+trajectory is unchanged; its hash changed with the checkpoint layout and parameter set.
+Climate worlds now start with a forager band in every habitable cell at
+`initial_occupancy` of capacity, because Epipaleolithic foragers lived across Southwest
+Asia at 12,000 BCE; starting from a dozen founders left most of the region empty for
+millennia and made the founders' crowding read as pressure. Agents grew from 20 to 28
+bytes: +8% wasm instructions and +14% native time per agent-step on the toy benchmark
+after copying kept bands in runs during merges and skipping trait moves for bands
+already in place (from +21% at first). Sedentism, storage and the Neolithic demographic
+transition build on these traits next (#13, #14).
 
 ## Notes
 

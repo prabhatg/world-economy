@@ -50,7 +50,7 @@ def test_capacity_map(m1):
 def test_younger_dryas_lowers_capacity(m1):
     w, _, _ = m1
     def total():
-        return int(w.capacity()[w.habitable()].sum())
+        return int(w.forage_capacity()[w.habitable()].sum())
     w.run_years(850, parts=4)    # 11,150 BCE: Allerod
     allerod = total()
     w.run_years(850, parts=4)    # 10,300 BCE: Younger Dryas

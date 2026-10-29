@@ -21,6 +21,9 @@ pub enum Component {
     AgentSpawn,
     /// Forcing-pack fields (read-only inputs: climate, terrain, soils, ...).
     Forcing,
+    /// Agent practice ([`crate::agents::Traits`]): written by cultivation, copied by
+    /// mechanisms that split bands off.
+    AgentTraits,
 }
 
 /// What a mechanism declares about itself.

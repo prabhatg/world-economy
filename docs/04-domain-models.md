@@ -36,6 +36,14 @@ enters the model, and the starting mechanisms.
   cattle, pigs, rice, maize…), with suitability from agro-climatic models.
 - Domestication as a co-evolutionary process (selection intensity × cultivation
   effort × time), not a switch.
+  *Implemented (M1):* bands carry cultivation effort and the domestic share of their
+  crop; effort moves toward a target nesting three competing drivers (population
+  pressure, climate stress, wild-cereal abundance) as weights; cultivation selects for
+  domestic traits against wild gene flow, slowly or quickly by the selection
+  hypothesis; capacity blends foraging and farming by effort, so domestic crops feed
+  more people and the transition can ratchet (`mechanisms::Cultivation`,
+  `environment::cereal_suitability`, ADR-0049). Wild-cereal suitability comes from
+  temperature and precipitation; soils, irrigation and animals are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
   oil, gas, uranium, renewables potential.
 

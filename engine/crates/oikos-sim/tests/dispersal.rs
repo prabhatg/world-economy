@@ -95,7 +95,7 @@ fn dispersal_is_a_default_mechanism_after_fission() {
     let specs: Vec<_> = mechanisms::defaults(&Params::default()).iter().map(|m| m.spec()).collect();
     let order = Schedule::build(&specs).unwrap();
     let names: Vec<&str> = order.order().iter().map(|&i| specs[i].name).collect();
-    assert_eq!(names, ["growth", "fission", "dispersal", "inundation"]);
+    assert_eq!(names, ["growth", "fission", "dispersal", "inundation", "cultivation"]);
     assert_eq!(Dispersal::from_params(&Params::default()).spec().name, "dispersal");
 }
 

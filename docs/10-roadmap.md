@@ -47,6 +47,9 @@ are uninhabitable), hydrology (ADR-0044: rivers, floodplains, lakes) and soils
 (ADR-0046). First mechanism on real forcing: forager carrying capacity from climate,
 dry land and aquatic resources (ADR-0047), and forager dispersal by budding into less
 crowded land (ADR-0048), so M1 worlds fill the region as a wave of advance.
+Cultivation and domestication (ADR-0049): bands carry cultivation effort and crop
+domestication, driven by competing hypotheses nested as weights; M1 worlds start with
+foragers across the region.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

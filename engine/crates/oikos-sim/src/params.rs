@@ -32,6 +32,7 @@ pub struct Params {
     pub merge_threshold: u64,
     pub initial_bands: u32,
     pub initial_weight: u64,
+    pub initial_occupancy: f64,
     pub capacity_period_ticks: u64,
     pub miami_npp_max: f64,
     pub miami_temp_offset: f64,
@@ -45,6 +46,23 @@ pub struct Params {
     pub dispersal_crowding: f64,
     pub dispersal_probability: f64,
     pub dispersal_fraction: f64,
+    pub cultivation_crowding: f64,
+    pub cultivation_pressure_weight: f64,
+    pub cultivation_stress_weight: f64,
+    pub cultivation_abundance_weight: f64,
+    pub stress_window_years: u64,
+    pub adoption_rate: f64,
+    pub selection_coefficient: f64,
+    pub domestic_wild_frequency: f64,
+    pub introgression_rate: f64,
+    pub farm_density: f64,
+    pub wild_yield_ratio: f64,
+    pub cereal_precip_min: f64,
+    pub cereal_precip_full: f64,
+    pub cereal_precip_wet: f64,
+    pub cereal_precip_max: f64,
+    pub cereal_temp_min: f64,
+    pub cereal_temp_full: f64,
 }
 
 impl Default for Params {
@@ -80,6 +98,7 @@ impl Params {
             merge_threshold: int("merge_threshold")?,
             initial_bands: u32::try_from(int("initial_bands")?).map_err(|e| format!("initial_bands: {e}"))?,
             initial_weight: int("initial_weight")?,
+            initial_occupancy: real("initial_occupancy")?,
             capacity_period_ticks: int("capacity_period_ticks")?,
             miami_npp_max: real("miami_npp_max")?,
             miami_temp_offset: real("miami_temp_offset")?,
@@ -93,6 +112,23 @@ impl Params {
             dispersal_crowding: real("dispersal_crowding")?,
             dispersal_probability: real("dispersal_probability")?,
             dispersal_fraction: real("dispersal_fraction")?,
+            cultivation_crowding: real("cultivation_crowding")?,
+            cultivation_pressure_weight: real("cultivation_pressure_weight")?,
+            cultivation_stress_weight: real("cultivation_stress_weight")?,
+            cultivation_abundance_weight: real("cultivation_abundance_weight")?,
+            stress_window_years: int("stress_window_years")?,
+            adoption_rate: real("adoption_rate")?,
+            selection_coefficient: real("selection_coefficient")?,
+            domestic_wild_frequency: real("domestic_wild_frequency")?,
+            introgression_rate: real("introgression_rate")?,
+            farm_density: real("farm_density")?,
+            wild_yield_ratio: real("wild_yield_ratio")?,
+            cereal_precip_min: real("cereal_precip_min")?,
+            cereal_precip_full: real("cereal_precip_full")?,
+            cereal_precip_wet: real("cereal_precip_wet")?,
+            cereal_precip_max: real("cereal_precip_max")?,
+            cereal_temp_min: real("cereal_temp_min")?,
+            cereal_temp_full: real("cereal_temp_full")?,
         };
         params.validate()?;
         Ok(params)
@@ -109,6 +145,20 @@ impl Params {
                 _ => Value::Real(v.as_f64().expect("numeric parameter")),
             };
             registry().check(key, value)?;
+        }
+        let p =
+            (self.cereal_precip_min, self.cereal_precip_full, self.cereal_precip_wet, self.cereal_precip_max);
+        if !(p.0 < p.1 && p.1 <= p.2 && p.2 < p.3) {
+            return Err(format!(
+                "cereal precipitation limits must rise: min {} < full {} <= wet {} < max {}",
+                p.0, p.1, p.2, p.3
+            ));
+        }
+        if self.cereal_temp_min >= self.cereal_temp_full {
+            return Err(format!(
+                "cereal_temp_min ({}) must be below cereal_temp_full ({})",
+                self.cereal_temp_min, self.cereal_temp_full
+            ));
         }
         if self.capacity_min > self.capacity_max {
             return Err(format!(

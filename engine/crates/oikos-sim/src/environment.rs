@@ -6,9 +6,15 @@
 //! scales with net primary productivity (the Miami model: the lower of a temperature and
 //! a precipitation limit, Lieth 1975), plus an aquatic part where a perennial river, a
 //! lake shore or a sea coast is at hand. The aquatic part does not depend on local
-//! rain, so river valleys in deserts (the Nile) can feed people (ADR-0047). Everything here is
-//! computed from the packs, the year and the parameters, with `oikos_math` functions,
-//! so every host gets the same integers.
+//! rain, so river valleys in deserts (the Nile) can feed people (ADR-0047).
+//!
+//! For cultivation (ADR-0049), each cell also has a wild-cereal suitability from its
+//! climate, the people its dry land would feed under full cultivation of domestic crops,
+//! and a climate stress: how much its forager capacity has fallen over the stress window.
+//! A cell's carrying capacity then blends foraging and cultivation by its bands' effort
+//! ([`farmed_capacity`]). Everything here is computed from the packs, the year, the
+//! parameters and agent totals, with `oikos_math` functions, so every host gets the same
+//! integers.
 
 use crate::inputs::{Inputs, LAKES};
 use crate::params::Params;
@@ -36,6 +42,26 @@ pub fn forager_density(npp: f64, p: &Params) -> f64 {
         return 0.0;
     }
     p.forager_density_ref * pow(npp / p.npp_reference, p.npp_elasticity)
+}
+
+/// Wild-cereal suitability in [0, 1] (the founder crops' wild progenitors: einkorn,
+/// emmer, barley, lentil): linear ramps up from too dry and too cold, down toward wet
+/// forest (Harlan and Zohary 1966; Zohary, Hopf and Weiss 2012).
+pub fn cereal_suitability(temp_c: f64, precip_mm: f64, p: &Params) -> f64 {
+    let ramp = |x: f64, lo: f64, hi: f64| ((x - lo) / (hi - lo)).clamp(0.0, 1.0);
+    ramp(precip_mm, p.cereal_precip_min, p.cereal_precip_full)
+        * (1.0 - ramp(precip_mm, p.cereal_precip_wet, p.cereal_precip_max))
+        * ramp(temp_c, p.cereal_temp_min, p.cereal_temp_full)
+}
+
+/// Carrying capacity of a cell with forager capacity `forage` and `farm` people fed under
+/// full cultivation of domestic crops, whose people spend on average `effort` of their
+/// effort cultivating and `crop` (the people-weighted mean of effort times domestic share)
+/// on domestic-type crops. Effort moves land use from foraging to fields; cultivated wild
+/// crops yield `wild_yield_ratio` of domestic ones. At least one person.
+pub fn farmed_capacity(forage: u64, farm: f64, effort: f64, crop: f64, p: &Params) -> u64 {
+    let fields = farm * (p.wild_yield_ratio * effort + (1.0 - p.wild_yield_ratio) * crop);
+    (oikos_math::finite(forage as f64 * (1.0 - effort) + fields) as u64).max(1)
 }
 
 /// Land and lake fractions of each cell in one year.
@@ -79,32 +105,110 @@ impl Surface<'_> {
     }
 }
 
+/// The climate and land of every cell in one year.
+struct Year<'a> {
+    temp: FieldView<'a>,
+    precip: FieldView<'a>,
+    slice: Slice,
+    area: FieldView<'a>,
+    rivers: Option<FieldView<'a>>,
+    surface: Surface<'a>,
+}
+
+impl Year<'_> {
+    /// None without a climate pack.
+    fn new(inputs: &Inputs, calendar_year: i64) -> Option<Year<'_>> {
+        let climate = inputs.pack(CLIMATE.0).ok()?;
+        Some(Year {
+            temp: climate.field(CLIMATE.1).expect("validated in from_packs"),
+            precip: climate.field(CLIMATE.2).expect("validated in from_packs"),
+            slice: climate.slice_at(calendar_year),
+            area: inputs.field(AREA.0, AREA.1).expect("validated in from_packs"),
+            rivers: inputs.field(RIVERS.0, RIVERS.1).ok(),
+            surface: Surface::new(inputs, calendar_year),
+        })
+    }
+
+    /// Temperature (degC) and precipitation (mm), if the cell has climate data.
+    fn climate(&self, c: usize) -> Option<(f64, f64)> {
+        Some((self.temp.at(self.slice, c)?, self.precip.at(self.slice, c)?))
+    }
+
+    /// Dry-land area (km2).
+    fn dry_area(&self, c: usize) -> f64 {
+        self.area.get(0, c).unwrap_or(0.0) * self.surface.dry(c)
+    }
+
+    /// Foragers the cell feeds (before rounding).
+    fn foragers(&self, c: usize, p: &Params) -> f64 {
+        let npp = self.climate(c).map_or(0.0, |(t, w)| npp_miami(t, w, p));
+        let river =
+            self.rivers.as_ref().and_then(|f| f.get(0, c)).is_some_and(|q| q >= p.perennial_discharge);
+        let aquatic =
+            if river || self.surface.shore(c) { p.aquatic_bonus * p.forager_density_ref } else { 0.0 };
+        oikos_math::finite(self.dry_area(c) * (forager_density(npp, p) + aquatic))
+    }
+}
+
 /// Writes each cell's forager carrying capacity in `calendar_year` into `out` (at least
 /// one person, so growth stays defined). Returns false, leaving `out` alone, without a
 /// climate pack.
 pub fn capacity_into(inputs: &Inputs, calendar_year: i64, p: &Params, out: &mut [u64]) -> bool {
-    let Ok(climate) = inputs.pack(CLIMATE.0) else {
+    let Some(year) = Year::new(inputs, calendar_year) else {
         return false;
     };
-    let (temp, precip) = (
-        climate.field(CLIMATE.1).expect("validated in from_packs"),
-        climate.field(CLIMATE.2).expect("validated in from_packs"),
-    );
-    let area = inputs.field(AREA.0, AREA.1).expect("validated in from_packs");
-    let rivers = inputs.field(RIVERS.0, RIVERS.1).ok();
-    let s = climate.slice_at(calendar_year);
-    let surface = Surface::new(inputs, calendar_year);
     for (c, k) in out.iter_mut().enumerate() {
-        let npp = match (temp.at(s, c), precip.at(s, c)) {
-            (Some(t), Some(w)) => npp_miami(t, w, p),
-            _ => 0.0,
-        };
-        let river = rivers.as_ref().and_then(|f| f.get(0, c)).is_some_and(|q| q >= p.perennial_discharge);
-        let aquatic = if river || surface.shore(c) { p.aquatic_bonus * p.forager_density_ref } else { 0.0 };
-        let people = area.get(0, c).unwrap_or(0.0) * surface.dry(c) * (forager_density(npp, p) + aquatic);
-        *k = (oikos_math::finite(people) as u64).max(1);
+        *k = (year.foragers(c, p) as u64).max(1);
     }
     true
+}
+
+/// Per-cell fields for cultivation in one year (ADR-0049).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Farmland {
+    /// Wild-cereal suitability, in [0, 1].
+    pub suitability: Vec<f64>,
+    /// People fed if all effort went into cultivating fully domestic crops: suitability
+    /// times dry-land area times `farm_density`.
+    pub farm: Vec<f64>,
+    /// Relative decline of forager capacity since `stress_window_years` earlier, in [0, 1].
+    pub stress: Vec<f64>,
+}
+
+impl Farmland {
+    /// The fields for `cells` cells in `calendar_year`; empty without a climate pack (no
+    /// cultivation).
+    pub fn new(inputs: &Inputs, calendar_year: i64, p: &Params, cells: usize) -> Farmland {
+        let mut f = Farmland::default();
+        f.update(inputs, calendar_year, p, cells);
+        f
+    }
+
+    /// [`Farmland::new`] into existing buffers.
+    pub fn update(&mut self, inputs: &Inputs, calendar_year: i64, p: &Params, cells: usize) {
+        let (Some(now), Some(before)) = (
+            Year::new(inputs, calendar_year),
+            Year::new(inputs, calendar_year - p.stress_window_years as i64),
+        ) else {
+            *self = Farmland::default();
+            return;
+        };
+        for v in [&mut self.suitability, &mut self.farm, &mut self.stress] {
+            v.resize(cells, 0.0);
+        }
+        for c in 0..cells {
+            let s = now.climate(c).map_or(0.0, |(t, w)| cereal_suitability(t, w, p));
+            self.suitability[c] = s;
+            self.farm[c] = oikos_math::finite(now.dry_area(c) * s * p.farm_density);
+            let (k, k0) = (now.foragers(c, p), before.foragers(c, p));
+            self.stress[c] = if k0 > 0.0 { (1.0 - k / k0).clamp(0.0, 1.0) } else { 0.0 };
+        }
+    }
+
+    /// Whether the forcing supports cultivation.
+    pub fn active(&self) -> bool {
+        !self.suitability.is_empty()
+    }
 }
 
 #[cfg(test)]

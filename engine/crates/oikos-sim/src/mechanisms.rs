@@ -12,7 +12,7 @@
 //! it before the next tile starts. Mechanisms must therefore be local to the cells of
 //! the tile they are given (reading anything else only through [`Sense`]).
 
-use crate::agents::Agents;
+use crate::agents::{Agents, Traits};
 use crate::params::Params;
 use crate::schedule::{Component, MechanismSpec};
 use crate::world::StepStats;
@@ -40,7 +40,18 @@ pub struct Sense<'a> {
     pub habitable: &'a [bool],
     /// Whether forcing packs restrict `habitable` (false: every cell is habitable).
     pub restricted: bool,
+    /// Carrying capacity per cell: what foraging and the bands' cultivation feed.
     pub capacity: &'a [u64],
+    /// Forager carrying capacity per cell (from the climate; equal to `capacity` in
+    /// worlds without one).
+    pub forage_capacity: &'a [u64],
+    /// Whether the forcing supports cultivation (a climate pack); without it the fields
+    /// below are empty.
+    pub farming: bool,
+    /// Wild-cereal suitability per cell, in [0, 1] (declare [`Component::Forcing`]).
+    pub suitability: &'a [f64],
+    /// Relative decline of forager capacity over the stress window, in [0, 1].
+    pub climate_stress: &'a [f64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],
     pub tick: Tick,
@@ -58,10 +69,10 @@ pub struct PartitionView<'a> {
 }
 
 impl PartitionView<'_> {
-    /// Creates an agent born in `birth_cell` (which this partition owns) and placed in
-    /// `dest`. Ids come from the birth cell's counter, so they never depend on
+    /// Creates an agent with `traits` born in `birth_cell` (which this partition owns) and
+    /// placed in `dest`. Ids come from the birth cell's counter, so they never depend on
     /// partitioning. Agents placed in another cell count as migrants.
-    pub fn spawn(&mut self, birth_cell: u32, dest: u32, weight: u64) -> EntityId {
+    pub fn spawn(&mut self, birth_cell: u32, dest: u32, weight: u64, traits: Traits) -> EntityId {
         let counter = &mut self.counters[(birth_cell - self.cells.start) as usize];
         let id = EntityId::new(birth_cell, *counter);
         *counter += 1;
@@ -69,22 +80,23 @@ impl PartitionView<'_> {
             self.stats.migrants += weight;
         }
         if self.cells.contains(&dest) {
-            self.agents.push(id, dest, weight);
+            self.agents.push_with(id, dest, weight, traits);
         } else {
             let owner = self.ranges.partition_point(|r| r.end <= dest);
-            self.outbox[owner].push(id, dest, weight);
+            self.outbox[owner].push_with(id, dest, weight, traits);
         }
         id
     }
 }
 
-/// The M0 toy mechanisms, configured from `params`, in registration order.
+/// The model's mechanisms, configured from `params`, in registration order.
 pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
     vec![
         Box::new(Growth::from_params(params)),
         Box::new(Fission::from_params(params)),
         Box::new(Dispersal::from_params(params)),
         Box::new(Inundation::from_params(params)),
+        Box::new(Cultivation::from_params(params)),
     ]
 }
 
@@ -207,7 +219,12 @@ impl Mechanism for Fission {
         MechanismSpec {
             name: "fission",
             period_ticks: self.period_ticks,
-            reads: vec![Component::Population, Component::Capacity, Component::Forcing],
+            reads: vec![
+                Component::Population,
+                Component::Capacity,
+                Component::Forcing,
+                Component::AgentTraits,
+            ],
             writes: vec![Component::AgentWeight, Component::AgentSpawn],
             after: self.after.clone(),
         }
@@ -239,7 +256,8 @@ impl Mechanism for Fission {
             part.agents.weight[i] = w;
             part.stats.fissions += 1;
             let dest = self.destination(sense, &migration_rng, explore, id, cell);
-            part.spawn(cell, dest, half);
+            let traits = part.agents.traits(i);
+            part.spawn(cell, dest, half, traits);
         }
     }
 }
@@ -293,7 +311,12 @@ impl Mechanism for Dispersal {
         MechanismSpec {
             name: "dispersal",
             period_ticks: self.period_ticks,
-            reads: vec![Component::Population, Component::Capacity, Component::Forcing],
+            reads: vec![
+                Component::Population,
+                Component::Capacity,
+                Component::Forcing,
+                Component::AgentTraits,
+            ],
             writes: vec![Component::AgentWeight, Component::AgentSpawn],
             after: self.after.clone(),
         }
@@ -318,7 +341,8 @@ impl Mechanism for Dispersal {
                     let take = (w as f64 * self.fraction) as u64;
                     if take > 0 && take <= room {
                         part.agents.weight[a] = w - take;
-                        part.spawn(cell, dest, take);
+                        let traits = part.agents.traits(a);
+                        part.spawn(cell, dest, take, traits);
                         break;
                     }
                 }
@@ -349,7 +373,12 @@ impl Mechanism for Inundation {
         MechanismSpec {
             name: "inundation",
             period_ticks: self.period_ticks,
-            reads: vec![Component::Population, Component::Capacity, Component::Forcing],
+            reads: vec![
+                Component::Population,
+                Component::Capacity,
+                Component::Forcing,
+                Component::AgentTraits,
+            ],
             writes: vec![Component::AgentWeight, Component::AgentSpawn],
             after: self.after.clone(),
         }
@@ -368,11 +397,138 @@ impl Mechanism for Inundation {
             part.agents.weight[i] = 0;
             match least_crowded(sense, habitable_neighbors(sense, cell)) {
                 Some(dest) => {
-                    part.spawn(cell, dest, w);
+                    let traits = part.agents.traits(i);
+                    part.spawn(cell, dest, w, traits);
                 }
                 None => lost += w,
             }
         }
         part.stats.deaths += lost;
+    }
+}
+
+/// Cultivation and domestication as co-evolution (docs/04 §4.2, ADR-0049), per band and
+/// period:
+///
+/// - **Effort.** A band moves its share of effort spent cultivating wild cereals toward a
+///   target, at `adoption_rate` (social learning). The target is zero where wild cereals
+///   do not grow; elsewhere it adds three drivers the literature disagrees on, each with
+///   its own weight, so calibration can weigh them against the record: *population
+///   pressure* (people beyond `crowding` times forager capacity, full at one capacity
+///   more: foragers at equilibrium feel none, but a climate that cuts capacity, or
+///   cultivation that lets people outgrow it, does; Binford 1968, Cohen 1977),
+///   *climate stress* (the decline of forager capacity over the stress window, e.g. the
+///   Younger Dryas; Moore and Hillman 1992, Bar-Yosef 1998) and *abundance* (rich wild
+///   stands invite cultivation without stress; Smith 2007, Zeder 2016).
+/// - **Domestication.** Harvesting and resowing select for domestic traits
+///   (non-shattering ears) at `selection` times effort, logistically in their share of
+///   the sown crop (from at least the wild mutant frequency); gene flow from wild stands
+///   and abandoned fields pulls the share back at `introgression` times the effort not
+///   spent cultivating. Weak selection gives the protracted domestication seen in the
+///   archaeobotanical record (Purugganan and Fuller 2011; Allaby et al. 2008); strong
+///   selection the rapid one measured in experimental cultivation (Hillman and Davies 1990).
+///
+/// Cultivation feeds back through carrying capacity ([`crate::environment::farmed_capacity`]):
+/// domestic crops feed more people per area, so populations grow, pressure rises and
+/// effort with it (Rindos 1984). Toy worlds (no climate pack) never cultivate.
+#[derive(Clone, Debug)]
+pub struct Cultivation {
+    pub period_ticks: u64,
+    pub crowding: f64,
+    pub pressure_weight: f64,
+    pub stress_weight: f64,
+    pub abundance_weight: f64,
+    pub adoption_rate: f64,
+    pub selection: f64,
+    pub wild_frequency: f64,
+    pub introgression: f64,
+    pub after: Vec<&'static str>,
+}
+
+impl Cultivation {
+    pub fn from_params(p: &Params) -> Cultivation {
+        Cultivation {
+            period_ticks: p.period_ticks,
+            crowding: p.cultivation_crowding,
+            pressure_weight: p.cultivation_pressure_weight,
+            stress_weight: p.cultivation_stress_weight,
+            abundance_weight: p.cultivation_abundance_weight,
+            adoption_rate: p.adoption_rate,
+            selection: p.selection_coefficient,
+            wild_frequency: p.domestic_wild_frequency,
+            introgression: p.introgression_rate,
+            after: vec!["inundation"],
+        }
+    }
+
+    /// The share of effort bands in a cell aim to spend cultivating: `people` against
+    /// `forage` capacity, wild-cereal `suitability` and climate `stress`.
+    pub fn target_effort(&self, people: u64, forage: u64, suitability: f64, stress: f64) -> f64 {
+        if suitability <= 0.0 {
+            return 0.0;
+        }
+        let crowding = people as f64 / forage.max(1) as f64;
+        let pressure = (crowding - self.crowding).clamp(0.0, 1.0);
+        let drive = self.pressure_weight * pressure
+            + self.stress_weight * stress
+            + self.abundance_weight * suitability;
+        oikos_math::finite(drive).clamp(0.0, 1.0)
+    }
+
+    /// Effort after one period of moving from `effort` toward `target`.
+    pub fn adopt(&self, effort: f64, target: f64) -> f64 {
+        effort + self.adoption_rate * (target - effort)
+    }
+
+    /// Domestic share of the crop after one period at `effort`, from `d`.
+    pub fn domesticate(&self, d: f64, effort: f64) -> f64 {
+        let gain = self.selection * effort * d.max(self.wild_frequency) * (1.0 - d);
+        let loss = self.introgression * (1.0 - effort) * d;
+        oikos_math::finite(d + gain - loss).clamp(0.0, 1.0)
+    }
+}
+
+impl Mechanism for Cultivation {
+    fn spec(&self) -> MechanismSpec {
+        MechanismSpec {
+            name: "cultivation",
+            period_ticks: self.period_ticks,
+            reads: vec![
+                Component::Population,
+                Component::Capacity,
+                Component::Forcing,
+                Component::AgentTraits,
+            ],
+            writes: vec![Component::AgentTraits],
+            after: self.after.clone(),
+        }
+    }
+
+    fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
+        if !sense.farming {
+            return;
+        }
+        let agents = &mut *part.agents;
+        for i in tile {
+            let cell = agents.cell[i] as usize;
+            let traits = agents.traits(i);
+            let target = self.target_effort(
+                sense.population[cell],
+                sense.forage_capacity[cell],
+                sense.suitability[cell],
+                sense.climate_stress[cell],
+            );
+            if target == 0.0 && traits == Traits::FORAGER {
+                continue;
+            }
+            let (e, d) = (Traits::share(traits.cultivation), Traits::share(traits.domestication));
+            agents.set_traits(
+                i,
+                Traits {
+                    cultivation: Traits::toward(traits.cultivation, self.adopt(e, target)),
+                    domestication: Traits::toward(traits.domestication, self.domesticate(d, e)),
+                },
+            );
+        }
     }
 }

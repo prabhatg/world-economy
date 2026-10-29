@@ -14,6 +14,7 @@
 //!   independent worlds in parallel.
 
 use oikos_params::Value;
+use oikos_sim::agents::Traits;
 use oikos_sim::inputs::Inputs;
 use oikos_sim::{World, WorldConfig, checkpoint, params::registry};
 use pyo3::exceptions::PyValueError;
@@ -41,6 +42,10 @@ fn array<'py>(py: Python<'py>, dtype: &str, bytes: Vec<u8>) -> PyResult<Bound<'p
 
 fn u64_array<'py>(py: Python<'py>, values: impl Iterator<Item = u64>) -> PyResult<Bound<'py, PyAny>> {
     array(py, "<u8", values.flat_map(u64::to_le_bytes).collect())
+}
+
+fn f64_array<'py>(py: Python<'py>, values: impl Iterator<Item = f64>) -> PyResult<Bound<'py, PyAny>> {
+    array(py, "<f8", values.flat_map(f64::to_le_bytes).collect())
 }
 
 /// One parameter value from Python: ints stay integers (counts never pass through
@@ -175,10 +180,41 @@ impl PyWorld {
         u64_array(py, self.0.population.iter().copied())
     }
 
-    /// Carrying capacity per cell (uint64, people): from the climate pack if there is one
-    /// (recomputed every `capacity_period_ticks`), else the toy draw.
+    /// Carrying capacity per cell (uint64, people): what foraging and the bands'
+    /// cultivation feed (equal to `forage_capacity()` where nobody cultivates).
     fn capacity<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         u64_array(py, self.0.capacity.iter().copied())
+    }
+
+    /// Forager carrying capacity per cell (uint64, people): from the climate pack if
+    /// there is one (recomputed every `capacity_period_ticks`), else the toy draw.
+    fn forage_capacity<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        u64_array(py, self.0.forage_capacity.iter().copied())
+    }
+
+    /// Mean share of effort each cell's people spend cultivating (float64, 0 in empty
+    /// cells and in worlds without a climate pack).
+    fn cultivation<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.cultivation().into_iter())
+    }
+
+    /// Domestic share of each cell's cultivated crop (float64; effort-weighted mean over
+    /// its bands, 0 where nobody cultivates).
+    fn domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.domestication().into_iter())
+    }
+
+    /// Wild-cereal suitability per cell in [0, 1] (float64; zeros without a climate pack).
+    fn suitability<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let s = &self.0.farmland.suitability;
+        f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
+    }
+
+    /// Climate stress per cell in [0, 1]: the relative decline of forager capacity over
+    /// the last `stress_window_years` (float64; zeros without a climate pack).
+    fn climate_stress<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let s = &self.0.farmland.stress;
+        f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
     }
 
     /// Whether each cell is habitable now (bool; dry land under the coastline and
@@ -187,8 +223,9 @@ impl PyWorld {
         array(py, "|b1", self.0.habitable.iter().map(|&h| h as u8).collect())
     }
 
-    /// Agents in canonical (cell, id) order: `id` (uint64), `cell` (uint32 grid index)
-    /// and `weight` (uint64, people the agent stands for).
+    /// Agents in canonical (cell, id) order: `id` (uint64), `cell` (uint32 grid index),
+    /// `weight` (uint64, people the agent stands for), and their practice as float64
+    /// shares: `cultivation` (of effort) and `domestication` (of the sown crop).
     fn agents<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let slices = || self.0.agent_slices();
         let out = PyDict::new(py);
@@ -196,6 +233,9 @@ impl PyWorld {
         let cells = slices().flat_map(|a| a.cell.iter().flat_map(|c| c.to_le_bytes())).collect();
         out.set_item("cell", array(py, "<u4", cells)?)?;
         out.set_item("weight", u64_array(py, slices().flat_map(|a| a.weight.iter().copied()))?)?;
+        let share = |v: &[u32]| v.iter().map(|&x| Traits::share(x)).collect::<Vec<_>>();
+        out.set_item("cultivation", f64_array(py, slices().flat_map(|a| share(&a.cultivation)))?)?;
+        out.set_item("domestication", f64_array(py, slices().flat_map(|a| share(&a.domestication)))?)?;
         Ok(out)
     }
 

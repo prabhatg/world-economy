@@ -1,5 +1,6 @@
 # Parameter registry for the engine's mechanisms: the M0 toy mechanisms (growth, band
-# fission, migration) and, from M1, foraging carrying capacity from forcing packs.
+# fission, migration) and, from M1, foraging carrying capacity from forcing packs,
+# forager dispersal, and cultivation and domestication.
 #
 # Every parameter declares its unit, valid range, calibration prior, status and
 # sources. Status "placeholder" means an engine-test value with no empirical claim;
@@ -8,7 +9,7 @@
 # Changing a default changes the golden hash (engine/golden/m0-toy.json).
 
 name = "m0-toy"
-version = 2
+version = 3
 
 [params.period_ticks]
 group = "time"
@@ -99,7 +100,7 @@ note = "Numerical resolution setting, not a behavioral claim."
 [params.initial_bands]
 group = "initial"
 unit = "bands"
-description = "Number of bands placed around the seed-chosen start cell."
+description = "Number of bands placed around the seed-chosen start cell (worlds without a climate pack, or with initial_occupancy 0)."
 kind = { type = "integer", min = 1, max = 100000 }
 default = 12
 prior = { dist = "fixed" }
@@ -117,6 +118,19 @@ status = "placeholder"
 note = "Close to typical forager residential group sizes."
 sources = [
   { citation = "Marlowe, F. W. (2005). Hunter-gatherers and human evolution. Evolutionary Anthropology 14, 54-67.", doi = "10.1002/evan.20046" },
+]
+
+[params.initial_occupancy]
+group = "initial"
+unit = "N/K"
+description = "Worlds with a climate pack start with one forager band in every habitable cell at this share of its forager capacity (0: start from initial_bands instead)."
+kind = { type = "probability" }
+default = 0.5
+prior = { dist = "uniform", lo = 0.2, hi = 1.0 }
+status = "placeholder"
+note = "Epipaleolithic foragers (Kebaran, Natufian, Zarzian) lived across Southwest Asia by 12,000 BCE; how close to capacity is uncertain and calibrated."
+sources = [
+  { citation = "Bar-Yosef, O. (1998). The Natufian culture in the Levant, threshold to the origins of agriculture. Evolutionary Anthropology 6, 159-177.", doi = "10.1002/(SICI)1520-6505(1998)6:5<159::AID-EVAN4>3.0.CO;2-7" },
 ]
 
 # Forager dispersal (ADR-0048): bands in crowded cells bud off into less crowded
@@ -278,3 +292,235 @@ default = 1.0
 prior = { dist = "fixed" }
 status = "placeholder"
 note = "Matches the hydrology pack's threshold for river_length (wadis excluded)."
+
+# Cultivation and domestication (ADR-0049): bands shift effort into cultivating wild
+# cereals, driven by population pressure, climate stress or abundance (competing
+# hypotheses nested as weights: set the others to zero to run one alone); cultivation
+# selects for domestic traits, slowly or quickly (competing hypotheses as the range of
+# selection_coefficient); domestic crops raise carrying capacity. Used by worlds with a
+# climate pack; toy worlds never cultivate.
+
+[params.cultivation_crowding]
+group = "cultivation"
+unit = "N/K"
+description = "Population pressure is the crowding (people over forager capacity) beyond this value, capped at 1."
+kind = { type = "real", min = 0.0, max = 3.0 }
+default = 1.2
+prior = { dist = "uniform", lo = 0.9, hi = 1.5 }
+status = "placeholder"
+note = "Above 1, foragers at equilibrium feel no pressure, and moving away absorbs small local overshoots; pressure comes when the climate cuts forager capacity or cultivation lets people outgrow it. Since any cultivation raises capacity, pressure then ratchets effort up (Rindos 1984)."
+sources = [
+  { citation = "Cohen, M.N. (1977). The Food Crisis in Prehistory: Overpopulation and the Origins of Agriculture. Yale University Press." },
+]
+
+[params.cultivation_pressure_weight]
+group = "cultivation"
+unit = "1"
+description = "Population-pressure hypothesis: target cultivation effort per unit of pressure (crowding beyond cultivation_crowding, capped at 1)."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.5
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Zero switches the hypothesis off; calibration weighs it against stress and abundance."
+sources = [
+  { citation = "Binford, L.R. (1968). Post-Pleistocene adaptations. In Binford, S.R., Binford, L.R. (eds), New Perspectives in Archeology, 313-341. Aldine." },
+  { citation = "Cohen, M.N. (1977). The Food Crisis in Prehistory: Overpopulation and the Origins of Agriculture. Yale University Press." },
+]
+
+[params.cultivation_stress_weight]
+group = "cultivation"
+unit = "1"
+description = "Climate-stress hypothesis: target cultivation effort per unit of climate stress (the relative decline of forager capacity over stress_window_years)."
+kind = { type = "real", min = 0.0, max = 10.0 }
+default = 1.0
+prior = { dist = "uniform", lo = 0.0, hi = 3.0 }
+status = "placeholder"
+note = "The Younger Dryas cut forager capacity by tens of percent; zero switches the hypothesis off."
+sources = [
+  { citation = "Moore, A.M.T., Hillman, G.C. (1992). The Pleistocene to Holocene transition and human economy in Southwest Asia: the impact of the Younger Dryas. American Antiquity 57, 482-494.", doi = "10.2307/280936" },
+  { citation = "Bar-Yosef, O. (1998). The Natufian culture in the Levant, threshold to the origins of agriculture. Evolutionary Anthropology 6, 159-177.", doi = "10.1002/(SICI)1520-6505(1998)6:5<159::AID-EVAN4>3.0.CO;2-7" },
+]
+
+[params.cultivation_abundance_weight]
+group = "cultivation"
+unit = "1"
+description = "Abundance (niche-construction) hypothesis: target cultivation effort per unit of wild-cereal suitability, at any population density."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Rich wild stands invite tending and sowing without stress. Off by default: any cultivation raises capacity and starts the pressure ratchet, so a positive weight puts cultivation everywhere wild cereals grow from the first years; calibration decides."
+sources = [
+  { citation = "Smith, B.D. (2007). Niche construction and the behavioral context of plant and animal domestication. Evolutionary Anthropology 16, 188-199.", doi = "10.1002/evan.20135" },
+  { citation = "Zeder, M.A. (2016). Domestication as a model system for niche construction theory. Evolutionary Ecology 30, 325-348.", doi = "10.1007/s10682-015-9801-8" },
+]
+
+[params.stress_window_years]
+group = "cultivation"
+unit = "years"
+description = "Climate stress compares forager capacity now with this many years earlier."
+kind = { type = "integer", min = 10, max = 2000 }
+default = 300
+prior = { dist = "uniform", lo = 100.0, hi = 1000.0 }
+status = "placeholder"
+note = "Memory of better times over about ten generations; climate slices are a century apart."
+
+[params.adoption_rate]
+group = "cultivation"
+unit = "1/period"
+description = "Share of the gap between a band's cultivation effort and its target closed each period (social learning)."
+kind = { type = "probability" }
+default = 0.02
+prior = { dist = "log_uniform", lo = 0.005, hi = 0.2 }
+status = "placeholder"
+note = "Practices spread over generations; 0.02 per year closes most of the gap in a century."
+sources = [
+  { citation = "Henrich, J. (2001). Cultural transmission and the diffusion of innovations: adoption dynamics indicate that biased cultural transmission is the predominate force in behavioral change. American Anthropologist 103, 992-1013.", doi = "10.1525/aa.2001.103.4.992" },
+]
+
+[params.selection_coefficient]
+group = "cultivation"
+unit = "1/period"
+description = "Selection for domestic traits (e.g. non-shattering ears) under full cultivation effort, per crop generation (one per year)."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.005
+prior = { dist = "log_uniform", lo = 0.001, hi = 0.5 }
+status = "placeholder"
+note = "The prior spans the competing hypotheses: protracted domestication (s ~ 0.001-0.01 from the archaeobotanical record) and rapid domestication (s ~ 0.05-0.5 under sickle harvest and resowing in experiments)."
+sources = [
+  { citation = "Purugganan, M.D., Fuller, D.Q. (2011). Archaeological data reveal slow rates of evolution during plant domestication. Evolution 65, 171-183.", doi = "10.1111/j.1558-5646.2010.01093.x" },
+  { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
+]
+
+[params.domestic_wild_frequency]
+group = "cultivation"
+unit = "1"
+description = "Share of domestic-type plants in wild stands (the floor selection acts on)."
+kind = { type = "probability" }
+default = 0.001
+prior = { dist = "log_uniform", lo = 0.00001, hi = 0.01 }
+status = "placeholder"
+note = "Tough-rachis mutants are rare in wild stands; the order of magnitude is uncertain."
+sources = [
+  { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
+]
+
+[params.introgression_rate]
+group = "cultivation"
+unit = "1/period"
+description = "Pull of a band's crop back toward the wild type, per unit of effort not spent cultivating (gene flow from wild stands, abandoned fields)."
+kind = { type = "probability" }
+default = 0.002
+prior = { dist = "log_uniform", lo = 0.0001, hi = 0.01 }
+status = "placeholder"
+note = "Gene flow from wild populations is why the protracted model predicts slow domestication; with it, light cultivation never domesticates."
+sources = [
+  { citation = "Allaby, R.G., Fuller, D.Q., Brown, T.A. (2008). The genetic expectations of a protracted model for the origins of domesticated crops. PNAS 105, 13982-13986.", doi = "10.1073/pnas.0803780105" },
+]
+
+[params.farm_density]
+group = "cultivation"
+unit = "people/km2"
+description = "People fed per km2 of dry land under full cultivation of domestic crops where wild cereals grow best."
+kind = { type = "real", min = 0.01, max = 100.0 }
+default = 2.0
+prior = { dist = "log_uniform", lo = 0.5, hi = 10.0 }
+status = "placeholder"
+note = "Regional densities of early farmers were around one to a few people per km2, an order of magnitude above foragers."
+sources = [
+  { citation = "Zimmermann, A., Hilpert, J., Wendt, K.P. (2009). Estimations of population density for selected periods between the Neolithic and AD 1800. Human Biology 81, 357-380.", doi = "10.3378/027.081.0313" },
+]
+
+[params.wild_yield_ratio]
+group = "cultivation"
+unit = "1"
+description = "Yield of cultivated wild cereals relative to domestic ones (shattering loses grain before harvest)."
+kind = { type = "probability" }
+default = 0.5
+prior = { dist = "uniform", lo = 0.2, hi = 1.0 }
+status = "placeholder"
+note = "Wild stands yield well when harvested at the right time; early cultivation was not more productive than foraging per hour of work."
+sources = [
+  { citation = "Bowles, S. (2011). Cultivation of cereals by the first farmers was not more productive than foraging. PNAS 108, 4760-4765.", doi = "10.1073/pnas.1010733108" },
+  { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
+]
+
+[params.cereal_precip_min]
+group = "cultivation"
+unit = "mm/yr"
+description = "Wild cereals are absent below this annual precipitation."
+kind = { type = "real", min = 0.0, max = 3000.0 }
+default = 200.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Wild barley reaches into the steppe at about 200 mm; wild wheats need more."
+sources = [
+  { citation = "Harlan, J.R., Zohary, D. (1966). Distribution of wild wheats and barley. Science 153, 1074-1080.", doi = "10.1126/science.153.3740.1074" },
+  { citation = "Zohary, D., Hopf, M., Weiss, E. (2012). Domestication of Plants in the Old World, 4th ed. Oxford University Press.", doi = "10.1093/acprof:osobl/9780199549061.001.0001" },
+]
+
+[params.cereal_precip_full]
+group = "cultivation"
+unit = "mm/yr"
+description = "Wild cereals are fully suited from this annual precipitation (linear from cereal_precip_min)."
+kind = { type = "real", min = 0.0, max = 3000.0 }
+default = 350.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "The oak-park woodland belt of the Fertile Crescent, where wild cereal stands are densest."
+sources = [
+  { citation = "Harlan, J.R., Zohary, D. (1966). Distribution of wild wheats and barley. Science 153, 1074-1080.", doi = "10.1126/science.153.3740.1074" },
+  { citation = "Zohary, D., Hopf, M., Weiss, E. (2012). Domestication of Plants in the Old World, 4th ed. Oxford University Press.", doi = "10.1093/acprof:osobl/9780199549061.001.0001" },
+]
+
+[params.cereal_precip_wet]
+group = "cultivation"
+unit = "mm/yr"
+description = "Wild cereals decline above this annual precipitation, as woodland closes."
+kind = { type = "real", min = 0.0, max = 3000.0 }
+default = 900.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Dense forest shades out the open stands wild cereals need."
+sources = [
+  { citation = "Harlan, J.R., Zohary, D. (1966). Distribution of wild wheats and barley. Science 153, 1074-1080.", doi = "10.1126/science.153.3740.1074" },
+]
+
+[params.cereal_precip_max]
+group = "cultivation"
+unit = "mm/yr"
+description = "Wild cereals are absent above this annual precipitation (linear from cereal_precip_wet)."
+kind = { type = "real", min = 0.0, max = 5000.0 }
+default = 1500.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Humid forest such as the Pontic coast."
+sources = [
+  { citation = "Harlan, J.R., Zohary, D. (1966). Distribution of wild wheats and barley. Science 153, 1074-1080.", doi = "10.1126/science.153.3740.1074" },
+]
+
+[params.cereal_temp_min]
+group = "cultivation"
+unit = "degC"
+description = "Wild cereals are absent below this annual mean temperature."
+kind = { type = "real", min = -20.0, max = 30.0 }
+default = 4.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "High plateaus and mountains with long winters."
+sources = [
+  { citation = "Zohary, D., Hopf, M., Weiss, E. (2012). Domestication of Plants in the Old World, 4th ed. Oxford University Press.", doi = "10.1093/acprof:osobl/9780199549061.001.0001" },
+]
+
+[params.cereal_temp_full]
+group = "cultivation"
+unit = "degC"
+description = "Wild cereals are fully suited from this annual mean temperature (linear from cereal_temp_min)."
+kind = { type = "real", min = -20.0, max = 30.0 }
+default = 10.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "Mediterranean-type climates with mild winters."
+sources = [
+  { citation = "Zohary, D., Hopf, M., Weiss, E. (2012). Domestication of Plants in the Old World, 4th ed. Oxford University Press.", doi = "10.1093/acprof:osobl/9780199549061.001.0001" },
+]

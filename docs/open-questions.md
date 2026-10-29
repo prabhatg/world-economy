@@ -4,10 +4,20 @@
 1. Which phenomena must emerge vs. be allowed as data-driven triggers in Mode B
    (e.g. may assimilation "introduce" a domesticate where data says it appeared)?
 2. How many competing mechanism modules per contested question can we afford?
+   (Cultivation nests its competing drivers as weights of one mechanism, ADR-0049.)
 3. Model discrepancy: how do we represent "the model is structurally wrong here"
    explicitly in calibration?
 4. How far to take genetics (ancestry tracers only, or selected loci)?
 5. Named historical individuals in Mode B: ever, or only anonymous agents?
+24. Cultivation ratchet (ADR-0049): any cultivation of rich wild stands raises carrying
+    capacity, so once people overshoot forager capacity effort ratchets up. At the
+    placeholder defaults cultivation begins across the Fertile Crescent by 11,800 BCE,
+    earlier than the PPNA (~9,700 BCE), while domestic crops first dominate around
+    9,000-8,500 BCE, close to the archaeobotanical record. Is the ratchet too strong
+    (`farm_density`, `wild_yield_ratio`), is a labour cost of cultivation missing
+    (Bowles 2011), or does cultivation need the stable Holocene climate (Richerson,
+    Boyd and Bettinger 2001)? To be settled against radiocarbon and archaeobotanical
+    timing (#17, #19).
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

@@ -98,9 +98,9 @@ fn capacity_follows_productivity_and_area() {
     let p = Params::default();
     for c in 0..h3.len() {
         let (t, pr) = wet_dry(0, c);
-        assert_eq!(w.capacity[c], expected(t, pr, &p, false), "cell {c}");
+        assert_eq!(w.forage_capacity[c], expected(t, pr, &p, false), "cell {c}");
     }
-    assert!(w.capacity[0] > 2 * w.capacity[1], "wetter cells feed more foragers");
+    assert!(w.forage_capacity[0] > 2 * w.forage_capacity[1], "wetter cells feed more foragers");
 }
 
 #[test]
@@ -112,13 +112,13 @@ fn capacity_changes_with_the_climate() {
         climate_pack(&h3, &[-12_000, -11_000], |y, _| if y < -11_500 { (2.0, 200.0) } else { (16.0, 600.0) });
     let mut w = world(&[&geometry_pack(&h3), &climate], 2);
     let p = Params::default();
-    let start = w.capacity[3];
+    let start = w.forage_capacity[3];
     assert_eq!(start, expected(2.0, 200.0, &p, false));
     w.run_years(500, 2, 500); // -11,500: half way
-    let mid = w.capacity[3];
+    let mid = w.forage_capacity[3];
     w.run_years(600, 2, 600); // -10,900: past the last slice
-    assert_eq!(w.capacity[3], expected(16.0, 600.0, &p, false));
-    assert!(start < mid && mid < w.capacity[3]);
+    assert_eq!(w.forage_capacity[3], expected(16.0, 600.0, &p, false));
+    assert!(start < mid && mid < w.forage_capacity[3]);
 }
 
 #[test]
@@ -133,8 +133,8 @@ fn perennial_rivers_raise_capacity() {
         3,
     );
     let p = Params::default();
-    assert_eq!(w.capacity[0], expected(15.0, 400.0, &p, true));
-    assert_eq!(w.capacity[1], expected(15.0, 400.0, &p, false));
+    assert_eq!(w.forage_capacity[0], expected(15.0, 400.0, &p, true));
+    assert_eq!(w.forage_capacity[1], expected(15.0, 400.0, &p, false));
 }
 
 #[test]
@@ -150,9 +150,9 @@ fn rivers_feed_foragers_in_deserts() {
         4,
     );
     let p = Params::default();
-    assert_eq!(w.capacity[1], 1, "rainless desert");
-    assert_eq!(w.capacity[0], expected(24.0, 0.0, &p, true));
-    assert!(w.capacity[0] > 100);
+    assert_eq!(w.forage_capacity[1], 1, "rainless desert");
+    assert_eq!(w.forage_capacity[0], expected(24.0, 0.0, &p, true));
+    assert!(w.forage_capacity[0] > 100);
 }
 
 #[test]
@@ -185,4 +185,25 @@ fn climate_worlds_are_partition_independent_and_restore() {
     assert_eq!(restored.capacity, w.capacity);
     restored.run_years(367, 4, 367);
     assert_eq!(checkpoint::state_hash(&restored), run(1));
+}
+
+#[test]
+fn climate_worlds_start_with_foragers_on_all_the_land() {
+    // At 12,000 BCE Epipaleolithic foragers lived across Southwest Asia: one band per
+    // cell at `initial_occupancy` of its forager capacity.
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], wet_dry));
+    let w = world(&[&g, &c], 8);
+    let p = Params::default();
+    for cell in 0..h3.len() {
+        let k = w.forage_capacity[cell];
+        assert_eq!(w.population[cell], (p.initial_occupancy * k as f64) as u64, "cell {cell}");
+    }
+    assert_eq!(w.agent_count(), h3.len());
+    // Zero occupancy keeps the founding bands of the toy start.
+    let inputs =
+        Inputs::from_packs([&g, &c].iter().map(|b| Pack::parse(b.to_vec()).unwrap()).collect()).unwrap();
+    let few = Params { initial_occupancy: 0.0, ..Params::default() };
+    let w = World::with_inputs(WorldConfig::geometry(&id(&g)), 8, few.clone(), inputs).unwrap();
+    assert_eq!(w.total_population(), few.initial_bands as u64 * few.initial_weight);
 }

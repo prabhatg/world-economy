@@ -42,6 +42,10 @@ abstraction chosen so that multi-node / multi-GPU is an implementation, not a re
   belief) as partitioned edge lists (CSR + delta buffers), owned by source entity.
 - **Stable 64-bit ids** that encode the birth *cell* + a per-cell counter, never reused.
   Cells (not partitions) own the counters, so ids are independent of partitioning.
+- *Implemented (M1, ADR-0049):* agents are `id, cell, weight` plus practice traits
+  (`cultivation`, `domestication`) as fixed-point shares (parts per billion);
+  split-off groups copy them and merges take people-weighted integer means, so
+  checkpoints (`OIKOSCK2`) and state hashes stay exact on every host.
 
 ## 3.4 Scheduling & phases
 

@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "70b9d2db4abdfa9dd1f1942afd7b1dc2f68c0e6bb0c644f4cb97f32421b47c6d"
+GOLDEN_HASH = "86f7a2afa76c9a5aa7a5e4145a85b4af6fc689e9c58d577ee926c3dd9632588c"
 
 
 def run(world, years=300, parts=1):
@@ -244,3 +244,17 @@ def test_capacity_and_habitat():
     p = oikos.registry()["params"]
     assert cap.min() >= p["capacity_min"]["default"] and cap.max() <= p["capacity_max"]["default"], "toy capacity"
     assert hab.all(), "without forcing packs every cell is habitable"
+
+
+def test_cultivation_fields():
+    w = oikos.World(seed=3)
+    w.run_years(300, parts=2)
+    for name in ("cultivation", "domestication", "suitability", "climate_stress"):
+        v = getattr(w, name)()
+        assert v.dtype == np.float64 and v.shape == (w.cells,), name
+        assert not v.any(), f"{name}: toy worlds never cultivate"
+    np.testing.assert_array_equal(w.forage_capacity(), w.capacity())
+    agents = w.agents()
+    for name in ("cultivation", "domestication"):
+        assert agents[name].dtype == np.float64 and len(agents[name]) == len(agents["id"])
+        assert not agents[name].any()
