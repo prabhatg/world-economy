@@ -17,7 +17,16 @@
     (`farm_density`, `wild_yield_ratio`), is a labour cost of cultivation missing
     (Bowles 2011), or does cultivation need the stable Holocene climate (Richerson,
     Boyd and Bettinger 2001)? To be settled against radiocarbon and archaeobotanical
-    timing (#17, #19).
+    timing (#17, #19). Making cultivators more visible to the radiocarbon operator
+    lowers the M1 score (ADR-0050), consistent with an onset that is too early.
+25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
+    mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
+    default world's activity rises about threefold and keeps rising. Is the gap
+    demographic (a Neolithic demographic transition, #14), visibility (sedentary
+    villages leave far more datable material, #13), or research bias toward the
+    Neolithic? Date density alone cannot separate them; site counts and sizes can
+    (#17). The operator also conditions out where dates are dense, so it needs a
+    research-intensity model or site surveys to use spatial density.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

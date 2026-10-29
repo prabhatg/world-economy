@@ -51,6 +51,7 @@
 | 0047 | Foraging carrying capacity: with a climate pack, capacity = dry-land area × (terrestrial density from Miami-model NPP, `ref × (NPP/NPP_ref)^elasticity`, + an aquatic density where a perennial river, lake shore or sea coast is at hand), recomputed every `capacity_period_ticks`; all coefficients in the registry; toy worlds keep the random capacity (golden trajectory unchanged, hash changed by the new parameters) | Accepted |
 | 0048 | Forager dispersal: a default mechanism after fission; a cell at least `dispersal_crowding` full (N/K) buds off one group with `dispersal_probability` per year (draw keyed by cell and tick): `dispersal_fraction` of its first band whose share fits moves to the least crowded habitable neighbor if it is less crowded and has room (as of last step); new `Stream::Dispersal` | Accepted |
 | 0049 | Cultivation and domestication: agents carry practice (`cultivation` effort and `domestication` share of the sown crop, fixed-point parts per billion), inherited by split-off groups and people-weighted on merge; a deterministic `cultivation` mechanism (last in the step) moves effort toward a target that nests three competing drivers as weights (population pressure beyond `cultivation_crowding` × forager capacity, climate stress = decline of forager capacity over `stress_window_years`, wild-cereal abundance) and selects for domestic traits logistically at `selection_coefficient` × effort against wild gene flow; capacity = forager capacity × (1 − effort) + farm capacity × (wild yield × effort + domestic gain × effort × domestication); climate worlds start peopled (`initial_occupancy`); checkpoint magic `OIKOSCK2` | Accepted |
+| 0050 | Observation operators live in `calibration/` (Python package `oikos_cal`), read activity recorded from a world through the bindings and never change it; first operator: radiocarbon date density, forward-modelled (people-years per cell and century × Surovell 2009 taphonomic survival, blurred by a calibration kernel built from IntCal20 per error class) and compared with site-phase-binned calibrated dates as a multinomial over centuries within coarse H3 blocks, so research intensity per block cancels; 1% background | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -177,6 +178,45 @@ bytes: +8% wasm instructions and +14% native time per agent-step on the toy benc
 after copying kept bands in runs during merges and skipping trait moves for bands
 already in place (from +21% at first). Sedentism, storage and the Neolithic demographic
 transition build on these traits next (#13, #14).
+
+## ADR-0050 rationale (observation operators, radiocarbon density)
+
+The record never measures people; it measures what survived, was found, dated and
+calibrated. Comparing a model's population with a summed probability distribution of
+dates (SPD) would treat calibration wiggles, taphonomic loss and excavation history as
+demography. So the operator moves the model into the data's space instead of the data
+into the model's: it predicts the calibrated date mass a history would produce and
+scores that against the observed mass (the logic of simulation-based SPD tests,
+Shennan et al. 2013, Timpson et al. 2014, here as a likelihood).
+
+- **Calibration** is a fixed linear map. The kernel gives, for a sample whose true date
+  is uniform in a century and whose error is typical of its class (≤ 50, ≤ 100,
+  ≤ 200 years; larger errors are dropped), the calibrated mass in each century, through
+  the same calibration as the dates pipeline. Plateaus such as the late-glacial ones
+  then blur the model exactly as they blur the data. It is built once per table (4 s
+  on M1), so scoring a history is a matrix product.
+- **Taphonomy** uses the global survival curve of Surovell et al. (2009), validated by
+  Bluhm and Surovell (2019); over 12,000-3,000 BCE survival falls about threefold, so
+  ignoring it reads loss as growth.
+- **Research intensity** varies far more across space (Çatalhöyük, the Jordan valley)
+  than through time within a region, and we have no model of it. Scoring only the
+  distribution over time within each block (H3 resolution 2, ~87,000 km², 44 blocks
+  with dates in M1) conditions it out exactly: any per-block factor cancels. The price
+  is that the operator says nothing about where in space dates are dense; that needs
+  site counts or a research-intensity model (open question 25).
+- **Clustering:** one well-dated site is one observation per phase. Dates of a site
+  within 200 years share one date's weight (Shennan et al. 2013): in M1, 4,398 usable
+  dates are 1,403 site-phases, and Çatalhöyük's 216 dates count about 14.
+- **Model error:** 1% of each block's mass is spread uniformly, so dates where the
+  model has nobody are costly but finite.
+
+Operators run on the calibration host, not in work units, so they use NumPy; results
+are validated by the engine's state hash, never by an operator's output. Activity is
+recorded from the bindings (population and cultivation sampled every 10 years); people
+and cultivators are kept apart so an operator can make sedentary cultivators more
+visible without re-running a world. Validation is on synthetic worlds with known
+histories, linear and plateau curves: the true history outscores onsets and peaks moved
+by 500 years, and research intensity and scale do not change the score.
 
 ## Notes
 

@@ -23,8 +23,20 @@ built by `data/oikos_data/radiocarbon.py` (ADR-0046): every p3k14c date in the r
 (lab id, 14C age and error, material, taxa, site, source, location accuracy, cell,
 IntCal20-calibrated median year, share of probability in 12,000–3,000 BCE), and the
 calibrated probability summed per cell and century for dates located within 500 m or
-exactly. The operator (#17) will add taphonomic loss and research intensity, and
-should bin dates by site and phase before comparing densities.
+exactly.
+
+**Implemented (radiocarbon density operator, ADR-0050):** `calibration/oikos_cal`
+(`radiocarbon.Operator`) scores a world's recorded activity (`record.activity`:
+people-years per cell and century) against the dates table. It forward-models
+taphonomic loss (Surovell et al. 2009) and measurement plus calibration (a kernel from
+IntCal20 per error class), bins dates by site and 200-year phase, and compares the
+distribution of binned calibrated mass over centuries within coarse H3 blocks (a
+multinomial given each block's total), so research intensity per block cancels.
+`synthetic_dates` draws dates from a known history to validate it. At the placeholder
+defaults the M1 world scores -4,028 against -4,026 for a flat history and -4,007 for
+0.01%/year growth: the record rises about fifteenfold from 11,500 to 6,000 BCE and
+then falls, the model about threefold and on (open question 25). Site counts, obsidian
+distance-decay and domestication timing are next (#17).
 
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.

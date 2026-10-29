@@ -52,5 +52,14 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 
+### Methods in our observation operators
+- **Taphonomic correction:** Surovell, T.A. et al. (2009), Journal of Archaeological
+  Science 36: 1715–1724, doi:10.1016/j.jas.2009.03.029; validated by Bluhm, L.E. &
+  Surovell, T.A. (2019), Quaternary Research 91: 325–328, doi:10.1017/qua.2018.78.
+- **Site-phase binning and simulation-based SPD comparison:** Shennan, S. et al. (2013),
+  Nature Communications 4: 2486, doi:10.1038/ncomms3486; Timpson, A. et al. (2014),
+  Journal of Archaeological Science 52: 549–557, doi:10.1016/j.jas.2014.08.011;
+  rcarbon, Crema, E.R. & Bevan, A. (2021), Radiocarbon 63: 23–39, doi:10.1017/RDC.2020.95.
+
 ## Volunteers, reviewers, contributors, institutions
 *Your name here.*

@@ -24,6 +24,7 @@ volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start wit
 | [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli`, `oikos-py` (Python bindings) |
 | [engine/python/](engine/python/tests/test_bindings.py) | Python binding tests (pytest) and examples |
 | [data/](data/README.md) | Regions, dataset manifests, ingestion pipelines (`oikos_data`), forcing-pack lock file |
+| [calibration/](calibration/README.md) | Observation operators (`oikos_cal`): score recorded worlds against the record |
 | [engine/params/](engine/params/m0-toy.toml) | Parameter registry: every parameter's unit, range, prior, status and sources |
 | [engine/golden/](engine/golden/) | Golden work unit and its committed result (reproducibility oracle) |
 | [engine/scripts/](engine/scripts/) | `check.sh` (verification gate), `bench.sh`, `compare-reports.sh`, git hooks |
@@ -66,6 +67,7 @@ cargo run --release -p oikos-cli -- params        # registry as JSON
 maturin develop --release -m crates/oikos-py/Cargo.toml   # Python module `oikos` into the venv
 pytest python/tests                               # Python binding tests
 (cd ../data && python -m oikos_data check)        # rebuild locked forcing packs, compare ids
+pytest ../calibration/tests                       # observation operators
 ```
 
 The gate's Python steps (zarr-python and pyarrow read our outputs; maturin builds the

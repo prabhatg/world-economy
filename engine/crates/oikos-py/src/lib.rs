@@ -245,6 +245,12 @@ impl PyWorld {
         self.0.tick.0
     }
 
+    /// Calendar year of the current tick (negative is BCE).
+    #[getter]
+    fn year(&self) -> i64 {
+        self.0.tick.calendar_year()
+    }
+
     #[getter]
     fn seed(&self) -> u64 {
         self.0.seed

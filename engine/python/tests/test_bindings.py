@@ -59,7 +59,7 @@ def test_step_advances_one_period_and_reports_exact_stats():
     before = w.summary()["population"]
     stats = w.step()
     assert set(stats) == {"births", "deaths", "fissions", "migrants"}
-    assert w.tick == 365
+    assert w.tick == 365 and w.year == -11_999, "calendar years count from 12,000 BCE"
     assert w.summary()["population"] == before + stats["births"] - stats["deaths"]
 
 

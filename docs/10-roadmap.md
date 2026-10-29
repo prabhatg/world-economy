@@ -50,6 +50,9 @@ crowded land (ADR-0048), so M1 worlds fill the region as a wave of advance.
 Cultivation and domestication (ADR-0049): bands carry cultivation effort and crop
 domestication, driven by competing hypotheses nested as weights; M1 worlds start with
 foragers across the region.
+First observation operator (ADR-0050): radiocarbon date density, scoring recorded
+worlds against binned, calibrated p3k14c dates with taphonomy and calibration
+forward-modelled (`calibration/`).
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers
