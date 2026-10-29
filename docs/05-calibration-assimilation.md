@@ -35,8 +35,13 @@ multinomial given each block's total), so research intensity per block cancels.
 `synthetic_dates` draws dates from a known history to validate it. At the placeholder
 defaults the M1 world scores -4,028 against -4,026 for a flat history and -4,007 for
 0.01%/year growth: the record rises about fifteenfold from 11,500 to 6,000 BCE and
-then falls, the model about threefold and on (open question 25). Site counts, obsidian
-distance-decay and domestication timing are next (#17).
+then falls, the model about threefold and on (open question 25).
+
+**Implemented (domestication-timing operator, ADR-0051):** `domestication.Operator`
+scores the domestic share of the crop sown near each dated barley assemblage of Allaby
+et al. 2017 (`data/oikos_data/rachis.py`) against its rachis counts, beta-binomially.
+In M1 it separates the competing domestication hypotheses: protracted selection scores
+-92.8, rapid selection -157.5. Site counts and obsidian distance-decay are next (#17).
 
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.

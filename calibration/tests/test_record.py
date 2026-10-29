@@ -20,12 +20,12 @@ def test_activity_is_people_years_per_cell_and_century():
         twin.run_years(n, parts=2)
     np.testing.assert_array_equal(a.people, people)
     assert twin.state_hash() == w.state_hash(), "recording never changes the world"
-    assert a.people[:, 2].sum() > 0 and not a.cultivators.any(), "toy worlds never cultivate"
+    assert a.people[:, 2].sum() > 0 and not a.cultivators.any() and not a.domestic.any(), "toy worlds never cultivate"
     np.testing.assert_array_equal(a.visible(3.0), a.people)
 
 
 def test_cultivators_can_be_more_visible():
-    a = record.Activity(record.Window(-12_000, -11_900), np.array([[100.0]]), np.array([[40.0]]))
+    a = record.Activity(record.Window(-12_000, -11_900), np.array([[100.0]]), np.array([[40.0]]), np.array([[10.0]]))
     assert a.visible(0.0)[0, 0] == 100 and a.visible(2.0)[0, 0] == 180
 
 

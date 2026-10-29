@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -26,6 +26,7 @@ python -m oikos_data build hydrology m1-swasia    # downloads RiverATLAS + LakeA
 python -m oikos_data build soils m1-swasia        # reads SoilGrids 1 km windows once (~1 min)
 python -m oikos_data build radiocarbon_dates m1-swasia     # p3k14c + IntCal20 -> build/*.parquet
 python -m oikos_data build radiocarbon_density m1-swasia
+python -m oikos_data build rachis m1-swasia                # Allaby et al. 2017 barley rachis table
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -51,6 +52,7 @@ Observation tables (Parquet, locked like packs; docs/05 §5.1):
 |---|---|---|
 | `radiocarbon_dates` | one per p3k14c date in the region: lab id, 14C age/error, material, taxa, site, source database, location accuracy, cell, IntCal20 median year, probability share in the window | p3k14c 1.0.0 (MIT), IntCal20 (CC BY 4.0); repeated lab ids keep their first row |
 | `radiocarbon_density` | cell × century (12,000–3,000 BCE): summed calibrated probability and number of dates, for dates located within 500 m or exactly | as above |
+| `rachis` | one per archaeobotanical assemblage in the region: crop, site and phase, location, cell, median calendar year, non-shattering share and count, rachis fragments determined and excluded, primary source | Allaby et al. 2017 supplement, Table S4 (barley; CC BY 4.0) |
 
 Rules:
 

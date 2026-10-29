@@ -52,6 +52,7 @@
 | 0048 | Forager dispersal: a default mechanism after fission; a cell at least `dispersal_crowding` full (N/K) buds off one group with `dispersal_probability` per year (draw keyed by cell and tick): `dispersal_fraction` of its first band whose share fits moves to the least crowded habitable neighbor if it is less crowded and has room (as of last step); new `Stream::Dispersal` | Accepted |
 | 0049 | Cultivation and domestication: agents carry practice (`cultivation` effort and `domestication` share of the sown crop, fixed-point parts per billion), inherited by split-off groups and people-weighted on merge; a deterministic `cultivation` mechanism (last in the step) moves effort toward a target that nests three competing drivers as weights (population pressure beyond `cultivation_crowding` × forager capacity, climate stress = decline of forager capacity over `stress_window_years`, wild-cereal abundance) and selects for domestic traits logistically at `selection_coefficient` × effort against wild gene flow; capacity = forager capacity × (1 − effort) + farm capacity × (wild yield × effort + domestic gain × effort × domestication); climate worlds start peopled (`initial_occupancy`); checkpoint magic `OIKOSCK2` | Accepted |
 | 0050 | Observation operators live in `calibration/` (Python package `oikos_cal`), read activity recorded from a world through the bindings and never change it; first operator: radiocarbon date density, forward-modelled (people-years per cell and century × Surovell 2009 taphonomic survival, blurred by a calibration kernel built from IntCal20 per error class) and compared with site-phase-binned calibrated dates as a multinomial over centuries within coarse H3 blocks, so research intensity per block cancels; 1% background | Accepted |
+| 0051 | Domestication-timing operator: rachis assemblages (Allaby et al. 2017 Table S4, barley, a locked Parquet table) scored beta-binomially (concentration 2) against the model's domestic share of the crop sown within one ring of the site over the phase's century ± 1 (wild mutant frequency where nobody cultivates); the recorder keeps effort × domestication people-years | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -217,6 +218,33 @@ and cultivators are kept apart so an operator can make sedentary cultivators mor
 visible without re-running a world. Validation is on synthetic worlds with known
 histories, linear and plateau curves: the true history outscores onsets and peaks moved
 by 500 years, and research intensity and scale do not change the score.
+
+## ADR-0051 rationale (domestication timing)
+
+The share of non-shattering rachis in a dated assemblage is the most direct record of
+domestication, and the quantity the two hypotheses of ADR-0049 disagree about: a
+protracted rise over millennia (Purugganan and Fuller 2011) or one within decades to two
+centuries of cultivation starting (Hillman and Davies 1990). The model's counterpart is
+the domestic share of the crop sown near the site, weighted by the people and effort
+sowing it, over the phase's century and its neighbours (phase medians are uncertain by
+centuries). Where nobody cultivates nearby, ears come from wild stands.
+
+Assemblages are far more variable than binomial sampling: they tend to be nearly all
+wild or nearly all domestic, from mixed contexts, gathered wild stands and changing
+identification criteria (Tanno and Willcox 2012). A beta-binomial absorbs this; on the
+M1 barley record a regional logistic fits best with concentration 1-2, and the
+conclusions below hold from 1 to 30.
+
+Only Table S4 (barley, 26 assemblages, 8,095 fragments) is machine-readable; emmer and
+einkorn are images, and transcribing them by hand would make an unverifiable dataset.
+On barley alone the record is a protracted domestication: a regional logistic fits best
+at 0.0015-0.003 per year, half domestic around 7,500 BCE, and 0.05 per year is worse by
+about 50 log-units. Full M1 worlds agree: the default protracted selection
+(`selection_coefficient` 0.005) scores -92.8, the rapid one (0.05) -157.5, since rapid
+selection makes the crop domestic as soon as cultivation starts (by 11,800 BCE at the
+defaults, open question 24), against wild Natufian and PPNA assemblages. The model's
+coefficient is not the logistic rate: selection acts in proportion to effort, so the
+best worlds sit at 0.005-0.008 and 0.002 never domesticates by 6,000 BCE.
 
 ## Notes
 

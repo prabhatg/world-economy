@@ -1,0 +1,53 @@
+# Archaeobotanical rachis assemblages: shattering vs non-shattering cereal ears.
+dataset = "allaby2017-rachis"
+title = "Raw data on shattering and non-shattering rachis in archaeobotanical cereal assemblages (supplement to Geographic mosaics and changing rates of cereal domestication)"
+version = "v1"
+homepage = "https://doi.org/10.6084/m9.figshare.5436709.v1"
+citation = "Allaby, R.G., Stevens, C., Lucas, L., Maeda, O., Fuller, D.Q. (2017). Geographic mosaics and changing rates of cereal domestication. Philosophical Transactions of the Royal Society B 372: 20160429. https://doi.org/10.1098/rstb.2016.0429. Supplement: https://doi.org/10.6084/m9.figshare.5436709.v1"
+doi = "10.6084/m9.figshare.5436709.v1"
+notes = """
+Electronic supplementary material (one .docx). Table S4 (barley, updated from Maeda et
+al. 2016) is a machine-readable table: site and phase, latitude, longitude, median age
+(cal BC, from the site's radiocarbon dates; Fuller et al. 2012, 2014), percentages of
+shattering and non-shattering rachis, the number of rachis fragments determined, the
+number excluded as indeterminate, and the primary archaeobotanical source; cite those
+through this dataset. Tables S7 (emmer) and S10 (einkorn) are embedded as images and
+are not read. Non-shattering counts are the percentage times the determined total,
+rounded.
+"""
+
+[license]
+# figshare lists the supplement as CC BY 4.0 (article 5436709, checked through the
+# figshare API).
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains rachis data from Allaby et al. 2017 (Phil. Trans. R. Soc. B 372: 20160429, https://doi.org/10.1098/rstb.2016.0429; supplement https://doi.org/10.6084/m9.figshare.5436709.v1), CC BY 4.0, and the archaeobotanical reports it compiles."
+verified = "2026-10-29"
+
+[access]
+kind = "figshare_file"
+url = "https://ndownloader.figshare.com/files/9393370"
+file = "allaby2017-rstb20160429_si_001.docx"
+md5 = "f0e3f22a7bddf3014a5f247cb753dc84"
+# Caption that introduces each crop's table.
+tables = { barley = "Table S4." }
+
+[coverage]
+spatial = "Southwest Asia (Levant, Upper Euphrates, Zagros, Anatolia): 26 barley assemblages"
+temporal = "10,800 to 6,200 cal BC"
+
+[[variables]]
+name = "non-shattering %"
+unit = "%"
+description = "Share of determined rachis fragments of the non-shattering (domestic) type."
+
+[[variables]]
+name = "total n (det. Rachis)"
+unit = "1"
+description = "Rachis fragments determined as shattering or non-shattering."
+
+[[variables]]
+name = "median age (cal.BC)"
+unit = "cal BC"
+description = "Median calibrated age of the archaeological phase."

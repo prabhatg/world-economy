@@ -52,7 +52,9 @@ domestication, driven by competing hypotheses nested as weights; M1 worlds start
 foragers across the region.
 First observation operator (ADR-0050): radiocarbon date density, scoring recorded
 worlds against binned, calibrated p3k14c dates with taphonomy and calibration
-forward-modelled (`calibration/`).
+forward-modelled (`calibration/`). Domestication timing (ADR-0051) against barley
+rachis assemblages: the record and M1 worlds both favour protracted domestication over
+rapid.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

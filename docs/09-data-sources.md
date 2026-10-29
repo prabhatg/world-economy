@@ -28,6 +28,9 @@ the figshare API and checked against its published MD5. Soils come from SoilGrid
 Radiocarbon observations come from p3k14c (ADR-0046): the public, location-fuzzed
 release in the authors' MIT-licensed compendium on Zenodo (the canonical tDAR copy needs
 a browser), calibrated with IntCal20 (CC BY 4.0); both checked 2026-10-28.
+Domestication timing comes from the barley rachis assemblages (shattering vs
+non-shattering ears) of Allaby et al. 2017's supplement on figshare (CC BY 4.0, checked
+2026-10-29; ADR-0051); its emmer and einkorn tables are images and are not yet read.
 
 ## Forcing (inputs)
 

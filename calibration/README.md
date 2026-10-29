@@ -8,8 +8,9 @@ through the Python bindings (`oikos`) and never change them.
 
 | Module | What it is |
 |---|---|
-| `oikos_cal/record.py` | `activity(world, end)`: people-years (and cultivator people-years) per cell and century while a world runs |
+| `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years and domestic-crop people-years per cell and century while a world runs |
 | `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; `synthetic_dates` for validation |
+| `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
 | `tests/` | pytest: synthetic worlds with known answers; M1 tests run when p3k14c, IntCal20 and the M1 packs are cached |
 
 ```sh

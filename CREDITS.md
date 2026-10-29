@@ -49,6 +49,11 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   2019, Manning & Timpson 2014, 14SEA).
 - **IntCal20** (radiocarbon calibration): Reimer, P.J. et al. (2020), Radiocarbon 62:
   725–757, doi:10.1017/RDC.2020.41. CC BY 4.0.
+- **Barley rachis assemblages** (domestication timing): Allaby, R.G., Stevens, C.,
+  Lucas, L., Maeda, O. & Fuller, D.Q. (2017), Phil. Trans. R. Soc. B 372: 20160429,
+  doi:10.1098/rstb.2016.0429; supplement doi:10.6084/m9.figshare.5436709.v1 (CC BY 4.0),
+  and the archaeobotanical reports it compiles (Colledge, Kislev, Tanno & Willcox,
+  van Zeist & Bakker-Heeres, de Moulins, Fairbairn et al., and others).
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 
