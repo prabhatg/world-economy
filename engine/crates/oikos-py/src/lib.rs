@@ -175,6 +175,18 @@ impl PyWorld {
         u64_array(py, self.0.population.iter().copied())
     }
 
+    /// Carrying capacity per cell (uint64, people): from the climate pack if there is one
+    /// (recomputed every `capacity_period_ticks`), else the toy draw.
+    fn capacity<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        u64_array(py, self.0.capacity.iter().copied())
+    }
+
+    /// Whether each cell is habitable now (bool; dry land under the coastline and
+    /// hydrology packs, every cell without them).
+    fn habitable<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        array(py, "|b1", self.0.habitable.iter().map(|&h| h as u8).collect())
+    }
+
     /// Agents in canonical (cell, id) order: `id` (uint64), `cell` (uint32 grid index)
     /// and `weight` (uint64, people the agent stands for).
     fn agents<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {

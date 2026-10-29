@@ -48,6 +48,7 @@
 | 0044 | Hydrology: a static `hydrology` pack from RiverATLAS and LakeATLAS (HydroATLAS, CC BY 4.0; not the standalone HydroRIVERS, whose HydroSHEDS licence restricts redistribution): river length, largest reach's natural discharge and Strahler order, floodplain fraction (GIEMS-D15 maximum inundation) and natural-lake fraction per cell; dry land = coastline land − lake fraction decides habitability | Accepted |
 | 0045 | Soils: a static `soils` pack from SoilGrids 2.0's 1 km aggregates (CC BY 4.0): clay, sand, silt, organic carbon, pH and coarse fragments as 0–30 cm depth-weighted means of 2×2-block samples located through the Homolosine projection; modern soils as a proxy, non-soil pixels skipped | Accepted |
 | 0046 | Radiocarbon observations: p3k14c (public release, MIT compendium) dates in the region, de-duplicated by lab id and calibrated with IntCal20 (annual grid, curve error in quadrature, normalized), as two locked Parquet tables (dates; probability per cell and century for LocAccuracy ≥ 2), built like forcing packs and identified by BLAKE3 | Accepted |
+| 0047 | Foraging carrying capacity: with a climate pack, capacity = dry-land area × (terrestrial density from Miami-model NPP, `ref × (NPP/NPP_ref)^elasticity`, + an aquatic density where a perennial river, lake shore or sea coast is at hand), recomputed every `capacity_period_ticks`; all coefficients in the registry; toy worlds keep the random capacity (golden trajectory unchanged, hash changed by the new parameters) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -94,6 +95,20 @@ Marmara count as land until a lake mask arrives with hydrology (#9). Habitabilit
 mask the engine derives each step from the pack and the year, never checkpointed, so a
 restored run rebuilds it; bands in flooded cells do not split, and the `inundation`
 mechanism (last in the step) moves them.
+
+## ADR-0047 rationale (foraging capacity)
+
+The Miami model needs only annual temperature and precipitation, which the climate
+pack has for every century, and is the standard first-order productivity model; it is
+crude (no seasonality, soils or CO2), and a better productivity model can replace it
+behind the same function. Forager density rising with productivity is the best-
+supported cross-cultural regularity (Binford 2001; Kelly 2013; Tallavaara et al. 2018);
+its level and elasticity are uncertain, so both are priors for calibration. Aquatic
+resources add density rather than multiplying it, because river and coastal foraging
+does not depend on local rain: the Nile valley feeds people in a rainless desert.
+Soils matter for cultivation, not foraging, and enter with #13. Capacity is
+recomputed every ten years, not every step: the climate changes on century slices, and
+recomputing 22,198 cells' productivity every year would cost more than the agents.
 
 ## Notes
 

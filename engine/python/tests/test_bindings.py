@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "2c1cabd70cd38af578f5f4edd599f18f924875de49d5f7a6df397c3c537af53e"
+GOLDEN_HASH = "561382d4557c5d29341ff99e8cbc6af9461e16d5891bece20c685b3f8600dbbd"
 
 
 def run(world, years=300, parts=1):
@@ -235,3 +235,12 @@ def test_sample_params_is_deterministic_and_monotone():
 def test_sample_params_rejects_what_it_cannot_map(u, message):
     with pytest.raises(ValueError, match=message):
         oikos.sample_params(u)
+
+
+def test_capacity_and_habitat():
+    w = oikos.World(seed=3)
+    cap, hab = w.capacity(), w.habitable()
+    assert cap.dtype == np.uint64 and len(cap) == w.cells and hab.dtype == np.bool_ and len(hab) == w.cells
+    p = oikos.registry()["params"]
+    assert cap.min() >= p["capacity_min"]["default"] and cap.max() <= p["capacity_max"]["default"], "toy capacity"
+    assert hab.all(), "without forcing packs every cell is habitable"

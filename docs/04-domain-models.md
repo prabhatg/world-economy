@@ -29,6 +29,9 @@ enters the model, and the starting mechanisms.
 ## 4.2 Ecology & resources
 
 - Biome productivity, wild plant/animal resources, megafauna remnants, fisheries.
+  *Implemented (M1):* forager carrying capacity per cell from the climate pack (Miami
+  model productivity), dry-land area and aquatic resources (rivers, lake shores,
+  coasts), recomputed as the climate changes (`oikos-sim::environment`, ADR-0047).
 - **Domesticable species pool** by region (wheat, barley, lentils, goats, sheep,
   cattle, pigs, rice, maize…), with suitability from agro-climatic models.
 - Domestication as a co-evolutionary process (selection intensity × cultivation

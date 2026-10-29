@@ -17,6 +17,13 @@ fn defaults_from_registry_match_the_m0_values() {
     assert_eq!(p.exploration_probability, 0.3);
     assert_eq!(p.merge_threshold, 10);
     assert_eq!((p.initial_bands, p.initial_weight), (12, 30));
+    assert_eq!(p.capacity_period_ticks, 3650);
+    assert_eq!(
+        (p.miami_npp_max, p.miami_temp_offset, p.miami_temp_slope, p.miami_precip_slope),
+        (3000.0, 1.315, 0.119, 0.000664)
+    );
+    assert_eq!((p.npp_reference, p.forager_density_ref, p.npp_elasticity), (1000.0, 0.1, 1.0));
+    assert_eq!((p.aquatic_bonus, p.perennial_discharge), (0.5, 1.0));
 }
 
 #[test]

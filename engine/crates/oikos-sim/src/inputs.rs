@@ -78,6 +78,12 @@ impl Inputs {
                 inputs.field(kind, field)?;
             }
         }
+        let (climate, temp, precip) = crate::environment::CLIMATE;
+        if inputs.pack(climate).is_ok() {
+            inputs.field(climate, temp)?;
+            inputs.field(climate, precip)?;
+            inputs.field(crate::environment::AREA.0, crate::environment::AREA.1)?;
+        }
         Ok(inputs)
     }
 
@@ -106,19 +112,13 @@ impl Inputs {
     /// its lake fraction (0 without a hydrology pack) is above zero. Returns whether any
     /// pack restricts habitability; without one every cell is habitable.
     pub fn habitable_into(&self, calendar_year: i64, out: &mut [bool]) -> bool {
-        let coast = self
-            .pack(COASTLINE.0)
-            .ok()
-            .map(|p| (p.field(COASTLINE.1).expect("validated in from_packs"), p.slice_at(calendar_year)));
-        let lakes = self.field(LAKES.0, LAKES.1).ok();
-        if coast.is_none() && lakes.is_none() {
+        let surface = crate::environment::Surface::new(self, calendar_year);
+        if !surface.restricted() {
             out.fill(true);
             return false;
         }
         for (c, h) in out.iter_mut().enumerate() {
-            let land = coast.as_ref().map_or(Some(1.0), |(f, s)| f.at(*s, c)).unwrap_or(0.0);
-            let lake = lakes.as_ref().map_or(Some(0.0), |f| f.get(0, c)).unwrap_or(0.0);
-            *h = land - lake > 0.0;
+            *h = surface.dry(c) > 0.0;
         }
         true
     }

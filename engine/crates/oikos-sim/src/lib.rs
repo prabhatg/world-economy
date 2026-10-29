@@ -14,6 +14,7 @@
 
 pub mod agents;
 pub mod checkpoint;
+pub mod environment;
 pub mod inputs;
 pub mod mechanisms;
 pub mod output;

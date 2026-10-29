@@ -15,7 +15,7 @@ pub fn registry() -> &'static Registry {
     })
 }
 
-/// Parameters of the M0 toy mechanisms. Field names are registry keys; units, ranges,
+/// Parameters of the engine's mechanisms. Field names are registry keys; units, ranges,
 /// priors and sources live in the registry, not here.
 ///
 /// Deserializing (work units, checkpoints) reads the given keys as overrides of the
@@ -32,6 +32,16 @@ pub struct Params {
     pub merge_threshold: u64,
     pub initial_bands: u32,
     pub initial_weight: u64,
+    pub capacity_period_ticks: u64,
+    pub miami_npp_max: f64,
+    pub miami_temp_offset: f64,
+    pub miami_temp_slope: f64,
+    pub miami_precip_slope: f64,
+    pub npp_reference: f64,
+    pub forager_density_ref: f64,
+    pub npp_elasticity: f64,
+    pub aquatic_bonus: f64,
+    pub perennial_discharge: f64,
 }
 
 impl Default for Params {
@@ -67,6 +77,16 @@ impl Params {
             merge_threshold: int("merge_threshold")?,
             initial_bands: u32::try_from(int("initial_bands")?).map_err(|e| format!("initial_bands: {e}"))?,
             initial_weight: int("initial_weight")?,
+            capacity_period_ticks: int("capacity_period_ticks")?,
+            miami_npp_max: real("miami_npp_max")?,
+            miami_temp_offset: real("miami_temp_offset")?,
+            miami_temp_slope: real("miami_temp_slope")?,
+            miami_precip_slope: real("miami_precip_slope")?,
+            npp_reference: real("npp_reference")?,
+            forager_density_ref: real("forager_density_ref")?,
+            npp_elasticity: real("npp_elasticity")?,
+            aquatic_bonus: real("aquatic_bonus")?,
+            perennial_discharge: real("perennial_discharge")?,
         };
         params.validate()?;
         Ok(params)

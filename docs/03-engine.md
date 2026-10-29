@@ -207,7 +207,9 @@ M1 packs: geometry and terrain (static), climate (92 century slices × 4 fields,
 hydrology (static). With a `coastline` or `hydrology` pack, `World::habitable` (also
 `Sense::habitable`) marks the cells with dry land in the current year (land fraction
 minus lake fraction above zero), rebuilt each step from the packs and the tick
-(ADR-0043, ADR-0044).
+(ADR-0043, ADR-0044). With a climate pack, `World::capacity` is the forager carrying
+capacity from `oikos-sim::environment`, recomputed every `capacity_period_ticks`
+(ADR-0047); without one it is the M0 toy draw.
 
 ## 3.9 Engineering practices
 

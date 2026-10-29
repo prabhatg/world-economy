@@ -21,6 +21,7 @@
 //! on the partitioning, so these are performance settings, not model parameters.
 
 use crate::agents::Agents;
+use crate::environment;
 use crate::inputs::Inputs;
 use crate::mechanisms::{self, Mechanism, PartitionView, Sense};
 use crate::params::Params;
@@ -210,15 +211,16 @@ impl World {
         let inputs = inputs.into();
         let grid = Arc::new(config.build_grid(&inputs)?);
         let n = grid.len();
-        let env = Philox4x32::new(seed, Stream::Environment);
-        let span = params.capacity_max - params.capacity_min + 1;
-        let capacity: Vec<u64> = (0..n as u64)
-            .map(|c| {
-                let b = env.block(c, 0, 0);
-                let r = ((b[0] as u64) << 32 | b[1] as u64) % span;
-                params.capacity_min + r
-            })
-            .collect();
+        // Capacity from the climate if there is a climate pack, else the toy draw.
+        let mut capacity = vec![0; n];
+        if !environment::capacity_into(&inputs, Tick::EPOCH.calendar_year(), &params, &mut capacity) {
+            let env = Philox4x32::new(seed, Stream::Environment);
+            let span = params.capacity_max - params.capacity_min + 1;
+            for (c, k) in capacity.iter_mut().enumerate() {
+                let b = env.block(c as u64, 0, 0);
+                *k = params.capacity_min + ((b[0] as u64) << 32 | b[1] as u64) % span;
+            }
+        }
 
         let mut birth_counter = vec![0; n];
         let mut agents = Agents::default();
@@ -350,6 +352,8 @@ impl World {
         params.validate()?;
         self.set_mechanisms(mechanisms::defaults(&params))?;
         self.params = params;
+        // Capacity derived from forcing follows the new parameters at once.
+        environment::capacity_into(&self.inputs, self.tick.calendar_year(), &self.params, &mut self.capacity);
         Ok(())
     }
 
@@ -461,6 +465,14 @@ impl World {
 
         if self.restricted {
             self.inputs.habitable_into(self.tick.calendar_year(), &mut self.habitable);
+        }
+        if self.tick.0 % self.params.capacity_period_ticks == 0 {
+            environment::capacity_into(
+                &self.inputs,
+                self.tick.calendar_year(),
+                &self.params,
+                &mut self.capacity,
+            );
         }
 
         // Sense + decide (parallel over partitions), running due mechanisms in order.
