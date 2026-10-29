@@ -1,0 +1,34 @@
+# IntCal20: the Northern Hemisphere radiocarbon calibration curve.
+dataset = "intcal20"
+title = "IntCal20 Northern Hemisphere radiocarbon age calibration curve (0-55 cal kBP)"
+version = "2020"
+homepage = "https://intcal.org"
+citation = "Reimer, P.J. et al. (2020). The IntCal20 Northern Hemisphere radiocarbon age calibration curve (0-55 cal kBP). Radiocarbon 62(4): 725-757. https://doi.org/10.1017/RDC.2020.41"
+doi = "10.1017/RDC.2020.41"
+notes = """
+Calendar age (cal BP), 14C age and one-sigma error at 5- to 20-year steps (9,501 rows).
+Used only to calibrate dates; the curve itself is not redistributed in any output.
+"""
+
+[license]
+# The article (and its curve data) is open access under CC BY 4.0 (Crossref licence
+# record for doi:10.1017/RDC.2020.41).
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Calibrated with IntCal20 (Reimer et al. 2020, Radiocarbon 62: 725-757, https://doi.org/10.1017/RDC.2020.41), CC BY 4.0."
+verified = "2026-10-28"
+
+[access]
+kind = "text"
+url = "https://intcal.org/curves/intcal20.14c"
+sha256 = "974a66649f2ac8a53e6c99e256b019ac6982f999b12dcf7193162d4c1c09168e"
+
+[coverage]
+spatial = "Northern Hemisphere atmosphere"
+temporal = "0-55,000 cal BP"
+
+[[variables]]
+name = "c14"
+unit = "14C yr BP"
+description = "Radiocarbon age of the atmosphere at each calendar age."

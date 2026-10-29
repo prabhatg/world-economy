@@ -3,9 +3,10 @@
     python -m oikos_data build <kind> <region> [--out DIR] [--update-lock]
     python -m oikos_data check        # rebuild every locked pack from cached inputs, compare ids
 
-Packs go to data/build/ (not committed). data/packs.lock.json records each pack's id:
-a build that differs from the lock fails unless --update-lock says the change is on
-purpose (like the engine's golden file).
+Packs (and observation tables, as Parquet) go to data/build/ (not committed).
+data/packs.lock.json records each output's id (BLAKE3 of its bytes): a build that
+differs from the lock fails unless --update-lock says the change is on purpose (like the
+engine's golden file).
 """
 
 import argparse
@@ -13,7 +14,9 @@ import json
 import sys
 from pathlib import Path
 
-from . import DATA, climate, coastline, geometry, hydrology, pack, raster, region, soils, terrain
+import blake3
+
+from . import DATA, climate, coastline, geometry, hydrology, radiocarbon, raster, region, soils, terrain
 
 LOCK = DATA / "packs.lock.json"
 BUILDERS = {
@@ -23,7 +26,11 @@ BUILDERS = {
     "coastline": coastline.build_pack,
     "hydrology": hydrology.build_pack,
     "soils": soils.build_pack,
+    "radiocarbon_dates": radiocarbon.build_dates,
+    "radiocarbon_density": radiocarbon.build_density,
 }
+# Outputs that are tables rather than forcing packs; ids are the BLAKE3 of the bytes either way.
+EXTENSIONS = {"radiocarbon_dates": "parquet", "radiocarbon_density": "parquet"}
 
 
 def load_lock():
@@ -34,7 +41,7 @@ def build(kind, region_name, update=False, offline=False):
     if kind not in BUILDERS:
         raise SystemExit(f"unknown pack kind {kind} (known: {', '.join(BUILDERS)})")
     data = BUILDERS[kind](region.load(region_name), update=update, offline=offline)
-    return data, pack.read(data).id
+    return data, blake3.blake3(data).hexdigest()
 
 
 def cmd_build(args):
@@ -45,7 +52,7 @@ def cmd_build(args):
     if locked and locked != pid and not args.update_lock:
         raise SystemExit(f"{key}: built {pid}, lock has {locked}; if the change is intended, rerun with --update-lock")
     args.out.mkdir(parents=True, exist_ok=True)
-    path = args.out / f"{args.region}.{args.kind}.oikospack"
+    path = args.out / f"{args.region}.{args.kind}.{EXTENSIONS.get(args.kind, 'oikospack')}"
     path.write_bytes(data)
     if locked != pid:
         lock[key] = {"id": pid, "bytes": len(data)}

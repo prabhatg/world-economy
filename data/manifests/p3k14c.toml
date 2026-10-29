@@ -1,0 +1,53 @@
+# p3k14c: a synthetic global database of archaeological radiocarbon dates.
+dataset = "p3k14c"
+title = "p3k14c: a synthetic global database of archaeological radiocarbon dates (scrubbed, location-fuzzed public release)"
+version = "1.0.0"
+homepage = "https://p3k14c.org"
+citation = "Bird, D., Miranda, L., Vander Linden, M., Robinson, E., Bocinsky, R.K., Nicholson, C., Capriles, J.M., Finley, J.B., Gayo, E.M., Gil, A., d'Alpoim Guedes, J., Hoggarth, J.A., Kay, A., Loftus, E., Lombardo, U., Mackie, M., Palmisano, A., Solheim, S., Kelly, R.L., Freeman, J. (2022). p3k14c, a synthetic global database of archaeological radiocarbon dates. Scientific Data 9: 27. https://doi.org/10.1038/s41597-022-01118-7. Data: https://doi.org/10.5281/zenodo.5597795"
+doi = "10.5281/zenodo.5597795"
+notes = """
+The public file (p3k14c_scrubbed_fuzzed.csv; canonical copy on tDAR, collection 70213)
+from the authors' Zenodo release of their research compendium. Dates are compiled from
+over 50 regional databases (in M1 mostly CALPAL, CONTEXT, Flohr et al. 2016, Vermeersch
+2019, Manning and Timpson 2014, 14SEA); cite them through p3k14c. Locations are fuzzed
+only for the USA and Canada. LocAccuracy: 0 country, 1 province, 2 within 500 m,
+3 exact. Ages are as reported (normalized where available); no reservoir corrections.
+The 2025.07 release ships the same data file.
+"""
+
+[license]
+# The compendium (code and the data it ships) is released under the MIT licence
+# (LICENSE.md, "Copyright (c) 2021 p3k14c authors"); Zenodo lists the record as open.
+id = "MIT"
+url = "https://github.com/people3k/p3k14c/blob/1.0.0/LICENSE.md"
+derived_redistribution = true
+attribution = "Contains radiocarbon dates from p3k14c (Bird et al. 2022, https://doi.org/10.1038/s41597-022-01118-7), MIT licence, and the databases it compiles."
+verified = "2026-10-28"
+
+[access]
+kind = "zenodo_file"
+url = "https://zenodo.org/api/records/5597795/files/people3k/p3k14c-1.0.0.zip/content"
+file = "p3k14c-1.0.0.zip"
+md5 = "14c9e47c254a5b69309311cfff9d64c6"
+member = "people3k-p3k14c-d0d7839/inst/p3k14c_scrubbed_fuzzed.csv"
+# Calendar years summed into centuries: the M1 window.
+window = [-12000, -3000]
+
+[coverage]
+spatial = "global, 179,689 dates"
+temporal = "about 50,000 BP to recent"
+
+[[variables]]
+name = "Age"
+unit = "14C yr BP"
+description = "Conventional radiocarbon age."
+
+[[variables]]
+name = "Error"
+unit = "14C yr"
+description = "One-sigma standard error of the radiocarbon age."
+
+[[variables]]
+name = "LocAccuracy"
+unit = "1"
+description = "0 country, 1 province, 2 within 500 m, 3 exact location."

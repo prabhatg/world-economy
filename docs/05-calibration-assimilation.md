@@ -18,6 +18,14 @@ state to what an instrument/record actually measures, including its biases:
 | Prices, wages (Allen, Clio-Infra) | market prices of comparable baskets |
 | GDP, health, governance (Maddison, GBD, V-Dem, WDI) | national aggregates of agent states |
 
+**Implemented (M1 data):** the radiocarbon observations are two locked Parquet tables
+built by `data/oikos_data/radiocarbon.py` (ADR-0046): every p3k14c date in the region
+(lab id, 14C age and error, material, taxa, site, source, location accuracy, cell,
+IntCal20-calibrated median year, share of probability in 12,000–3,000 BCE), and the
+calibrated probability summed per cell and century for dates located within 500 m or
+exactly. The operator (#17) will add taphonomic loss and research intensity, and
+should bin dates by site and phase before comparing densities.
+
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
 

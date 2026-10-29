@@ -43,6 +43,12 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   2015). CC BY 4.0, www.hydrosheds.org.
 - **SoilGrids 2.0** (soils pack): ISRIC – World Soil Information; Poggio, L. et al. (2021),
   SOIL 7, 217–240, doi:10.5194/soil-7-217-2021. CC BY 4.0.
+- **p3k14c** (radiocarbon observations): Bird, D. et al. (2022), Scientific Data 9: 27,
+  doi:10.1038/s41597-022-01118-7; data doi:10.5281/zenodo.5597795 (MIT), and the
+  databases it compiles (in M1 mostly CalPal, CONTEXT, Flohr et al. 2016, Vermeersch
+  2019, Manning & Timpson 2014, 14SEA).
+- **IntCal20** (radiocarbon calibration): Reimer, P.J. et al. (2020), Radiocarbon 62:
+  725–757, doi:10.1017/RDC.2020.41. CC BY 4.0.
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 

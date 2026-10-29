@@ -9,8 +9,8 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils` |
-| `packs.lock.json` | Id (BLAKE3) of every pack we build; rebuilds must match (like the engine's golden file) |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon` |
+| `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
 | `tests/` | pytest; includes checks that the engine reads Python-built packs |
@@ -24,6 +24,8 @@ python -m oikos_data build climate m1-swasia      # reads ~21 GB of CHELSA rows 
 python -m oikos_data build coastline m1-swasia    # reads ~1 GB of paleo-DEM rows once (~5 min)
 python -m oikos_data build hydrology m1-swasia    # downloads RiverATLAS + LakeATLAS (~4 GB) once
 python -m oikos_data build soils m1-swasia        # reads SoilGrids 1 km windows once (~1 min)
+python -m oikos_data build radiocarbon_dates m1-swasia     # p3k14c + IntCal20 -> build/*.parquet
+python -m oikos_data build radiocarbon_density m1-swasia
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -42,6 +44,13 @@ a notice. The cache lives in `$OIKOS_DATA_CACHE` (default `~/.cache/manyworlds`)
 | `coastline` | `land_fraction` per (time, cell), same slices as `climate`, linear in time; cells at 0 are uninhabitable in the engine | CHELSA-TraCE21k paleo-DEM ocean mask (one global sea level per slice on modern topography and bathymetry, no regional isostasy); the Caspian, lakes and the Sea of Marmara count as land (the hydrology pack's lakes are subtracted in the engine) |
 | `hydrology` | `river_length` (km of reaches with ≥ 1 m³/s), `river_discharge` (m³/s, largest reach), `river_order` (Strahler), `floodplain_fraction`, `lake_fraction` | RiverATLAS / LakeATLAS v1.0 (HydroATLAS, CC BY 4.0): modern hydrography as a proxy; floodplain from GIEMS-D15 maximum inundation per reach catchment; reservoirs excluded from lakes |
 | `soils` | `clay`, `sand`, `silt` (%), `organic_carbon` (g/kg), `ph`, `coarse_fragments` (vol %), 0–30 cm depth-weighted | SoilGrids 2.0 1 km aggregates (CC BY 4.0), Homolosine samples located per cell; built-up, water and glaciers unmapped (nodata); modern soils as a proxy |
+
+Observation tables (Parquet, locked like packs; docs/05 §5.1):
+
+| Table | Rows | Source |
+|---|---|---|
+| `radiocarbon_dates` | one per p3k14c date in the region: lab id, 14C age/error, material, taxa, site, source database, location accuracy, cell, IntCal20 median year, probability share in the window | p3k14c 1.0.0 (MIT), IntCal20 (CC BY 4.0); repeated lab ids keep their first row |
+| `radiocarbon_density` | cell × century (12,000–3,000 BCE): summed calibrated probability and number of dates, for dates located within 500 m or exactly | as above |
 
 Rules:
 
