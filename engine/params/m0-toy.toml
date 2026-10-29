@@ -119,6 +119,45 @@ sources = [
   { citation = "Marlowe, F. W. (2005). Hunter-gatherers and human evolution. Evolutionary Anthropology 14, 54-67.", doi = "10.1002/evan.20046" },
 ]
 
+# Forager dispersal (ADR-0048): bands in crowded cells bud off into less crowded
+# neighbors, the wave of advance by which foragers fill a landscape.
+
+[params.dispersal_crowding]
+group = "migration"
+unit = "N/K"
+description = "Bands disperse only from cells at least this crowded (population over carrying capacity)."
+kind = { type = "real", min = 0.0, max = 2.0 }
+default = 0.9
+prior = { dist = "uniform", lo = 0.5, hi = 1.0 }
+status = "placeholder"
+note = "Foragers move before resources are exhausted; the threshold is calibrated against dispersal speed."
+sources = [
+  { citation = "Kelly, R.L. (2013). The Lifeways of Hunter-Gatherers: The Foraging Spectrum. Cambridge University Press.", doi = "10.1017/CBO9781139176132" },
+]
+
+[params.dispersal_probability]
+group = "migration"
+unit = "probability per period"
+description = "Probability that a band in a crowded cell sends a group to a less crowded neighbor in one period."
+kind = { type = "probability" }
+default = 0.1
+prior = { dist = "log_uniform", lo = 0.01, hi = 0.5 }
+status = "placeholder"
+note = "Sets the diffusion rate of the wave of advance (speed ~ 2 sqrt(r D)); calibrated against dated expansion fronts."
+sources = [
+  { citation = "Ammerman, A.J., Cavalli-Sforza, L.L. (1984). The Neolithic Transition and the Genetics of Populations in Europe. Princeton University Press.", doi = "10.1515/9781400853113" },
+]
+
+[params.dispersal_fraction]
+group = "migration"
+unit = "1"
+description = "Share of a dispersing band that leaves (the rest stays)."
+kind = { type = "probability" }
+default = 0.5
+prior = { dist = "uniform", lo = 0.2, hi = 0.8 }
+status = "placeholder"
+note = "Budding: part of a group founds a new territory while the rest keeps the old one."
+
 # Foraging carrying capacity (ADR-0047): used by worlds with a climate pack; toy worlds
 # keep capacity_min/capacity_max.
 

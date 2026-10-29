@@ -42,6 +42,9 @@ pub struct Params {
     pub npp_elasticity: f64,
     pub aquatic_bonus: f64,
     pub perennial_discharge: f64,
+    pub dispersal_crowding: f64,
+    pub dispersal_probability: f64,
+    pub dispersal_fraction: f64,
 }
 
 impl Default for Params {
@@ -87,6 +90,9 @@ impl Params {
             npp_elasticity: real("npp_elasticity")?,
             aquatic_bonus: real("aquatic_bonus")?,
             perennial_discharge: real("perennial_discharge")?,
+            dispersal_crowding: real("dispersal_crowding")?,
+            dispersal_probability: real("dispersal_probability")?,
+            dispersal_fraction: real("dispersal_fraction")?,
         };
         params.validate()?;
         Ok(params)

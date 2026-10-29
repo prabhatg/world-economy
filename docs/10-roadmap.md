@@ -45,7 +45,8 @@ packs); `data/` pipelines with locked pack ids; geometry, terrain, climate
 are uninhabitable), hydrology (ADR-0044: rivers, floodplains, lakes) and soils
 (ADR-0045) packs for M1; radiocarbon observation tables from p3k14c with IntCal20
 (ADR-0046). First mechanism on real forcing: forager carrying capacity from climate,
-dry land and aquatic resources (ADR-0047).
+dry land and aquatic resources (ADR-0047), and forager dispersal by budding into less
+crowded land (ADR-0048), so M1 worlds fill the region as a wave of advance.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

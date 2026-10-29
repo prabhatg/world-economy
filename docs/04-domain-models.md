@@ -115,6 +115,9 @@ Not brain simulation. Agents implement validated regularities:
 - Raiding, warfare (technology, logistics, terrain), conquest, refugee flows.
 - Migration driven by expected utility differentials, networks, and push factors
   (climate shocks, famine, violence).
+  *Implemented (M1):* forager dispersal: crowded cells bud off groups into less
+  crowded neighbors with room, the wave of advance by which foragers fill the region
+  (`mechanisms::Dispersal`, ADR-0048).
 
 ## 4.10 Modern-era additions (1800 →)
 

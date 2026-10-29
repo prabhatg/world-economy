@@ -7,9 +7,12 @@ use std::ops::Range;
 
 const RES4: WorldConfig = WorldConfig::SOUTHWEST_ASIA;
 
-/// Agents only in the first quarter of the cells.
+/// Agents only in the first quarter of the cells (0..600, at capacity). Dispersal is
+/// off: from full cells it would move ~10% of the bands in the first step, after the
+/// partitions were chosen.
 fn hotspot() -> World {
-    World::filled_cells(RES4, 3, Params::default(), 4, 0..600).unwrap()
+    let p = Params { dispersal_probability: 0.0, ..Params::default() };
+    World::filled_cells(RES4, 3, p, 4, 0..600).unwrap()
 }
 
 /// Max partition cost over the mean, in percent.

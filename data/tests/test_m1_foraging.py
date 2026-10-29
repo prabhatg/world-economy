@@ -57,3 +57,13 @@ def test_younger_dryas_lowers_capacity(m1):
     younger_dryas = total()
     w.run_years(1300, parts=4)   # 9,000 BCE: early Holocene
     assert younger_dryas < 0.97 * allerod and younger_dryas < 0.97 * total()
+
+
+def test_foragers_spread_over_the_region(m1):
+    w, _, _ = m1
+    w.run_years(3000 - w.tick // 365, parts=4)  # to 9,000 BCE whatever earlier tests ran
+    pop, hab, cap = w.population(), w.habitable(), w.capacity()
+    occupied = pop > 0
+    assert occupied.sum() > 500, "bands disperse from a handful of start cells across the landscape (#14)"
+    assert pop[~hab].sum() == 0
+    assert pop.sum() <= 1.05 * cap[occupied].sum(), "the population stays within the capacity of the land it holds"

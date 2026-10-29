@@ -49,6 +49,7 @@
 | 0045 | Soils: a static `soils` pack from SoilGrids 2.0's 1 km aggregates (CC BY 4.0): clay, sand, silt, organic carbon, pH and coarse fragments as 0–30 cm depth-weighted means of 2×2-block samples located through the Homolosine projection; modern soils as a proxy, non-soil pixels skipped | Accepted |
 | 0046 | Radiocarbon observations: p3k14c (public release, MIT compendium) dates in the region, de-duplicated by lab id and calibrated with IntCal20 (annual grid, curve error in quadrature, normalized), as two locked Parquet tables (dates; probability per cell and century for LocAccuracy ≥ 2), built like forcing packs and identified by BLAKE3 | Accepted |
 | 0047 | Foraging carrying capacity: with a climate pack, capacity = dry-land area × (terrestrial density from Miami-model NPP, `ref × (NPP/NPP_ref)^elasticity`, + an aquatic density where a perennial river, lake shore or sea coast is at hand), recomputed every `capacity_period_ticks`; all coefficients in the registry; toy worlds keep the random capacity (golden trajectory unchanged, hash changed by the new parameters) | Accepted |
+| 0048 | Forager dispersal: a default mechanism after fission; a cell at least `dispersal_crowding` full (N/K) buds off one group with `dispersal_probability` per year (draw keyed by cell and tick): `dispersal_fraction` of its first band whose share fits moves to the least crowded habitable neighbor if it is less crowded and has room (as of last step); new `Stream::Dispersal` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -109,6 +110,24 @@ does not depend on local rain: the Nile valley feeds people in a rainless desert
 Soils matter for cultivation, not foraging, and enter with #13. Capacity is
 recomputed every ten years, not every step: the climate changes on century slices, and
 recomputing 22,198 cells' productivity every year would cost more than the agents.
+
+## ADR-0048 rationale (dispersal)
+
+On the real M1 region a res-5 cell feeds about one forager band (~20-50 people), so
+fission by group size (bands of 60 or more) never fires and populations stay where they
+start. Foragers fill a landscape by budding: part of a group founds a new territory when
+the old one is full, a reaction-diffusion wave of advance whose speed grows with growth
+rate and dispersal rate (Fisher-KPP; Ammerman and Cavalli-Sforza 1984). Moving toward
+less crowded land, only where the group can be fed, follows the ideal free distribution.
+Events are per cell (a res-5 cell is about one band's territory), which also keeps the
+cost low: one draw per crowded cell, and the neighbor scan only when it hits; per-band
+draws and scans cost ~45% more per agent-step in a fully crowded world.
+Room is judged from last step's population (the partition-independent snapshot), so
+groups from several neighbors arriving in the same step can overshoot a cell a little;
+logistic decline corrects it, and reserving room across partitions within a step would
+break partition independence. Group-size (scalar-stress) fission, the Neolithic
+demographic transition and village aggregation remain in #14; they need sedentism and
+cultivation (#13).
 
 ## Notes
 

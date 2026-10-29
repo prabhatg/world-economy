@@ -24,6 +24,7 @@ fn defaults_from_registry_match_the_m0_values() {
     );
     assert_eq!((p.npp_reference, p.forager_density_ref, p.npp_elasticity), (1000.0, 0.1, 1.0));
     assert_eq!((p.aquatic_bonus, p.perennial_discharge), (0.5, 1.0));
+    assert_eq!((p.dispersal_crowding, p.dispersal_probability, p.dispersal_fraction), (0.9, 0.1, 0.5));
 }
 
 #[test]

@@ -83,6 +83,7 @@ pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
     vec![
         Box::new(Growth::from_params(params)),
         Box::new(Fission::from_params(params)),
+        Box::new(Dispersal::from_params(params)),
         Box::new(Inundation::from_params(params)),
     ]
 }
@@ -243,6 +244,90 @@ impl Mechanism for Fission {
     }
 }
 
+/// Forager dispersal: a cell at least `crowding` full (N/K, previous step) buds off one
+/// group with probability `probability` per period: `fraction` of its first band whose
+/// share fits moves to the least crowded habitable neighbor, if that neighbor is less
+/// crowded and can feed the group (its population, last step, plus the group within its
+/// capacity). A res-5 cell is about one band's territory. Repeated, this is
+/// the wave of advance by which foragers fill a landscape (Fisher-KPP; Ammerman and
+/// Cavalli-Sforza 1984), and it works where a cell holds a single band, so fission by
+/// group size never fires (res-5 cells feed ~20-50 foragers).
+#[derive(Clone, Debug)]
+pub struct Dispersal {
+    pub period_ticks: u64,
+    pub crowding: f64,
+    pub probability: f64,
+    pub fraction: f64,
+    pub after: Vec<&'static str>,
+}
+
+impl Dispersal {
+    /// A habitable cell at least `crowding` full (last step).
+    fn crowded(&self, sense: &Sense<'_>, cell: u32) -> bool {
+        let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
+        sense.habitable[cell as usize] && n as f64 >= self.crowding * k as f64
+    }
+
+    /// The least crowded habitable neighbor of `cell`, if it is less crowded than `cell`,
+    /// and its room (capacity less population, last step).
+    fn target(&self, sense: &Sense<'_>, cell: u32) -> Option<(u32, u64)> {
+        let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
+        let dest = least_crowded(sense, habitable_neighbors(sense, cell))?;
+        let (nd, kd) = (sense.population[dest as usize], sense.capacity[dest as usize]);
+        (nd as u128 * (k as u128) < n as u128 * kd as u128 && nd < kd).then(|| (dest, kd - nd))
+    }
+
+    pub fn from_params(p: &Params) -> Dispersal {
+        Dispersal {
+            period_ticks: p.period_ticks,
+            crowding: p.dispersal_crowding,
+            probability: p.dispersal_probability,
+            fraction: p.dispersal_fraction,
+            after: vec!["fission"],
+        }
+    }
+}
+
+impl Mechanism for Dispersal {
+    fn spec(&self) -> MechanismSpec {
+        MechanismSpec {
+            name: "dispersal",
+            period_ticks: self.period_ticks,
+            reads: vec![Component::Population, Component::Capacity, Component::Forcing],
+            writes: vec![Component::AgentWeight, Component::AgentSpawn],
+            after: self.after.clone(),
+        }
+    }
+
+    fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
+        let go = Probability::from_f64(self.probability);
+        let rng = Philox4x32::new(sense.seed, Stream::Dispersal);
+        let t = sense.tick.0;
+        // Tiles hold whole cells; agents spawned this step lie past the tile.
+        let mut i = tile.start;
+        while i < tile.end {
+            let cell = part.agents.cell[i];
+            let end = i + part.agents.cell[i..tile.end].iter().take_while(|&&c| c == cell).count();
+            if self.crowded(sense, cell)
+                && go.hit(rng.u32(cell as u64, t, 0, 0))
+                && let Some((dest, room)) = self.target(sense, cell)
+            {
+                // The first band (canonical order) whose group fits buds off.
+                for a in i..end {
+                    let w = part.agents.weight[a];
+                    let take = (w as f64 * self.fraction) as u64;
+                    if take > 0 && take <= room {
+                        part.agents.weight[a] = w - take;
+                        part.spawn(cell, dest, take);
+                        break;
+                    }
+                }
+            }
+            i = end;
+        }
+    }
+}
+
 /// Bands in a cell the sea has flooded move to the least crowded habitable neighbor
 /// (by N/K) as new agents born there, or are lost if no neighbor is habitable. A
 /// res-5 cell floods only when none of it is land, so a neighbor is usually open.
@@ -255,7 +340,7 @@ pub struct Inundation {
 
 impl Inundation {
     pub fn from_params(p: &Params) -> Inundation {
-        Inundation { period_ticks: p.period_ticks, after: vec!["growth", "fission"] }
+        Inundation { period_ticks: p.period_ticks, after: vec!["growth", "fission", "dispersal"] }
     }
 }
 
