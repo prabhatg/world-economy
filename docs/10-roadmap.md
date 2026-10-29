@@ -56,7 +56,8 @@ forward-modelled (`calibration/`). Domestication timing (ADR-0051) against barle
 rachis assemblages: the record and M1 worlds both favour protracted domestication over
 rapid. First calibration waves (ADR-0052): Morris screening and two history-matching
 waves with Gaussian-process emulators leave 22% of the prior space, ruling out rapid
-domestication; radiocarbon summaries do not yet constrain.
+domestication; radiocarbon summaries do not yet constrain. Neolithic demographic transition
+(ADR-0053) as a nested hypothesis; it does not explain the radiocarbon rise.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

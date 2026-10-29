@@ -120,15 +120,27 @@ fn habitable_neighbors<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Ite
 
 /// Logistic growth toward each cell's carrying capacity: dw = r w (1 - N/K),
 /// stochastically rounded to whole people.
+///
+/// The intrinsic rate r is the Neolithic demographic transition (Bocquet-Appel 2002,
+/// 2011): it moves linearly with a band's cultivation effort from the mobile foragers'
+/// rate to the sedentary cultivators'. Sedentism and cereal weaning foods shorten birth
+/// intervals (Sellen and Mace 1997; Page et al. 2016); the net effect is what the rates
+/// encode. Foragers' bands (and toy worlds, which never cultivate) grow at `rate`.
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
     pub rate: f64,
+    pub sedentary_rate: f64,
 }
 
 impl Growth {
     pub fn from_params(p: &Params) -> Growth {
-        Growth { period_ticks: p.period_ticks, rate: p.growth_rate }
+        Growth { period_ticks: p.period_ticks, rate: p.growth_rate, sedentary_rate: p.sedentary_growth_rate }
+    }
+
+    /// Intrinsic growth rate of a band spending `effort` of its effort cultivating.
+    pub fn rate(&self, effort: f64) -> f64 {
+        self.rate + (self.sedentary_rate - self.rate) * effort
     }
 }
 
@@ -137,7 +149,7 @@ impl Mechanism for Growth {
         MechanismSpec {
             name: "growth",
             period_ticks: self.period_ticks,
-            reads: vec![Component::Population, Component::Capacity],
+            reads: vec![Component::Population, Component::Capacity, Component::AgentTraits],
             writes: vec![Component::AgentWeight],
             after: vec![],
         }
@@ -154,7 +166,8 @@ impl Mechanism for Growth {
             let w = agents.weight[i];
             let pop = sense.population[cell] as f64;
             let k = sense.capacity[cell] as f64;
-            let dw = oikos_math::finite(self.rate * w as f64 * (1.0 - pop / k));
+            let r = self.rate(Traits::share(agents.cultivation[i]));
+            let dw = oikos_math::finite(r * w as f64 * (1.0 - pop / k));
             let draw = rng.u32(agents.id[i].0, t, 0, 0);
             if dw >= 0.0 {
                 let b = stochastic_round(dw, draw);

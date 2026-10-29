@@ -387,3 +387,32 @@ fn abandoned_cultivation_dies_out_completely() {
     assert!(w.agent_slices().all(|a| a.domestication.iter().all(|&d| d == 0)));
     assert_eq!(w.capacity, w.forage_capacity);
 }
+
+#[test]
+fn sedentary_cultivators_grow_faster_than_mobile_foragers() {
+    // The Neolithic demographic transition (Bocquet-Appel 2002, 2011): intrinsic growth
+    // moves from the forager rate to the sedentary rate with cultivation effort.
+    let p = Params { growth_rate: 0.002, sedentary_growth_rate: 0.03, ..Params::default() };
+    let g = mechanisms::Growth::from_params(&p);
+    assert_eq!(g.rate(0.0), 0.002);
+    assert_eq!(g.rate(1.0), 0.03);
+    assert!((g.rate(0.5) - 0.016).abs() < 1e-15);
+}
+
+#[test]
+fn the_demographic_transition_follows_cultivation() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let run = |precip: f64, sedentary: f64| {
+        let c = climate_pack(&h3, &[-12_000], |_, _| (15.0, precip));
+        let p = Params { growth_rate: 0.002, sedentary_growth_rate: sedentary, ..only(0.0, 0.0, 0.8) };
+        let mut w = world(&[&g, &c], 6, p);
+        w.run_years(600, 2, 600);
+        w.total_population()
+    };
+    // Cereal country: bands cultivate, settle and grow faster.
+    let (transition, none) = (run(500.0, 0.03), run(500.0, 0.002));
+    assert!(transition > 2 * none, "{transition} vs {none}");
+    // Forest: nobody cultivates, so the sedentary rate changes nothing.
+    assert_eq!(run(1900.0, 0.03), run(1900.0, 0.002));
+}

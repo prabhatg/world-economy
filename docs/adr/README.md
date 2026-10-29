@@ -54,6 +54,7 @@
 | 0050 | Observation operators live in `calibration/` (Python package `oikos_cal`), read activity recorded from a world through the bindings and never change it; first operator: radiocarbon date density, forward-modelled (people-years per cell and century × Surovell 2009 taphonomic survival, blurred by a calibration kernel built from IntCal20 per error class) and compared with site-phase-binned calibrated dates as a multinomial over centuries within coarse H3 blocks, so research intensity per block cancels; 1% background | Accepted |
 | 0051 | Domestication-timing operator: rachis assemblages (Allaby et al. 2017 Table S4, barley, a locked Parquet table) scored beta-binomially (concentration 2) against the model's domestic share of the crop sown within one ring of the site over the phase's century ± 1 (wild mutant frequency where nobody cultivates); the recorder keeps effort × domestication people-years | Accepted |
 | 0052 | First calibration waves on the calibration host (`oikos_cal`): Morris screening (μ* in units of each target's tolerance) picks the factors emulators see; Gaussian-process emulators (linear trend, ARD, nugget; SciPy pinned) per summary; history matching with implausibility cutoff 3 on the max over summaries; summaries are 5 radiocarbon eras (centered log shares, block-bootstrap variance) and 4 barley domestic-share eras, discrepancy sd 0.25 and 0.1; every run recorded in `calibration/runs/` | Accepted |
+| 0053 | Neolithic demographic transition as a nested hypothesis: a band's intrinsic growth rate moves linearly with its cultivation effort from `growth_rate` (mobile foragers) to `sedentary_growth_rate` (sedentary cultivators); the default sets them equal (no transition) until calibration says otherwise; the golden hash changes only because the parameter set grew (summaries identical) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -283,6 +284,30 @@ standard deviations), so further waves at these summaries would not narrow it: t
 constraint has to come from new observations or a tighter, justified discrepancy, not
 more runs.
 
+## ADR-0053 rationale (Neolithic demographic transition)
+
+Skeletal series show a jump in the share of juveniles a few centuries after farming
+arrives, read as a rise in fertility with sedentism and cereal weaning foods
+(Bocquet-Appel 2002, 2011); across societies, fertility rises with dependence on
+cultivation (Sellen and Mace 1997), and settled hunter-gatherers have shorter birth
+intervals but higher child mortality (Page et al. 2016). The model encodes the net
+effect as the band's intrinsic growth rate, interpolated by its cultivation effort, so
+the transition travels with practice and with people. Equal rates nest the
+no-transition hypothesis, which stays the default: the literature fixes the sign, not
+the size, of the net change.
+
+It was built to test whether the transition explains the radiocarbon rise (open
+question 25). It does not. M1 populations sit at carrying capacity from 11,000 BCE
+(N/K 0.94-1.01), so the growth rate changes only how fast they follow it. With
+foragers at 0.002 and cultivators at 0.02 per year, the first radiocarbon era moves
+from -0.62 to -0.84 (record -1.36), and from an equilibrium start (`initial_occupancy`
+1) only to -0.67. The model's rise is set by capacity, and capacity has already
+doubled by 11,500 BCE through cultivation of wild cereals (open question 24). Single
+capacity-side changes (no climate stress, wild yields 0.2, farm density 8) do not
+reproduce the record's shape either: the record's date mass rises about eightfold to
+6,700-5,100 BCE and then falls, every world rises about 2.6-fold and keeps rising.
+
+## Notes
 
 - H3 cells are not exactly equal-area; mechanisms use per-cell areas, never assume
   uniform cells.

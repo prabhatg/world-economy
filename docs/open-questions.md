@@ -37,7 +37,13 @@
     matching (ADR-0052) the gap persists across the prior space - worlds consistent with
     every summary rise about half as much in log terms as the record before 9,900 BCE -
     but stays inside the radiocarbon tolerance; low growth rates, filling the region
-    slowly, come closest.
+    slowly, come closest. A Neolithic demographic transition does not close it
+    (ADR-0053): populations sit at carrying capacity, so the rise is set by capacity,
+    which doubles by 11,500 BCE through wild-cereal cultivation (question 24). The
+    record also falls after 5,100 BCE while every world keeps rising: a Neolithic
+    boom and bust (Shennan et al. 2013), the 8.2 ka event, or research focus on the
+    Neolithic? The model has no mechanism that lowers capacity or raises mortality
+    after the transition.
 26. How large is the M1 model discrepancy (ADR-0052)? The first waves used 0.25 on
     radiocarbon era log shares and 0.1 on domestic shares, and at those values the
     radiocarbon record rules out nothing. Tighter values would make it bind but must

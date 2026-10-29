@@ -24,7 +24,7 @@ note = "Yearly steps suit slow prehistoric dynamics; finer periods arrive with s
 [params.growth_rate]
 group = "demography"
 unit = "1/period"
-description = "Intrinsic growth rate r in logistic growth dw = r w (1 - N/K)."
+description = "Intrinsic growth rate r in logistic growth dw = r w (1 - N/K) of mobile foragers (see sedentary_growth_rate)."
 kind = { type = "real", min = 0.0, max = 0.1 }
 default = 0.01
 prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
@@ -32,6 +32,22 @@ status = "placeholder"
 note = "Order of magnitude of local growth during the Neolithic demographic transition; not calibrated."
 sources = [
   { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
+]
+
+[params.sedentary_growth_rate]
+group = "demography"
+unit = "1/period"
+description = "Intrinsic growth rate of fully sedentary cultivators; a band's rate moves linearly from growth_rate (mobile foragers) to this with its cultivation effort (the Neolithic demographic transition)."
+kind = { type = "real", min = 0.0, max = 0.1 }
+default = 0.01
+prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
+status = "placeholder"
+note = "Sedentism and cereal weaning foods shorten birth intervals: fertility rises with dependence on cultivation, followed by higher child mortality, with net growth higher than foragers'. The default equals growth_rate (no transition) until calibration says otherwise."
+sources = [
+  { citation = "Bocquet-Appel, J.-P. (2002). Paleoanthropological traces of a Neolithic demographic transition. Current Anthropology 43, 637-650.", doi = "10.1086/342429" },
+  { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
+  { citation = "Sellen, D.W., Mace, R. (1997). Fertility and mode of subsistence: a phylogenetic analysis. Current Anthropology 38, 878-889.", doi = "10.1086/204677" },
+  { citation = "Page, A.E. et al. (2016). Reproductive trade-offs in extant hunter-gatherers suggest adaptive mechanism for the Neolithic expansion. PNAS 113, 4694-4699.", doi = "10.1073/pnas.1524031113" },
 ]
 
 [params.capacity_min]

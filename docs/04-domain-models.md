@@ -52,6 +52,11 @@ enters the model, and the starting mechanisms.
 - Age-structured fertility/mortality conditional on nutrition, disease, workload,
   sedentism (Neolithic demographic transition), and later the modern demographic
   transition (education, child mortality, contraception, urbanization).
+  *Implemented (M1):* logistic growth whose intrinsic rate moves with a band's
+  cultivation effort from the mobile foragers' rate to the sedentary cultivators'
+  (`mechanisms::Growth`, ADR-0053), the net effect of the Neolithic demographic
+  transition; age structure is not yet modelled. Equal rates (the default) nest the
+  no-transition hypothesis.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.

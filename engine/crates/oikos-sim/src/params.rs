@@ -24,6 +24,7 @@ pub fn registry() -> &'static Registry {
 pub struct Params {
     pub period_ticks: u64,
     pub growth_rate: f64,
+    pub sedentary_growth_rate: f64,
     pub capacity_min: u64,
     pub capacity_max: u64,
     pub fission_threshold: u64,
@@ -90,6 +91,7 @@ impl Params {
         let params = Params {
             period_ticks: int("period_ticks")?,
             growth_rate: real("growth_rate")?,
+            sedentary_growth_rate: real("sedentary_growth_rate")?,
             capacity_min: int("capacity_min")?,
             capacity_max: int("capacity_max")?,
             fission_threshold: int("fission_threshold")?,
