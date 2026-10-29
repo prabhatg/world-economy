@@ -571,6 +571,7 @@ impl World {
                 farming: self.farmland.active(),
                 suitability: &self.farmland.suitability,
                 climate_stress: &self.farmland.stress,
+                climate_variability: &self.farmland.variability,
                 population: &self.population,
                 tick: self.tick,
                 seed: self.seed,

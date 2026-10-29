@@ -55,6 +55,7 @@
 | 0051 | Domestication-timing operator: rachis assemblages (Allaby et al. 2017 Table S4, barley, a locked Parquet table) scored beta-binomially (concentration 2) against the model's domestic share of the crop sown within one ring of the site over the phase's century ± 1 (wild mutant frequency where nobody cultivates); the recorder keeps effort × domestication people-years | Accepted |
 | 0052 | First calibration waves on the calibration host (`oikos_cal`): Morris screening (μ* in units of each target's tolerance) picks the factors emulators see; Gaussian-process emulators (linear trend, ARD, nugget; SciPy pinned) per summary; history matching with implausibility cutoff 3 on the max over summaries; summaries are 5 radiocarbon eras (centered log shares, block-bootstrap variance) and 4 barley domestic-share eras, discrepancy sd 0.25 and 0.1; every run recorded in `calibration/runs/` | Accepted |
 | 0053 | Neolithic demographic transition as a nested hypothesis: a band's intrinsic growth rate moves linearly with its cultivation effort from `growth_rate` (mobile foragers) to `sedentary_growth_rate` (sedentary cultivators); the default sets them equal (no transition) until calibration says otherwise; the golden hash changes only because the parameter set grew (summaries identical) | Accepted |
+| 0054 | Stable-climate hypothesis of cultivation (Richerson, Boyd and Bettinger 2001) as a fourth nested driver: the cultivation target is scaled by 1 - `cultivation_variability_weight` × climate variability (mean change of wild-cereal suitability per century over the stress window, between century boundaries, recomputed once per century); weight 0 (the default) switches it off; with century-resolution forcing it does not delay the onset | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -306,6 +307,34 @@ doubled by 11,500 BCE through cultivation of wild cereals (open question 24). Si
 capacity-side changes (no climate stress, wild yields 0.2, farm density 8) do not
 reproduce the record's shape either: the record's date mass rises about eightfold to
 6,700-5,100 BCE and then falls, every world rises about 2.6-fold and keeps rising.
+
+## ADR-0054 rationale (stable-climate hypothesis; onset timing)
+
+Open question 24 names three explanations for an onset of cultivation that comes too
+early; the stable-climate one can be tested on the forcing. Richerson, Boyd and
+Bettinger (2001) argue that late-glacial climates swung too fast for sowing to pay,
+whatever the motive, so the hypothesis scales the target rather than adding a driver.
+Variability is measured between century boundaries, the climate packs' native step:
+between them the climate is interpolated, and 100-year lags from mid-century land on
+smoothed values. It changes only at boundaries, so it is computed once per century
+(M1 run time +2%; computing it every land update cost +11%).
+
+With century-resolution TraCE climate it does not delay the onset. Suitability changes
+about 0.08 per century before 9,000 BCE and 0.03 after, a real contrast, but
+suitability saturates at 1 in the core of the cereal belt (37% of suitable cells), where
+variability is zero however the climate swings, and cultivation ignites there and
+spreads. Weights 5-15 leave the radiocarbon eras unchanged and make late domestication
+worse (domestic share after 7,000 BCE 0.20-0.22 against 0.33). Testing the hypothesis
+properly needs decadal variability (ice cores, speleothems), the time scale its
+authors argue from. The default stays 0.
+
+Is onset timing the lever at all? A counterfactual that forbids cultivation until a
+given year and then forks the world with the default parameters says: partly. With an
+onset at 10,500 BCE the first two radiocarbon eras match the record (-0.96 and -0.25
+against -1.36 and -0.30), but the last era overshoots (0.77 against 0.51), barley after
+7,000 BCE is only 6% domestic, and the radiocarbon log-likelihood, which sees every
+century, gets worse (-4,036; onsets at 9,700 and 9,000 BCE: -4,053 and -4,063; the
+default: -4,028). What the record has and no world has is the fall after 5,100 BCE.
 
 ## Notes
 

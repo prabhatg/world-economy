@@ -371,6 +371,20 @@ sources = [
   { citation = "Zeder, M.A. (2016). Domestication as a model system for niche construction theory. Evolutionary Ecology 30, 325-348.", doi = "10.1007/s10682-015-9801-8" },
 ]
 
+[params.cultivation_variability_weight]
+group = "cultivation"
+unit = "1/suitability per century"
+description = "Stable-climate hypothesis: cultivation targets are multiplied by 1 - weight x climate variability (the mean change of wild-cereal suitability per century over the stress window), at least 0."
+kind = { type = "real", min = 0.0, max = 50.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 20.0 }
+status = "placeholder"
+note = "Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after."
+sources = [
+  { citation = "Richerson, P.J., Boyd, R., Bettinger, R.L. (2001). Was agriculture impossible during the Pleistocene but mandatory during the Holocene? A climate change hypothesis. American Antiquity 66, 387-411.", doi = "10.2307/2694241" },
+  { citation = "Bettinger, R., Richerson, P., Boyd, R. (2009). Constraints on the development of agriculture. Current Anthropology 50, 627-631.", doi = "10.1086/605359" },
+]
+
 [params.stress_window_years]
 group = "cultivation"
 unit = "years"

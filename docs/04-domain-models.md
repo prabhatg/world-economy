@@ -42,8 +42,10 @@ enters the model, and the starting mechanisms.
   domestic traits against wild gene flow, slowly or quickly by the selection
   hypothesis; capacity blends foraging and farming by effort, so domestic crops feed
   more people and the transition can ratchet (`mechanisms::Cultivation`,
-  `environment::cereal_suitability`, ADR-0049). Wild-cereal suitability comes from
-  temperature and precipitation; soils, irrigation and animals are not yet included.
+  `environment::cereal_suitability`, ADR-0049). A fourth, nested hypothesis scales the
+  target by climate reliability (stable-climate hypothesis, ADR-0054; off by default).
+  Wild-cereal suitability comes from temperature and precipitation; soils, irrigation
+  and animals are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
   oil, gas, uranium, renewables potential.
 

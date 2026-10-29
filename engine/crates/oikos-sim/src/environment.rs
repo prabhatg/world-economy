@@ -10,7 +10,8 @@
 //!
 //! For cultivation (ADR-0049), each cell also has a wild-cereal suitability from its
 //! climate, the people its dry land would feed under full cultivation of domestic crops,
-//! and a climate stress: how much its forager capacity has fallen over the stress window.
+//! a climate stress: how much its forager capacity has fallen over the stress window, and a
+//! climate variability: how much its suitability has swung per century over that window.
 //! A cell's carrying capacity then blends foraging and cultivation by its bands' effort
 //! ([`farmed_capacity`]). Everything here is computed from the packs, the year, the
 //! parameters and agent totals, with `oikos_math` functions, so every host gets the same
@@ -173,6 +174,19 @@ pub struct Farmland {
     pub farm: Vec<f64>,
     /// Relative decline of forager capacity since `stress_window_years` earlier, in [0, 1].
     pub stress: Vec<f64>,
+    /// Climate variability: the mean absolute change of suitability per century over the
+    /// stress window (at least one century), between the century boundaries before the year.
+    pub variability: Vec<f64>,
+    /// What `variability` was computed for: it changes only at century boundaries.
+    variability_key: Option<VariabilityKey>,
+}
+
+/// The century, window and suitability parameters a variability field depends on.
+#[derive(Clone, Debug, PartialEq)]
+struct VariabilityKey {
+    anchor: i64,
+    centuries: i64,
+    suitability: [u64; 6],
 }
 
 impl Farmland {
@@ -196,6 +210,7 @@ impl Farmland {
         for v in [&mut self.suitability, &mut self.farm, &mut self.stress] {
             v.resize(cells, 0.0);
         }
+        self.update_variability(inputs, calendar_year, p, cells);
         for c in 0..cells {
             let s = now.climate(c).map_or(0.0, |(t, w)| cereal_suitability(t, w, p));
             self.suitability[c] = s;
@@ -203,6 +218,37 @@ impl Farmland {
             let (k, k0) = (now.foragers(c, p), before.foragers(c, p));
             self.stress[c] = if k0 > 0.0 { (1.0 - k / k0).clamp(0.0, 1.0) } else { 0.0 };
         }
+    }
+
+    /// Variability is measured between century boundaries (the climate packs' native
+    /// step): between them the climate is interpolated, which would hide swings. So it
+    /// is recomputed only when the century, the window or the suitability parameters change.
+    fn update_variability(&mut self, inputs: &Inputs, calendar_year: i64, p: &Params, cells: usize) {
+        let key = VariabilityKey {
+            anchor: calendar_year.div_euclid(100) * 100,
+            centuries: (p.stress_window_years / 100).max(1) as i64,
+            suitability: [
+                p.cereal_precip_min,
+                p.cereal_precip_full,
+                p.cereal_precip_wet,
+                p.cereal_precip_max,
+                p.cereal_temp_min,
+                p.cereal_temp_full,
+            ]
+            .map(f64::to_bits),
+        };
+        if self.variability_key.as_ref() == Some(&key) && self.variability.len() == cells {
+            return;
+        }
+        let at = |i: i64| Year::new(inputs, key.anchor - 100 * i).expect("the climate pack is present");
+        let years: Vec<Year<'_>> = (0..=key.centuries).map(at).collect();
+        self.variability.resize(cells, 0.0);
+        for c in 0..cells {
+            let suit = |y: &Year<'_>| y.climate(c).map_or(0.0, |(t, w)| cereal_suitability(t, w, p));
+            let change: f64 = years.windows(2).map(|w| (suit(&w[0]) - suit(&w[1])).abs()).sum();
+            self.variability[c] = oikos_math::finite(change / key.centuries as f64);
+        }
+        self.variability_key = Some(key);
     }
 
     /// Whether the forcing supports cultivation.

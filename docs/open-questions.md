@@ -25,7 +25,11 @@
     7,400-6,600 BCE, when half the assemblages are wholly domestic. History matching
     (ADR-0052) finds worlds that fit both ends, but they are rare: of the worlds wild
     enough before 8,000 BCE, a third reach the record's share after 7,000 BCE, and the
-    consistent ones sit at its low end (median 0.65 against 0.80).
+    consistent ones sit at its low end (median 0.65 against 0.80). The stable-climate
+    hypothesis is implemented (ADR-0054) but century-resolution climate cannot test
+    it: suitability saturates in the cereal belt's core, where cultivation ignites.
+    Delaying the onset to 10,500 BCE by fiat fits the first two radiocarbon eras but
+    not the rest (ADR-0054), so onset timing is part of the gap, not all of it.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap

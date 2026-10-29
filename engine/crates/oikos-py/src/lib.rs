@@ -217,6 +217,13 @@ impl PyWorld {
         f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
     }
 
+    /// Climate variability per cell: the mean change of wild-cereal suitability per century
+    /// over the stress window (float64; zeros without a climate pack).
+    fn climate_variability<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let s = &self.0.farmland.variability;
+        f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
+    }
+
     /// Whether each cell is habitable now (bool; dry land under the coastline and
     /// hydrology packs, every cell without them).
     fn habitable<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {

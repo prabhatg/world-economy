@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "243a069d713958388b66d23160620ed47fc2ded46173caf121b4010f491c908a"
+GOLDEN_HASH = "4188d61fb6ff3877532ff0ec3004cc80cdf9ae5b5f517b58a7d814e1b9fff6ea"
 
 
 def run(world, years=300, parts=1):
@@ -249,7 +249,7 @@ def test_capacity_and_habitat():
 def test_cultivation_fields():
     w = oikos.World(seed=3)
     w.run_years(300, parts=2)
-    for name in ("cultivation", "domestication", "suitability", "climate_stress"):
+    for name in ("cultivation", "domestication", "suitability", "climate_stress", "climate_variability"):
         v = getattr(w, name)()
         assert v.dtype == np.float64 and v.shape == (w.cells,), name
         assert not v.any(), f"{name}: toy worlds never cultivate"

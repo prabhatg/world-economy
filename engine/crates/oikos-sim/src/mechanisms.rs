@@ -52,6 +52,8 @@ pub struct Sense<'a> {
     pub suitability: &'a [f64],
     /// Relative decline of forager capacity over the stress window, in [0, 1].
     pub climate_stress: &'a [f64],
+    /// Mean change of suitability per century over the stress window.
+    pub climate_variability: &'a [f64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],
     pub tick: Tick,
@@ -432,7 +434,10 @@ impl Mechanism for Inundation {
 ///   cultivation that lets people outgrow it, does; Binford 1968, Cohen 1977),
 ///   *climate stress* (the decline of forager capacity over the stress window, e.g. the
 ///   Younger Dryas; Moore and Hillman 1992, Bar-Yosef 1998) and *abundance* (rich wild
-///   stands invite cultivation without stress; Smith 2007, Zeder 2016).
+///   stands invite cultivation without stress; Smith 2007, Zeder 2016). A fourth
+///   hypothesis scales the target instead of adding to it: where suitability swings
+///   from century to century, sowing does not pay, whatever the motive (the stable
+///   Holocene climate made agriculture possible; Richerson, Boyd and Bettinger 2001).
 /// - **Domestication.** Harvesting and resowing select for domestic traits
 ///   (non-shattering ears) at `selection` times effort, logistically in their share of
 ///   the sown crop (from at least the wild mutant frequency); gene flow from wild stands
@@ -451,6 +456,7 @@ pub struct Cultivation {
     pub pressure_weight: f64,
     pub stress_weight: f64,
     pub abundance_weight: f64,
+    pub variability_weight: f64,
     pub adoption_rate: f64,
     pub selection: f64,
     pub wild_frequency: f64,
@@ -466,6 +472,7 @@ impl Cultivation {
             pressure_weight: p.cultivation_pressure_weight,
             stress_weight: p.cultivation_stress_weight,
             abundance_weight: p.cultivation_abundance_weight,
+            variability_weight: p.cultivation_variability_weight,
             adoption_rate: p.adoption_rate,
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
@@ -475,8 +482,16 @@ impl Cultivation {
     }
 
     /// The share of effort bands in a cell aim to spend cultivating: `people` against
-    /// `forage` capacity, wild-cereal `suitability` and climate `stress`.
-    pub fn target_effort(&self, people: u64, forage: u64, suitability: f64, stress: f64) -> f64 {
+    /// `forage` capacity, wild-cereal `suitability`, climate `stress`, and climate
+    /// `variability`, which makes harvests unreliable whatever the motive.
+    pub fn target_effort(
+        &self,
+        people: u64,
+        forage: u64,
+        suitability: f64,
+        stress: f64,
+        variability: f64,
+    ) -> f64 {
         if suitability <= 0.0 {
             return 0.0;
         }
@@ -485,7 +500,8 @@ impl Cultivation {
         let drive = self.pressure_weight * pressure
             + self.stress_weight * stress
             + self.abundance_weight * suitability;
-        oikos_math::finite(drive).clamp(0.0, 1.0)
+        let reliability = (1.0 - self.variability_weight * variability).clamp(0.0, 1.0);
+        oikos_math::finite(drive * reliability).clamp(0.0, 1.0)
     }
 
     /// Effort after one period of moving from `effort` toward `target`.
@@ -530,6 +546,7 @@ impl Mechanism for Cultivation {
                 sense.forage_capacity[cell],
                 sense.suitability[cell],
                 sense.climate_stress[cell],
+                sense.climate_variability[cell],
             );
             if target == 0.0 && traits == Traits::FORAGER {
                 continue;

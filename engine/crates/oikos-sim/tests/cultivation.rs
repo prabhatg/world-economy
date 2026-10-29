@@ -8,7 +8,7 @@
 use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
 use oikos_sim::agents::SHARE_ONE;
-use oikos_sim::environment::cereal_suitability;
+use oikos_sim::environment::{Farmland, cereal_suitability};
 use oikos_sim::inputs::Inputs;
 use oikos_sim::mechanisms::{self, Cultivation, Fission};
 use oikos_sim::schedule::Schedule;
@@ -123,19 +123,19 @@ fn hypotheses_set_the_target_effort() {
     let c = |p: Params| Cultivation::from_params(&p);
     // Pressure: none up to `crowding` times forager capacity, full weight one capacity beyond.
     let pressure = c(Params { cultivation_crowding: 1.0, ..only(0.6, 0.0, 0.0) });
-    assert_eq!(pressure.target_effort(100, 100, 1.0, 0.0), 0.0);
-    assert!((pressure.target_effort(150, 100, 1.0, 0.0) - 0.3).abs() < 1e-12);
-    assert!((pressure.target_effort(400, 100, 1.0, 0.0) - 0.6).abs() < 1e-12);
+    assert_eq!(pressure.target_effort(100, 100, 1.0, 0.0, 0.0), 0.0);
+    assert!((pressure.target_effort(150, 100, 1.0, 0.0, 0.0) - 0.3).abs() < 1e-12);
+    assert!((pressure.target_effort(400, 100, 1.0, 0.0, 0.0) - 0.6).abs() < 1e-12);
     // Stress: proportional to the decline of forager capacity, at any density.
     let stress = c(only(0.0, 2.0, 0.0));
-    assert!((stress.target_effort(1, 100, 1.0, 0.2) - 0.4).abs() < 1e-12);
+    assert!((stress.target_effort(1, 100, 1.0, 0.2, 0.0) - 0.4).abs() < 1e-12);
     // Abundance: proportional to wild-cereal suitability, at any density.
     let abundance = c(only(0.0, 0.0, 0.5));
-    assert!((abundance.target_effort(1, 100, 0.8, 0.0) - 0.4).abs() < 1e-12);
+    assert!((abundance.target_effort(1, 100, 0.8, 0.0, 0.0) - 0.4).abs() < 1e-12);
     // No wild cereals, nothing to cultivate; effort never exceeds everything.
     let all = c(only(1.0, 5.0, 1.0));
-    assert_eq!(all.target_effort(500, 100, 0.0, 0.5), 0.0);
-    assert_eq!(all.target_effort(500, 100, 1.0, 0.5), 1.0);
+    assert_eq!(all.target_effort(500, 100, 0.0, 0.5, 0.0), 0.0);
+    assert_eq!(all.target_effort(500, 100, 1.0, 0.5, 0.0), 1.0);
 }
 
 /// Years of full-effort cultivation until half the crop is of the domestic type.
@@ -415,4 +415,59 @@ fn the_demographic_transition_follows_cultivation() {
     assert!(transition > 2 * none, "{transition} vs {none}");
     // Forest: nobody cultivates, so the sedentary rate changes nothing.
     assert_eq!(run(1900.0, 0.03), run(1900.0, 0.002));
+}
+
+#[test]
+fn variability_lowers_the_target_effort() {
+    // The stable-climate hypothesis (Richerson, Boyd and Bettinger 2001): sowing pays
+    // only where harvests are reliable. Weight 0 switches it off.
+    let p = Params { cultivation_variability_weight: 4.0, ..only(0.0, 0.0, 0.5) };
+    let c = Cultivation::from_params(&p);
+    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.0) - 0.5).abs() < 1e-12);
+    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.1) - 0.3).abs() < 1e-12);
+    assert_eq!(c.target_effort(1, 100, 1.0, 0.0, 0.3), 0.0, "too variable to sow at all");
+    let off = Cultivation::from_params(&only(0.0, 0.0, 0.5));
+    assert_eq!(off.target_effort(1, 100, 1.0, 0.0, 0.3), 0.5);
+}
+
+/// Every century from 12,000 BCE, rain swings between 500 mm (suitability 1) and 275 mm
+/// (suitability 0.5) if `swinging`, else stays at 500 mm.
+fn swinging_climate(h3: &[u64], swinging: bool) -> Vec<u8> {
+    let years: Vec<i64> = (0..=40).map(|i| -12_000 + 100 * i).collect();
+    climate_pack(h3, &years, move |y, _| (15.0, if swinging && (y / 100) % 2 != 0 { 275.0 } else { 500.0 }))
+}
+
+#[test]
+fn climate_variability_is_the_mean_change_in_suitability_per_century() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let p = Params { stress_window_years: 300, ..Params::default() };
+    for (swinging, expected) in [(true, 0.5), (false, 0.0)] {
+        let c = swinging_climate(&h3, swinging);
+        let f = Farmland::new(&inputs(&[&g, &c]), -11_500, &p, h3.len());
+        assert!(
+            f.variability.iter().all(|&v| (v - expected).abs() < 1e-9),
+            "{swinging}: {:?}",
+            &f.variability[..3]
+        );
+    }
+}
+
+#[test]
+fn nobody_sows_where_the_climate_is_too_variable() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let run = |swinging: bool, weight: f64| {
+        let c = swinging_climate(&h3, swinging);
+        let p =
+            Params { cultivation_variability_weight: weight, initial_occupancy: 0.5, ..only(0.0, 0.0, 0.8) };
+        let mut w = world(&[&g, &c], 7, p);
+        // The window fills over the first three centuries; effort sown then dies out.
+        w.run_years(1000, 2, 1000);
+        mean_effort(&w)
+    };
+    assert!(run(true, 0.0) > 0.3, "abundance alone brings cultivation");
+    let swinging = run(true, 2.0);
+    assert!(swinging < 0.01, "swinging harvests keep it away: {swinging}");
+    assert_eq!(run(false, 2.0), run(false, 0.0), "a stable climate is unaffected");
 }
