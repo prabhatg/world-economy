@@ -2,7 +2,8 @@
 # tables as an independent consumer would (scripts/verify-outputs.py); maturin builds the
 # Python bindings (crates/oikos-py) and pytest runs their tests (python/tests); h3,
 # blake3, rasterio (GDAL), pyogrio (GDAL vector reads) and shapely run the data
-# pipelines (../data: regions, geometry, rasters, vector datasets, forcing packs).
+# pipelines (../data: regions, geometry, rasters, vector datasets, forcing packs); scipy
+# fits the calibration emulators (../calibration: L-BFGS-B, Cholesky solves).
 # Every package is pinned exactly, transitive dependencies included, so every machine
 # verifies with the same tools. `source scripts/env.sh` installs these into
 # engine/.venv. To upgrade: change the direct pins, reinstall, then copy the full
@@ -17,6 +18,7 @@ pyarrow==26.0.0
 pyogrio==0.13.0
 pytest==9.2.0
 rasterio==1.5.2
+scipy==1.18.1
 shapely==2.2.0
 zarr==3.4.2
 

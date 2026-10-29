@@ -86,7 +86,7 @@ else
   echo "SKIP data pipelines: needs h3, blake3, numpy, pytest (source scripts/env.sh)"
 fi
 
-step "calibration: observation operators (pytest)"
+step "calibration: operators, emulators, history matching (pytest)"
 if "$py" -c "import h3, numpy, pyarrow, pytest" 2>/dev/null; then
   "$py" -m pytest -q ../calibration/tests
 else

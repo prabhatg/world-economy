@@ -66,5 +66,21 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Journal of Archaeological Science 52: 549–557, doi:10.1016/j.jas.2014.08.011;
   rcarbon, Crema, E.R. & Bevan, A. (2021), Radiocarbon 63: 23–39, doi:10.1017/RDC.2020.95.
 
+### Methods in our calibration
+- **Screening:** Morris, M.D. (1991), Technometrics 33: 161–174,
+  doi:10.1080/00401706.1991.10484804; μ* of Campolongo, F., Cariboni, J. & Saltelli, A.
+  (2007), Environmental Modelling & Software 22: 1509–1518,
+  doi:10.1016/j.envsoft.2006.10.004.
+- **Emulators:** Kennedy, M.C. & O'Hagan, A. (2001), JRSS B 63: 425–464,
+  doi:10.1111/1467-9868.00294; Rasmussen, C.E. & Williams, C.K.I. (2006), Gaussian
+  Processes for Machine Learning (MIT Press); design size from Loeppky, J.L., Sacks, J. &
+  Welch, W.J. (2009), Technometrics 51: 366–376, doi:10.1198/TECH.2009.08040.
+- **History matching:** Craig, P.S. et al. (1997), Case Studies in Bayesian Statistics
+  III: 37–93; Vernon, I., Goldstein, M. & Bower, R.G. (2010), Bayesian Analysis 5:
+  619–669, doi:10.1214/10-BA524; Williamson, D. et al. (2013), Climate Dynamics 41:
+  1703–1729, doi:10.1007/s00382-013-1896-4; three-sigma rule, Pukelsheim, F. (1994), The
+  American Statistician 48: 88–91, doi:10.1080/00031305.1994.10476030.
+- **SciPy** (optimization and linear algebra for the emulators).
+
 ## Volunteers, reviewers, contributors, institutions
 *Your name here.*

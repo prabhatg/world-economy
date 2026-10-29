@@ -88,6 +88,15 @@ Goal: posterior over mechanism parameters θ (and over *which* competing modules
    fit and held-out skill.
 6. **Pattern-oriented validation:** stylized facts that were *not* used in fitting.
 
+**Implemented (first waves, ADR-0052):** `oikos_cal.screening` (Morris),
+`oikos_cal.emulator` (Gaussian processes), `oikos_cal.history` (implausibility, waves,
+NROY sampling) and `oikos_cal.targets` (radiocarbon and domestication eras), run on M1
+by `python -m oikos_cal screen / wave` with every run recorded in `calibration/runs/m1/`.
+Screening found eight of 22 free parameters that move the summaries; two waves of 200
+worlds leave 22% of the prior space, with selection the one sharply constrained
+parameter (0.001-0.01 per year). Radiocarbon eras do not constrain at their present
+tolerances (open question 25); late domestication is the binding summary (question 24).
+
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.
 

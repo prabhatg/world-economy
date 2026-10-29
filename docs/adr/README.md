@@ -53,6 +53,7 @@
 | 0049 | Cultivation and domestication: agents carry practice (`cultivation` effort and `domestication` share of the sown crop, fixed-point parts per billion), inherited by split-off groups and people-weighted on merge; a deterministic `cultivation` mechanism (last in the step) moves effort toward a target that nests three competing drivers as weights (population pressure beyond `cultivation_crowding` × forager capacity, climate stress = decline of forager capacity over `stress_window_years`, wild-cereal abundance) and selects for domestic traits logistically at `selection_coefficient` × effort against wild gene flow; capacity = forager capacity × (1 − effort) + farm capacity × (wild yield × effort + domestic gain × effort × domestication); climate worlds start peopled (`initial_occupancy`); checkpoint magic `OIKOSCK2` | Accepted |
 | 0050 | Observation operators live in `calibration/` (Python package `oikos_cal`), read activity recorded from a world through the bindings and never change it; first operator: radiocarbon date density, forward-modelled (people-years per cell and century × Surovell 2009 taphonomic survival, blurred by a calibration kernel built from IntCal20 per error class) and compared with site-phase-binned calibrated dates as a multinomial over centuries within coarse H3 blocks, so research intensity per block cancels; 1% background | Accepted |
 | 0051 | Domestication-timing operator: rachis assemblages (Allaby et al. 2017 Table S4, barley, a locked Parquet table) scored beta-binomially (concentration 2) against the model's domestic share of the crop sown within one ring of the site over the phase's century ± 1 (wild mutant frequency where nobody cultivates); the recorder keeps effort × domestication people-years | Accepted |
+| 0052 | First calibration waves on the calibration host (`oikos_cal`): Morris screening (μ* in units of each target's tolerance) picks the factors emulators see; Gaussian-process emulators (linear trend, ARD, nugget; SciPy pinned) per summary; history matching with implausibility cutoff 3 on the max over summaries; summaries are 5 radiocarbon eras (centered log shares, block-bootstrap variance) and 4 barley domestic-share eras, discrepancy sd 0.25 and 0.1; every run recorded in `calibration/runs/` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -246,7 +247,42 @@ defaults, open question 24), against wild Natufian and PPNA assemblages. The mod
 coefficient is not the logistic rate: selection acts in proportion to effort, so the
 best worlds sit at 0.005-0.008 and 0.002 never domesticates by 6,000 BCE.
 
-## Notes
+## ADR-0052 rationale (first calibration waves)
+
+Calibration starts with history matching rather than a posterior (docs/05 §5.2): with a
+model known to be incomplete, the first question is which parameter values cannot
+reproduce the record however generously the model's errors are judged. The answer
+rules out regions, and says whether any region survives at all; an empty space would
+mean a missing mechanism, not a bad parameter.
+
+Summaries rather than full likelihoods: an implausibility needs an observed value and
+variances it can be judged against, and a handful of summaries can be emulated. Both
+come from the operators (ADR-0050, ADR-0051), so the model side goes through the same
+forward model. Radiocarbon eras keep only the shape over time (scale and research
+intensity cancel as in the operator); the block bootstrap is the honest observation
+error for 44 blocks occupied and studied very differently. Discrepancies are judgments:
+0.25 on an era's log share, 0.1 on an era's domestic share. Seed noise is below 5% of
+every tolerance, so the emulators' nuggets mostly absorb the factors they do not see.
+
+Screening (238 M1 worlds, 10 trajectories over the 22 free parameters) found eight
+factors with an effect of at least half a tolerance on some summary: selection
+coefficient (8.8 tolerances), cultivation abundance weight, growth rate, forager
+density, introgression, the wild domestic-type frequency, adoption rate and climate
+stress weight. Dispersal, fission, aquatic resources and the stress window move no
+summary by more than half a tolerance.
+
+Two waves of 200 worlds each (Latin hypercube, then the space wave 1 did not rule out)
+leave 22% of the prior space; 62 of the 400 worlds are consistent with all nine
+summaries. Only selection is sharply constrained: 0.001-0.01 per year (prior to 0.5),
+median 0.003, so rapid domestication is ruled out by history matching as well as by
+the likelihood (ADR-0051). The radiocarbon eras rule out nothing at these tolerances:
+the record's early era is about 1.0 log units below the model's median (the gap of open
+question 25), within three tolerances of 0.37. The second wave shrank the space only
+from 23% to 22% with emulators validated (95-100% of held-out runs within three
+standard deviations), so further waves at these summaries would not narrow it: the next
+constraint has to come from new observations or a tighter, justified discrepancy, not
+more runs.
+
 
 - H3 cells are not exactly equal-area; mechanisms use per-cell areas, never assume
   uniform cells.

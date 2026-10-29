@@ -22,7 +22,10 @@
     lowers the M1 score (ADR-0050), consistent with an onset that is too early. The
     rachis record shows a second gap (ADR-0051): at the defaults the model's crop is
     1-3% domestic at PPNA sites, close to the record's 0-6%, but only 25-35% domestic in
-    7,400-6,600 BCE, when half the assemblages are wholly domestic.
+    7,400-6,600 BCE, when half the assemblages are wholly domestic. History matching
+    (ADR-0052) finds worlds that fit both ends, but they are rare: of the worlds wild
+    enough before 8,000 BCE, a third reach the record's share after 7,000 BCE, and the
+    consistent ones sit at its low end (median 0.65 against 0.80).
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
@@ -30,7 +33,16 @@
     villages leave far more datable material, #13), or research bias toward the
     Neolithic? Date density alone cannot separate them; site counts and sizes can
     (#17). The operator also conditions out where dates are dense, so it needs a
-    research-intensity model or site surveys to use spatial density.
+    research-intensity model or site surveys to use spatial density. In history
+    matching (ADR-0052) the gap persists across the prior space - worlds consistent with
+    every summary rise about half as much in log terms as the record before 9,900 BCE -
+    but stays inside the radiocarbon tolerance; low growth rates, filling the region
+    slowly, come closest.
+26. How large is the M1 model discrepancy (ADR-0052)? The first waves used 0.25 on
+    radiocarbon era log shares and 0.1 on domestic shares, and at those values the
+    radiocarbon record rules out nothing. Tighter values would make it bind but must
+    be justified independently (e.g. by held-out regions or by a second dates
+    database), not chosen to make it bind.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
