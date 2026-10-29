@@ -471,3 +471,100 @@ fn nobody_sows_where_the_climate_is_too_variable() {
     assert!(swinging < 0.01, "swinging harvests keep it away: {swinging}");
     assert_eq!(run(false, 2.0), run(false, 0.0), "a stable climate is unaffected");
 }
+
+#[test]
+fn soil_erodes_under_fields_and_forms_slowly() {
+    use oikos_sim::environment::{erode, soil_yield};
+    let p = Params {
+        soil_erosion_rate: 0.0004,
+        soil_formation_rate: 0.0001,
+        soil_critical: 0.5,
+        ..Params::default()
+    };
+    // Erosion takes depth at a steady rate under fields; formation refills toward full.
+    assert!((erode(0.5, 1.0, 10.0, &p) - (0.5 - 0.004 + 0.0005)).abs() < 1e-15);
+    assert!((erode(0.5, 0.0, 10.0, &p) - 0.5005).abs() < 1e-15, "fallow land re-forms slowly");
+    assert_eq!(erode(0.001, 1.0, 10.0, &p), 0.0, "never below bare rock");
+    assert_eq!(erode(1.0, 0.0, 10.0, &p), 1.0);
+    // Yields hold while roots have enough soil, then fall linearly to nothing.
+    assert_eq!(soil_yield(0.8, &p), 1.0);
+    assert_eq!(soil_yield(0.5, &p), 1.0);
+    assert!((soil_yield(0.25, &p) - 0.5).abs() < 1e-15);
+    assert_eq!(soil_yield(0.0, &p), 0.0);
+    // Off by default: no erosion, full soil stays full.
+    assert_eq!(erode(1.0, 1.0, 10.0, &Params::default()), 1.0);
+}
+
+/// A cereal-country world that ratchets into farming (as in the ratchet test).
+fn farming_world(seed: u64, extra: impl Fn(Params) -> Params) -> (World, Vec<u8>, Vec<u8>) {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    // Foragers everywhere from the start, as in M1, so the land does not fill meanwhile.
+    let p = extra(Params { selection_coefficient: 0.02, initial_occupancy: 0.5, ..only(0.8, 0.0, 0.2) });
+    (world(&[&g, &c], seed, p), g, c)
+}
+
+#[test]
+fn eroding_fields_turn_a_farming_boom_into_a_bust() {
+    let trajectory = |erosion: f64| {
+        let (mut w, ..) =
+            farming_world(5, |p| Params { soil_erosion_rate: erosion, soil_critical: 0.5, ..p });
+        let mut people = Vec::new();
+        for _ in 0..32 {
+            w.run_years(250, 3, 250);
+            people.push(w.total_population());
+        }
+        (people, w.soil().iter().sum::<f64>() / w.soil().len() as f64)
+    };
+    let (eroding, soil) = trajectory(0.0004);
+    let peak = *eroding.iter().max().unwrap();
+    let at = eroding.iter().position(|&n| n == peak).unwrap();
+    assert!(at > 2 && at < eroding.len() - 4, "a boom first: peak at {at} of {eroding:?}");
+    assert!(*eroding.last().unwrap() < peak * 7 / 10, "then a bust: {eroding:?}");
+    assert!(soil < 0.5, "fields have worn the soil down: {soil}");
+    let (lasting, soil) = trajectory(0.0);
+    let peak = *lasting.iter().max().unwrap();
+    assert!(*lasting.last().unwrap() > peak * 95 / 100, "without erosion farming lasts: {lasting:?}");
+    assert_eq!(soil, 1.0);
+}
+
+#[test]
+fn soil_is_partition_independent_and_restores() {
+    let erosion = |p| Params { soil_erosion_rate: 0.001, ..p };
+    let run = |parts| {
+        let (mut w, ..) = farming_world(9, erosion);
+        w.run_years(1500, parts, 1500);
+        assert!(w.soil().iter().any(|&s| s < 1.0), "the test must exercise erosion");
+        checkpoint::state_hash(&w)
+    };
+    assert_eq!(run(1), run(4));
+    let (mut w, g, c) = farming_world(9, erosion);
+    w.run_years(777, 3, 777);
+    let mut restored = checkpoint::decode_with(&checkpoint::encode(&w), inputs(&[&g, &c])).unwrap();
+    assert_eq!(restored.soil(), w.soil());
+    assert_eq!(restored.capacity, w.capacity);
+    restored.run_years(723, 2, 723);
+    assert_eq!(checkpoint::state_hash(&restored), run(1));
+}
+
+#[test]
+fn checkpoints_from_before_soil_restore_with_whole_soil() {
+    let (mut w, g, c) = farming_world(9, |p| p);
+    w.run_years(300, 2, 300);
+    let now = checkpoint::encode(&w);
+    // The previous layout: magic OIKOSCK2 and no soil between birth counters and agents.
+    let cells = w.population.len();
+    let params_len = serde_json::to_vec(&w.params).unwrap().len();
+    let header = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8 + 4 + params_len + 4;
+    let soil_at = header + 16 * cells;
+    let mut before = now.clone();
+    before[..8].copy_from_slice(b"OIKOSCK2");
+    before.drain(soil_at..soil_at + 4 * cells);
+    let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
+    assert!(restored.soil().iter().all(|&s| s == 1.0));
+    assert_eq!(checkpoint::encode(&restored), now, "nothing eroded, so nothing is lost");
+    let mut bad = now.clone();
+    bad[soil_at..soil_at + 4].copy_from_slice(&(SHARE_ONE + 1).to_le_bytes());
+    let err = checkpoint::decode_with(&bad, inputs(&[&g, &c])).err().expect("refused");
+    assert!(err.contains("soil"), "{err}");
+}

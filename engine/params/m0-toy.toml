@@ -475,6 +475,46 @@ sources = [
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
 
+[params.soil_erosion_rate]
+group = "cultivation"
+unit = "soil share per year at full effort"
+description = "Land-degradation hypothesis: share of a cell's erodible soil lost per year under full cultivation effort (in proportion to effort)."
+kind = { type = "real", min = 0.0, max = 0.01 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 0.001 }
+status = "placeholder"
+note = "Zero switches the hypothesis off. Tilled land erodes one to two orders of magnitude faster than soil forms (about 1 mm/yr against 0.01-0.1 mm/yr); hoe and sickle farming of thin Mediterranean soils loses tens of centimetres over millennia: 1e-4 to 1e-3 of the erodible depth per year."
+sources = [
+  { citation = "Montgomery, D.R. (2007). Soil erosion and agricultural sustainability. PNAS 104, 13268-13272.", doi = "10.1073/pnas.0611508104" },
+  { citation = "Rollefson, G.O., Kohler-Rollefson, I. (1989). The collapse of early Neolithic settlements in the southern Levant. In Hershkovitz, I. (ed.), People and Culture in Change, BAR International Series 508, 73-89." },
+]
+
+[params.soil_formation_rate]
+group = "cultivation"
+unit = "1/year"
+description = "Soil formation: each year the eroded share of a cell's soil re-forms at this rate (toward full, whatever the land use)."
+kind = { type = "real", min = 0.0, max = 0.01 }
+default = 0.0001
+prior = { dist = "log_uniform", lo = 0.00001, hi = 0.001 }
+status = "placeholder"
+note = "Soil production of 0.01-0.1 mm/yr refills a metre of soil over 10,000-100,000 years; faster rates stand for colluvium and fallow recovery."
+sources = [
+  { citation = "Montgomery, D.R. (2007). Soil erosion and agricultural sustainability. PNAS 104, 13268-13272.", doi = "10.1073/pnas.0611508104" },
+]
+
+[params.soil_critical]
+group = "cultivation"
+unit = "soil share"
+description = "Yields of fields hold while a cell keeps at least this share of its erodible soil, then fall linearly to nothing on bare rock."
+kind = { type = "real", min = 0.01, max = 1.0 }
+default = 0.5
+prior = { dist = "uniform", lo = 0.2, hi = 0.8 }
+status = "placeholder"
+note = "Cereal yields are insensitive to topsoil depth until roots run short of soil and water; then they fall steeply."
+sources = [
+  { citation = "Lal, R. (1998). Soil erosion impact on agronomic productivity and environment quality. Critical Reviews in Plant Sciences 17, 319-464.", doi = "10.1080/07352689891304249" },
+]
+
 [params.cereal_precip_min]
 group = "cultivation"
 unit = "mm/yr"

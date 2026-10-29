@@ -13,7 +13,8 @@
 //! a climate stress: how much its forager capacity has fallen over the stress window, and a
 //! climate variability: how much its suitability has swung per century over that window.
 //! A cell's carrying capacity then blends foraging and cultivation by its bands' effort
-//! ([`farmed_capacity`]). Everything here is computed from the packs, the year, the
+//! ([`farmed_capacity`]), with fields yielding less where they have worn the soil down
+//! ([`erode`], [`soil_yield`]). Everything here is computed from the packs, the year, the
 //! parameters and agent totals, with `oikos_math` functions, so every host gets the same
 //! integers.
 
@@ -63,6 +64,22 @@ pub fn cereal_suitability(temp_c: f64, precip_mm: f64, p: &Params) -> f64 {
 pub fn farmed_capacity(forage: u64, farm: f64, effort: f64, crop: f64, p: &Params) -> u64 {
     let fields = farm * (p.wild_yield_ratio * effort + (1.0 - p.wild_yield_ratio) * crop);
     (oikos_math::finite(forage as f64 * (1.0 - effort) + fields) as u64).max(1)
+}
+
+/// A cell's soil share (1 = its original erodible soil) after `years` with its people
+/// spending `effort` cultivating: fields erode it at `soil_erosion_rate` times effort, a
+/// steady loss of depth (Montgomery 2007), while soil re-forms at `soil_formation_rate`
+/// times what is missing. Between 0 (bare rock) and 1.
+pub fn erode(soil: f64, effort: f64, years: f64, p: &Params) -> f64 {
+    let loss = p.soil_erosion_rate * effort * years;
+    let gain = p.soil_formation_rate * (1.0 - soil) * years;
+    oikos_math::finite(soil - loss + gain).clamp(0.0, 1.0)
+}
+
+/// Share of full field yields on soil `soil`: whole while roots have at least
+/// `soil_critical` of the soil, then linear to nothing on bare rock (Lal 1998).
+pub fn soil_yield(soil: f64, p: &Params) -> f64 {
+    (soil / p.soil_critical).min(1.0)
 }
 
 /// Land and lake fractions of each cell in one year.
@@ -170,7 +187,8 @@ pub struct Farmland {
     /// Wild-cereal suitability, in [0, 1].
     pub suitability: Vec<f64>,
     /// People fed if all effort went into cultivating fully domestic crops: suitability
-    /// times dry-land area times `farm_density`.
+    /// times dry-land area times `farm_density`, times the soil's yield ([`soil_yield`],
+    /// applied by the world, which keeps the soil).
     pub farm: Vec<f64>,
     /// Relative decline of forager capacity since `stress_window_years` earlier, in [0, 1].
     pub stress: Vec<f64>,

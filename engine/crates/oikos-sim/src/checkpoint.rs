@@ -1,14 +1,16 @@
 //! Canonical binary checkpoints.
 //!
 //! Layout (all integers little-endian):
-//! `magic "OIKOSCK2" | version u32 | region | seed u64 | tick u64 |
+//! `magic "OIKOSCK3" | version u32 | region | seed u64 | tick u64 |
 //!  params_len u32 | params JSON | cells u32 | forage_capacity u64×cells |
-//!  birth_counter u64×cells | agents u64 |
+//!  birth_counter u64×cells | soil u32×cells | agents u64 |
 //!  (id u64, cell u32, weight u64, cultivation u32, domestication u32)×agents`
 //!
-//! Magic `OIKOSCK1` was the layout before agents carried traits (ADR-0049). Everything
-//! derived (carrying capacity under cultivation, farmland, habitability) is recomputed
-//! from the packs, the parameters and the agents on restore.
+//! Magic `OIKOSCK2` was the layout before cells kept soil (ADR-0055); it restores with
+//! full soil everywhere, which is what it meant. `OIKOSCK1` was the layout before agents
+//! carried traits (ADR-0049). Everything derived (carrying capacity under cultivation,
+//! farmland, habitability) is recomputed from the packs, the parameters, the soil and
+//! the agents on restore.
 //!
 //! The version says how the region is named: 1 = `base_cell u8 | resolution u8`;
 //! 2 = `geometry pack id [u8; 32] | packs u32 | pack id [u8; 32]×packs` (all forcing
@@ -24,7 +26,8 @@ use crate::world::{World, WorldConfig};
 use oikos_core::{EntityId, Tick};
 use std::sync::Arc;
 
-const MAGIC: &[u8; 8] = b"OIKOSCK2";
+const MAGIC: &[u8; 8] = b"OIKOSCK3";
+const MAGIC_BEFORE_SOIL: &[u8; 8] = b"OIKOSCK2";
 const MAGIC_BEFORE_TRAITS: &[u8; 8] = b"OIKOSCK1";
 const BASE_CELL: u32 = 1;
 const GEOMETRY: u32 = 2;
@@ -71,6 +74,9 @@ pub fn encode(world: &World) -> Vec<u8> {
         b.extend_from_slice(&v.to_le_bytes());
     }
     for v in &world.birth_counter {
+        b.extend_from_slice(&v.to_le_bytes());
+    }
+    for v in &world.soil {
         b.extend_from_slice(&v.to_le_bytes());
     }
     b.extend_from_slice(&(world.agent_count() as u64).to_le_bytes());
@@ -124,15 +130,16 @@ pub fn decode(bytes: &[u8]) -> Result<World, String> {
 pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World, String> {
     let inputs = inputs.into();
     let mut r = Reader { b: bytes };
-    match r.take(8)? {
-        m if m == MAGIC => {}
+    let soil_kept = match r.take(8)? {
+        m if m == MAGIC => true,
+        m if m == MAGIC_BEFORE_SOIL => false,
         m if m == MAGIC_BEFORE_TRAITS => {
             return Err(
                 "checkpoint predates agent traits (format OIKOSCK1); rerun it with this engine".into()
             );
         }
         _ => return Err("not an Oikos checkpoint".into()),
-    }
+    };
     let config = match r.u32()? {
         BASE_CELL => WorldConfig::base_cell(r.u8()?, r.u8()?),
         GEOMETRY => {
@@ -161,6 +168,13 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
     }
     let forage_capacity = (0..cells).map(|_| r.u64()).collect::<Result<Vec<_>, _>>()?;
     let birth_counter = (0..cells).map(|_| r.u64()).collect::<Result<Vec<_>, _>>()?;
+    let soil = match soil_kept {
+        true => (0..cells).map(|_| r.u32()).collect::<Result<Vec<_>, _>>()?,
+        false => vec![crate::agents::SHARE_ONE; cells],
+    };
+    if soil.iter().any(|&s| s > crate::agents::SHARE_ONE) {
+        return Err("cell soil share above one".into());
+    }
     let n = r.u64()? as usize;
     let mut agents = Agents::default();
     for _ in 0..n {
@@ -180,5 +194,10 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
         return Err("trailing bytes in checkpoint".into());
     }
     agents.sort_canonical();
-    Ok(World::assemble(config, grid, inputs, seed, tick, params, forage_capacity, birth_counter, agents))
+    let mut w =
+        World::assemble(config, grid, inputs, seed, tick, params, forage_capacity, birth_counter, agents);
+    if soil.iter().any(|&s| s < crate::agents::SHARE_ONE) {
+        w.restore_soil(soil);
+    }
+    Ok(w)
 }

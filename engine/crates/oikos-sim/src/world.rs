@@ -20,12 +20,13 @@
 //! drifted more than [`IMBALANCE_TOLERANCE_PCT`] above the mean. Results never depend
 //! on the partitioning, so these are performance settings, not model parameters.
 
-use crate::agents::{Agents, SHARE_ONE};
+use crate::agents::{Agents, SHARE_ONE, Traits};
 use crate::environment::{self, Farmland};
 use crate::inputs::Inputs;
 use crate::mechanisms::{self, Mechanism, PartitionView, Sense};
 use crate::params::Params;
 use crate::schedule::Schedule;
+use oikos_core::time::TICKS_PER_YEAR;
 use oikos_core::{EntityId, Philox4x32, Stream, Tick};
 use oikos_grid::Grid;
 use serde::{Deserialize, Serialize};
@@ -147,6 +148,9 @@ pub struct World {
     /// times domestic share (fixed point, see [`SHARE_ONE`]); derived from the agents.
     effort_sum: Vec<u64>,
     crop_sum: Vec<u64>,
+    /// Soil share per cell (fixed point, see [`SHARE_ONE`]; full at the start): worn down
+    /// by fields, re-forming slowly ([`environment::erode`]). Checkpointed.
+    pub(crate) soil: Vec<u32>,
     /// Next birth counter per cell, used for partition-independent ids.
     pub birth_counter: Vec<u64>,
     /// Population per cell after the last commit.
@@ -368,6 +372,7 @@ impl World {
             farmland,
             effort_sum,
             crop_sum,
+            soil: vec![SHARE_ONE; n],
             birth_counter,
             population,
             parts: vec![part],
@@ -403,7 +408,44 @@ impl World {
         let year = land_year(self.tick, &self.params);
         environment::capacity_into(&self.inputs, year, &self.params, &mut self.forage_capacity);
         self.farmland.update(&self.inputs, year, &self.params, self.grid.len());
+        if self.farmland.active() {
+            for (farm, &s) in self.farmland.farm.iter_mut().zip(&self.soil) {
+                if s < SHARE_ONE {
+                    *farm *= environment::soil_yield(s as f64 / SHARE_ONE as f64, &self.params);
+                }
+            }
+        }
         self.farm_all();
+    }
+
+    /// One capacity period of erosion and soil formation, from each cell's effort at the
+    /// last commit.
+    fn erode_soil(&mut self) {
+        let years = self.params.capacity_period_ticks as f64 / TICKS_PER_YEAR as f64;
+        let one = SHARE_ONE as f64;
+        for c in 0..self.grid.len() {
+            let effort = match self.population[c] {
+                0 => 0.0,
+                n => self.effort_sum[c] as f64 / (n as f64 * one),
+            };
+            let s = self.soil[c];
+            if effort > 0.0 || s < SHARE_ONE {
+                self.soil[c] =
+                    Traits::toward(s, environment::erode(s as f64 / one, effort, years, &self.params));
+            }
+        }
+    }
+
+    /// Soil share of each cell (1 = its original erodible soil).
+    pub fn soil(&self) -> Vec<f64> {
+        self.soil.iter().map(|&s| s as f64 / SHARE_ONE as f64).collect()
+    }
+
+    /// Sets each cell's soil (fixed point) and the capacity it supports (restoring).
+    pub(crate) fn restore_soil(&mut self, soil: Vec<u32>) {
+        assert_eq!(soil.len(), self.grid.len());
+        self.soil = soil;
+        self.refresh_land();
     }
 
     /// Mean cultivation effort of each cell's people (0 in empty cells).
@@ -556,6 +598,7 @@ impl World {
             self.inputs.habitable_into(self.tick.calendar_year(), &mut self.habitable);
         }
         if self.tick.0 % self.params.capacity_period_ticks == 0 && self.farmland.active() {
+            self.erode_soil();
             self.refresh_land();
         }
 

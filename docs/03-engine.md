@@ -45,7 +45,11 @@ abstraction chosen so that multi-node / multi-GPU is an implementation, not a re
 - *Implemented (M1, ADR-0049):* agents are `id, cell, weight` plus practice traits
   (`cultivation`, `domestication`) as fixed-point shares (parts per billion);
   split-off groups copy them and merges take people-weighted integer means, so
-  checkpoints (`OIKOSCK2`) and state hashes stay exact on every host.
+  checkpoints and state hashes stay exact on every host.
+- *Implemented (M1, ADR-0055):* cells keep a soil share (fixed point), worn down by
+  fields and re-forming slowly; it is the one checkpointed cell state besides birth
+  counters and forager capacity (`OIKOSCK3`; `OIKOSCK2` checkpoints restore with
+  whole soil).
 
 ## 3.4 Scheduling & phases
 

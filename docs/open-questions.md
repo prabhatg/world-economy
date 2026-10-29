@@ -46,8 +46,10 @@
     which doubles by 11,500 BCE through wild-cereal cultivation (question 24). The
     record also falls after 5,100 BCE while every world keeps rising: a Neolithic
     boom and bust (Shennan et al. 2013), the 8.2 ka event, or research focus on the
-    Neolithic? The model has no mechanism that lowers capacity or raises mortality
-    after the transition.
+    Neolithic? Land degradation (ADR-0055) can lower capacity after the boom, and an
+    imposed decline improves the radiocarbon fit by 24-44 log-units; whether erosion
+    at plausible rates, a later onset and faster selection reproduce the whole record
+    together is for the next calibration wave.
 26. How large is the M1 model discrepancy (ADR-0052)? The first waves used 0.25 on
     radiocarbon era log shares and 0.1 on domestic shares, and at those values the
     radiocarbon record rules out nothing. Tighter values would make it bind but must

@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "4188d61fb6ff3877532ff0ec3004cc80cdf9ae5b5f517b58a7d814e1b9fff6ea"
+GOLDEN_HASH = "0fa52840e64d87333c911248d65ee918279b603aa9efa1c6dfe6bd65865b4a49"
 
 
 def run(world, years=300, parts=1):
@@ -254,6 +254,7 @@ def test_cultivation_fields():
         assert v.dtype == np.float64 and v.shape == (w.cells,), name
         assert not v.any(), f"{name}: toy worlds never cultivate"
     np.testing.assert_array_equal(w.forage_capacity(), w.capacity())
+    assert (w.soil() == 1).all(), "nobody farms, so the soil stays whole"
     agents = w.agents()
     for name in ("cultivation", "domestication"):
         assert agents[name].dtype == np.float64 and len(agents[name]) == len(agents["id"])

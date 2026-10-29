@@ -56,6 +56,7 @@
 | 0052 | First calibration waves on the calibration host (`oikos_cal`): Morris screening (μ* in units of each target's tolerance) picks the factors emulators see; Gaussian-process emulators (linear trend, ARD, nugget; SciPy pinned) per summary; history matching with implausibility cutoff 3 on the max over summaries; summaries are 5 radiocarbon eras (centered log shares, block-bootstrap variance) and 4 barley domestic-share eras, discrepancy sd 0.25 and 0.1; every run recorded in `calibration/runs/` | Accepted |
 | 0053 | Neolithic demographic transition as a nested hypothesis: a band's intrinsic growth rate moves linearly with its cultivation effort from `growth_rate` (mobile foragers) to `sedentary_growth_rate` (sedentary cultivators); the default sets them equal (no transition) until calibration says otherwise; the golden hash changes only because the parameter set grew (summaries identical) | Accepted |
 | 0054 | Stable-climate hypothesis of cultivation (Richerson, Boyd and Bettinger 2001) as a fourth nested driver: the cultivation target is scaled by 1 - `cultivation_variability_weight` × climate variability (mean change of wild-cereal suitability per century over the stress window, between century boundaries, recomputed once per century); weight 0 (the default) switches it off; with century-resolution forcing it does not delay the onset | Accepted |
+| 0055 | Land degradation as a nested hypothesis: cells keep a fixed-point soil share, eroded at `soil_erosion_rate` × effort per year and re-forming at `soil_formation_rate` × what is missing, updated each capacity period; field yields scale by min(1, soil / `soil_critical`); checkpoint layout `OIKOSCK3` (soil per cell; `OIKOSCK2` restores with whole soil); erosion 0 (the default) switches it off | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -335,6 +336,34 @@ against -1.36 and -0.30), but the last era overshoots (0.77 against 0.51), barle
 7,000 BCE is only 6% domestic, and the radiocarbon log-likelihood, which sees every
 century, gets worse (-4,036; onsets at 9,700 and 9,000 BCE: -4,053 and -4,063; the
 default: -4,028). What the record has and no world has is the fall after 5,100 BCE.
+
+## ADR-0055 rationale (land degradation: boom and bust)
+
+The radiocarbon record of M1 rises to a plateau at 6,600-5,600 BCE and falls by a
+quarter by 5,000 BCE; under the taphonomic correction that the record itself prefers
+(Surovell 2009: log-likelihood -4,028 against -4,056 without it), activity has to fall by
+about 40%. Every world kept rising: nothing in the model lowered capacity once farming
+had raised it. A counterfactual that halves farm density over 7,000-5,000 BCE improved
+the radiocarbon fit by 24 log-units, and with a later onset and faster selection by 44,
+with all nine summaries within 1.2 tolerances: a capacity decline after the boom is what
+the record asks for (the boom and bust of Neolithic populations, Shennan et al. 2013;
+the Late PPNB crisis, Rollefson and Kohler-Rollefson 1989).
+
+Soil erosion is the process that fits: tilled land erodes one to two orders of
+magnitude faster than soil forms (Montgomery 2007), so it is cumulative, slow and hardly
+reversible on the time scale of a civilization. Yields are insensitive to soil depth
+until roots run short (Lal 1998), so loss of soil is a loss of depth at a steady rate,
+and field yields hold until the soil falls below a critical share, then fall linearly.
+That gives the shape the record has, a plateau and then a decline, where a proportional
+loss would decline from the start. Soil is cell state, kept as a fixed-point share and
+updated with integer rounding toward the change, so checkpoints stay exact.
+
+In M1 at the defaults otherwise, erosion of 3e-4 of the soil per year at full effort
+improves the radiocarbon log-likelihood from -4,028 to -4,004 with the domestication score
+unchanged (-94 against -93); 5e-4 is too much (-4,145). With faster selection (0.01) and
+a critical share of 0.3 the radiocarbon fit reaches -3,991, but with the onset as early
+as it is, faster selection makes Natufian barley 54% domestic. Decline, onset and
+selection have to be calibrated together; the default stays off until they are.
 
 ## Notes
 

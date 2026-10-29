@@ -224,6 +224,11 @@ impl PyWorld {
         f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
     }
 
+    /// Soil share per cell (float64; 1 = its original erodible soil, worn down by fields).
+    fn soil<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.soil().into_iter())
+    }
+
     /// Whether each cell is habitable now (bool; dry land under the coastline and
     /// hydrology packs, every cell without them).
     fn habitable<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
