@@ -58,7 +58,8 @@ stay consistent; the chosen world becomes the registry defaults (ADR-0057).
 
 Round 1 (ADR-0052) is in `runs/m1/`, round 2 (ten radiocarbon eras judged one by one
 and together, 27 free parameters; ADR-0056) in `runs/m1/round2/`, with `best.json`, the
-source of the calibrated defaults (ADR-0057).
+source of the calibrated defaults (ADR-0057). Round 3 (a third wave refocused on 17
+factors, ADR-0058) is in `runs/m1/round3/`; `wave --previous ... --screening` refocuses.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
 validated by the engine's state hash, never by an operator's output.

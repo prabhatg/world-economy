@@ -103,6 +103,8 @@ prior space survives two waves, the radiocarbon record binds, and the worlds tha
 both records best erode their soils at 1.1-1.6e-4 per year. The best of them is the
 registry default (ADR-0057): the 12 emulated parameters are `calibrated`, the others keep
 their defaults, and a test keeps the default world consistent with the record.
+Round 3 (ADR-0058) refocuses a third wave on 17 factors: 3.6% of the prior space
+survives, and the record leaves sedentary growth and the soil's critical share free.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

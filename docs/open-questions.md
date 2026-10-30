@@ -61,8 +61,10 @@
 27. Does cultivation speed population growth in M1 (ADR-0053, ADR-0057)? Round 2 did not
     emulate `sedentary_growth_rate`; the calibrated defaults set it equal to the forager
     rate (no transition), yet the record mildly prefers slower sedentary growth (-3,990
-    against -3,997 on radiocarbon at 0.01). The next round should emulate it, and the
-    rural-cemetery juvenile index (Bocquet-Appel 2002) could test it directly.
+    against -3,997 on radiocarbon at 0.01). Round 3 (ADR-0058) emulated it: the record
+    does not identify it (consistent worlds score alike from under 0.7 to over 1.4 times
+    the forager rate). The rural-cemetery juvenile index (Bocquet-Appel 2002) could test
+    it directly.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

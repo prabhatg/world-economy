@@ -59,6 +59,7 @@
 | 0055 | Land degradation as a nested hypothesis: cells keep a fixed-point soil share, eroded at `soil_erosion_rate` × effort per year and re-forming at `soil_formation_rate` × what is missing, updated each capacity period; field yields scale by min(1, soil / `soil_critical`); checkpoint layout `OIKOSCK3` (soil per cell; `OIKOSCK2` restores with whole soil); erosion 0 (the default) switches it off | Accepted |
 | 0056 | Calibration round 2: radiocarbon eras of 800 years (10), judged one by one and together by a multivariate implausibility (Mahalanobis distance with the block-bootstrap covariance plus discrepancy and emulator variances, against the 99.5% chi-square quantile, Vernon et al. 2010); 27 free parameters including the nested hypotheses of ADR-0053-0055; runs in `calibration/runs/m1/round2/` | Accepted |
 | 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted |
+| 0058 | Calibration round 3: a third wave refocuses the emulators on the 17 factors whose round-2 screening effect reaches 0.4 tolerances (adding sedentary growth, soil critical share, NPP elasticity, dispersal crowding and wild yield ratio); earlier waves keep their own active sets and still rule out. `wave --previous ... --screening` refocuses. Defaults unchanged | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -420,6 +421,24 @@ The golden toy world changes with them (hash b2f4be8f): growth three times faste
 fills its land by 9,500 BCE (506,594 people at the end against 190,526). Instructions
 per agent-step 1,068.19 -> 1,081.51 (+1.2%); an M1 run takes 27.7 s against 31.3 s
 (fewer people).
+
+## ADR-0058 rationale (calibration round 3)
+
+History matching may change which factors the emulators see from wave to wave: each
+wave's implausibility uses its own emulators, and a point stays only if every wave
+keeps it (Vernon et al. 2010). Round 2's emulators saw 12 factors; the next five by
+screening (0.40-0.54 tolerances) were noise to them, among them sedentary growth (open
+question 27) and the soil's critical share, which shapes the bust. Wave 3 (300 worlds
+from round 2's NROY) leaves 3.6% of the prior space (4.7% before); 127 of its worlds
+are consistent with all summaries, and the record leaves all five new factors free.
+
+Likelihoods agree: consistent worlds score alike whether cultivators grow at under 0.7,
+0.7-1.4 or over 1.4 times the forager rate (mean radiocarbon -4,031, -4,030, -4,037),
+and soil critical share does not correlate with either log-likelihood. The best
+wave-3 world (run 162) ties the default world (joint -4,069.1 against -4,068.2), so
+the defaults stay. It shows the bust is within reach: its dated activity falls 0.21
+from the peak era to the last against the record's 0.26 (the default world: 0.44),
+and its barley after 7,000 BCE is 76% domestic against 80%.
 
 ## Notes
 

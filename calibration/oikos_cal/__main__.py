@@ -103,6 +103,14 @@ def screening_ranks(doc):
     return e, e.mu_star / tol, noise
 
 
+def active_factors(doc, threshold, max_active):
+    """Indices of the factors a wave's emulators see: at most `max_active` of those whose
+    largest μ*/tolerance in screening `doc` reaches `threshold`, most influential first."""
+    _, scaled, _ = screening_ranks(doc)
+    ranked = [int(i) for i in np.argsort(-scaled.max(axis=1), kind="stable") if scaled[i].max() >= threshold]
+    return sorted(ranked[:max_active])
+
+
 def report_screening(doc):
     e, scaled, noise = screening_ranks(doc)
     ts = _targets(doc["targets"])
@@ -127,6 +135,8 @@ def wave(args):
     rng = np.random.default_rng(args.seed)
     if previous:
         factors, active = previous[-1]["factors"], previous[-1]["active"]
+        if args.screening:  # refocus: later emulators may see more factors than earlier ones
+            active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
         waves = [_fit_wave(d, np.random.default_rng(0)) for d in previous]
         u, kept = history.nroy(waves, len(factors), args.runs, rng)
         print(f"NROY after {len(waves)} waves: {kept:.4f} of the space", file=sys.stderr)
@@ -135,10 +145,7 @@ def wave(args):
     else:
         factors = screening.free_parameters(oikos.registry())
         if args.screening:
-            doc = json.loads(Path(args.screening).read_text())
-            _, scaled, _ = screening_ranks(doc)
-            active = [i for i in np.argsort(-scaled.max(axis=1)) if scaled[i].max() >= args.threshold]
-            active = sorted(int(i) for i in active[: args.max_active])
+            active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
         else:
             active = list(range(len(factors)))
         u = emulator.latin_hypercube(args.runs, len(factors), rng)
@@ -275,7 +282,7 @@ def main(argv=None):
     w = sub.add_parser("wave", help="one history-matching wave")
     w.add_argument("--runs", type=int, default=200)
     w.add_argument("--previous", nargs="*", default=[], help="earlier waves' files, in order")
-    w.add_argument("--screening", help="screening file choosing the emulators' active factors (wave 1)")
+    w.add_argument("--screening", help="screening file choosing the emulators' active factors (else the last wave's)")
     w.add_argument("--threshold", type=float, default=0.5, help="active if max mu*/tol reaches this")
     w.add_argument("--max-active", type=int, default=10)
     w.add_argument("--seed", type=int, default=1)
