@@ -22,6 +22,7 @@
 
 use crate::agents::{Agents, SHARE_ONE, Traits};
 use crate::environment::{self, Farmland};
+use crate::exchange::Obsidian;
 use crate::inputs::Inputs;
 use crate::mechanisms::{self, Mechanism, PartitionView, Sense};
 use crate::params::Params;
@@ -151,6 +152,9 @@ pub struct World {
     /// Soil share per cell (fixed point, see [`SHARE_ONE`]; full at the start): worn down
     /// by fields, re-forming slowly ([`environment::erode`]). Checkpointed.
     pub(crate) soil: Vec<u32>,
+    /// Obsidian availability per source group and cell, passed down the line every step
+    /// ([`crate::exchange`]); empty without an obsidian pack. Checkpointed.
+    pub(crate) obsidian: Obsidian,
     /// Next birth counter per cell, used for partition-independent ids.
     pub birth_counter: Vec<u64>,
     /// Population per cell after the last commit.
@@ -359,6 +363,7 @@ impl World {
         let mut habitable = vec![true; n];
         let restricted = inputs.habitable_into(tick.calendar_year(), &mut habitable);
         let farmland = Farmland::new(&inputs, land_year(tick, &params), &params, n);
+        let obsidian = Obsidian::new(&inputs, n);
         let mechanisms = mechanisms::defaults(&params);
         let schedule = schedule_of(&mechanisms).expect("default mechanisms form a valid schedule");
         let mut w = World {
@@ -373,6 +378,7 @@ impl World {
             effort_sum,
             crop_sum,
             soil: vec![SHARE_ONE; n],
+            obsidian,
             birth_counter,
             population,
             parts: vec![part],
@@ -446,6 +452,23 @@ impl World {
         assert_eq!(soil.len(), self.grid.len());
         self.soil = soil;
         self.refresh_land();
+    }
+
+    /// Obsidian source groups (the obsidian pack's fields; none without one).
+    pub fn obsidian_sources(&self) -> &[String] {
+        &self.obsidian.sources
+    }
+
+    /// Availability of source group `source`'s obsidian in each cell (1 at the source).
+    pub fn obsidian(&self, source: usize) -> Vec<f64> {
+        self.obsidian.available[source].iter().map(|&x| x as f64 / SHARE_ONE as f64).collect()
+    }
+
+    /// Sets each source group's availability per cell (fixed point; restoring).
+    pub(crate) fn restore_obsidian(&mut self, available: Vec<Vec<u32>>) {
+        assert_eq!(available.len(), self.obsidian.sources.len());
+        assert!(available.iter().all(|a| a.len() == self.grid.len()));
+        self.obsidian.available = available;
     }
 
     /// Mean cultivation effort of each cell's people (0 in empty cells).
@@ -600,6 +623,9 @@ impl World {
         if self.tick.0 % self.params.capacity_period_ticks == 0 && self.farmland.active() {
             self.erode_soil();
             self.refresh_land();
+        }
+        if self.obsidian.active() {
+            self.obsidian.exchange(&self.grid, &self.population, self.params.obsidian_loss);
         }
 
         // Sense + decide (parallel over partitions), running due mechanisms in order.

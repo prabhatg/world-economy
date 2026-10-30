@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "362621da7610ffcca4bb4c944abc3508d57afe9a38e920647bb6b05db50d4f66"
+GOLDEN_HASH = "3409a5cbf887967aa8152b99bc6e97787953d288f12932d803ce2263bba4cae4"
 
 
 def run(world, years=300, parts=1):
@@ -245,6 +245,10 @@ def test_capacity_and_habitat():
     p = oikos.registry()["params"]
     assert cap.min() >= p["capacity_min"]["default"] and cap.max() <= p["capacity_max"]["default"], "toy capacity"
     assert hab.all(), "without forcing packs every cell is habitable"
+
+
+def test_obsidian_without_a_pack():
+    assert oikos.World(seed=3).obsidian() == {}, "toy worlds have no obsidian sources"
 
 
 def test_cultivation_fields():

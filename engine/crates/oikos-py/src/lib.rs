@@ -229,6 +229,16 @@ impl PyWorld {
         f64_array(py, self.0.soil().into_iter())
     }
 
+    /// Obsidian availability per cell (float64; 1 at the source, falling off down the
+    /// line) for each source group of the obsidian pack, in its order (empty without one).
+    fn obsidian<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        let d = PyDict::new(py);
+        for (i, name) in self.0.obsidian_sources().iter().enumerate() {
+            d.set_item(name, f64_array(py, self.0.obsidian(i).into_iter())?)?;
+        }
+        Ok(d)
+    }
+
     /// Whether each cell is habitable now (bool; dry land under the coastline and
     /// hydrology packs, every cell without them).
     fn habitable<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {

@@ -58,6 +58,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Bevan, A. & Shennan, S. (2021), Quaternary Science Reviews 252: 106739,
   doi:10.1016/j.quascirev.2020.106739; data doi:10.5281/zenodo.4322979 (CC BY 4.0), and
   the surface surveys it compiles (listed in the archive's References.txt).
+- **DObsiSS 2.0** (obsidian pack and sourced assemblages): Batist, Z. (2016), The
+  Database of Obsidian Sourcing Studies, doi:10.5281/zenodo.55848, licensed under CC
+  BY-SA 4.0, and the sourcing studies it compiles (biblio.bib in the archive); derived
+  data are shared under the same license.
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 

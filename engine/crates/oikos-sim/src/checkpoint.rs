@@ -1,13 +1,15 @@
 //! Canonical binary checkpoints.
 //!
 //! Layout (all integers little-endian):
-//! `magic "OIKOSCK3" | version u32 | region | seed u64 | tick u64 |
+//! `magic "OIKOSCK4" | version u32 | region | seed u64 | tick u64 |
 //!  params_len u32 | params JSON | cells u32 | forage_capacity u64×cells |
-//!  birth_counter u64×cells | soil u32×cells | agents u64 |
+//!  birth_counter u64×cells | soil u32×cells | sources u32 |
+//!  (obsidian availability u32×cells)×sources | agents u64 |
 //!  (id u64, cell u32, weight u64, cultivation u32, domestication u32)×agents`
 //!
-//! Magic `OIKOSCK2` was the layout before cells kept soil (ADR-0055); it restores with
-//! full soil everywhere, which is what it meant. `OIKOSCK1` was the layout before agents
+//! Magic `OIKOSCK3` was the layout before cells held obsidian (ADR-0060); it restores
+//! with none held yet. `OIKOSCK2` was the layout before cells kept soil (ADR-0055); it
+//! restores with full soil everywhere, which is what it meant. `OIKOSCK1` was the layout before agents
 //! carried traits (ADR-0049). Everything derived (carrying capacity under cultivation,
 //! farmland, habitability) is recomputed from the packs, the parameters, the soil and
 //! the agents on restore.
@@ -26,7 +28,8 @@ use crate::world::{World, WorldConfig};
 use oikos_core::{EntityId, Tick};
 use std::sync::Arc;
 
-const MAGIC: &[u8; 8] = b"OIKOSCK3";
+const MAGIC: &[u8; 8] = b"OIKOSCK4";
+const MAGIC_BEFORE_OBSIDIAN: &[u8; 8] = b"OIKOSCK3";
 const MAGIC_BEFORE_SOIL: &[u8; 8] = b"OIKOSCK2";
 const MAGIC_BEFORE_TRAITS: &[u8; 8] = b"OIKOSCK1";
 const BASE_CELL: u32 = 1;
@@ -79,6 +82,12 @@ pub fn encode(world: &World) -> Vec<u8> {
     for v in &world.soil {
         b.extend_from_slice(&v.to_le_bytes());
     }
+    b.extend_from_slice(&(world.obsidian.available.len() as u32).to_le_bytes());
+    for source in &world.obsidian.available {
+        for v in source {
+            b.extend_from_slice(&v.to_le_bytes());
+        }
+    }
     b.extend_from_slice(&(world.agent_count() as u64).to_le_bytes());
     for a in world.agent_slices() {
         for i in 0..a.len() {
@@ -130,9 +139,10 @@ pub fn decode(bytes: &[u8]) -> Result<World, String> {
 pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World, String> {
     let inputs = inputs.into();
     let mut r = Reader { b: bytes };
-    let soil_kept = match r.take(8)? {
-        m if m == MAGIC => true,
-        m if m == MAGIC_BEFORE_SOIL => false,
+    let (soil_kept, obsidian_kept) = match r.take(8)? {
+        m if m == MAGIC => (true, true),
+        m if m == MAGIC_BEFORE_OBSIDIAN => (true, false),
+        m if m == MAGIC_BEFORE_SOIL => (false, false),
         m if m == MAGIC_BEFORE_TRAITS => {
             return Err(
                 "checkpoint predates agent traits (format OIKOSCK1); rerun it with this engine".into()
@@ -175,6 +185,24 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
     if soil.iter().any(|&s| s > crate::agents::SHARE_ONE) {
         return Err("cell soil share above one".into());
     }
+    let obsidian = match obsidian_kept {
+        true => {
+            let sources = r.u32()? as usize;
+            let want = inputs.pack(crate::exchange::OBSIDIAN).map_or(0, |p| p.header().fields.len());
+            if sources != want {
+                return Err(format!(
+                    "checkpoint holds obsidian of {sources} source groups, its obsidian pack has {want}"
+                ));
+            }
+            (0..sources)
+                .map(|_| (0..cells).map(|_| r.u32()).collect::<Result<Vec<_>, _>>())
+                .collect::<Result<Vec<_>, _>>()?
+        }
+        false => vec![],
+    };
+    if obsidian.iter().flatten().any(|&x| x > crate::agents::SHARE_ONE) {
+        return Err("cell obsidian availability above one".into());
+    }
     let n = r.u64()? as usize;
     let mut agents = Agents::default();
     for _ in 0..n {
@@ -198,6 +226,9 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
         World::assemble(config, grid, inputs, seed, tick, params, forage_capacity, birth_counter, agents);
     if soil.iter().any(|&s| s < crate::agents::SHARE_ONE) {
         w.restore_soil(soil);
+    }
+    if obsidian_kept {
+        w.restore_obsidian(obsidian);
     }
     Ok(w)
 }

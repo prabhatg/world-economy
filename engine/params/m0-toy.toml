@@ -534,6 +534,22 @@ sources = [
   { citation = "Lal, R. (1998). Soil erosion impact on agronomic productivity and environment quality. Critical Reviews in Plant Sciences 17, 319-464.", doi = "10.1080/07352689891304249" },
 ]
 
+[params.obsidian_loss]
+group = "exchange"
+unit = "share per period"
+description = "Share of obsidian used up or kept, not passed on, at each step of down-the-line exchange: away from its sources a cell's availability becomes (1 - loss) times the mean over itself and its occupied neighbors."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.003
+prior = { dist = "log_uniform", lo = 0.0003, hi = 0.1 }
+status = "placeholder"
+note = "Sets how fast obsidian falls off with distance along settled land: one e-fold every 1.5 res-5 cells (25 km) at 0.1, 4.3 (74 km) at 0.01, 7.1 (121 km) at 0.003 and 10.6 (180 km) at 0.001; at small losses the network takes about 1/loss years to settle. Renfrew's contact zone falls off over a few hundred kilometres; to be calibrated against sourced assemblages (ADR-0060)."
+sources = [
+  { citation = "Renfrew, C., Dixon, J.E., Cann, J.R. (1966). Obsidian and early cultural contact in the Near East. Proceedings of the Prehistoric Society 32, 30-72.", doi = "10.1017/S0079497X0001433X" },
+  { citation = "Renfrew, C., Dixon, J.E., Cann, J.R. (1968). Further analysis of Near Eastern obsidians. Proceedings of the Prehistoric Society 34, 319-331.", doi = "10.1017/S0079497X0001392X" },
+  { citation = "Renfrew, C. (1977). Alternative models for exchange and spatial distribution. In Earle, T.K., Ericson, J.E. (eds), Exchange Systems in Prehistory, 71-90. Academic Press.", doi = "10.1016/B978-0-12-227650-7.50010-9" },
+  { citation = "Ortega, D., Ibanez, J.J., Campos, D., Khalidi, L., Mendez, V., Teira, L. (2016). Systems of interaction between the first sedentary villages in the Near East exposed using agent-based modelling of obsidian exchange. Systems 4, 18.", doi = "10.3390/systems4020018" },
+]
+
 [params.cereal_precip_min]
 group = "cultivation"
 unit = "mm/yr"

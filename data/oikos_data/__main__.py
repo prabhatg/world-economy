@@ -16,7 +16,8 @@ from pathlib import Path
 
 import blake3
 
-from . import DATA, climate, coastline, geometry, hydrology, rachis, radiocarbon, raster, region, sites, soils, terrain
+from . import (DATA, climate, coastline, geometry, hydrology, obsidian, rachis, radiocarbon, raster, region, sites, soils,
+               terrain)
 
 LOCK = DATA / "packs.lock.json"
 BUILDERS = {
@@ -30,9 +31,12 @@ BUILDERS = {
     "radiocarbon_density": radiocarbon.build_density,
     "rachis": rachis.build_table,
     "sites": sites.build_table,
+    "obsidian": obsidian.build_obsidian_pack,
+    "obsidian_assemblages": obsidian.build_obsidian_table,
 }
 # Outputs that are tables rather than forcing packs; ids are the BLAKE3 of the bytes either way.
-EXTENSIONS = {"radiocarbon_dates": "parquet", "radiocarbon_density": "parquet", "rachis": "parquet", "sites": "parquet"}
+EXTENSIONS = {"radiocarbon_dates": "parquet", "radiocarbon_density": "parquet", "rachis": "parquet", "sites": "parquet",
+              "obsidian_assemblages": "parquet"}
 
 
 def load_lock():

@@ -35,6 +35,10 @@ Settlement counts come from the survey compilation of Palmisano et al. 2021 on Z
 (CC BY 4.0, checked 2026-10-29; ADR-0059): dated site phases from surface surveys in
 South-Central Anatolia and Upper Mesopotamia. Its Southern Levant settlements (DAAHL)
 are not in the archive.
+Obsidian sourcing comes from DObsiSS 2.0 (Batist 2016) on Zenodo (CC BY-SA 4.0, checked
+2026-10-30; ADR-0060): artefacts assigned to volcanic sources by chemical
+characterization in 176 dated site contexts of the region, and the volcanoes'
+locations. Derived packs and tables share its license.
 
 ## Forcing (inputs)
 

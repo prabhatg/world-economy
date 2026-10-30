@@ -572,14 +572,15 @@ fn checkpoints_from_before_soil_restore_with_whole_soil() {
     let (mut w, g, c) = farming_world(9, |p| Params { soil_erosion_rate: 0.0, ..p });
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
-    // The previous layout: magic OIKOSCK2 and no soil between birth counters and agents.
+    // The layout before soil: magic OIKOSCK2 and nothing between birth counters and
+    // agents (neither soil nor the obsidian source count that followed it).
     let cells = w.population.len();
     let params_len = serde_json::to_vec(&w.params).unwrap().len();
     let header = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8 + 4 + params_len + 4;
     let soil_at = header + 16 * cells;
     let mut before = now.clone();
     before[..8].copy_from_slice(b"OIKOSCK2");
-    before.drain(soil_at..soil_at + 4 * cells);
+    before.drain(soil_at..soil_at + 4 * cells + 4);
     let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
     assert!(restored.soil().iter().all(|&s| s == 1.0));
     assert_eq!(checkpoint::encode(&restored), now, "nothing eroded, so nothing is lost");

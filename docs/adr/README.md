@@ -61,6 +61,7 @@
 | 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted; values superseded by 0059 |
 | 0058 | Calibration round 3: a third wave refocuses the emulators on the 17 factors whose round-2 screening effect reaches 0.4 tolerances (adding sedentary growth, soil critical share, NPP elasticity, dispersal crowding and wild yield ratio); earlier waves keep their own active sets and still rule out. `wave --previous ... --screening` refocuses. Defaults unchanged | Accepted |
 | 0059 | Site-count operator and calibration round 4: survey site phases of Palmisano et al. 2021 (Anatolia, Upper Mesopotamia) counted aoristically in 500-year eras from 6,500 to 3,000 BCE; a world's cultivator activity in each survey's landscape (cells with any recorded site) is dated through the surveys' own period scheme; centered log shares, bootstrap covariance, one group per survey, discrepancy 0.25. A fourth wave judges radiocarbon, rachis and site counts together, and the best consistent world (wave 4, run 251) becomes the registry defaults: 17 parameters `calibrated`, sources in `calibration/runs/m1/round4/best.json` | Accepted |
+| 0060 | Down-the-line exchange of obsidian as a tracer: cells hold a fixed-point availability per source group; every step, occupied cells within one res-5 step of a group's volcanoes (an `obsidian` forcing pack from DObsiSS 2.0) have all they want, other occupied cells take (1 - `obsidian_loss`) times the mean of themselves and their occupied neighbors, empty cells hold none; nothing else reads it, so it never changes history; checkpoint layout `OIKOSCK4` (`OIKOSCK3` restores with none held); sourced assemblages (DObsiSS, ASPRO periods) become an observation table | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -487,6 +488,44 @@ The golden toy world changes with the defaults (hash 362621da): slower growth le
 205,140 people at the end against 506,594. Instructions per agent-step 1,081.51 ->
 1,136.58 (+5.1%); an M1 run takes 62 s against 43 s at the round-2 defaults (measured
 interleaved), seven times as many people.
+
+## ADR-0060 rationale (obsidian exchange)
+
+Obsidian is the one Neolithic good whose origin can be read from the object: each
+volcano has its own trace-element signature, so sourced assemblages map who received
+whose obsidian. Renfrew, Dixon and Cann (1966, 1968) found a supply zone around each
+source and, beyond it, a share of obsidian that falls off steadily with distance, and
+Renfrew (1977) showed that down-the-line exchange produces such a fall-off: each group
+keeps part of what it receives and passes the rest on. The model needs the pattern,
+not the goods: what M1 can test is whether the settlement network its worlds grow
+would carry Cappadocian obsidian to the Levant and Eastern Anatolian obsidian to the
+Zagros, and where the two mix.
+
+Availability is a share per source group, updated each year as the mean over a cell
+and its settled neighbors less `obsidian_loss`; along settled land it falls by an
+e-fold every 1.5 cells (25 km) at loss 0.1 to 10.6 cells (180 km) at 0.001, measured
+on the res-5 grid. It runs every step rather than every capacity period, because at
+small losses the network needs about 1/loss steps to settle. People cannot pass on
+what nobody holds, so empty cells hold none and deserts and seas break the chain.
+Exchange in the model is a tracer: obsidian has no use value, nobody moves for it,
+and nothing reads it, so worlds with and without the pack have identical histories
+(tested). Agent-based models of the same network (Ortega et al. 2016) add exchange
+between villages by kinship and distance; that, and goods that matter, can replace
+this when exchange starts to change what people do.
+
+Only the two groups that supplied most Neolithic obsidian are traced: Cappadocia
+(Göllü Dağ, Nenezi Dağ, Hasan Dağ, Erciyes, Acıgöl) and Eastern Anatolia (Bingöl,
+Nemrut Dağ, Meydan, Tendürek, Süphan, Muş). Their volcanoes reach the cells within
+one res-5 step (about a day's walk). Northeastern Anatolian and Transcaucasian sources
+(8% of artefacts in the region, mostly after 6,000 BCE) count as "other". DObsiSS is
+CC BY-SA 4.0, so the pack and table carry its attribution and are shared under the
+same license. Both groups supply equally; whether one source was preferred (Göllü
+Dağ's quality, Bingöl's accessibility) is left to the data.
+
+The golden toy world has no obsidian pack, so its history is unchanged (same
+summaries); its hash changes with the checkpoint layout and the new parameter
+(3409a5cb). Instructions per agent-step 1,136.58 -> 1,138.42 (+0.2%, no pack); an
+M1 run with the pack takes 3-5% longer (51.0-51.7 s against 48.6-50.3 s).
 
 ## Notes
 

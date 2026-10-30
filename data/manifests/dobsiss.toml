@@ -1,0 +1,69 @@
+# Obsidian sourcing studies: chemically characterized obsidian by volcanic source, per site and period.
+dataset = "dobsiss"
+title = "DObsiSS: The Database of Obsidian Sourcing Studies"
+version = "2.0"
+homepage = "https://doi.org/10.5281/zenodo.55848"
+citation = "Batist, Z. (2016). DObsiSS: The Database of Obsidian Sourcing Studies, version 2.0. Zenodo. https://doi.org/10.5281/zenodo.55848"
+doi = "10.5281/zenodo.55848"
+notes = """
+One archive (GitHub release 97c0511) with the database as CSV (one row per site and
+context: coordinates, ASPRO period, and the number of artefacts assigned to each
+volcanic source by chemical characterization), the ASPRO chronology (Hours et al. 1994;
+Aurenche et al. 2001) and the source coordinates. The database and the source table
+are Mac Roman text (the sources with CR line ends).
+Göllü Dağ East and West share one coordinate; Bingöl A and Nemrut Dağ are chemically
+one group in the counts. Data pending publication are omitted by the compiler. Cite
+the sourcing studies through this dataset (biblio.bib in the archive). The archive's
+LICENSE.md and the Zenodo record give CC BY-SA 4.0.
+"""
+
+[license]
+# Zenodo lists the record as CC BY-SA 4.0 (checked through the Zenodo API), and the
+# archive's LICENSE.md says the same. Derived packs and tables are shared under it.
+id = "CC-BY-SA-4.0"
+url = "https://creativecommons.org/licenses/by-sa/4.0/"
+derived_redistribution = true
+attribution = "Contains obsidian sourcing data from DObsiSS 2.0 (Batist 2016, https://doi.org/10.5281/zenodo.55848), licensed under CC BY-SA 4.0, and the sourcing studies it compiles; located on H3 cells by ManyWorlds. Derived data are shared under the same license."
+verified = "2026-10-30"
+
+[access]
+kind = "zenodo_file"
+url = "https://zenodo.org/records/55848/files/DObsiSS-v2.0.zip?download=1"
+file = "DObsiSS-v2.0.zip"
+md5 = "059b6dc1b02dffe7481d90efc359433e"
+table = "zackbatist-DObsiSS-97c0511/DObsiSS_2.0.csv"
+table_encoding = "mac_roman"
+chronology = "zackbatist-DObsiSS-97c0511/chronology.csv"
+sources = "zackbatist-DObsiSS-97c0511/sources/obsi_sources.csv"
+sources_encoding = "mac_roman"
+
+# Source groups the model traces, in pack order: the region of their volcanoes in the
+# sources table and their columns in the database. Other sources count as "other".
+[[access.groups]]
+name = "cappadocia"
+region = "Cappadocia"
+columns = ["Agicol", "Gollu Dag East", "Gollu Dag West", "Nenezi Dag", "Hasan Dag", "Erciyes Dag"]
+
+[[access.groups]]
+name = "eastern_anatolia"
+region = "Van"
+columns = ["Bingol B", "Nemrut Dag / Bingol A", "Meydan Dag", "Tendurek Dag", "Suphan Dag", "Mus"]
+
+[coverage]
+spatial = "Southwest Asia and Anatolia: 179 site contexts from the Levant to the Zagros and Transcaucasia"
+temporal = "Epipalaeolithic to Late Chalcolithic (ASPRO periods 0-12, before 12,500 to 3,000 cal BC)"
+
+[[variables]]
+name = "artefacts per source"
+unit = "1"
+description = "Obsidian artefacts of the context assigned to each volcanic source by chemical characterization."
+
+[[variables]]
+name = "ASPRO"
+unit = "period"
+description = "ASPRO chronological period of the context (begin and end in cal BC in chronology.csv); 'a or b' spans both."
+
+[[variables]]
+name = "source location"
+unit = "degrees"
+description = "Latitude and longitude of each volcanic source."

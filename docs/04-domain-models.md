@@ -89,6 +89,13 @@ Not brain simulation. Agents implement validated regularities:
 - **Exchange emerges:** reciprocity/gift → barter → commodity money → coinage →
   credit → banking → financial markets. Money arises where trade frequency and
   double-coincidence costs make it advantageous (search-theoretic models of money).
+  *Implemented (M1, ADR-0060):* down-the-line exchange of obsidian as a tracer of
+  contact (`oikos-sim::exchange`, Renfrew 1977): every year, people within a day's walk
+  of a source group's volcanoes have its obsidian, and every other occupied cell holds
+  the mean of itself and its occupied neighbors less a share used up or kept
+  (`obsidian_loss`), so availability falls off about exponentially along settled land
+  and never crosses empty land. It changes nothing else yet; goods with value, and
+  exchange that responds to them, come later.
 - Markets: local price formation via decentralized bargaining/matching; routes with
   transport costs by terrain, technology (pack animals, ships, rail, containers).
 - Specialization and division of labor tied to market size (Smith) and urbanization.

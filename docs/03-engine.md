@@ -47,9 +47,10 @@ abstraction chosen so that multi-node / multi-GPU is an implementation, not a re
   split-off groups copy them and merges take people-weighted integer means, so
   checkpoints and state hashes stay exact on every host.
 - *Implemented (M1, ADR-0055):* cells keep a soil share (fixed point), worn down by
-  fields and re-forming slowly; it is the one checkpointed cell state besides birth
-  counters and forager capacity (`OIKOSCK3`; `OIKOSCK2` checkpoints restore with
-  whole soil).
+  fields and re-forming slowly; with obsidian availability per source group (ADR-0060)
+  it is the checkpointed cell state besides birth counters and forager capacity
+  (`OIKOSCK4`; `OIKOSCK3` checkpoints restore with no obsidian held, `OIKOSCK2` also
+  with whole soil).
 
 ## 3.4 Scheduling & phases
 
