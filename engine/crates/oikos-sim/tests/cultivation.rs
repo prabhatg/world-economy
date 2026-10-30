@@ -100,6 +100,10 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         selection_coefficient: 0.005,
         introgression_rate: 0.002,
         domestic_wild_frequency: 0.001,
+        dispersal_crowding: 0.9,
+        npp_elasticity: 1.0,
+        soil_critical: 0.5,
+        wild_yield_ratio: 0.5,
         ..Params::default()
     }
 }
@@ -179,7 +183,7 @@ fn domestication_is_protracted_under_weak_selection_and_rapid_under_strong() {
 
 #[test]
 fn domestic_traits_fade_without_cultivation() {
-    let c = Cultivation::from_params(&Params::default());
+    let c = Cultivation::from_params(&only(1.0, 1.0, 1.0));
     let mut d = 0.8;
     for _ in 0..3000 {
         d = c.domesticate(d, 0.0);

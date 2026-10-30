@@ -1,6 +1,7 @@
 """The M1 calibration problem (docs/05 §5.2, ADR-0052): Neolithic Southwest Asia worlds,
-12,000 to 3,000 BCE, against the radiocarbon record (p3k14c, IntCal20) and the barley
-rachis record (Allaby et al. 2017).
+12,000 to 3,000 BCE, against the radiocarbon record (p3k14c, IntCal20), the barley
+rachis record (Allaby et al. 2017) and survey site counts in Central Anatolia and Upper
+Mesopotamia (Palmisano et al. 2021; ADR-0059).
 
 A run is a point u of the unit cube of the registry's free parameters (those with a
 prior to sample; `oikos.sample_params` maps u onto the priors), a world built from the
@@ -10,8 +11,10 @@ are independent, so they go to worker processes, each building the operators onc
 
 Radiocarbon eras are 800 years and judged one by one and together (their bootstrap
 covariance; ADR-0056). Discrepancy: 0.25 on each radiocarbon era's centered log share (dated activity off by
-about a quarter in an era) and 0.1 on each era's domestic share - judgments, recorded
-with every wave so later waves can revisit them.
+about a quarter in an era), 0.1 on each era's domestic share and 0.25 on each survey
+era's centered log share - judgments, recorded with every wave so later waves can
+revisit them. Survey eras are 500 years from 6,500 BCE, when pottery makes villages
+visible to surface survey, and each survey is judged as a whole.
 """
 
 import io
@@ -23,15 +26,17 @@ import pyarrow.parquet as pq
 
 from oikos_data import DATA, rachis, region
 from oikos_data import radiocarbon as dates_pipeline
+from oikos_data import sites as sites_pipeline
 
-from . import domestication, radiocarbon, record, targets
+from . import domestication, radiocarbon, record, sites, targets
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "packs", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology")
 END = -3_000
-DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1}
+DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25}
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
+SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 DIAGNOSTICS = ["log-likelihood radiocarbon", "log-likelihood domestication", "people 3000 BCE"]
 
 
@@ -52,16 +57,20 @@ class Problem:
         sources = dates_pipeline.inputs(offline=True)
         dates = pq.read_table(io.BytesIO(dates_pipeline.build(r, *sources)[0])).to_pydict()
         barley = pq.read_table(io.BytesIO(rachis.build(r, *rachis.inputs(offline=True)))).to_pydict()
+        surveys = pq.read_table(io.BytesIO(sites_pipeline.build(r, *sites_pipeline.inputs(offline=True)))).to_pydict()
         self.radiocarbon = radiocarbon.Operator(dates, sources[2], self.cells)
         if self.radiocarbon.settings.true.end != END:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
         self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true)
+        self.sites = sites.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.eras = [targets.RadiocarbonEras(self.radiocarbon, eras=RADIOCARBON_ERAS,
                                              discrepancy_sd=DISCREPANCY["radiocarbon"], rng=np.random.default_rng(0)),
                      targets.DomesticationEras(self.domestication, barley,
-                                               discrepancy_sd=DISCREPANCY["domestication"])]
+                                               discrepancy_sd=DISCREPANCY["domestication"]),
+                     targets.SiteEras(self.sites, discrepancy_sd=DISCREPANCY["sites"], rng=np.random.default_rng(0))]
         self.targets = [t for e in self.eras for t in e.targets]
-        self.groups = [self.eras[0].group(0)]
+        first = len(self.eras[0].targets) + len(self.eras[1].targets)
+        self.groups = [self.eras[0].group(0), *self.eras[2].groups(first)]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def outputs(self, activity):

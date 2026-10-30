@@ -17,7 +17,11 @@ likelihoods use:
 - domestication eras: the mean domestic share of barley assemblages in each era,
   weighted by n / (n + φ), the share of an assemblage's information that beta-binomial
   overdispersion φ leaves (ADR-0051). Observation variance is that of the weighted mean
-  of beta-binomial shares around it.
+  of beta-binomial shares around it;
+- site eras: in each survey's landscape, how the aoristic site count is shared among
+  eras, as centered log shares, against the world's settled activity dated the same way
+  (`sites.Operator`). Observation variance and covariance are a bootstrap over sites;
+  each survey is one group.
 
 Discrepancy standard deviations are judgments, stated where the problem is set up and
 recorded with each wave: how far a good world may honestly sit from these summaries.
@@ -28,7 +32,7 @@ import numpy as np
 from .history import Group, Target
 from .radiocarbon import SUROVELL_2009
 
-__all__ = ["RadiocarbonEras", "DomesticationEras"]
+__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras"]
 
 
 def _era(first, end):
@@ -101,6 +105,39 @@ class DomesticationEras:
     def model(self, activity):
         s = self.op.shares(activity)
         return np.array([(self.weights[m] * s[m]).sum() / self.weights[m].sum() for m in self.members])
+
+
+class SiteEras:
+    def __init__(self, op, discrepancy_sd=0.25, replicates=2000, rng=None):
+        """Eras of `op` (`sites.Operator`) in each survey window; each era needs sites."""
+        self.op = op
+        rng = rng or np.random.default_rng(0)
+        self.targets, self.covariances = [], []
+        edges = op.edges
+        for name in op.windows:
+            per_site = op.per_site[name]
+            empty = per_site.sum(axis=0) <= 0
+            if empty.any():
+                raise ValueError(f"no sites in {name} {_era(edges[empty.argmax()], edges[empty.argmax() + 1])}")
+            z = _clr(per_site.sum(axis=0))
+            pick = rng.integers(0, len(per_site), size=(replicates, len(per_site)))
+            cov = np.cov(_clr(per_site[pick].sum(axis=1)), rowvar=False)
+            self.covariances.append(cov)
+            self.targets += [_target(f"sites {name} {_era(edges[e], edges[e + 1])}", z[e], cov[e, e], discrepancy_sd**2)
+                             for e in range(len(z))]
+
+    def groups(self, first):
+        """One `history.Group` per survey, their targets starting at index `first`."""
+        n = len(self.op.edges) - 1
+        return [Group(list(range(first + k * n, first + (k + 1) * n)), c, dof=n - 1)
+                for k, c in enumerate(self.covariances)]
+
+    def model(self, activity):
+        """Summaries of a world: settled activity is `activity.cultivators` (survey sites
+        are villages), or people-years [cell, century] given directly."""
+        a = activity.cultivators if hasattr(activity, "cultivators") else activity
+        e = self.op.expected(a)
+        return np.concatenate([_clr(e[n]) for n in self.op.windows])
 
 
 def _target(name, observed, variance, discrepancy):

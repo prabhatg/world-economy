@@ -1,0 +1,51 @@
+# Archaeological survey settlements: dated site phases in Central Anatolia and Upper Mesopotamia.
+dataset = "palmisano2021-sites"
+title = "Holocene regional population dynamics and climatic trends in the Near East: a first comparison using archaeo-demographic proxies (dataset and R scripts)"
+version = "v2"
+homepage = "https://doi.org/10.5281/zenodo.4322979"
+citation = "Palmisano, A., Lawrence, D., de Gruchy, M.W., Bevan, A., Shennan, S. (2021). Holocene regional population dynamics and climatic trends in the Near East: a first comparison using archaeo-demographic proxies. Quaternary Science Reviews 252: 106739. https://doi.org/10.1016/j.quascirev.2020.106739. Data: https://doi.org/10.5281/zenodo.4322979"
+doi = "10.5281/zenodo.4322979"
+notes = """
+One archive with radiocarbon dates, palaeoclimate records, survey settlements and R
+scripts; only the two settlement point layers are read. Each row is one phase of one
+site (Id), with an approximate start and end date of its cultural period in calendar
+years, coordinates, and size in hectares (Anatolia: often missing, coded 0; Upper
+Mesopotamia: all phases). The Southern Levant settlements (DAAHL) are not included in
+the archive. Cite the surveys through this dataset (References.txt in the archive).
+"""
+
+[license]
+# The archive's README and the Zenodo record (checked through the Zenodo API) give
+# CC BY 4.0 for the data, MIT for the code.
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains survey settlement data from Palmisano et al. 2021 (Quaternary Science Reviews 252: 106739, https://doi.org/10.1016/j.quascirev.2020.106739; data https://doi.org/10.5281/zenodo.4322979), CC BY 4.0, and the surveys it compiles."
+verified = "2026-10-29"
+
+[access]
+kind = "zenodo_file"
+url = "https://zenodo.org/records/4322979/files/Palmisano_etal_data_and_code.zip?download=1"
+file = "Palmisano_etal_data_and_code.zip"
+md5 = "4fae824e612e8ca126f0f48dccdd9acf"
+# Survey window -> point layer in the archive.
+layers = { anatolia = "Palmisano_etal_data_and_code/shp/sites_anatolia.shp", upper_mesopotamia = "Palmisano_etal_data_and_code/shp/north_mesopotamia_sites.shp" }
+
+[coverage]
+spatial = "South-Central Anatolia (Konya plain and surroundings, 1,336 sites) and Upper Mesopotamia (Balikh to Khabur and northern Iraq, 478 sites)"
+temporal = "Epipalaeolithic to the Islamic period; Neolithic and later phases are well represented"
+
+[[variables]]
+name = "StartDate"
+unit = "calendar year (negative BCE)"
+description = "Approximate start of the site phase's cultural period."
+
+[[variables]]
+name = "EndDate"
+unit = "calendar year (negative BCE)"
+description = "Approximate end of the site phase's cultural period."
+
+[[variables]]
+name = "SizeHa"
+unit = "ha"
+description = "Estimated site size in the phase (0 when unknown)."

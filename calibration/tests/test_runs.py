@@ -72,6 +72,7 @@ def test_candidates_rank_consistent_runs_by_both_log_likelihoods_and_keep_active
     assert [(k["wave"], k["run"]) for k in c] == [(0, 1), (1, 0), (0, 0)], "the inconsistent run is left out"
     assert c[0]["log_likelihood"] == -2 and c[0]["params"] == {"x": 1, "z": 21}, "inactive y is left at its default"
     assert len(cli.candidates([first, second], top=1)) == 1
+    assert cli.candidates([{**second, "wave": 4}], top=1)[0]["wave"] == 3, "a wave keeps its own number"
 
 
 def test_a_later_wave_can_refocus_on_more_factors():

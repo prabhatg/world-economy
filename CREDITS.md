@@ -54,6 +54,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   doi:10.1098/rstb.2016.0429; supplement doi:10.6084/m9.figshare.5436709.v1 (CC BY 4.0),
   and the archaeobotanical reports it compiles (Colledge, Kislev, Tanno & Willcox,
   van Zeist & Bakker-Heeres, de Moulins, Fairbairn et al., and others).
+- **Survey settlements** (site counts): Palmisano, A., Lawrence, D., de Gruchy, M.W.,
+  Bevan, A. & Shennan, S. (2021), Quaternary Science Reviews 252: 106739,
+  doi:10.1016/j.quascirev.2020.106739; data doi:10.5281/zenodo.4322979 (CC BY 4.0), and
+  the surface surveys it compiles (listed in the archive's References.txt).
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 
@@ -65,6 +69,9 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Nature Communications 4: 2486, doi:10.1038/ncomms3486; Timpson, A. et al. (2014),
   Journal of Archaeological Science 52: 549–557, doi:10.1016/j.jas.2014.08.011;
   rcarbon, Crema, E.R. & Bevan, A. (2021), Radiocarbon 63: 23–39, doi:10.1017/RDC.2020.95.
+- **Aoristic site counts:** Crema, E.R. (2012), Journal of Archaeological Method and
+  Theory 19: 440–461, doi:10.1007/s10816-011-9122-3; as applied to these surveys by
+  Palmisano et al. (2021).
 
 ### Methods in our calibration
 - **Screening:** Morris, M.D. (1991), Technometrics 33: 161–174,

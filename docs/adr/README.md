@@ -58,8 +58,9 @@
 | 0054 | Stable-climate hypothesis of cultivation (Richerson, Boyd and Bettinger 2001) as a fourth nested driver: the cultivation target is scaled by 1 - `cultivation_variability_weight` × climate variability (mean change of wild-cereal suitability per century over the stress window, between century boundaries, recomputed once per century); weight 0 (the default) switches it off; with century-resolution forcing it does not delay the onset | Accepted |
 | 0055 | Land degradation as a nested hypothesis: cells keep a fixed-point soil share, eroded at `soil_erosion_rate` × effort per year and re-forming at `soil_formation_rate` × what is missing, updated each capacity period; field yields scale by min(1, soil / `soil_critical`); checkpoint layout `OIKOSCK3` (soil per cell; `OIKOSCK2` restores with whole soil); erosion 0 (the default) switches it off | Accepted |
 | 0056 | Calibration round 2: radiocarbon eras of 800 years (10), judged one by one and together by a multivariate implausibility (Mahalanobis distance with the block-bootstrap covariance plus discrepancy and emulator variances, against the 99.5% chi-square quantile, Vernon et al. 2010); 27 free parameters including the nested hypotheses of ADR-0053-0055; runs in `calibration/runs/m1/round2/` | Accepted |
-| 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted |
+| 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted; values superseded by 0059 |
 | 0058 | Calibration round 3: a third wave refocuses the emulators on the 17 factors whose round-2 screening effect reaches 0.4 tolerances (adding sedentary growth, soil critical share, NPP elasticity, dispersal crowding and wild yield ratio); earlier waves keep their own active sets and still rule out. `wave --previous ... --screening` refocuses. Defaults unchanged | Accepted |
+| 0059 | Site-count operator and calibration round 4: survey site phases of Palmisano et al. 2021 (Anatolia, Upper Mesopotamia) counted aoristically in 500-year eras from 6,500 to 3,000 BCE; a world's cultivator activity in each survey's landscape (cells with any recorded site) is dated through the surveys' own period scheme; centered log shares, bootstrap covariance, one group per survey, discrepancy 0.25. A fourth wave judges radiocarbon, rachis and site counts together, and the best consistent world (wave 4, run 251) becomes the registry defaults: 17 parameters `calibrated`, sources in `calibration/runs/m1/round4/best.json` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -439,6 +440,53 @@ wave-3 world (run 162) ties the default world (joint -4,069.1 against -4,068.2),
 the defaults stay. It shows the bust is within reach: its dated activity falls 0.21
 from the peak era to the last against the record's 0.26 (the default world: 0.44),
 and its barley after 7,000 BCE is 76% domestic against 80%.
+
+## ADR-0059 rationale (site counts; calibration round 4)
+
+Radiocarbon dates are dense where people dug, not only where people lived (open
+question 25); surface surveys walk a landscape and record every site they see, so
+they measure settlement differently. Palmisano et al. (2021) compiled the surveys of
+Southwest Asia with each site phase dated to the cultural period of its pottery.
+Periods are long and uneven, so a phase counts in each era by its share of the period
+(aoristic sums; Crema 2012), and a world is seen the same way: each century of its
+settled activity goes to the periods that contain it, weighted by how many phases
+surveyors dated to each per century, and spreads over them. Recovering a known
+history to 0.01 on synthetic surveys tests that the two sides match. Only villages
+with pottery are visible to survey, so eras start at 6,500 BCE; only the cells holding
+some recorded site count, because survey coverage is unknown elsewhere. The archive has
+no Southern Levant settlements (DAAHL is not included), so only the northern surveys
+count. Counts are shares, so the operator needs no detection
+rate.
+
+The surveys contradict the region-wide bust: Upper Mesopotamia's sites fall gently to
+5,000 BCE and then multiply into the Late Chalcolithic, and Anatolia's swing between
+eras, while every round-2 and round-3 world, the defaults included, falls after
+6,000 BCE (the defaults' Upper Mesopotamian log share drops from 1.5 to -2.4; group
+distances 20-215 against 18.5). A fourth wave, sampled from round 3's NROY space and
+judged on all three records, keeps 2.3% of the prior space; 91 of 300 worlds are
+consistent with all of them (148 with radiocarbon and rachis alone). Soil formation
+separates them: worlds whose soils recover (formation in the upper part of its prior)
+keep the bust local.
+
+`best` reruns the 12 best consistent wave-4 worlds with three seeds; 10 stay
+consistent, and run 251 fits best (joint log-likelihood -4,089 against -4,079 for the
+round-2 defaults, which the site record rules out). Its 17 emulated values become the
+defaults. They change the world: forager growth 0.010 against 0.029, sedentary growth
+0.028 (a Neolithic demographic transition, although the record does not identify one;
+question 27), forager density 0.29 against 0.043 people/km2, faster soil formation
+(1.9e-4) and introgression ten times weaker. The adopted world: radiocarbon -4,000,
+domestication -88, max implausibility 2.5, group distances 9.6 (radiocarbon, cutoff
+23.6), 8.8 (Anatolia) and 15.0 (Upper Mesopotamia, cutoff 18.5) for seeds 1-3;
+2.3 million people at 3,000 BCE. It fits both records by having almost no bust: its
+radiocarbon log share keeps rising after 5,900 BCE (0.35 to 0.59, the record 0.73
+to 0.54), and its Upper Mesopotamian share still falls where the surveys rise. The
+radiocarbon fall may be southern Levantine or research focus rather than region-wide
+(question 25).
+
+The golden toy world changes with the defaults (hash 362621da): slower growth leaves
+205,140 people at the end against 506,594. Instructions per agent-step 1,081.51 ->
+1,136.58 (+5.1%); an M1 run takes 62 s against 43 s at the round-2 defaults (measured
+interleaved), seven times as many people.
 
 ## Notes
 

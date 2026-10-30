@@ -30,6 +30,12 @@ def test_the_record_summaries(problem):
     assert all(0 < t.variance < 0.3 for t in rc)
     assert ts["domestic barley before 9000 BCE"].observed < 0.05 < 0.7 < ts["domestic barley after 7000 BCE"].observed
     assert problem.names[: len(problem.targets)] == list(ts)
+    st = [t.name for t in problem.targets if t.name.startswith("sites")]
+    assert len(st) == 14 and st[0] == "sites anatolia 6500-6000 BCE"
+    assert [g.indices for g in problem.groups[1:]] == [list(range(14, 21)), list(range(21, 28))]
+    assert all(g.dof == 6 for g in problem.groups[1:])
+    assert (ts["sites upper_mesopotamia 3500-3000 BCE"].observed > ts["sites upper_mesopotamia 6500-6000 BCE"].observed
+            + 0.3), "villages multiply into the Late Chalcolithic"
 
 
 def test_worlds_are_run_in_parallel_and_reproducibly(problem):
@@ -43,8 +49,8 @@ def test_worlds_are_run_in_parallel_and_reproducibly(problem):
 
 
 def test_the_default_world_is_consistent_with_the_record(problem):
-    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round2/best.json,
-    ADR-0057): with any seed, every target and the radiocarbon group pass history matching."""
+    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round4/best.json,
+    ADR-0059): with any seed, every target and every group pass history matching."""
     from oikos_cal import __main__ as cli
     from oikos_cal import m1
 

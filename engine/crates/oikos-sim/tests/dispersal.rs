@@ -102,8 +102,9 @@ fn dispersal_is_a_default_mechanism_after_fission() {
 #[test]
 fn groups_only_move_where_they_fit() {
     // Capacities from 1 to 200, so large bands sit next to cells that feed a few people.
-    // Each group must fit in its destination as of last step; groups from several
-    // neighbors can arrive in the same step, so a cell may overshoot by a little, which
+    // Each group must fit in its destination as of last step: a full cell receives no
+    // one, and each of its (at most six) neighbors sends at most its room. Groups from
+    // several neighbors can arrive in the same step, so a cell may overshoot, which
     // logistic decline then corrects.
     let p = Params { capacity_min: 1, capacity_max: 200, ..Params::default() };
     let mut moved = 0;
@@ -116,7 +117,10 @@ fn groups_only_move_where_they_fit() {
             moved += w.step(2).migrants;
             for (c, (&now, &was)) in w.population.iter().zip(&before).enumerate() {
                 let k = w.capacity[c];
-                assert!(now <= was.max(k) + k / 2, "seed {seed} cell {c}: {was} -> {now}, capacity {k}");
+                assert!(
+                    now <= was + 6 * k.saturating_sub(was),
+                    "seed {seed} cell {c}: {was} -> {now}, capacity {k}"
+                );
             }
         }
     }

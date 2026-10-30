@@ -41,7 +41,16 @@ then falls, the model about threefold and on (open question 25).
 scores the domestic share of the crop sown near each dated barley assemblage of Allaby
 et al. 2017 (`data/oikos_data/rachis.py`) against its rachis counts, beta-binomially.
 In M1 it separates the competing domestication hypotheses: protracted selection scores
--92.8, rapid selection -157.5. Site counts and obsidian distance-decay are next (#17).
+-92.8, rapid selection -157.5.
+
+**Implemented (site-count operator, ADR-0059):** `sites.Operator` counts the survey site
+phases of Palmisano et al. 2021 (`data/oikos_data/sites.py`) in each era aoristically,
+and dates a world's settled activity (cultivator people-years) in each survey's
+landscape the same way: each century goes to the periods surveyors used that contain
+it, by their popularity, and spreads over them. On synthetic surveys drawn from a known
+history it recovers the era shares to 0.01. The surveys rise into the Late Chalcolithic
+where radiocarbon falls, so they rule out the region-wide bust of the round-2 defaults.
+Obsidian distance-decay is next (#17).
 
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
@@ -105,6 +114,11 @@ registry default (ADR-0057): the 12 emulated parameters are `calibrated`, the ot
 their defaults, and a test keeps the default world consistent with the record.
 Round 3 (ADR-0058) refocuses a third wave on 17 factors: 3.6% of the prior space
 survives, and the record leaves sedentary growth and the soil's critical share free.
+Round 4 (ADR-0059) adds the site counts as two groups of seven 500-year eras: 2.3% of the
+prior space survives, 91 of 300 worlds fit all three records, and the best of them
+(wave 4, run 251) is the registry default, with all 17 emulated parameters
+`calibrated`. It fits by having almost no bust; soils that recover separate the
+consistent worlds from the rest.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

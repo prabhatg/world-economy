@@ -175,16 +175,17 @@ def consistent(doc):
 
 def candidates(docs, top):
     """The `top` consistent runs of waves `docs`, best first by the sum of their
-    log-likelihood diagnostics, with only their active factors' values: the factors the
-    emulators did not see were varied as noise, so their values say nothing and a
-    candidate leaves them at the registry defaults."""
+    log-likelihood diagnostics, with only their active factors' values (`wave` counts from
+    0 by the file's own wave number): the factors the emulators did not see were varied as
+    noise, so their values say nothing and a candidate leaves them at the registry
+    defaults."""
     found = []
     for k, doc in enumerate(docs):
         ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
         y = np.array(doc["outputs"])
         active = [doc["factors"][i] for i in doc["active"]]
         for i in np.flatnonzero(consistent(doc)):
-            found.append({"wave": k, "run": int(i), "log_likelihood": float(y[i, ll].sum()),
+            found.append({"wave": doc.get("wave", k + 1) - 1, "run": int(i), "log_likelihood": float(y[i, ll].sum()),
                           "params": {f: doc["params"][i][f] for f in active}})
     found.sort(key=lambda c: -c["log_likelihood"])
     return found[:top]

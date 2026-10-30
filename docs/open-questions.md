@@ -51,19 +51,24 @@
     at plausible rates, a later onset and faster selection reproduce the whole record
     together is for the next calibration wave. Round 2 (ADR-0056): the best-fitting
     consistent worlds erode at 1.1-1.6e-4 per year and do rise and fall, but by about
-    half the record's amplitude.
+    half the record's amplitude. Site counts (ADR-0059) contradict a region-wide bust:
+    Upper Mesopotamia's survey sites multiply into the Late Chalcolithic, and worlds
+    consistent with both records have almost none (the calibrated default keeps
+    rising). Is the radiocarbon fall southern Levantine (surveys there are not yet in
+    the record) or research focus on the Neolithic?
 26. How large is the M1 model discrepancy (ADR-0052)? The first waves used 0.25 on
     radiocarbon era log shares and 0.1 on domestic shares, and at those values the
     radiocarbon record rules out nothing. Tighter values would make it bind but must
     be justified independently (e.g. by held-out regions or by a second dates
     database), not chosen to make it bind. With 800-year eras judged together
     (ADR-0056) the record binds at the same discrepancy.
-27. Does cultivation speed population growth in M1 (ADR-0053, ADR-0057)? Round 2 did not
+27. Does cultivation speed population growth in M1 (ADR-0053, ADR-0057, ADR-0059)? Round 2 did not
     emulate `sedentary_growth_rate`; the calibrated defaults set it equal to the forager
     rate (no transition), yet the record mildly prefers slower sedentary growth (-3,990
     against -3,997 on radiocarbon at 0.01). Round 3 (ADR-0058) emulated it: the record
     does not identify it (consistent worlds score alike from under 0.7 to over 1.4 times
-    the forager rate). The rural-cemetery juvenile index (Bocquet-Appel 2002) could test
+    the forager rate). The round-4 default has one (sedentary growth 2.7 times the
+    forager rate), but as one world among many, not as evidence. The rural-cemetery juvenile index (Bocquet-Appel 2002) could test
     it directly.
 
 ## Policy lab

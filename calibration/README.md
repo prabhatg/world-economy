@@ -11,6 +11,7 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years and domestic-crop people-years per cell and century while a world runs |
 | `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; `synthetic_dates` for validation |
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
+| `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settled activity dated through the surveys' own period scheme |
 | `oikos_cal/screening.py` | Morris elementary-effects screening of the registry's free parameters (ADR-0052) |
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
 | `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
@@ -54,12 +55,15 @@ python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/bes
 
 `best` reruns the best consistent runs (by both log-likelihoods) with only their emulated
 parameters set and the others at their defaults, with three seeds, and records which
-stay consistent; the chosen world becomes the registry defaults (ADR-0057).
+stay consistent; the chosen world becomes the registry defaults (ADR-0057, ADR-0059).
 
 Round 1 (ADR-0052) is in `runs/m1/`, round 2 (ten radiocarbon eras judged one by one
 and together, 27 free parameters; ADR-0056) in `runs/m1/round2/`, with `best.json`, the
 source of the calibrated defaults (ADR-0057). Round 3 (a third wave refocused on 17
 factors, ADR-0058) is in `runs/m1/round3/`; `wave --previous ... --screening` refocuses.
+Round 4 (site counts added, ADR-0059) is in `runs/m1/round4/`, with `best.json`, the
+source of the current calibrated defaults (`best` given only wave 4, the one judged on
+the sites).
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
 validated by the engine's state hash, never by an operator's output.
