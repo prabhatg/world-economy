@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "0fa52840e64d87333c911248d65ee918279b603aa9efa1c6dfe6bd65865b4a49"
+GOLDEN_HASH = "b2f4be8fe22888915e71fb237b8cee1f87cb3ed8429ed7f0988de93b8176cefe"
 
 
 def run(world, years=300, parts=1):
@@ -98,8 +98,9 @@ def test_fork_with_a_new_seed_branches_history():
 def test_fork_with_new_params_applies_them():
     w = oikos.World(seed=5)
     w.run_years(200)
-    f = w.fork(seed=5, params={"growth_rate": 0.02})
-    assert f.params["growth_rate"] == 0.02 and w.params["growth_rate"] == 0.01
+    r = w.params["growth_rate"]
+    f = w.fork(seed=5, params={"growth_rate": 2 * r})
+    assert f.params["growth_rate"] == 2 * r and w.params["growth_rate"] == r
     assert same_agents(f, w)
     f.run_years(300)
     w.run_years(300)

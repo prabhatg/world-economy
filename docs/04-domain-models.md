@@ -43,9 +43,10 @@ enters the model, and the starting mechanisms.
   hypothesis; capacity blends foraging and farming by effort, so domestic crops feed
   more people and the transition can ratchet (`mechanisms::Cultivation`,
   `environment::cereal_suitability`, ADR-0049). A fourth, nested hypothesis scales the
-  target by climate reliability (stable-climate hypothesis, ADR-0054; off by default).
+  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 5.5 in the
+  calibrated defaults, ADR-0057).
   Fields wear the soil down and yields fall once it thins below a critical share (land
-  degradation, ADR-0055; off by default).
+  degradation, ADR-0055; 1.4e-4 per year at full effort in the calibrated defaults).
   Wild-cereal suitability comes from temperature and precipitation; soils, irrigation
   and animals are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,

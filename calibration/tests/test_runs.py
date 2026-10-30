@@ -47,3 +47,28 @@ def test_a_wave_file_keeps_its_groups():
     assert len(w.groups) == 1 and w.groups[0].dof == 1
     assert np.array_equal(w.groups[0].covariance, g.covariance)
     assert cli._fit_wave({**doc, "groups": None}, np.random.default_rng(0)).groups == [], "round-1 files have none"
+
+
+def _wave_doc(outputs, params):
+    ts = [history.Target("a", 0.0, 0.01, 0.0), history.Target("b", 0.0, 0.01, 0.0)]
+    g = history.Group([0, 1], [[0.01, 0.0], [0.0, 0.01]], dof=2)
+    names = ["a", "b", "log-likelihood radiocarbon", "log-likelihood domestication", "people 3000 BCE"]
+    return json.loads(json.dumps({"targets": cli._targets_json(ts), "groups": cli._groups_json([g]),
+                                  "names": names, "outputs": outputs, "params": params,
+                                  "factors": ["x", "y", "z"], "active": [0, 2]}))
+
+
+def test_consistent_runs_pass_every_target_and_every_group():
+    doc = _wave_doc([[0.0, 0.0, -1, -1, 5], [0.4, 0.0, -1, -1, 5], [0.25, 0.25, -1, -1, 5]], [{}] * 3)
+    # run 1 is 4 sd off on a; run 2 is 2.5 sd off on both: fine one by one, not together (chi2 12.5 > 10.6)
+    assert cli.consistent(doc).tolist() == [True, False, False]
+
+
+def test_candidates_rank_consistent_runs_by_both_log_likelihoods_and_keep_active_factors():
+    p = [{"x": i, "y": 10 + i, "z": 20 + i} for i in range(4)]
+    first = _wave_doc([[0, 0, -10, -5, 1], [0, 0, -1, -1, 1]], p[:2])
+    second = _wave_doc([[0, 0, -3, -3, 1], [0.4, 0, 0, 0, 1]], p[2:])
+    c = cli.candidates([first, second], top=5)
+    assert [(k["wave"], k["run"]) for k in c] == [(0, 1), (1, 0), (0, 0)], "the inconsistent run is left out"
+    assert c[0]["log_likelihood"] == -2 and c[0]["params"] == {"x": 1, "z": 21}, "inactive y is left at its default"
+    assert len(cli.candidates([first, second], top=1)) == 1

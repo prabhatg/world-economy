@@ -3,6 +3,7 @@
     python -m oikos_cal screen --trajectories 10 --out runs/m1/screening.json
     python -m oikos_cal wave --runs 200 --screening runs/m1/screening.json --out runs/m1/wave1.json
     python -m oikos_cal wave --runs 200 --previous runs/m1/wave1.json --out runs/m1/wave2.json
+    python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 
 Each command records what it ran (unit-cube points, parameter values, seeds, outputs,
 targets with their variances, the code revision) in one JSON file, so waves can be
@@ -154,6 +155,72 @@ def wave(args):
     report_wave(previous + [doc])
 
 
+def consistent(doc):
+    """Runs not ruled out by their own outputs: every target within the cutoff and every
+    group within its chi-squared cutoff."""
+    ts = _targets(doc["targets"])
+    y = np.array(doc["outputs"])[:, : len(ts)]
+    ok = history.implausibility(y, 0.0, ts).max(axis=1) <= CUTOFF
+    for g in _groups(doc.get("groups")):
+        ok &= g.implausibility(y, 0.0, ts) <= history.chi2_cutoff(g.dof)
+    return ok
+
+
+def candidates(docs, top):
+    """The `top` consistent runs of waves `docs`, best first by the sum of their
+    log-likelihood diagnostics, with only their active factors' values: the factors the
+    emulators did not see were varied as noise, so their values say nothing and a
+    candidate leaves them at the registry defaults."""
+    found = []
+    for k, doc in enumerate(docs):
+        ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
+        y = np.array(doc["outputs"])
+        active = [doc["factors"][i] for i in doc["active"]]
+        for i in np.flatnonzero(consistent(doc)):
+            found.append({"wave": k, "run": int(i), "log_likelihood": float(y[i, ll].sum()),
+                          "params": {f: doc["params"][i][f] for f in active}})
+    found.sort(key=lambda c: -c["log_likelihood"])
+    return found[:top]
+
+
+def best(args):
+    docs = [json.loads(Path(p).read_text()) for p in args.waves]
+    cs = candidates(docs, args.top)
+    seeds = list(range(1, args.seeds + 1))
+    ts, names, groups = _problem_targets()
+    out = _run([(c["params"], s) for c in cs for s in seeds], args.workers).reshape(len(cs), len(seeds), -1)
+    check = {"targets": _targets_json(ts), "groups": _groups_json(groups)}
+    ll = [j for j, n in enumerate(names) if n.startswith("log-likelihood")]
+    for c, o in zip(cs, out):
+        c["outputs"] = o.tolist()
+        c["consistent"] = bool(consistent({**check, "outputs": o}).all())
+        c["rerun_log_likelihood"] = float(o[:, ll].sum(axis=1).mean())
+    ok = [i for i, c in enumerate(cs) if c["consistent"]]
+    chosen = max(ok, key=lambda i: cs[i]["rerun_log_likelihood"]) if ok else None
+    every = candidates(docs, top=None)
+    values = {f: [c["params"][f] for c in every] for f in cs[0]["params"]} if cs else {}
+    ranges = {f: dict(zip(["q10", "q50", "q90"], np.quantile(v, [0.1, 0.5, 0.9]).tolist())) for f, v in values.items()}
+    _write(args.out, {"command": "best", "revision": _revision(), "waves": [str(p) for p in args.waves],
+                      "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges,
+                      "candidates": cs, "chosen": chosen})
+    report_best(json.loads(Path(args.out).read_text()))
+
+
+def report_best(doc):
+    print(f"{'wave':>4} {'run':>4} {'log-lik in wave':>15} {'rerun':>9}  consistent at defaults")
+    for c in doc["candidates"]:
+        print(f"{c['wave'] + 1:4} {c['run']:4} {c['log_likelihood']:15.1f} {c['rerun_log_likelihood']:9.1f}  "
+              f"{'yes' if c['consistent'] else 'no'}")
+    if doc["chosen"] is None:
+        print("no candidate stays consistent with the other parameters at their defaults")
+        return
+    c = doc["candidates"][doc["chosen"]]
+    print(f"chosen: wave {c['wave'] + 1} run {c['run']} ({doc['consistent_runs']} consistent runs give the ranges)")
+    for f, v in c["params"].items():
+        r = doc["ranges"][f]
+        print(f"  {f:32} {v:<11.4g} consistent runs 10-90%: {r['q10']:.3g} to {r['q90']:.3g}")
+
+
 def report_wave(docs):
     doc = docs[-1]
     ts = _targets(doc["targets"])
@@ -168,7 +235,6 @@ def report_wave(docs):
     run_i = history.implausibility(y, 0.0, ts)
     gs = _groups(doc.get("groups"))
     run_g = np.stack([g.implausibility(y, 0.0, ts) for g in gs], axis=1) if gs else np.zeros((len(y), 0))
-    fails_group = (run_g > np.array([history.chi2_cutoff(g.dof) for g in gs])).any(axis=1)
     print(f"{'target':36} {'observed':>9} {'tol':>6} {'runs in 3 tol':>13} {'emulator |z|<3':>14}")
     for j, t in enumerate(ts):
         m, v = test.emulators[j].predict(x, noise=True)
@@ -176,7 +242,7 @@ def report_wave(docs):
         print(f"{t.name:36} {t.observed:9.3f} {np.sqrt(t.variance + t.discrepancy):6.3f} "
               f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {(np.abs(z) < 3).mean():14.2f}")
     best = int(run_i.max(axis=1).argmin())
-    kept = (run_i.max(axis=1) <= CUTOFF) & ~fails_group
+    kept = consistent(doc)
     print(f"best run {best}: max implausibility {run_i[best].max():.2f} ({ts[int(run_i[best].argmax())].name}); "
           f"runs not ruled out by their own outputs: {kept.sum()} ({(run_i.max(axis=1) <= CUTOFF).sum()} one by one)")
     for k, g in enumerate(gs):
@@ -215,16 +281,25 @@ def main(argv=None):
     w.add_argument("--seed", type=int, default=1)
     w.add_argument("--workers", type=int, default=workers)
     w.add_argument("--out", required=True)
-    r = sub.add_parser("report", help="report a screening or wave file (and the waves before it)")
+    b = sub.add_parser("best", help="rerun the best consistent runs with the other parameters at their defaults")
+    b.add_argument("waves", nargs="+", help="wave files, in order")
+    b.add_argument("--top", type=int, default=10)
+    b.add_argument("--seeds", type=int, default=3)
+    b.add_argument("--workers", type=int, default=workers)
+    b.add_argument("--out", required=True)
+    r = sub.add_parser("report", help="report a screening, wave or best file (and the waves before it)")
     r.add_argument("files", nargs="+")
     args = ap.parse_args(argv)
     if args.command == "screen":
         screen(args)
     elif args.command == "wave":
         wave(args)
+    elif args.command == "best":
+        best(args)
     else:
         docs = [json.loads(Path(f).read_text()) for f in args.files]
-        report_screening(docs[0]) if docs[0]["command"] == "screen" else report_wave(docs)
+        report = {"screen": lambda: report_screening(docs[0]), "best": lambda: report_best(docs[0])}
+        report.get(docs[0]["command"], lambda: report_wave(docs))()
 
 
 if __name__ == "__main__":

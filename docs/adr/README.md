@@ -58,6 +58,7 @@
 | 0054 | Stable-climate hypothesis of cultivation (Richerson, Boyd and Bettinger 2001) as a fourth nested driver: the cultivation target is scaled by 1 - `cultivation_variability_weight` × climate variability (mean change of wild-cereal suitability per century over the stress window, between century boundaries, recomputed once per century); weight 0 (the default) switches it off; with century-resolution forcing it does not delay the onset | Accepted |
 | 0055 | Land degradation as a nested hypothesis: cells keep a fixed-point soil share, eroded at `soil_erosion_rate` × effort per year and re-forming at `soil_formation_rate` × what is missing, updated each capacity period; field yields scale by min(1, soil / `soil_critical`); checkpoint layout `OIKOSCK3` (soil per cell; `OIKOSCK2` restores with whole soil); erosion 0 (the default) switches it off | Accepted |
 | 0056 | Calibration round 2: radiocarbon eras of 800 years (10), judged one by one and together by a multivariate implausibility (Mahalanobis distance with the block-bootstrap covariance plus discrepancy and emulator variances, against the 99.5% chi-square quantile, Vernon et al. 2010); 27 free parameters including the nested hypotheses of ADR-0053-0055; runs in `calibration/runs/m1/round2/` | Accepted |
+| 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -390,6 +391,35 @@ on radiocarbon and -84 to -91 on domestication, better on both than the default 
 (-4,028, -93) and than any world of round 1. Their dated activity rises to a plateau and
 falls, but by less than the record (peak era 0.41 against 0.80), and barley after
 7,000 BCE is 64% domestic against 80%.
+
+## ADR-0057 rationale (calibrated M1 defaults)
+
+Until now every later experiment started from placeholder defaults that the record
+rules out on radiocarbon (-4,028) and on late domestication. A point in the NROY space
+is not a posterior, but it is a world the record does not rule out, and the best such
+world is the natural reference run until simulation-based inference gives a posterior
+(#19). The candidate runs varied all 27 free parameters, the 15 the emulators did not
+see as noise; their values say nothing, so a candidate keeps only its 12 emulated values
+and the others stay at their defaults. `best` reruns the 12 best consistent runs that
+way with three seeds: all 12 stay consistent, and wave 2 run 28 remains the best
+(radiocarbon -3,990, domestication -80). Values keep four significant figures: two
+cost 14 log-units, more than seed noise, so the fit is sharper than the ranges suggest.
+
+`sedentary_growth_rate` was not emulated (screening 0.41 tolerances). Left at 0.01 it
+would make cultivators grow at a third of the calibrated forager rate (0.029), an
+inverted demographic transition no source supports, so it follows `growth_rate`, the
+neutral value its note promises; the record mildly prefers the slower rate (-3,990
+against -3,997 on radiocarbon), which the next round should emulate (open question
+27). The adopted world: radiocarbon -3,997, domestication -82, max implausibility 2.1
+and group distance 8.1 (cutoff 23.6) for seeds 1-3; 319,000 people at 3,000 BCE
+(placeholder defaults: 1.7 million). Most calibrated values are only one point of wide
+ranges (e.g. farm density 1.1 within 0.7-6.5 people/km2); selection (0.0021 within
+0.0017-0.0067) and erosion (1.4e-4, below 8.6e-4) are constrained.
+
+The golden toy world changes with them (hash b2f4be8f): growth three times faster
+fills its land by 9,500 BCE (506,594 people at the end against 190,526). Instructions
+per agent-step 1,068.19 -> 1,081.51 (+1.2%); an M1 run takes 27.7 s against 31.3 s
+(fewer people).
 
 ## Notes
 

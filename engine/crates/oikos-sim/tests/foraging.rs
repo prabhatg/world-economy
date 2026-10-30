@@ -152,7 +152,10 @@ fn rivers_feed_foragers_in_deserts() {
     let p = Params::default();
     assert_eq!(w.forage_capacity[1], 1, "rainless desert");
     assert_eq!(w.forage_capacity[0], expected(24.0, 0.0, &p, true));
-    assert!(w.forage_capacity[0] > 100);
+    assert!(
+        w.forage_capacity[0] > 50 * w.forage_capacity[1],
+        "a river feeds bands where the desert feeds nobody"
+    );
 }
 
 #[test]

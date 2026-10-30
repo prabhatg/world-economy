@@ -77,6 +77,11 @@ fn world(packs: &[&[u8]], seed: u64, params: Params) -> World {
 /// bands, so tests see the land fill. Toy fission is off: it sends half of a large band to
 /// a random neighbor whatever its crowding, an overshoot that would read as pressure
 /// (scalar-stress fission replaces it, #14); dispersal spreads people instead.
+///
+/// The other hypotheses are off and demography, densities and domestication rates are
+/// fixed at the values these tests were written for (the registry defaults before M1
+/// calibration, ADR-0057), so a calibration round that moves the defaults never moves
+/// what the tests check.
 fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
     Params {
         initial_occupancy: 0.0,
@@ -84,6 +89,17 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         cultivation_pressure_weight: pressure,
         cultivation_stress_weight: stress,
         cultivation_abundance_weight: abundance,
+        cultivation_variability_weight: 0.0,
+        soil_erosion_rate: 0.0,
+        soil_formation_rate: 0.0001,
+        growth_rate: 0.01,
+        sedentary_growth_rate: 0.01,
+        dispersal_probability: 0.1,
+        forager_density_ref: 0.1,
+        farm_density: 2.0,
+        selection_coefficient: 0.005,
+        introgression_rate: 0.002,
+        domestic_wild_frequency: 0.001,
         ..Params::default()
     }
 }
@@ -491,8 +507,8 @@ fn soil_erodes_under_fields_and_forms_slowly() {
     assert_eq!(soil_yield(0.5, &p), 1.0);
     assert!((soil_yield(0.25, &p) - 0.5).abs() < 1e-15);
     assert_eq!(soil_yield(0.0, &p), 0.0);
-    // Off by default: no erosion, full soil stays full.
-    assert_eq!(erode(1.0, 1.0, 10.0, &Params::default()), 1.0);
+    // Rate zero switches the hypothesis off: full soil stays full.
+    assert_eq!(erode(1.0, 1.0, 10.0, &Params { soil_erosion_rate: 0.0, ..p }), 1.0);
 }
 
 /// A cereal-country world that ratchets into farming (as in the ratchet test).
@@ -549,7 +565,7 @@ fn soil_is_partition_independent_and_restores() {
 
 #[test]
 fn checkpoints_from_before_soil_restore_with_whole_soil() {
-    let (mut w, g, c) = farming_world(9, |p| p);
+    let (mut w, g, c) = farming_world(9, |p| Params { soil_erosion_rate: 0.0, ..p });
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     // The previous layout: magic OIKOSCK2 and no soil between birth counters and agents.

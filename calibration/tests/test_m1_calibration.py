@@ -40,3 +40,15 @@ def test_worlds_are_run_in_parallel_and_reproducibly(problem):
     assert (a == b).all(), "a run is a function of its parameters and seed"
     i = history.implausibility(a[None, : len(problem.targets)], 0.0, problem.targets)[0]
     print("M1 default world implausibility: " + ", ".join(f"{t.name} {x:.1f}" for t, x in zip(problem.targets, i)))
+
+
+def test_the_default_world_is_consistent_with_the_record(problem):
+    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round2/best.json,
+    ADR-0057): with any seed, every target and the radiocarbon group pass history matching."""
+    from oikos_cal import __main__ as cli
+    from oikos_cal import m1
+
+    out = m1.evaluate([({}, s) for s in (1, 2, 3)], workers=3)
+    doc = {"targets": cli._targets_json(problem.targets), "groups": cli._groups_json(problem.groups), "outputs": out}
+    i = history.implausibility(out[:, : len(problem.targets)], 0.0, problem.targets)
+    assert cli.consistent(doc).all(), f"max implausibility per seed {i.max(axis=1)}"

@@ -39,9 +39,11 @@ def test_capacity_map(m1):
     density = w.capacity() / area
     zagros, galilee, pontic = cell(34.4, 46.5), cell(33.0, 35.4), cell(41.0, 40.5)
     nile, eastern_desert, nefud = cell(25.7, 32.65), cell(25.7, 33.6), cell(28.0, 41.0)
+    ref = w.params["forager_density_ref"]
     for wet in (zagros, galilee, pontic):
-        assert density[wet] > 0.1 > 3 * density[nefud], "forested and foothill zones feed far more than deserts"
-    assert w.capacity()[nile] > 10 * w.capacity()[eastern_desert], "the Nile feeds people the desert beside it cannot"
+        assert density[wet] > ref > 3 * density[nefud], "forested and foothill zones feed far more than deserts"
+    assert w.capacity()[eastern_desert] == 1, "the desert feeds nobody (capacity's floor)"
+    assert density[nile] > ref / 4, "the Nile feeds people the desert beside it cannot"
     assert not w.habitable()[cell(39.5, 51.5)], "the Caspian"
     total = w.capacity()[w.habitable()].sum()
     assert 1e5 < total < 3e6, f"regional forager capacity at 12,000 BCE: {total}"

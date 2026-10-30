@@ -5,11 +5,13 @@
 # Every parameter declares its unit, valid range, calibration prior, status and
 # sources. Status "placeholder" means an engine-test value with no empirical claim;
 # M1 replaces these with literature-based or calibrated values.
+# Status "calibrated" means the value of one world consistent with the M1 record
+# (calibration/runs/m1/round2/best.json, ADR-0057); its note gives the consistent range.
 #
 # Changing a default changes the golden hash (engine/golden/m0-toy.json).
 
 name = "m0-toy"
-version = 3
+version = 4
 
 [params.period_ticks]
 group = "time"
@@ -26,11 +28,12 @@ group = "demography"
 unit = "1/period"
 description = "Intrinsic growth rate r in logistic growth dw = r w (1 - N/K) of mobile foragers (see sedentary_growth_rate)."
 kind = { type = "real", min = 0.0, max = 0.1 }
-default = 0.01
+default = 0.02934
 prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
-status = "placeholder"
-note = "Order of magnitude of local growth during the Neolithic demographic transition; not calibrated."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.0043 to 0.028 (10-90%). Local growth of foragers between filling empty land and holding at capacity; the Neolithic demographic transition is sedentary_growth_rate."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
 ]
 
@@ -39,10 +42,10 @@ group = "demography"
 unit = "1/period"
 description = "Intrinsic growth rate of fully sedentary cultivators; a band's rate moves linearly from growth_rate (mobile foragers) to this with its cultivation effort (the Neolithic demographic transition)."
 kind = { type = "real", min = 0.0, max = 0.1 }
-default = 0.01
+default = 0.02934
 prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
 status = "placeholder"
-note = "Sedentism and cereal weaning foods shorten birth intervals: fertility rises with dependence on cultivation, followed by higher child mortality, with net growth higher than foragers'. The default equals growth_rate (no transition) until calibration says otherwise."
+note = "Sedentism and cereal weaning foods shorten birth intervals: fertility rises with dependence on cultivation, followed by higher child mortality, with net growth higher than foragers'. The default equals the calibrated growth_rate (no transition): round 2 did not emulate it, and the M1 record mildly prefers slower sedentary growth (open question Q27)."
 sources = [
   { citation = "Bocquet-Appel, J.-P. (2002). Paleoanthropological traces of a Neolithic demographic transition. Current Anthropology 43, 637-650.", doi = "10.1086/342429" },
   { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
@@ -170,11 +173,12 @@ group = "migration"
 unit = "probability per period"
 description = "Probability that a band in a crowded cell sends a group to a less crowded neighbor in one period."
 kind = { type = "probability" }
-default = 0.1
+default = 0.1222
 prior = { dist = "log_uniform", lo = 0.01, hi = 0.5 }
-status = "placeholder"
-note = "Sets the diffusion rate of the wave of advance (speed ~ 2 sqrt(r D)); calibrated against dated expansion fronts."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.015 to 0.34 (10-90%). Sets the diffusion rate of the wave of advance (speed ~ 2 sqrt(r D)); calibrated against dated expansion fronts."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Ammerman, A.J., Cavalli-Sforza, L.L. (1984). The Neolithic Transition and the Genetics of Populations in Europe. Princeton University Press.", doi = "10.1515/9781400853113" },
 ]
 
@@ -264,11 +268,12 @@ group = "foraging"
 unit = "people/km2"
 description = "Forager population density at the reference productivity, without aquatic resources."
 kind = { type = "real", min = 0.001, max = 5.0 }
-default = 0.1
+default = 0.04333
 prior = { dist = "log_uniform", lo = 0.02, hi = 0.5 }
-status = "placeholder"
-note = "Ethnographic terrestrial forager densities mostly fall between ~0.01 and ~1 person/km2; to be calibrated against radiocarbon density."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.027 to 0.42 (10-90%). Ethnographic terrestrial forager densities mostly fall between ~0.01 and ~1 person/km2; calibrated against radiocarbon density."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Binford, L.R. (2001). Constructing Frames of Reference: An Analytical Method for Archaeological Theory Building Using Ethnographic and Environmental Data Sets. University of California Press." },
   { citation = "Kelly, R.L. (2013). The Lifeways of Hunter-Gatherers: The Foraging Spectrum. Cambridge University Press.", doi = "10.1017/CBO9781139176132" },
 ]
@@ -334,11 +339,12 @@ group = "cultivation"
 unit = "1"
 description = "Population-pressure hypothesis: target cultivation effort per unit of pressure (crowding beyond cultivation_crowding, capped at 1)."
 kind = { type = "real", min = 0.0, max = 5.0 }
-default = 0.5
+default = 0.9606
 prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
-status = "placeholder"
-note = "Zero switches the hypothesis off; calibration weighs it against stress and abundance."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.095 to 0.92 (10-90%). Zero switches the hypothesis off; calibration weighs it against stress and abundance."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Binford, L.R. (1968). Post-Pleistocene adaptations. In Binford, S.R., Binford, L.R. (eds), New Perspectives in Archeology, 313-341. Aldine." },
   { citation = "Cohen, M.N. (1977). The Food Crisis in Prehistory: Overpopulation and the Origins of Agriculture. Yale University Press." },
 ]
@@ -362,11 +368,12 @@ group = "cultivation"
 unit = "1"
 description = "Abundance (niche-construction) hypothesis: target cultivation effort per unit of wild-cereal suitability, at any population density."
 kind = { type = "real", min = 0.0, max = 5.0 }
-default = 0.0
+default = 0.00508
 prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
-status = "placeholder"
-note = "Rich wild stands invite tending and sowing without stress. Off by default: any cultivation raises capacity and starts the pressure ratchet, so a positive weight puts cultivation everywhere wild cereals grow from the first years; calibration decides."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.13 to 0.87 (10-90%). Rich wild stands invite tending and sowing without stress. The calibrated world has almost none: any cultivation raises capacity and starts the pressure ratchet, and the pressure hypothesis carries cultivation there."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Smith, B.D. (2007). Niche construction and the behavioral context of plant and animal domestication. Evolutionary Anthropology 16, 188-199.", doi = "10.1002/evan.20135" },
   { citation = "Zeder, M.A. (2016). Domestication as a model system for niche construction theory. Evolutionary Ecology 30, 325-348.", doi = "10.1007/s10682-015-9801-8" },
 ]
@@ -376,11 +383,12 @@ group = "cultivation"
 unit = "1/suitability per century"
 description = "Stable-climate hypothesis: cultivation targets are multiplied by 1 - weight x climate variability (the mean change of wild-cereal suitability per century over the stress window), at least 0."
 kind = { type = "real", min = 0.0, max = 50.0 }
-default = 0.0
+default = 5.457
 prior = { dist = "uniform", lo = 0.0, hi = 20.0 }
-status = "placeholder"
-note = "Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 3.4 to 18 (10-90%). Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Richerson, P.J., Boyd, R., Bettinger, R.L. (2001). Was agriculture impossible during the Pleistocene but mandatory during the Holocene? A climate change hypothesis. American Antiquity 66, 387-411.", doi = "10.2307/2694241" },
   { citation = "Bettinger, R., Richerson, P., Boyd, R. (2009). Constraints on the development of agriculture. Current Anthropology 50, 627-631.", doi = "10.1086/605359" },
 ]
@@ -413,11 +421,12 @@ group = "cultivation"
 unit = "1/period"
 description = "Selection for domestic traits (e.g. non-shattering ears) under full cultivation effort, per crop generation (one per year)."
 kind = { type = "real", min = 0.0, max = 1.0 }
-default = 0.005
+default = 0.002137
 prior = { dist = "log_uniform", lo = 0.001, hi = 0.5 }
-status = "placeholder"
-note = "The prior spans the competing hypotheses: protracted domestication (s ~ 0.001-0.01 from the archaeobotanical record) and rapid domestication (s ~ 0.05-0.5 under sickle harvest and resowing in experiments)."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.0017 to 0.0067 (10-90%). The prior spans the competing hypotheses: protracted domestication (s ~ 0.001-0.01 from the archaeobotanical record) and rapid domestication (s ~ 0.05-0.5 under sickle harvest and resowing in experiments)."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Purugganan, M.D., Fuller, D.Q. (2011). Archaeological data reveal slow rates of evolution during plant domestication. Evolution 65, 171-183.", doi = "10.1111/j.1558-5646.2010.01093.x" },
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
@@ -427,11 +436,12 @@ group = "cultivation"
 unit = "1"
 description = "Share of domestic-type plants in wild stands (the floor selection acts on)."
 kind = { type = "probability" }
-default = 0.001
+default = 0.001388
 prior = { dist = "log_uniform", lo = 0.00001, hi = 0.01 }
-status = "placeholder"
-note = "Tough-rachis mutants are rare in wild stands; the order of magnitude is uncertain."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 2e-05 to 0.0064 (10-90%). Tough-rachis mutants are rare in wild stands; the order of magnitude is uncertain."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
 
@@ -440,11 +450,12 @@ group = "cultivation"
 unit = "1/period"
 description = "Pull of a band's crop back toward the wild type, per unit of effort not spent cultivating (gene flow from wild stands, abandoned fields)."
 kind = { type = "probability" }
-default = 0.002
+default = 0.001518
 prior = { dist = "log_uniform", lo = 0.0001, hi = 0.01 }
-status = "placeholder"
-note = "Gene flow from wild populations is why the protracted model predicts slow domestication; with it, light cultivation never domesticates."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.00014 to 0.0043 (10-90%). Gene flow from wild populations is why the protracted model predicts slow domestication; with it, light cultivation never domesticates."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Allaby, R.G., Fuller, D.Q., Brown, T.A. (2008). The genetic expectations of a protracted model for the origins of domesticated crops. PNAS 105, 13982-13986.", doi = "10.1073/pnas.0803780105" },
 ]
 
@@ -453,11 +464,12 @@ group = "cultivation"
 unit = "people/km2"
 description = "People fed per km2 of dry land under full cultivation of domestic crops where wild cereals grow best."
 kind = { type = "real", min = 0.01, max = 100.0 }
-default = 2.0
+default = 1.128
 prior = { dist = "log_uniform", lo = 0.5, hi = 10.0 }
-status = "placeholder"
-note = "Regional densities of early farmers were around one to a few people per km2, an order of magnitude above foragers."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 0.71 to 6.5 (10-90%). Regional densities of early farmers were around one to a few people per km2, an order of magnitude above foragers."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Zimmermann, A., Hilpert, J., Wendt, K.P. (2009). Estimations of population density for selected periods between the Neolithic and AD 1800. Human Biology 81, 357-380.", doi = "10.3378/027.081.0313" },
 ]
 
@@ -480,11 +492,12 @@ group = "cultivation"
 unit = "soil share per year at full effort"
 description = "Land-degradation hypothesis: share of a cell's erodible soil lost per year under full cultivation effort (in proportion to effort)."
 kind = { type = "real", min = 0.0, max = 0.01 }
-default = 0.0
+default = 0.0001355
 prior = { dist = "uniform", lo = 0.0, hi = 0.001 }
-status = "placeholder"
-note = "Zero switches the hypothesis off. Tilled land erodes one to two orders of magnitude faster than soil forms (about 1 mm/yr against 0.01-0.1 mm/yr); hoe and sickle farming of thin Mediterranean soils loses tens of centimetres over millennia: 1e-4 to 1e-3 of the erodible depth per year."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 4.3e-05 to 0.00064 (10-90%). Zero switches the hypothesis off. Tilled land erodes one to two orders of magnitude faster than soil forms (about 1 mm/yr against 0.01-0.1 mm/yr); hoe and sickle farming of thin Mediterranean soils loses tens of centimetres over millennia: 1e-4 to 1e-3 of the erodible depth per year."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Montgomery, D.R. (2007). Soil erosion and agricultural sustainability. PNAS 104, 13268-13272.", doi = "10.1073/pnas.0611508104" },
   { citation = "Rollefson, G.O., Kohler-Rollefson, I. (1989). The collapse of early Neolithic settlements in the southern Levant. In Hershkovitz, I. (ed.), People and Culture in Change, BAR International Series 508, 73-89." },
 ]
@@ -494,11 +507,12 @@ group = "cultivation"
 unit = "1/year"
 description = "Soil formation: each year the eroded share of a cell's soil re-forms at this rate (toward full, whatever the land use)."
 kind = { type = "real", min = 0.0, max = 0.01 }
-default = 0.0001
+default = 2.474e-05
 prior = { dist = "log_uniform", lo = 0.00001, hi = 0.001 }
-status = "placeholder"
-note = "Soil production of 0.01-0.1 mm/yr refills a metre of soil over 10,000-100,000 years; faster rates stand for colluvium and fallow recovery."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0057): one world consistent with the record; consistent worlds span 1.7e-05 to 0.00078 (10-90%). Soil production of 0.01-0.1 mm/yr refills a metre of soil over 10,000-100,000 years; faster rates stand for colluvium and fallow recovery."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 2 (ADR-0056, ADR-0057): the best-fitting world consistent with the radiocarbon and barley rachis records, calibration/runs/m1/round2/best.json (wave 2, run 28).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round2/best.json" },
   { citation = "Montgomery, D.R. (2007). Soil erosion and agricultural sustainability. PNAS 104, 13268-13272.", doi = "10.1073/pnas.0611508104" },
 ]
 

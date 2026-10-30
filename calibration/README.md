@@ -49,10 +49,16 @@ python -m oikos_cal screen --trajectories 10 --out runs/m1/screening.json
 python -m oikos_cal wave --runs 220 --screening runs/m1/screening.json --out runs/m1/wave1.json
 python -m oikos_cal wave --runs 220 --previous runs/m1/wave1.json --out runs/m1/wave2.json
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
+python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 ```
 
+`best` reruns the best consistent runs (by both log-likelihoods) with only their emulated
+parameters set and the others at their defaults, with three seeds, and records which
+stay consistent; the chosen world becomes the registry defaults (ADR-0057).
+
 Round 1 (ADR-0052) is in `runs/m1/`, round 2 (ten radiocarbon eras judged one by one
-and together, 27 free parameters; ADR-0056) in `runs/m1/round2/`.
+and together, 27 free parameters; ADR-0056) in `runs/m1/round2/`, with `best.json`, the
+source of the calibrated defaults (ADR-0057).
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
 validated by the engine's state hash, never by an operator's output.

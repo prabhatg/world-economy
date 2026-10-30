@@ -66,7 +66,7 @@ def test_farming_stays_where_wild_cereals_grow_and_domestication_is_protracted(m
     e, dom, pop = w.cultivation(), w.domestication(), w.population()
     farmed = pop * e
     assert farmed[w.suitability() > 0].sum() > 0.99 * farmed.sum()
-    assert e[cell(28.0, 41.0)] == 0, "nobody farms the Nefud"
+    assert e[cell(28.0, 41.0)] < 0.01, "nobody farms the Nefud (bands arriving from fields lose the habit)"
     assert (e > 0.2).sum() > 1000, "cultivation is widespread by 7000 BCE"
     farming = (e > 0.3) & (dom > 0.5)
     assert farming.sum() > 100, "domestic crops dominate in places by 7000 BCE"
