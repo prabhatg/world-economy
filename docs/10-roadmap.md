@@ -94,6 +94,11 @@ Work items are GitHub issues under the M1 milestone.
 - Emulators (GP/NN), SBI pipeline, localized particle-filter assimilation on M1.
 - Knowledge-ingestion pipeline v1 feeding the parameter registry; citizen-science
   review tool for extracted parameters.
+- Behavior v1 (ADR-0062): first distilled, integer-inference policy network for one
+  M1 archetype decision (move or stay, cultivate or forage), its free parameters
+  calibrated against the M1 record and compared with the hand-written rule.
+- Ensemble analyst v0: pathway clustering and scenario discovery over calibration
+  runs, with questions answered from the analysis store.
 - Desktop clients (Win/macOS/Linux) and headless/Docker client; accounts, teams,
   credits; adaptive replication.
 - Nonprofit set up (fiscal sponsor), charter, advisory board; **public launch**.
@@ -112,6 +117,8 @@ Work items are GitHub issues under the M1 milestone.
 ## M5 — 1800–2026 and the digital twin
 - Industrialization, demographic transition, nation-states, globalization, digital
   economy, AI. Dense assimilation; synthetic modern population; twin-2026 v1.
+- AI as a class of agents and capital (task-based production; ADR-0062); decision
+  packs for optional LLM notable actors.
 - Multi-node scaling work (MPI, GPU kernels).
 
 ## M6 — Policy laboratory

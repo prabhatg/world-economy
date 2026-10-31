@@ -81,11 +81,19 @@
     Sea crossings, source preference and directional exchange would each add a
     parameter; the zones say whether they are needed.
 
+29. Do behavior models trained on today's participants transfer to the past
+    (ADR-0062)? Experiment and survey data come mostly from modern, often Western,
+    participants; foragers and early farmers lived under other norms and constraints.
+    Distilled policies may need archetype-specific priors from ethnography, and their
+    contribution must be tested on held-out periods and regions before it is trusted.
+
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
 7. Which hindcast interventions form the validation suite for the policy lab?
 8. How to model AI itself as a technology — productivity, labor displacement,
-   power concentration — with so little historical data?
+   power concentration — with so little historical data? ADR-0062 makes AI systems a
+   class of agents and capital with task-based production; capability growth and
+   diffusion stay scenario inputs with ensembles over them.
 9. Who are the first external users/collaborators (academics, NGOs, policymakers)?
 
 ## Engineering

@@ -63,6 +63,7 @@
 | 0059 | Site-count operator and calibration round 4: survey site phases of Palmisano et al. 2021 (Anatolia, Upper Mesopotamia) counted aoristically in 500-year eras from 6,500 to 3,000 BCE; a world's cultivator activity in each survey's landscape (cells with any recorded site) is dated through the surveys' own period scheme; centered log shares, bootstrap covariance, one group per survey, discrepancy 0.25. A fourth wave judges radiocarbon, rachis and site counts together, and the best consistent world (wave 4, run 251) becomes the registry defaults: 17 parameters `calibrated`, sources in `calibration/runs/m1/round4/best.json` | Accepted |
 | 0060 | Down-the-line exchange of obsidian as a tracer: cells hold a fixed-point availability per source group; every step, occupied cells within one res-5 step of a group's volcanoes (an `obsidian` forcing pack from DObsiSS 2.0) have all they want, other occupied cells take (1 - `obsidian_loss`) times the mean of themselves and their occupied neighbors, empty cells hold none; nothing else reads it, so it never changes history; checkpoint layout `OIKOSCK4` (`OIKOSCK3` restores with none held); sourced assemblages (DObsiSS, ASPRO periods) become an observation table | Accepted |
 | 0061 | Obsidian sourcing operator and calibration round 5: the share of Cappadocian (against Eastern Anatolian) obsidian in each DObsiSS context with at least three artefacts of the two, against the obsidian in use in the site's cell and its neighbors over its period, beta-binomial (φ = 2); contexts no chain of habitable cells joins to a volcano (Cyprus) are dropped; targets are mean shares in four zones of relative distance to the sources (edges -250, 0, 250 km) before and after 6,900 BCE, bootstrap covariance, one group, discrepancy 0.1. A parameter new to the registry joins a later wave as an active factor. A round's best world replaces the defaults only if it fits clearly better than they do on the same seeds; `profile` calibrates one parameter at the defaults when a new record constrains it and leaves history alone: `obsidian_loss` 0.0028 (`calibration/runs/m1/round5/obsidian_loss.json`) | Accepted |
+| 0062 | AI inside the simulation has four roles: the source of simulated people's behavior (behavior models distilled into per-archetype policy networks with calibrated free parameters), actors in the modern world (AI systems as a class of agents and capital; optional LLM notable actors replayed from content-addressed decision packs), analyst of ensembles, and scientist. Inside a run, AI is integer inference or replayed, never a live model call; behavior models used before the twin's start are trained on experiments and surveys, not on narratives of the period, and tested on held-out periods; every AI component is ablatable (docs/07) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -582,6 +583,35 @@ the zones see the boundary's sharpness and the contexts the far tails.
 The golden toy world has no obsidian pack, so its history is unchanged (same
 summaries); its hash changes with the default (ae727f79). Performance is unchanged:
 no code on the step path changed (instructions per agent-step 1,138.42 -> 1,138.40).
+
+## ADR-0062 rationale (AI inside the simulation)
+
+The project's aim (doc 1) needs simulated people whose responses to conditions and
+policies are realistic, including responses to policies never tried; hand-written
+decision rules are the weakest part of agent-based models, and models trained on human
+choice data now predict behavior across many tasks (doc 7 §7.2). Using them directly
+for billions of agents is unaffordable and not reproducible, so they are teachers:
+their answers on sampled situations are distilled into small per-archetype policy
+networks that run in integer arithmetic (exact on every platform, so volunteer results
+stay validatable by hash, ADR-0016 and ADR-0017) and whose few free parameters are
+calibrated like any mechanism. The record keeps the last word.
+
+The main risk is leakage. A model that has read history knows its outcome; letting it
+decide agents' choices in a hindcast would steer worlds toward what happened and turn
+calibration into an echo. Behavior models used before the present are therefore
+trained on experiments, surveys and ethnography rather than narratives of the period,
+and their contribution is tested on held-out periods and regions. Full LLMs act only
+after the twin's start, where there is nothing to leak and where judging reactions to
+untried policies matters most; even there their decisions are recorded once into a
+content-addressed decision pack and replayed, so a work unit never calls a model.
+
+AI also appears as part of the world: from about 2020 AI systems do tasks, earn
+returns for their owners and advise decisions, so they are a class of agents and
+capital (task-based production, Acemoglu and Restrepo 2018, 2019), not a single
+productivity parameter. And it helps people read the results: grouping worlds into
+pathways, finding what separates better worlds from the rest, answering questions with
+the runs as evidence, and narrating a world's history. Every such component can be
+switched off, and results report how much they depend on it.
 
 ## Notes
 
