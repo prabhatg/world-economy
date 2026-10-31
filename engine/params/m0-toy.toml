@@ -6,7 +6,8 @@
 # sources. Status "placeholder" means an engine-test value with no empirical claim;
 # M1 replaces these with literature-based or calibrated values.
 # Status "calibrated" means the value of one world consistent with the M1 record
-# (calibration/runs/m1/round4/best.json, ADR-0059); its note gives the consistent range.
+# (calibration/runs/m1/round4/best.json, ADR-0059; obsidian_loss profiled in that world,
+# calibration/runs/m1/round5/obsidian_loss.json, ADR-0061); its note gives the consistent range.
 #
 # Changing a default changes the golden hash (engine/golden/m0-toy.json).
 
@@ -539,11 +540,12 @@ group = "exchange"
 unit = "share per period"
 description = "Share of obsidian used up or kept, not passed on, at each step of down-the-line exchange: away from its sources a cell's availability becomes (1 - loss) times the mean over itself and its occupied neighbors."
 kind = { type = "real", min = 0.0, max = 1.0 }
-default = 0.003
+default = 0.0028
 prior = { dist = "log_uniform", lo = 0.0003, hi = 0.1 }
-status = "placeholder"
-note = "Sets how fast obsidian falls off with distance along settled land: one e-fold every 1.5 res-5 cells (25 km) at 0.1, 4.3 (74 km) at 0.01, 7.1 (121 km) at 0.003 and 10.6 (180 km) at 0.001; at small losses the network takes about 1/loss years to settle. Renfrew's contact zone falls off over a few hundred kilometres; to be calibrated against sourced assemblages (ADR-0060)."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0061): profiled with every other parameter at its default (obsidian is a tracer, so the world is the same world); the sourced assemblages rule out losses below 0.002 and score 0.002-0.0038 within 1.4 log-likelihood of the best, and the consistent wave-5 worlds span 0.0024 to 0.066 (10-90%). Sets how fast obsidian falls off with distance along settled land: one e-fold every 1.5 res-5 cells (25 km) at 0.1, 4.3 (74 km) at 0.01, 7.1 (121 km) at 0.003 and 10.6 (180 km) at 0.001; at small losses the network takes about 1/loss years to settle. Renfrew's contact zone falls off over a few hundred kilometres (ADR-0060)."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 5 (ADR-0061): the obsidian_loss profile at the calibrated defaults, judged on the radiocarbon, barley rachis, survey site-count and obsidian sourcing records, calibration/runs/m1/round5/obsidian_loss.json.", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round5/obsidian_loss.json" },
   { citation = "Renfrew, C., Dixon, J.E., Cann, J.R. (1966). Obsidian and early cultural contact in the Near East. Proceedings of the Prehistoric Society 32, 30-72.", doi = "10.1017/S0079497X0001433X" },
   { citation = "Renfrew, C., Dixon, J.E., Cann, J.R. (1968). Further analysis of Near Eastern obsidians. Proceedings of the Prehistoric Society 34, 319-331.", doi = "10.1017/S0079497X0001392X" },
   { citation = "Renfrew, C. (1977). Alternative models for exchange and spatial distribution. In Earle, T.K., Ericson, J.E. (eds), Exchange Systems in Prehistory, 71-90. Academic Press.", doi = "10.1016/B978-0-12-227650-7.50010-9" },

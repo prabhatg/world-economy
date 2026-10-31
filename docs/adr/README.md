@@ -62,6 +62,7 @@
 | 0058 | Calibration round 3: a third wave refocuses the emulators on the 17 factors whose round-2 screening effect reaches 0.4 tolerances (adding sedentary growth, soil critical share, NPP elasticity, dispersal crowding and wild yield ratio); earlier waves keep their own active sets and still rule out. `wave --previous ... --screening` refocuses. Defaults unchanged | Accepted |
 | 0059 | Site-count operator and calibration round 4: survey site phases of Palmisano et al. 2021 (Anatolia, Upper Mesopotamia) counted aoristically in 500-year eras from 6,500 to 3,000 BCE; a world's cultivator activity in each survey's landscape (cells with any recorded site) is dated through the surveys' own period scheme; centered log shares, bootstrap covariance, one group per survey, discrepancy 0.25. A fourth wave judges radiocarbon, rachis and site counts together, and the best consistent world (wave 4, run 251) becomes the registry defaults: 17 parameters `calibrated`, sources in `calibration/runs/m1/round4/best.json` | Accepted |
 | 0060 | Down-the-line exchange of obsidian as a tracer: cells hold a fixed-point availability per source group; every step, occupied cells within one res-5 step of a group's volcanoes (an `obsidian` forcing pack from DObsiSS 2.0) have all they want, other occupied cells take (1 - `obsidian_loss`) times the mean of themselves and their occupied neighbors, empty cells hold none; nothing else reads it, so it never changes history; checkpoint layout `OIKOSCK4` (`OIKOSCK3` restores with none held); sourced assemblages (DObsiSS, ASPRO periods) become an observation table | Accepted |
+| 0061 | Obsidian sourcing operator and calibration round 5: the share of Cappadocian (against Eastern Anatolian) obsidian in each DObsiSS context with at least three artefacts of the two, against the obsidian in use in the site's cell and its neighbors over its period, beta-binomial (φ = 2); contexts no chain of habitable cells joins to a volcano (Cyprus) are dropped; targets are mean shares in four zones of relative distance to the sources (edges -250, 0, 250 km) before and after 6,900 BCE, bootstrap covariance, one group, discrepancy 0.1. A parameter new to the registry joins a later wave as an active factor. A round's best world replaces the defaults only if it fits clearly better than they do on the same seeds; `profile` calibrates one parameter at the defaults when a new record constrains it and leaves history alone: `obsidian_loss` 0.0028 (`calibration/runs/m1/round5/obsidian_loss.json`) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -526,6 +527,61 @@ The golden toy world has no obsidian pack, so its history is unchanged (same
 summaries); its hash changes with the checkpoint layout and the new parameter
 (3409a5cb). Instructions per agent-step 1,136.58 -> 1,138.42 (+0.2%, no pack); an
 M1 run with the pack takes 3-5% longer (51.0-51.7 s against 48.6-50.3 s).
+
+## ADR-0061 rationale (obsidian sourcing; calibration round 5)
+
+What sourced obsidian records is a share: of the artefacts analysed from a context, how
+many came from each volcano. The operator compares it with the share the world's people
+held, using the same exchange tracer (ADR-0060), over the context's ASPRO period
+(each century weighted by its overlap) and over the site's cell and its six neighbors,
+so a site on the edge of a settled patch still counts. Only Cappadocian and Eastern
+Anatolian artefacts count; contexts with fewer than three of them say little and are
+dropped, leaving 129. Assemblages vary more than sampling would make them (a few large
+contexts, phases mixed, artefacts chosen for analysis), so counts are beta-binomial
+with φ = 2, as for rachis.
+
+Five contexts are never reached in any world: all are on Cyprus (Shillourokambos,
+Khirokitia, Kalavasos Tenta, Cap Andreas, Klepini-Troulli), supplied with Cappadocian
+obsidian by boat across some 70 km of sea. A chain of settled cells cannot cross
+the sea, so those contexts would only add a share of 0.5 for every world. They are
+dropped when the operator is built, by asking which contexts a chain of habitable
+cells (land minus lake fraction above zero in some century, the engine's rule) joins
+to a volcano; dropping them per world instead would let worlds be judged on different
+contexts. 124 contexts are judged; sea crossings are open question 28.
+
+History matching needs summaries. Mean shares in four zones of relative distance (how
+much nearer the Cappadocian than the eastern sources, with edges at -250, 0 and 250 km),
+before and after 6,900 BCE (by the period midpoint), give eight targets: the record's
+eastern obsidian moves west after 6,900 BCE (Cappadocian 0-250 km zone 0.91 to 0.54).
+Their bootstrap covariance makes one group (dof 8), with discrepancy 0.1. At the
+round-4 defaults the record rules out small losses: 0.0003 leaves
+every zone mixed (group distance 37.7 against a cutoff of 22.0), and 0.03 supplies the
+later Cappadocian side wholly (0.99 against 0.54).
+
+`obsidian_loss` is new to the registry, so wave 5 adds it to the factors of the
+earlier waves (`extend_factors`; earlier waves' emulators never see it) as an active
+factor. Wave 5 judges all four records: 0.8% of the prior space survives (2.3% after
+round 4), 70 of 300 worlds are consistent, and losses below 0.002 are ruled out. `best`
+reruns the 12 best with three seeds; all stay consistent, and run 31 fits best
+(-4,280.2). The defaults score -4,282.9 on the same seeds and are consistent with
+every record (obsidian group 14.6). A gap of 2.7 is small next to the spread of the
+candidates' reruns (-4,280 to -4,374), and run 31 is a different world (sedentary growth 0.4
+times the forager rate, 3.9 million people at 3,000 BCE against 2.3 million), so it is
+not adopted: a round's best world replaces the defaults only when it fits clearly
+better than they do on the same seeds. That the two fit alike is the finding:
+sedentary growth stays unidentified (question 27).
+
+Obsidian changes no history, so its loss can be calibrated in the default world
+itself: `profile` reruns the defaults over ten losses with three seeds and chooses the
+consistent one with the best log-likelihood. 0.0028 is best (-4,282.8); 0.002 to
+0.0038 lie within 1.4 of it, and 0.0016 or less are inconsistent. Every other
+log-likelihood is the same along the profile (a tracer). The zone distance keeps
+falling up to 0.0056 (11.5) while the context likelihood falls away beyond 0.0038:
+the zones see the boundary's sharpness and the contexts the far tails.
+
+The golden toy world has no obsidian pack, so its history is unchanged (same
+summaries); its hash changes with the default (ae727f79). Performance is unchanged:
+no code on the step path changed (instructions per agent-step 1,138.42 -> 1,138.40).
 
 ## Notes
 

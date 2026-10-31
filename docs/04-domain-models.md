@@ -95,7 +95,8 @@ Not brain simulation. Agents implement validated regularities:
   the mean of itself and its occupied neighbors less a share used up or kept
   (`obsidian_loss`), so availability falls off about exponentially along settled land
   and never crosses empty land. It changes nothing else yet; goods with value, and
-  exchange that responds to them, come later.
+  exchange that responds to them, come later. Sourced assemblages calibrate the loss
+  at 0.0028, an e-fold about every 120 km (ADR-0061).
 - Markets: local price formation via decentralized bargaining/matching; routes with
   transport costs by terrain, technology (pack animals, ships, rail, containers).
 - Specialization and division of labor tied to market size (Smith) and urbanization.

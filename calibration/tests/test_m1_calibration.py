@@ -32,10 +32,17 @@ def test_the_record_summaries(problem):
     assert problem.names[: len(problem.targets)] == list(ts)
     st = [t.name for t in problem.targets if t.name.startswith("sites")]
     assert len(st) == 14 and st[0] == "sites anatolia 6500-6000 BCE"
-    assert [g.indices for g in problem.groups[1:]] == [list(range(14, 21)), list(range(21, 28))]
-    assert all(g.dof == 6 for g in problem.groups[1:])
+    assert [g.indices for g in problem.groups[1:3]] == [list(range(14, 21)), list(range(21, 28))]
+    assert all(g.dof == 6 for g in problem.groups[1:3])
     assert (ts["sites upper_mesopotamia 3500-3000 BCE"].observed > ts["sites upper_mesopotamia 6500-6000 BCE"].observed
             + 0.3), "villages multiply into the Late Chalcolithic"
+    ob = [t for t in problem.targets if t.name.startswith("obsidian")]
+    assert len(ob) == 8 and problem.groups[3].indices == list(range(28, 36)) and problem.groups[3].dof == 8
+    assert ob[0].observed < 0.1 and ob[3].observed > 0.9, "before 6900 BCE each source supplies its own side"
+    assert 0.2 < ob[1].observed < 0.8 or 0.2 < ob[2].observed < 0.8, "and the two mix near the middle"
+    assert problem.obsidian.isolated == 5, "the Cypriot contexts: obsidian crossed the sea by boat"
+    assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
+                                  "log-likelihood obsidian", "people 3000 BCE"]
 
 
 def test_worlds_are_run_in_parallel_and_reproducibly(problem):

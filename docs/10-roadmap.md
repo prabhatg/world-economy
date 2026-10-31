@@ -67,7 +67,9 @@ third wave on 17 factors leaves 3.6%; sedentary growth is not identified. Site-c
 operator (ADR-0059): survey settlements of Anatolia and Upper Mesopotamia, dated
 aoristically; with them a fourth wave leaves 2.3%, and its best world is the new
 registry default. Down-the-line exchange of obsidian as a tracer (ADR-0060), from the
-DObsiSS volcanoes; sourced assemblages are the next observation operator.
+DObsiSS volcanoes. Obsidian sourcing operator (ADR-0061): sourced assemblages judged in
+zones of distance to the sources; with them a fifth wave leaves 0.8%, the defaults
+stay (the best world only ties them) and the obsidian loss is calibrated at them.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

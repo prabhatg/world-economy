@@ -36,3 +36,35 @@ def test_recording_starts_and_ends_on_century_boundaries():
     w.run_years(30)
     with pytest.raises(ValueError, match="century"):
         record.activity(w, end=-11_800)
+
+
+class _ObsidianWorld:
+    """Two cells, a source group whose availability rises each year in cell 0."""
+
+    cells = 2
+
+    def __init__(self):
+        self.year = -12_000
+
+    def population(self):
+        return np.array([10, 0], dtype=np.uint64)
+
+    def cultivation(self):
+        return np.zeros(2)
+
+    def domestication(self):
+        return np.zeros(2)
+
+    def obsidian(self):
+        return {"west": np.array([(self.year + 12_000) / 1000, 0.0]), "east": np.array([0.5, 0.0])}
+
+    def run_years(self, n, parts):
+        self.year += n
+
+
+def test_obsidian_in_use_is_people_years_times_availability():
+    a = record.activity(_ObsidianWorld(), end=-11_900, every=50, parts=1)
+    assert list(a.obsidian) == ["west", "east"]
+    np.testing.assert_allclose(a.obsidian["west"][:, 0], [50 * 10 * 0.0 + 50 * 10 * 0.05, 0])
+    np.testing.assert_allclose(a.obsidian["east"][:, 0], [100 * 10 * 0.5, 0])
+    assert record.activity(oikos.World(seed=4), end=-11_900).obsidian == {}, "no obsidian pack, no obsidian"

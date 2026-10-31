@@ -84,3 +84,28 @@ def test_a_later_wave_can_refocus_on_more_factors():
     assert cli.active_factors(doc, threshold=3, max_active=4) == [0, 2]
     assert cli.active_factors(doc, threshold=1, max_active=4) == [0, 2, 3]
     assert cli.active_factors(doc, threshold=1, max_active=2) == [0, 2], "the most influential first"
+
+
+def test_a_later_wave_adds_parameters_new_to_the_registry_as_active_factors():
+    factors, new = cli.extend_factors(["a", "c", "d"], ["a", "b", "c", "d", "e"])
+    assert factors == ["a", "c", "d", "b", "e"] and new == [3, 4], "appended, so earlier waves' indices hold"
+    assert cli.extend_factors(["a", "b"], ["a", "b"]) == (["a", "b"], [])
+    # Earlier waves judge only their own factors: a point's new coordinates never matter.
+    u = emulator.latin_hypercube(30, 2, np.random.default_rng(1))
+    ts = [history.Target("a", 0.5, 0.0001, 0.0)]
+    w = history.Wave.fit(u, u[:, :1], ts, active=[0], rng=np.random.default_rng(0))
+    x = np.random.default_rng(2).random((200, 3))
+    assert (w.plausible(x) == w.plausible(np.c_[x[:, :2], 1 - x[:, 2]])).all()
+
+
+def test_a_profile_chooses_the_consistent_value_with_the_best_log_likelihood():
+    doc = _wave_doc([], [])
+    # three values of one parameter, two seeds each: outputs [value][seed]
+    doc["outputs"] = [[[0.0, 0.0, -9, -1, 5], [0.0, 0.0, -9, -1, 5]],
+                      [[0.0, 0.0, -2, -1, 5], [0.4, 0.0, -2, -1, 5]],  # best, but 4 sd off on one seed
+                      [[0.1, 0.0, -5, -1, 5], [0.0, 0.1, -4, -1, 5]]]
+    assert cli.profile_choice(doc) == 2
+    doc["outputs"][2][1][0] = 0.4
+    assert cli.profile_choice(doc) == 0
+    doc["outputs"] = [[[0.4, 0.0, -1, -1, 5]]]
+    assert cli.profile_choice(doc) is None, "no value stays consistent"

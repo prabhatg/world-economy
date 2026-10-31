@@ -50,7 +50,14 @@ landscape the same way: each century goes to the periods surveyors used that con
 it, by their popularity, and spreads over them. On synthetic surveys drawn from a known
 history it recovers the era shares to 0.01. The surveys rise into the Late Chalcolithic
 where radiocarbon falls, so they rule out the region-wide bust of the round-2 defaults.
-Obsidian distance-decay is next (#17).
+
+**Implemented (obsidian sourcing operator, ADR-0061):** `obsidian.Operator` scores the
+share of Cappadocian obsidian in use around each sourced assemblage of DObsiSS
+(`data/oikos_data/obsidian.py`) over its period, against the obsidian the world's
+people held there (the down-the-line tracer, ADR-0060), beta-binomially (φ = 2). The
+targets are mean shares in four zones of relative distance to the two source groups,
+before and after 6,900 BCE. Cypriot assemblages are dropped: their obsidian crossed the
+sea by boat, which a chain over land cannot do.
 
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
@@ -119,6 +126,11 @@ prior space survives, 91 of 300 worlds fit all three records, and the best of th
 (wave 4, run 251) is the registry default, with all 17 emulated parameters
 `calibrated`. It fits by having almost no bust; soils that recover separate the
 consistent worlds from the rest.
+Round 5 (ADR-0061) adds the obsidian zones and `obsidian_loss`: 0.8% of the prior space
+survives and 70 of 300 worlds fit all four records. The best of them ties the defaults
+(-4,280.2 against -4,282.9 on the same seeds) as a different world, so the defaults
+stay; a profile at the defaults calibrates `obsidian_loss` (0.0028), which the tracer
+lets vary without changing the world.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

@@ -4,6 +4,7 @@
     python -m oikos_cal wave --runs 200 --screening runs/m1/screening.json --out runs/m1/wave1.json
     python -m oikos_cal wave --runs 200 --previous runs/m1/wave1.json --out runs/m1/wave2.json
     python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
+    python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
 
 Each command records what it ran (unit-cube points, parameter values, seeds, outputs,
 targets with their variances, the code revision) in one JSON file, so waves can be
@@ -122,6 +123,15 @@ def report_screening(doc):
     print("seed noise / tol: " + ", ".join(f"{t.name} {n:.2f}" for t, n in zip(ts, noise)))
 
 
+def extend_factors(previous, free):
+    """Factors of a wave after waves over `previous`: those plus the free parameters new
+    to the registry, appended so earlier waves' factor indices hold, and the indices of
+    the new ones. Earlier waves never judged the new factors (they ran at the defaults),
+    so NROY points take them uniformly and the new wave's emulators see them."""
+    new = [f for f in free if f not in previous]
+    return list(previous) + new, list(range(len(previous), len(previous) + len(new)))
+
+
 def _fit_wave(doc, rng):
     ts = _targets(doc["targets"])
     y = np.array(doc["outputs"])[:, : len(ts)]
@@ -137,6 +147,10 @@ def wave(args):
         factors, active = previous[-1]["factors"], previous[-1]["active"]
         if args.screening:  # refocus: later emulators may see more factors than earlier ones
             active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
+        factors, new = extend_factors(factors, screening.free_parameters(oikos.registry()))
+        active = sorted(set(active) | set(new))
+        if new:
+            print(f"new factors, active in this wave: {[factors[i] for i in new]}", file=sys.stderr)
         waves = [_fit_wave(d, np.random.default_rng(0)) for d in previous]
         u, kept = history.nroy(waves, len(factors), args.runs, rng)
         print(f"NROY after {len(waves)} waves: {kept:.4f} of the space", file=sys.stderr)
@@ -212,6 +226,42 @@ def best(args):
                       "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges,
                       "candidates": cs, "chosen": chosen})
     report_best(json.loads(Path(args.out).read_text()))
+
+
+def profile_choice(doc):
+    """The value (index) of a profile whose worlds are consistent with every seed and have
+    the best log-likelihood diagnostics summed, averaged over seeds; None if none is."""
+    ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
+    ok, score = [], []
+    for o in doc["outputs"]:
+        ok.append(bool(consistent({**doc, "outputs": o}).all()))
+        score.append(np.array(o)[:, ll].sum(axis=1).mean())
+    return max((i for i in range(len(ok)) if ok[i]), key=lambda i: score[i], default=None)
+
+
+def profile(args):
+    """One parameter over `values`, every other at its registry default: for a parameter a
+    new record constrains but which leaves the rest of the world alone (a tracer, as
+    obsidian; ADR-0061), so the calibrated world stays the same world."""
+    ts, names, groups = _problem_targets()
+    seeds = list(range(1, args.seeds + 1))
+    out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers)
+    doc = {"command": "profile", "revision": _revision(), "parameter": args.parameter, "values": args.values,
+           "seeds": seeds, "names": names, "outputs": out.reshape(len(args.values), len(seeds), -1).tolist(),
+           "targets": _targets_json(ts), "groups": _groups_json(groups)}
+    doc["chosen"] = profile_choice(doc)
+    _write(args.out, doc)
+    report_profile(doc)
+
+
+def report_profile(doc):
+    ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
+    print(f"{doc['parameter']:>14} {'log-lik':>9}  consistent")
+    for v, o in zip(doc["values"], doc["outputs"]):
+        print(f"{v:14.4g} {np.array(o)[:, ll].sum(axis=1).mean():9.1f}  "
+              f"{'yes' if consistent({**doc, 'outputs': o}).all() else 'no'}")
+    c = doc["chosen"]
+    print("no value is consistent" if c is None else f"chosen: {doc['parameter']} = {doc['values'][c]:.4g}")
 
 
 def report_best(doc):
@@ -295,6 +345,12 @@ def main(argv=None):
     b.add_argument("--seeds", type=int, default=3)
     b.add_argument("--workers", type=int, default=workers)
     b.add_argument("--out", required=True)
+    pr = sub.add_parser("profile", help="one parameter over values, the others at their defaults")
+    pr.add_argument("parameter")
+    pr.add_argument("values", nargs="+", type=float)
+    pr.add_argument("--seeds", type=int, default=3)
+    pr.add_argument("--workers", type=int, default=workers)
+    pr.add_argument("--out", required=True)
     r = sub.add_parser("report", help="report a screening, wave or best file (and the waves before it)")
     r.add_argument("files", nargs="+")
     args = ap.parse_args(argv)
@@ -304,9 +360,12 @@ def main(argv=None):
         wave(args)
     elif args.command == "best":
         best(args)
+    elif args.command == "profile":
+        profile(args)
     else:
         docs = [json.loads(Path(f).read_text()) for f in args.files]
-        report = {"screen": lambda: report_screening(docs[0]), "best": lambda: report_best(docs[0])}
+        report = {"screen": lambda: report_screening(docs[0]), "best": lambda: report_best(docs[0]),
+                  "profile": lambda: report_profile(docs[0])}
         report.get(docs[0]["command"], lambda: report_wave(docs))()
 
 

@@ -68,8 +68,18 @@
     against -3,997 on radiocarbon at 0.01). Round 3 (ADR-0058) emulated it: the record
     does not identify it (consistent worlds score alike from under 0.7 to over 1.4 times
     the forager rate). The round-4 default has one (sedentary growth 2.7 times the
-    forager rate), but as one world among many, not as evidence. The rural-cemetery juvenile index (Bocquet-Appel 2002) could test
+    forager rate), but as one world among many, not as evidence. Round 5's best world
+    (ADR-0061) fits the four records as well with sedentary growth 0.4 times the
+    forager rate. The rural-cemetery juvenile index (Bocquet-Appel 2002) could test
     it directly.
+28. How did obsidian move beyond the settled chain (ADR-0060, ADR-0061)? Down-the-line
+    exchange passes obsidian only between neighboring settled cells, so Cyprus, supplied
+    with Cappadocian obsidian by boat, is never reached and its assemblages are dropped.
+    Both sources supply equally, though Göllü Dağ's obsidian may have been preferred, and
+    the record's eastern obsidian moves west after 6,900 BCE (into the Pottery Neolithic
+    and Halaf), which a fixed loss per step produces only through where people settle.
+    Sea crossings, source preference and directional exchange would each add a
+    parameter; the zones say whether they are needed.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

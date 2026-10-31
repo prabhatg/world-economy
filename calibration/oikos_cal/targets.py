@@ -21,7 +21,11 @@ likelihoods use:
 - site eras: in each survey's landscape, how the aoristic site count is shared among
   eras, as centered log shares, against the world's settled activity dated the same way
   (`sites.Operator`). Observation variance and covariance are a bootstrap over sites;
-  each survey is one group.
+  each survey is one group;
+- obsidian zones: the mean Cappadocian share of sourced assemblages (each context
+  counting once) in zones of relative distance to the two source groups, before and
+  after an era boundary (`obsidian.Operator`). Observation variance and covariance are a
+  bootstrap over contexts; all zones are one group.
 
 Discrepancy standard deviations are judgments, stated where the problem is set up and
 recorded with each wave: how far a good world may honestly sit from these summaries.
@@ -32,7 +36,7 @@ import numpy as np
 from .history import Group, Target
 from .radiocarbon import SUROVELL_2009
 
-__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras"]
+__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras", "ObsidianZones"]
 
 
 def _era(first, end):
@@ -142,3 +146,62 @@ class SiteEras:
 
 def _target(name, observed, variance, discrepancy):
     return Target(name, float(observed), float(variance), float(discrepancy))
+
+
+class ObsidianZones:
+    def __init__(self, op, edges=(-250.0, 0.0, 250.0), era=-6900, discrepancy_sd=0.1, replicates=2000, rng=None):
+        """Zones of `op` (`obsidian.Operator`) between relative-distance `edges` (km,
+        ascending; positive nearer the first source group), before and after calendar
+        year `era` (by a context's period midpoint); each zone needs contexts."""
+        self.op, self.edges, self.era = op, np.asarray(edges, dtype=float), era
+        self.zone = self._zones()
+        rng = rng or np.random.default_rng(0)
+        share = op.k / op.n
+        z = self._summary(share)
+        pick = rng.integers(0, len(share), size=(replicates, len(share)))
+        boot = np.array([self._summary(share[p], self.zone[p], strict=False) for p in pick])
+        self.covariance = np.cov(boot[np.isfinite(boot).all(axis=1)], rowvar=False)
+        labels = [self._label(lo, hi) for lo, hi in zip([-np.inf, *self.edges], [*self.edges, np.inf])]
+        when = [f"before {-era} BCE", f"after {-era} BCE"]
+        names = [f"obsidian {w}, {lab}" for w in when for lab in labels]
+        self.targets = [_target(n, z[j], self.covariance[j, j], discrepancy_sd**2) for j, n in enumerate(names)]
+
+    def _zones(self):
+        """Zone index of each context: era-major, then by relative distance."""
+        z = (self.op.mid >= self.era) * (len(self.edges) + 1) + np.searchsorted(self.edges, self.op.delta, side="right")
+        empty = np.setdiff1d(np.arange(2 * (len(self.edges) + 1)), z)
+        if empty.size:
+            raise ValueError(f"no contexts in obsidian zone {empty[0]} (era-major, by relative distance)")
+        return z
+
+    def _summary(self, share, zone=None, strict=True):
+        zone = self.zone if zone is None else zone
+        n = 2 * (len(self.edges) + 1)
+        total, count = np.bincount(zone, share, minlength=n), np.bincount(zone, minlength=n)
+        return total / count if strict else np.divide(total, count, out=np.full(n, np.nan), where=count > 0)
+
+    def _label(self, lo, hi):
+        first, second = (self.op.label(g) for g in obsidian_groups())
+        if np.isinf(lo):
+            return f"{second} source nearer by over {-hi:g} km"
+        if np.isinf(hi):
+            return f"{first} source nearer by over {lo:g} km"
+        if hi <= 0:
+            return f"{second} source nearer by {abs(hi):g}-{-lo:g} km"
+        if lo >= 0:
+            return f"{first} source nearer by {lo:g}-{hi:g} km"
+        return f"{first} source nearer by up to {hi:g} km or {second} by up to {-lo:g} km"
+
+    def group(self, first):
+        """All zones as one `history.Group`, their targets starting at index `first`."""
+        return Group(list(range(first, first + len(self.targets))), self.covariance, dof=len(self.targets))
+
+    def model(self, activity):
+        """Summaries of a world: the model share at each context, averaged per zone."""
+        return self._summary(self.op.shares(activity)[0])
+
+
+def obsidian_groups():
+    from .obsidian import GROUPS
+
+    return GROUPS
