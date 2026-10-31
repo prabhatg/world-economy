@@ -8,10 +8,16 @@ use oikos_sim::{Params, World, WorldConfig, checkpoint};
 
 const REGION: WorldConfig = WorldConfig::base_cell(22, 4);
 
+/// Foragers that grow and disperse fast enough to fill a toy region in centuries: these
+/// tests are about where people go, not about the calibrated M1 rates.
+fn spreading() -> Params {
+    Params { growth_rate: 0.01, dispersal_crowding: 0.8, dispersal_probability: 0.3, ..Params::default() }
+}
+
 /// Every cell feeds 25 people (about one forager band per M1 cell), so toy fission (bands
 /// of 60 or more) never fires.
 fn one_band_cells() -> Params {
-    Params { capacity_min: 25, capacity_max: 25, ..Params::default() }
+    Params { capacity_min: 25, capacity_max: 25, ..spreading() }
 }
 
 fn occupied(w: &World) -> usize {
@@ -106,7 +112,7 @@ fn groups_only_move_where_they_fit() {
     // one, and each of its (at most six) neighbors sends at most its room. Groups from
     // several neighbors can arrive in the same step, so a cell may overshoot, which
     // logistic decline then corrects.
-    let p = Params { capacity_min: 1, capacity_max: 200, ..Params::default() };
+    let p = Params { capacity_min: 1, capacity_max: 200, ..spreading() };
     let mut moved = 0;
     for seed in 0..4 {
         let mut w = World::new(REGION, seed, p.clone()).unwrap();

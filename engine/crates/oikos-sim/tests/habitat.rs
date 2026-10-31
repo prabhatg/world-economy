@@ -66,7 +66,16 @@ fn flooded(c: usize) -> bool {
 /// Cells `sea` are always sea; cells `flooded` are land until 11,500 BCE and sea from
 /// 11,400 BCE; a few cells are half land.
 fn world(seed: u64) -> World {
-    world_with(seed, Params::default())
+    // Foragers that spread fast enough to reach the flooding cells in centuries.
+    world_with(
+        seed,
+        Params {
+            growth_rate: 0.01,
+            dispersal_crowding: 0.8,
+            dispersal_probability: 0.3,
+            ..Params::default()
+        },
+    )
 }
 
 fn world_with(seed: u64, params: Params) -> World {

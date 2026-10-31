@@ -13,10 +13,11 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
 | `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settled activity dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
+| `oikos_cal/onset.py` | Cultivation-onset operator (ADR-0064): people-weighted cultivation effort at dated site phases, against the effort their crops among charred plant remains imply (anchored on Pottery Neolithic phases) |
 | `oikos_cal/screening.py` | Morris elementary-effects screening of the registry's free parameters (ADR-0052) |
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
 | `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
-| `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones |
+| `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones, onset eras |
 | `oikos_cal/ensemble.py` | Ensembles for the viewer (ADR-0063): the calibrated defaults and the best consistent worlds of a `best` record, run as work units by the `oikos` CLI with outputs, and a `catalog.json` |
 | `oikos_cal/m1.py` | The M1 problem: operators, targets, worlds run in worker processes |
 | `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / best / profile / ensemble / report` |
@@ -54,7 +55,7 @@ python -m oikos_cal wave --runs 220 --previous runs/m1/wave1.json --out runs/m1/
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
 python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-python -m oikos_cal ensemble runs/m1/round5/best.json --out ../viewer/data/m1   # needs the release CLI
+python -m oikos_cal ensemble runs/m1/round6/best.json --out ../viewer/data/m1   # needs the release CLI
 ```
 
 `best` reruns the best consistent runs (by both log-likelihoods) with only their emulated
@@ -74,6 +75,10 @@ the sites).
 Round 5 (obsidian zones added, ADR-0061) is in `runs/m1/round5/`: `wave5.json`,
 `best.json` (whose best world ties the defaults, so it is not adopted) and
 `obsidian_loss.json`, the profile that calibrates `obsidian_loss` at the defaults.
+Round 6 (cultivation-onset eras added, ADR-0064) is in `runs/m1/round6/`: `wave6.json`
+and `best.json`, the source of the current calibrated defaults (wave 6, run 236). The
+onset record's tables are downloaded by hand (`data/README.md`); without them the M1
+problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
 validated by the engine's state hash, never by an operator's output.

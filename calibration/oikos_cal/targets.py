@@ -201,6 +201,45 @@ class ObsidianZones:
         return self._summary(self.op.shares(activity)[0])
 
 
+class OnsetEras:
+    def __init__(self, op, edges=(-10_000, -8_800, -7_600), discrepancy_sd=0.1, replicates=2000, rng=None):
+        """Eras of `op` (`onset.Operator`) between calendar-year `edges` (ascending), by a
+        phase's midpoint: the cultivation effort the record implies, the era's mean crop
+        share (each phase once) over the anchor's, with a bootstrap covariance that
+        resamples the era phases and the anchor phases; every era needs phases."""
+        self.op, self.edges = op, np.asarray(edges, dtype=float)
+        self.era = np.searchsorted(self.edges, op.mid, side="right")
+        n = len(self.edges) + 1
+        if empty := sorted(set(range(n)) - set(self.era.tolist())):
+            raise ValueError(f"no phases in onset era {empty[0]} (eras split at {list(edges)})")
+        rng = rng or np.random.default_rng(0)
+        share = op.k / op.n
+        pick = rng.integers(0, len(share), size=(replicates, len(share)))
+        anchor = rng.integers(0, len(op.anchors), size=(replicates, len(op.anchors)))
+        boot = np.array([self._summary(share[p], self.era[p], strict=False) / op.anchors[a].mean()
+                         for p, a in zip(pick, anchor)])
+        self.covariance = np.cov(boot[np.isfinite(boot).all(axis=1)], rowvar=False)
+        bounds = [f"before {-edges[0]:g} BCE", *(f"{-a:g}-{-b:g} BCE" for a, b in zip(edges, edges[1:])),
+                  f"after {-edges[-1]:g} BCE"]
+        z = self._summary(share) / op.farming_share
+        self.targets = [_target(f"cultivation effort implied {b}", z[j], self.covariance[j, j], discrepancy_sd**2)
+                        for j, b in enumerate(bounds)]
+
+    def _summary(self, values, era=None, strict=True):
+        era = self.era if era is None else era
+        n = len(self.edges) + 1
+        total, count = np.bincount(era, values, minlength=n), np.bincount(era, minlength=n)
+        return total / count if strict else np.divide(total, count, out=np.full(n, np.nan), where=count > 0)
+
+    def group(self, first):
+        """All eras as one `history.Group`, their targets starting at index `first`."""
+        return Group(list(range(first, first + len(self.targets))), self.covariance, dof=len(self.targets))
+
+    def model(self, activity):
+        """Summaries of a world: its effort at each phase, averaged per era."""
+        return self._summary(self.op.efforts(activity)[0])
+
+
 def obsidian_groups():
     from .obsidian import GROUPS
 

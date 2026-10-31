@@ -1,7 +1,8 @@
 """The M1 calibration problem (docs/05 §5.2, ADR-0052): Neolithic Southwest Asia worlds,
 12,000 to 3,000 BCE, against the radiocarbon record (p3k14c, IntCal20), the barley
 rachis record (Allaby et al. 2017), survey site counts in Central Anatolia and Upper
-Mesopotamia (Palmisano et al. 2021; ADR-0059) and sourced obsidian (DObsiSS; ADR-0061).
+Mesopotamia (Palmisano et al. 2021; ADR-0059), sourced obsidian (DObsiSS; ADR-0061) and
+crops among charred plant remains (Wallace et al. 2018; ADR-0064).
 
 A run is a point u of the unit cube of the registry's free parameters (those with a
 prior to sample; `oikos.sample_params` maps u onto the priors), a world built from the
@@ -17,7 +18,10 @@ revisit them. Survey eras are 500 years from 6,500 BCE, when pottery makes villa
 visible to surface survey, and each survey is judged as a whole. Obsidian zones are
 the mean Cappadocian share of contexts with at least three sourced artefacts, in four
 zones of relative distance to the two source groups before and after 6,900 BCE (the end
-of the PPNB), judged together; discrepancy 0.1 on each.
+of the PPNB), judged together; discrepancy 0.1 on each. Onset eras are the cultivation
+effort the plant remains imply (crop share over the Pottery Neolithic anchor) in four
+eras split at 10,000, 8,800 and 7,600 BCE, judged together; discrepancy 0.1 on each, as
+on the domestic share (the anchor's uncertainty is in the bootstrap variance).
 """
 
 import io
@@ -27,23 +31,25 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, pack, rachis, region
+from oikos_data import DATA, archaeobotany, pack, rachis, region
 from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
 
-from . import domestication, obsidian, radiocarbon, record, sites, targets
+from . import domestication, obsidian, onset, radiocarbon, record, sites, targets
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "packs", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian")
 END = -3_000
-DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1}
+DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1}
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources
 OBSIDIAN_ERA = -6_900
 OBSIDIAN_MIN_ARTEFACTS = 3
+ONSET_EDGES = (-10_000, -8_800, -7_600)  # Late Epipalaeolithic, PPNA, Early-Middle PPNB, Late PPNB
+ONSET_MIN_ITEMS = 50
 DIAGNOSTICS = ["log-likelihood radiocarbon", "log-likelihood domestication", "log-likelihood obsidian",
                "people 3000 BCE"]
 
@@ -85,16 +91,21 @@ class Problem:
         self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach,
                                           min_artefacts=OBSIDIAN_MIN_ARTEFACTS,
                                           joined=obsidian.joined(habitable(self.cells), reach))
+        phases = pq.read_table(io.BytesIO(archaeobotany.build_crop_table(r))).to_pydict()
+        self.onset = onset.Operator(phases, self.cells, self.radiocarbon.settings.true, min_items=ONSET_MIN_ITEMS)
         self.eras = [targets.RadiocarbonEras(self.radiocarbon, eras=RADIOCARBON_ERAS,
                                              discrepancy_sd=DISCREPANCY["radiocarbon"], rng=np.random.default_rng(0)),
                      targets.DomesticationEras(self.domestication, barley,
                                                discrepancy_sd=DISCREPANCY["domestication"]),
                      targets.SiteEras(self.sites, discrepancy_sd=DISCREPANCY["sites"], rng=np.random.default_rng(0)),
                      targets.ObsidianZones(self.obsidian, edges=OBSIDIAN_EDGES, era=OBSIDIAN_ERA,
-                                           discrepancy_sd=DISCREPANCY["obsidian"], rng=np.random.default_rng(0))]
+                                           discrepancy_sd=DISCREPANCY["obsidian"], rng=np.random.default_rng(0)),
+                     targets.OnsetEras(self.onset, edges=ONSET_EDGES, discrepancy_sd=DISCREPANCY["onset"],
+                                       rng=np.random.default_rng(0))]
         self.targets = [t for e in self.eras for t in e.targets]
         first = np.cumsum([0] + [len(e.targets) for e in self.eras])
-        self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3])]
+        self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3]),
+                       self.eras[4].group(first[4])]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def outputs(self, activity):

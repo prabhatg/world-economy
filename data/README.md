@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -40,6 +40,15 @@ intended, and say why in the commit. The engine gate (`engine/scripts/check.sh`)
 the tests and the lock check; packs whose inputs are not in the cache are skipped with
 a notice. The cache lives in `$OIKOS_DATA_CACHE` (default `~/.cache/manyworlds`).
 
+Some datasets can only be downloaded by hand. The archaeobotanical database behind the
+cultivation-onset record (Wallace et al. 2018, `manifests/origins-agriculture.toml`) is
+served by the Archaeology Data Service to browsers only, under terms that allow research
+use but not passing on the data or anything derived from it. Download the seven tables
+the manifest lists (`access.files`) from its Downloads page into
+`$OIKOS_DATA_CACHE/manual/ads-3047/`; they are checked against the manifest's SHA-256
+sums. The calibration builds the phase table from them in memory
+(`archaeobotany.build_crop_table`); it is never written to `build/`, locked or committed.
+
 | Pack | Fields | Source |
 |---|---|---|
 | `geometry` | `h3`, `lat`, `lng`, `area_km2` | H3 |
@@ -58,6 +67,7 @@ Observation tables (Parquet, locked like packs; docs/05 §5.1):
 | `radiocarbon_density` | cell × century (12,000–3,000 BCE): summed calibrated probability and number of dates, for dates located within 500 m or exactly | as above |
 | `rachis` | one per archaeobotanical assemblage in the region: crop, site and phase, location, cell, median calendar year, non-shattering share and count, rachis fragments determined and excluded, primary source | Allaby et al. 2017 supplement, Table S4 (barley; CC BY 4.0) |
 | `sites` | one per survey site phase in the region: survey window, site id, location, cell, start and end calendar years of its cultural period, size in hectares (NaN when unknown), source survey | Palmisano et al. 2021, Zenodo 4322979 (Central Anatolia and Upper Mesopotamia; CC BY 4.0) |
+| `archaeobotany` (local only, never written or locked) | one per dated site phase in the region: phase, site, location, cell, period and approximate start and end calendar years, crop items (domesticates, crop progenitors, presumed crops) and all items among charred grains and seeds of its retained samples, number of samples | Origins of agriculture database (Wallace et al. 2018, ADS doi:10.5284/1046750; ADS Terms of Use and Access: research use, no redistribution of derived data) |
 | `obsidian_assemblages` | one per sourced site context in the region with a dated ASPRO period: context id, site, location, cell, period and its start and end calendar years ("a or b" spans both), artefacts per traced source group and from other sources, characterization study | DObsiSS 2.0, Zenodo 55848 (CC BY-SA 4.0; shared under the same license) |
 
 Rules:

@@ -65,6 +65,7 @@
 | 0061 | Obsidian sourcing operator and calibration round 5: the share of Cappadocian (against Eastern Anatolian) obsidian in each DObsiSS context with at least three artefacts of the two, against the obsidian in use in the site's cell and its neighbors over its period, beta-binomial (φ = 2); contexts no chain of habitable cells joins to a volcano (Cyprus) are dropped; targets are mean shares in four zones of relative distance to the sources (edges -250, 0, 250 km) before and after 6,900 BCE, bootstrap covariance, one group, discrepancy 0.1. A parameter new to the registry joins a later wave as an active factor. A round's best world replaces the defaults only if it fits clearly better than they do on the same seeds; `profile` calibrates one parameter at the defaults when a new record constrains it and leaves history alone: `obsidian_loss` 0.0028 (`calibration/runs/m1/round5/obsidian_loss.json`) | Accepted |
 | 0062 | AI inside the simulation has four roles: the source of simulated people's behavior (behavior models distilled into per-archetype policy networks with calibrated free parameters), actors in the modern world (AI systems as a class of agents and capital; optional LLM notable actors replayed from content-addressed decision packs), analyst of ensembles, and scientist. Inside a run, AI is integer inference or replayed, never a live model call; behavior models used before the twin's start are trained on experiments and surveys, not on narratives of the period, and tested on held-out periods; every AI component is ablatable (docs/07) | Accepted |
 | 0063 | Viewer v0: a TypeScript page (`viewer/`; Vite, deck.gl core and layers, h3-js) that plays back an ensemble of plausible worlds. It reads each world's own run outputs (`fields.zarr`, with a minimal uint64 + gzip Zarr reader) and a `catalog.json` written by `python -m oikos_cal ensemble` (the calibrated defaults and the best consistent worlds of a `best` record, run as ordinary work units by the CLI). Run outputs gain per-cell shares over time in parts per 10,000: cultivation, domestication, soil, dry land, obsidian per source group. The map shows one world on the night surface with no basemap; the charts show every world. Ensemble data is built locally, not committed | Accepted |
+| 0064 | Cultivation-onset operator and calibration round 6: the share of crops (domesticates, crop progenitors, presumed crops) among the charred grains and seeds of dated site phases in the Origins of agriculture database (Wallace et al. 2018; under the ADS terms it is downloaded by hand and its phase table built in memory, never committed or packed), against a world's people-weighted cultivation effort in the site's cell and its neighbors over the phase. Shares are not diets: the share of a farming world is anchored on the record's Pottery Neolithic phases (mean 0.50 over 18 phases), and an era's mean share over the anchor is the effort the record implies; phases are not scored one by one. Targets are four eras (edges 10,000, 8,800 and 7,600 BCE), joint bootstrap over phases and anchors, one group, discrepancy 0.1. A sixth wave judges all five records, and its best consistent world (wave 6, run 236) becomes the registry defaults: 18 parameters `calibrated`, `obsidian_loss` included, sources in `calibration/runs/m1/round6/best.json` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -658,6 +659,96 @@ gets more than half its food from planted crops by 11,500 BCE, more than a mille
 before cultivation is first seen and at far too high a share. None of the four records
 dates the onset of cultivation (open question 30, #29). The page says so, next to its
 claim that the worlds match the evidence checked so far (design review, ADR-0032).
+
+## ADR-0064 rationale (cultivation onset; calibration round 6)
+
+The viewer's ensemble showed every world consistent with the four earlier records
+living mostly on planted crops by 11,500 BCE (open question 30), while cultivation of
+wild cereals is first seen in the Pre-Pottery Neolithic A and at a small share. None
+of those records dates the onset: rachis dates domestication, the surveys start at
+6,500 BCE, and radiocarbon and obsidian say nothing of diet.
+
+What dates it is what people burnt. The Origins of agriculture database (Wallace,
+Livarda, Charles and Jones 2018) compiles plant remains per sample for dated site
+phases of southwest Asia, Pre-Pottery Neolithic and earlier, with the Pottery
+Neolithic. Items are counted as Wallace et al. (2019) select them for their analysis of
+deliberate collection: samples the compilers did not exclude, grains and seeds,
+charred. Crops are domesticates, crop progenitors and presumed crops; taxa classed
+"progenitor or wild" or indeterminate count as neither. Phases with fewer than 50
+items are dropped (their analysis uses 50 or more), leaving 59 target phases and 18
+Pottery Neolithic ones.
+
+Counts are not diets: arable weeds come with the harvest, dung fuel brings wild seeds,
+and a cereal grain is many small seeds' worth of food. So the operator does not read a
+share as a diet. It anchors the share of a farming world on the record's own Pottery
+Neolithic phases (the mean over phases, 0.50), when people across the region lived on
+crops, and reads an era's mean share over that anchor as the cultivation effort the
+record implies. Both simplifications make the test lenient: Pottery Neolithic people
+also gathered and herded, so full farming would show more crops than the anchor (less
+implied effort than the record's), and foragers gathered wild crop progenitors, which
+this leaves out. A world the record rules out under them is ruled out.
+
+The model's side is a world's cultivation effort (cultivator people-years over
+people-years) over the site's cell and its six neighbors and the centuries of the
+phase, each weighted by its overlap. Phases where a world has nobody take the mean
+effort of the phases it reached, so every world is judged on the same phases.
+
+Phases are not scored one by one. Within a period their shares vary enormously at the
+same level of farming (logit standard deviation 2-5: villages burning crop waste near
+1, steppe sites burning dung near 0), and a beta-binomial per phase (φ = 2, as for
+rachis) scored a late start below an early one, because shares near zero say almost
+nothing under that spread. Only era means over many phases carry information. Four
+eras split at 10,000, 8,800 and 7,600 BCE (Late Epipalaeolithic, PPNA, Early-Middle
+PPNB, Late PPNB) give implied efforts of 0.09, 0.52, 0.64 and 0.62, with a joint
+bootstrap over the eras' phases and the anchors (the anchor is shared, so the targets
+correlate): one group of four, discrepancy 0.1 on effort, as on the domestic share. The
+earliest era is thin: four phases at three sites (two at Abu Hureyra, Iraq ed-Dubb,
+Mureybet), so its standard deviation (0.04) comes from few phases, and the discrepancy
+dominates it.
+
+The record rules out the round-4 defaults: they put in 0.57, 0.79, 0.79 and 0.58
+(implausibility 4.4 before 10,000 BCE; group distance 21.2 against a cutoff of 14.9).
+The discrepancy is a judgment: at 0.2 the defaults would pass (implausibility 2.3), so
+the conclusion rests on effort being known to about 0.1 from the anchor argument above,
+not on the record alone.
+
+Wave 6 (300 runs, 18 active factors, the earlier waves as previous) judges all five
+records: 0.23% of the prior space survives (0.8% after round 5), and 55 of 300 worlds
+are consistent; the onset group passes in 42% of runs, the earliest era alone in 29%.
+`best` reruns the 12 best with three seeds; 11 stay consistent and run 236 fits best
+(-4,274.8). Because the record rules the defaults out, the defaults cannot stay, and
+run 236 replaces them: its 18 emulated values become the registry defaults, with
+`obsidian_loss` now emulated in the wave instead of profiled (0.0041, against 0.0028).
+Its maximum implausibility is 2.3-2.4 (the earliest era) and its groups 6.2, 8.0, 12.7,
+12.7 and 8.6 (cutoffs 23.6, 18.5, 18.5, 22.0, 14.9); it has 5.4 million people at
+3,000 BCE (2.3 million in the round-4 world; consistent worlds 0.8 to 4.5 million,
+10-90%). Its forager growth (0.0022) and wild-abundance weight (0.024) are below the
+consistent worlds' 10-90% ranges and its farm density (6.9) above: it is one world
+among many, not an estimate.
+
+The finding is structural. Run 236 puts in an effort of 0.34, 0.39, 0.39 and 0.34: it
+passes by planting about a third throughout, not by starting low and rising. No world
+of wave 6, consistent or not, rises like the record (0.09 to 0.62): the largest rise
+from the first era to the last is 0.22, and among consistent worlds 0.19 (median 0.04).
+The cultivation mechanism moves effort toward a target set by pressure, stress and
+abundance, which reaches its level early and holds it; nothing in it makes planting
+grow with time (open question 31, #30).
+
+The ADS terms allow research use but not passing on the data or anything derived from
+it except to registered users. The seven tables are downloaded by hand into the local
+cache and checked against the manifest's SHA-256 sums; the phase table is built in
+memory for each calibration and never written to `build/`, locked or committed, and
+the targets and wave files record only the four era summaries (with the citation), as
+a publication of results would.
+
+The golden toy world has no cultivation packs; its forager growth falls to 0.0022, so
+it grows to 7,505 people by 9,000 BCE (205,140 before) and its hash changes (5efe3afc).
+Mechanism tests that need foragers to fill a toy region in centuries (dispersal, sea
+flooding) pin fast-spreading values instead of the defaults. The stylized test that
+domestic crops do not dominate before 9,500 BCE now weights cells by cultivators: in
+the round-6 world two cells at the region's northwest edge (243 people), where no wild
+stands dilute the crop, drift past half domestic, while rapid selection (0.02) would put
+98% of cultivators in such cells.
 
 ## Notes
 

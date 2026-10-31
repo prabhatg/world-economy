@@ -43,11 +43,11 @@ enters the model, and the starting mechanisms.
   hypothesis; capacity blends foraging and farming by effort, so domestic crops feed
   more people and the transition can ratchet (`mechanisms::Cultivation`,
   `environment::cereal_suitability`, ADR-0049). A fourth, nested hypothesis scales the
-  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 10.6 in the
-  calibrated defaults, ADR-0059).
+  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 4.0 in the
+  calibrated defaults, ADR-0064).
   Fields wear the soil down and yields fall once it thins below a critical share (land
-  degradation, ADR-0055; 1.4e-4 per year at full effort in the calibrated defaults,
-  against soil formation 1.9e-4).
+  degradation, ADR-0055; 5.8e-4 per year at full effort in the calibrated defaults,
+  against soil formation 7.0e-4).
   Wild-cereal suitability comes from temperature and precipitation; soils, irrigation
   and animals are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
@@ -95,8 +95,8 @@ Not brain simulation. Agents implement validated regularities:
   the mean of itself and its occupied neighbors less a share used up or kept
   (`obsidian_loss`), so availability falls off about exponentially along settled land
   and never crosses empty land. It changes nothing else yet; goods with value, and
-  exchange that responds to them, come later. Sourced assemblages calibrate the loss
-  at 0.0028, an e-fold about every 120 km (ADR-0061).
+  exchange that responds to them, come later. Sourced assemblages constrain the loss:
+  0.0041 in the calibrated defaults, an e-fold about every 105 km (ADR-0061, ADR-0064).
 - Markets: local price formation via decentralized bargaining/matching; routes with
   transport costs by terrain, technology (pack animals, ships, rail, containers).
 - Specialization and division of labor tied to market size (Smith) and urbanization.

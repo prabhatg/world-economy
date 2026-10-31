@@ -95,6 +95,19 @@
     6,500 BCE, and radiocarbon and obsidian say nothing of diet. An onset operator
     (archaeobotanical evidence of pre-domestication cultivation, such as arable weed
     floras, or the share of cereals among plant remains) would rule these worlds out.
+    Partly resolved (ADR-0064): the share of crops among charred plant remains, anchored
+    on the Pottery Neolithic, implies an effort of 0.09 before 10,000 BCE and rules out
+    worlds planting most of their food then; the calibrated default puts in 0.34. The
+    earliest era rests on four phases at three sites, and the conclusion on a model
+    discrepancy of 0.1 (at 0.2 the earlier defaults would pass).
+
+31. Why does no M1 world plant more over time (ADR-0064, #30)? The onset record's
+    implied effort rises from 0.09 before 10,000 BCE to about 0.6 in the PPNB; in wave
+    6 no world rises by more than 0.22, and consistent worlds pass by planting about a
+    third throughout. Cultivation effort moves toward a target set by pressure, stress
+    and abundance, which it reaches early. Yields that improve with domestication,
+    accumulated knowledge spread by social learning, or storage and sedentism could
+    each make planting grow; each would need a prior and a nested test.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

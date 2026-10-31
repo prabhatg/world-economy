@@ -62,6 +62,17 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Database of Obsidian Sourcing Studies, doi:10.5281/zenodo.55848, licensed under CC
   BY-SA 4.0, and the sourcing studies it compiles (biblio.bib in the archive); derived
   data are shared under the same license.
+- **Origins of agriculture archaeobotanical database** (cultivation-onset record):
+  Wallace, M., Livarda, A., Charles, M. & Jones, G. (2018), York: Archaeology Data Service
+  (distributor), doi:10.5284/1046750, used under the ADS Terms of Use and Access; funded
+  by the ERC ('The Evolutionary Origins of Agriculture', 269830-EOA) and NERC ('Origins
+  of Agriculture', NE/H022716/1); building on Sue Colledge's database for the AHRB
+  project 'The Origin and Spread of Neolithic Plant Economies in the Near East and
+  Europe' and the NERC 'Domestication of Europe' project; and the archaeobotanical
+  publications it compiles (its tables 3 and 4). Analysis: Wallace, M. et al. (2019),
+  Vegetation History and Archaeobotany 28: 449–463, doi:10.1007/s00334-018-0702-y. Those
+  who collected and compiled the data bear no responsibility for our analysis or
+  interpretation of it.
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 

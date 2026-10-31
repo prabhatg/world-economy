@@ -39,6 +39,14 @@ Obsidian sourcing comes from DObsiSS 2.0 (Batist 2016) on Zenodo (CC BY-SA 4.0, 
 2026-10-30; ADR-0060): artefacts assigned to volcanic sources by chemical
 characterization in 176 dated site contexts of the region, and the volcanoes'
 locations. Derived packs and tables share its license.
+The onset of cultivation comes from the Origins of agriculture archaeobotanical database
+(Wallace, Livarda, Charles and Jones 2018, Archaeology Data Service doi:10.5284/1046750;
+ADR-0064): plant remains per sample of dated site phases in southwest Asia, central
+Anatolia and Cyprus, from the Epipalaeolithic to the Pottery Neolithic. It is under the ADS Terms of Use
+and Access (checked 2026-10-31): research use with acknowledgement, no sale, and the
+data or anything derived from it given only to registered users. ADS serves it to
+browsers only, so it is downloaded by hand, and its phase table is built in memory and
+never committed or packed.
 
 ## Forcing (inputs)
 

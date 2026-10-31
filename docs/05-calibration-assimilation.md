@@ -59,6 +59,16 @@ targets are mean shares in four zones of relative distance to the two source gro
 before and after 6,900 BCE. Cypriot assemblages are dropped: their obsidian crossed the
 sea by boat, which a chain over land cannot do.
 
+**Implemented (cultivation-onset operator, ADR-0064):** `onset.Operator` compares the
+share of crops (domesticates and their wild progenitors) among the charred grains and
+seeds of dated site phases (Wallace et al. 2018, `data/oikos_data/archaeobotany.py`)
+with the cultivation effort a world's people put in there and then. Counts are not
+diets, so the share of a farming world is anchored on the record's Pottery Neolithic
+phases, and an era's mean share over that anchor is the effort the record implies; both
+simplifications make the test lenient. Phases vary too much at the same level of
+farming to score one by one, so only four era means are targets (split at 10,000, 8,800
+and 7,600 BCE). Before 10,000 BCE the record implies an effort of 0.09.
+
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
 
@@ -133,6 +143,12 @@ stay; a profile at the defaults calibrates `obsidian_loss` (0.0028), which the t
 lets vary without changing the world. The viewer's ensemble of these worlds (ADR-0063) shows that
 all of them cultivate far too early: no record judged so far dates the onset of
 cultivation (open question 30, #29).
+Round 6 (ADR-0064) adds the cultivation-onset eras, which rule out the defaults
+(implausibility 4.4 before 10,000 BCE): 0.23% of the prior space survives, 55 of 300
+worlds fit all five records, and the best of them (wave 6, run 236) is the registry
+default, with 18 parameters `calibrated`. It passes by planting about a third
+throughout; no world rises from little planting to much as the record does (open
+question 31, #30).
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

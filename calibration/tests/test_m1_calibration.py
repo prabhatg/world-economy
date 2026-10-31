@@ -1,5 +1,6 @@
 """The M1 calibration problem on the real records (runs when p3k14c, IntCal20, the rachis
-supplement and the M1 packs are cached and the bindings are built)."""
+supplement, the hand-downloaded Origins of agriculture tables and the M1 packs are
+cached and the bindings are built)."""
 
 import numpy as np
 import pytest
@@ -41,6 +42,10 @@ def test_the_record_summaries(problem):
     assert ob[0].observed < 0.1 and ob[3].observed > 0.9, "before 6900 BCE each source supplies its own side"
     assert 0.2 < ob[1].observed < 0.8 or 0.2 < ob[2].observed < 0.8, "and the two mix near the middle"
     assert problem.obsidian.isolated == 5, "the Cypriot contexts: obsidian crossed the sea by boat"
+    on = [t for t in problem.targets if t.name.startswith("cultivation effort implied")]
+    assert len(on) == 4 and problem.groups[4].indices == list(range(36, 40)) and problem.groups[4].dof == 4
+    assert 0.3 < problem.onset.farming_share < 0.7, "Pottery Neolithic phases anchor a farming world"
+    assert on[0].observed < 0.2 < 0.5 < on[3].observed, "little planting before 10,000 BCE, much by the late PPNB"
     assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
                                   "log-likelihood obsidian", "people 3000 BCE"]
 
@@ -56,8 +61,8 @@ def test_worlds_are_run_in_parallel_and_reproducibly(problem):
 
 
 def test_the_default_world_is_consistent_with_the_record(problem):
-    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round4/best.json,
-    ADR-0059): with any seed, every target and every group pass history matching."""
+    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round6/best.json,
+    ADR-0064): with any seed, every target and every group pass history matching."""
     from oikos_cal import __main__ as cli
     from oikos_cal import m1
 

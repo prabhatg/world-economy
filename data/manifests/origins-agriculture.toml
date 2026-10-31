@@ -1,0 +1,59 @@
+# Archaeobotany of the Pre-Pottery Neolithic and earlier: plant remains per sample of dated
+# site phases in southwest Asia, central Anatolia and Cyprus.
+dataset = "origins-agriculture"
+title = "Origins of agriculture: archaeobotanical database"
+version = "2018"
+homepage = "https://doi.org/10.5284/1046750"
+citation = "Wallace, M., Livarda, A., Charles, M., Jones, G. (2018). Origins of agriculture: archaeobotanical database (data-set). York: Archaeology Data Service (distributor). https://doi.org/10.5284/1046750"
+doi = "10.5284/1046750"
+notes = """
+Compiled from published sources for Wallace et al. (2019, Vegetation History and
+Archaeobotany 28: 449-463, doi:10.1007/s00334-018-0702-y), building on Sue Colledge's
+database for the AHRB project 'The Origin and Spread of Neolithic Plant Economies in the
+Near East and Europe' (PIs Shennan and Conolly) and the NERC 'Domestication of Europe'
+project (PI Brown). Funded by the ERC ('The Evolutionary Origins of Agriculture',
+269830-EOA, PI Jones) and NERC ('Origins of Agriculture: an Ecological Perspective on
+Crop Domestication', NE/H022716/1, PI Osborne). Each phase carries approximate start and
+end years BC and a period; each taxon is classed as a domesticate, a crop progenitor or
+wild. The original publications of each sample (tables 3 and 4) are to be cited with it.
+"""
+
+[license]
+# ADS Terms of Use and Access (read 2026-10-31 at archaeologydataservice.ac.uk, policies,
+# "ADS Terms of Use and Access"): use for non-commercial research, learning and teaching;
+# acknowledge the depositors, funders and ADS; declare that those who collected the data
+# bear no responsibility for its further analysis; send ADS a copy of publications based
+# substantially on it; no sale; the data and material derived from it may be given only
+# to registered users. So nothing derived from it is committed or packed: each user
+# downloads the tables and builds the phase table locally.
+id = "ADS-Terms-of-Use-and-Access"
+url = "https://archaeologydataservice.ac.uk/about/policies/use-access-to-data/ads-terms-of-use-and-access/"
+derived_redistribution = false
+attribution = "Uses the Origins of agriculture archaeobotanical database (Wallace, Livarda, Charles and Jones 2018; ERC grant 269830-EOA and NERC grant NE/H022716/1; distributed by the Archaeology Data Service, doi:10.5284/1046750) and the publications it compiles. Those who collected and compiled the data bear no responsibility for its further analysis or interpretation here."
+verified = "2026-10-31"
+
+[access]
+# ADS serves files only to browsers (bot protection), so they are downloaded by hand
+# from the collection's Downloads page into $OIKOS_DATA_CACHE/manual/ads-3047/ and
+# checked against these SHA-256 sums.
+kind = "manual"
+page = "https://archaeologydataservice.ac.uk/archives/view/origins_nerc_2018/downloads.cfm"
+dir = "ads-3047"
+
+[access.files]
+"1_Site.txt" = "9bfba9fb3162133213d4f1a175a00f90640632413e55c620cefd342ace15c1cd"
+"2_SitePhase.txt" = "27b8658ca0ea82e5ed0ad1fd2b4c1c8231a6a226e6e72464cb8c464153b15102"
+"3_Records-Samples.txt" = "d6e28da07d5a8340d6fb8acd0d518868a9d45521fbcede8e7514ec4f918f9868"
+"5_Taxa_Entries.txt" = "78a262df2810fcfd284aabf9a50bff6d213351d5557b72107ad1cc8e6a7ea62d"
+"6_PlantPart_Categories.txt" = "9ee3fbcab5106df1ddc82e8c3746bc1993489404c39db766c99113cc866bdba9"
+"7_Taxa_Standardisation.txt" = "b3965d9d661457cf4b5fea58c106bbf9ed716284467c29ca993be8ebc3a201b0"
+"8_Taxa_Groups.txt" = "cbe9805ce5761d824ca43aea3421ff4287d051fa889af80970b9e7741d1533a4"
+
+[coverage]
+spatial = "Southwest Asia, central Anatolia and Cyprus: 75 sites"
+temporal = "Pre-Pottery Neolithic and earlier (mainly 12,000-5,000 cal BC)"
+
+[[variables]]
+name = "plant items"
+unit = "1"
+description = "Minimum number of plant parts per taxon, plant part and preservation in each sample."

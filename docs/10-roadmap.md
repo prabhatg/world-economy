@@ -70,6 +70,10 @@ registry default. Down-the-line exchange of obsidian as a tracer (ADR-0060), fro
 DObsiSS volcanoes. Obsidian sourcing operator (ADR-0061): sourced assemblages judged in
 zones of distance to the sources; with them a fifth wave leaves 0.8%, the defaults
 stay (the best world only ties them) and the obsidian loss is calibrated at them.
+Cultivation-onset operator (ADR-0064): crops among charred plant remains of dated site
+phases, anchored on the Pottery Neolithic; they rule out the defaults, a sixth wave
+leaves 0.23%, and its best world is the new registry default. No world yet rises from
+little planting to much as the record does (#30).
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers
@@ -80,7 +84,7 @@ Work items are GitHub issues under the M1 milestone.
   exchange networks (obsidian as tracer!); emerging inequality; simple disease;
   social learning of practices.
 - Observation operators: radiocarbon density (p3k14c), site counts, obsidian sourcing
-  distance-decay, domestication timing.
+  distance-decay, domestication timing, cultivation onset.
 - Calibration: sensitivity analysis + first history-matching waves on cloud batch.
 - Viewer v0: TS + deck.gl map playing back fields and settlements over time.
   *Implemented (ADR-0063):* `viewer/` plays back an ensemble of plausible M1 worlds

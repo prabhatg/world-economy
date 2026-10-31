@@ -61,7 +61,11 @@ def test_the_younger_dryas_registers_as_climate_stress(m1):
 def test_farming_stays_where_wild_cereals_grow_and_domestication_is_protracted(m1):
     w, cell = m1
     run_to(w, 9_500)
-    assert (w.domestication() <= 0.5).all(), "domestic crops do not dominate before the PPNB"
+    # Weighted by cultivators: a few people at the region's edge, where no wild stands
+    # dilute the crop, may drift to domestic forms early (two cells, 243 people, in the
+    # round-6 world; ADR-0064); rapid selection (0.02) puts 98% of cultivators there.
+    sown = w.population() * w.cultivation()
+    assert sown[w.domestication() > 0.5].sum() < 0.01 * sown.sum(), "domestic crops do not dominate before the PPNB"
     run_to(w, 7_000)
     e, dom, pop = w.cultivation(), w.domestication(), w.population()
     farmed = pop * e

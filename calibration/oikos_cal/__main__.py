@@ -5,7 +5,7 @@
     python -m oikos_cal wave --runs 200 --previous runs/m1/wave1.json --out runs/m1/wave2.json
     python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
     python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-    python -m oikos_cal ensemble runs/m1/round5/best.json --out ../viewer/data/m1
+    python -m oikos_cal ensemble runs/m1/round6/best.json --out ../viewer/data/m1
 
 Each command records what it ran (unit-cube points, parameter values, seeds, outputs,
 targets with their variances, the code revision) in one JSON file, so waves can be
