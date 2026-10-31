@@ -6,6 +6,10 @@
   --on-surface: #132220; --on-surface-variant: #4A5C59; --outline-variant: #C9D4D2;
   --night: #08121A; --night-2: #0F2633; --on-night: #EAF2F1; --on-night-variant: #9FB4B6;
   --welfare-health: #D55E00; --welfare-material: #E69F00; --welfare-freedom: #0072B2; --welfare-sustain: #009E73;
+  /* Map fields on the always-dark night surface: empty land, then a sequential ramp (low to high). */
+  --map-land: #15303D;
+  --map-ramp-1: #23727A; --map-ramp-2: #3A8F8C; --map-ramp-3: #5BAA9F;
+  --map-ramp-4: #86C4B1; --map-ramp-5: #B6DEC6; --map-ramp-6: #E9F5DC;
 
   --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;

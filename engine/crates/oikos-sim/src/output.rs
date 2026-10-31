@@ -2,7 +2,9 @@
 //!
 //! Raw agent state is far too large to write every step, so a run records:
 //! - `fields.zarr`: population per cell over time (Zarr v3), with the time coordinate
-//!   (`tick`), each cell's H3 index (`cell_h3`) and carrying capacity;
+//!   (`tick`), each cell's H3 index (`cell_h3`) and carrying capacity, and the shares a
+//!   viewer maps (cultivation, domestication, soil, dry land, obsidian per source group;
+//!   [`World::recorded_fields`]) over time in parts per 10,000;
 //! - `summary.parquet`: one row per output time with totals and the flows since the
 //!   previous row (births, deaths, fissions, migrants);
 //! - `panel.parquet`: a deterministic sample of agents (by id hash) at every output time.
@@ -10,7 +12,7 @@
 //! Outputs only read the world, so recording never changes a run's state hash, and they
 //! are byte-identical for any partition count.
 
-use crate::world::{StepStats, World};
+use crate::world::{FIELD_ONE, StepStats, World};
 use oikos_core::EntityId;
 use oikos_io::table::{self, Column};
 use oikos_io::{Sink, zarr};
@@ -63,6 +65,19 @@ pub fn panel_sampled(id: EntityId, one_in: u64) -> bool {
     (z ^ (z >> 31)) % one_in == 0
 }
 
+fn share_description(name: &str) -> String {
+    match name {
+        "cultivation" => "Mean cultivation effort of each cell's people".into(),
+        "domestication" => "Domestic share of each cell's cultivated crop".into(),
+        "soil" => "Soil share of each cell (1 = its original erodible soil)".into(),
+        "land" => "Dry land fraction of each cell (land less lakes) in the current capacity period".into(),
+        n => format!(
+            "Availability of {} obsidian in each cell (1 at its sources)",
+            n.trim_start_matches("obsidian_")
+        ),
+    }
+}
+
 #[derive(Default)]
 struct Summary {
     tick: Vec<u64>,
@@ -87,6 +102,7 @@ struct Panel {
 pub struct Recorder {
     spec: OutputSpec,
     population: zarr::TimeSeries,
+    shares: Vec<zarr::TimeSeries>,
     summary: Summary,
     panel: Panel,
     flows: StepStats,
@@ -106,9 +122,30 @@ impl Recorder {
             &["time", "cell"],
             json!({ "unit": "people", "description": "Population per H3 cell at each output time" }),
         );
+        let shares = world
+            .recorded_fields()
+            .into_iter()
+            .map(|(name, _)| {
+                let attrs = json!({
+                    "unit": "1",
+                    "scale_factor": 1.0 / FIELD_ONE as f64,
+                    "description": share_description(&name),
+                });
+                let path = format!("fields.zarr/{name}");
+                zarr::TimeSeries::new(
+                    &path,
+                    cells,
+                    spec.time_chunk,
+                    spec.cell_chunk,
+                    &["time", "cell"],
+                    attrs,
+                )
+            })
+            .collect();
         let mut r = Recorder {
             spec,
             population,
+            shares,
             summary: Summary::default(),
             panel: Panel::default(),
             flows: StepStats::default(),
@@ -163,7 +200,11 @@ impl Recorder {
             files.push(path);
             Ok(())
         };
-        self.population.push(&world.population, &mut prefixed)
+        self.population.push(&world.population, &mut prefixed)?;
+        for (series, (_, values)) in self.shares.iter_mut().zip(world.recorded_fields()) {
+            series.push(&values, &mut prefixed)?;
+        }
+        Ok(())
     }
 
     fn write(
@@ -189,6 +230,9 @@ impl Recorder {
             zarr::TimeSeries::new("unused", 0, 1, 1, &["time", "cell"], json!({})),
         );
         self.write(out, |o| population.finish(o))?;
+        for series in std::mem::take(&mut self.shares) {
+            self.write(out, |o| series.finish(o))?;
+        }
         let ticks = self.summary.tick.clone();
         let chunk = self.spec.time_chunk;
         let attrs =

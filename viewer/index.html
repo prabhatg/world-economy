@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ManyWorlds viewer</title>
+    <meta name="description" content="Play back plausible simulated worlds: where people lived, farmed and traded, in every world that fits the record." />
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;500&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="map" aria-label="Map of the world shown">
+        <div id="map" class="map-canvas"></div>
+        <div class="map-overlay">
+          <p class="year" id="year">&nbsp;</p>
+          <p class="map-world" id="map-world"></p>
+        </div>
+        <p class="map-status" id="status" role="status"></p>
+        <div class="legend" id="legend"></div>
+        <p class="visually-hidden" id="map-summary" aria-live="polite"></p>
+      </section>
+
+      <aside class="panel">
+        <header class="intro">
+          <p class="eyebrow" id="title">ManyWorlds viewer</p>
+          <h1 id="headline">Loading worlds</h1>
+          <p class="summary" id="summary"></p>
+        </header>
+
+        <section class="time" aria-label="Time">
+          <div class="time-row">
+            <button id="play" class="btn-primary" type="button" disabled>Play</button>
+            <label class="slider">
+              <span class="visually-hidden">Year</span>
+              <input id="slider" type="range" min="0" max="0" value="0" step="1" disabled />
+            </label>
+          </div>
+          <p class="slider-ends" aria-hidden="true"><span id="first-year"></span><span id="last-year"></span></p>
+        </section>
+
+        <fieldset class="fields" id="fields">
+          <legend>Show on the map</legend>
+        </fieldset>
+
+        <section class="worlds" aria-labelledby="range">
+          <h2 id="range">Every world</h2>
+          <label class="world-pick">
+            <span>World on the map (people by the last year)</span>
+            <select id="world" disabled></select>
+          </label>
+          <figure class="chart">
+            <figcaption id="people-caption">People in every world.</figcaption>
+            <svg id="chart-people" role="img"></svg>
+          </figure>
+          <figure class="chart">
+            <figcaption id="farming-caption">Share of food from planted crops in every world.</figcaption>
+            <svg id="chart-farming" role="img"></svg>
+          </figure>
+          <p class="note" id="note"></p>
+        </section>
+
+        <details class="provenance">
+          <summary>Where these worlds come from</summary>
+          <div id="provenance"></div>
+        </details>
+      </aside>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

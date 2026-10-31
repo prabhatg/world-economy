@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# Ensembles are built locally (python -m oikos_cal ensemble ...), not committed.
+data/

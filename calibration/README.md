@@ -17,8 +17,9 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
 | `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
 | `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones |
+| `oikos_cal/ensemble.py` | Ensembles for the viewer (ADR-0063): the calibrated defaults and the best consistent worlds of a `best` record, run as work units by the `oikos` CLI with outputs, and a `catalog.json` |
 | `oikos_cal/m1.py` | The M1 problem: operators, targets, worlds run in worker processes |
-| `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / report` |
+| `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / best / profile / ensemble / report` |
 | `runs/m1/` | Every screening and wave run: points, parameters, seeds, outputs, targets, revision |
 | `tests/` | pytest: synthetic worlds with known answers; M1 tests run when p3k14c, IntCal20 and the M1 packs are cached |
 
@@ -53,6 +54,7 @@ python -m oikos_cal wave --runs 220 --previous runs/m1/wave1.json --out runs/m1/
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
 python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
+python -m oikos_cal ensemble runs/m1/round5/best.json --out ../viewer/data/m1   # needs the release CLI
 ```
 
 `best` reruns the best consistent runs (by both log-likelihoods) with only their emulated

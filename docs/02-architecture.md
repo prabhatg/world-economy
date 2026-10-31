@@ -69,7 +69,7 @@ engine/                     Rust workspace
   crates/py                 PyO3 bindings
 python/worldsim/            orchestration, calibration, assimilation, emulators, analysis
 data/                       dataset manifests (not data), ingestion pipelines
-viewer/                     TypeScript web viewer
+viewer/                     TypeScript web viewer (Vite, deck.gl; reads run outputs; ADR-0063)
 docs/                       this design
 ```
 

@@ -93,5 +93,11 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   American Statistician 48: 88–91, doi:10.1080/00031305.1994.10476030.
 - **SciPy** (optimization and linear algebra for the emulators).
 
+### Software in our viewer
+- **deck.gl**, **luma.gl** and **loaders.gl** (vis.gl, OpenJS Foundation; MIT): the map.
+- **h3-js** (Uber Technologies, Apache-2.0): cell boundaries.
+- **Vite** and **Vitest** (MIT), **TypeScript** (Microsoft, Apache-2.0) and
+  **Playwright** (Microsoft, Apache-2.0): building, testing and rendering checks.
+
 ## Volunteers, reviewers, contributors, institutions
 *Your name here.*

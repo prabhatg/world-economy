@@ -87,6 +87,15 @@
     Distilled policies may need archetype-specific priors from ethnography, and their
     contribution must be tested on held-out periods and regions before it is trusted.
 
+30. When did people begin to plant (ADR-0063)? Every world consistent with the four
+    M1 records gets 52-96% of its food from planted crops by 11,500 BCE (the viewer
+    ensemble), while cultivation of wild cereals is first seen in the Pre-Pottery
+    Neolithic A, about 10,000 BCE, and at a small share. None of the records judged
+    dates the onset of cultivation: rachis dates domestication, the surveys start at
+    6,500 BCE, and radiocarbon and obsidian say nothing of diet. An onset operator
+    (archaeobotanical evidence of pre-domestication cultivation, such as arable weed
+    floras, or the share of cereals among plant remains) would rule these worlds out.
+
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
 7. Which hindcast interventions form the validation suite for the policy lab?

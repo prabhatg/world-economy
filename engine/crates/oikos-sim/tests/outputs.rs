@@ -77,6 +77,9 @@ fn writes_zarr_fields_and_parquet_tables() {
         "out/fields.zarr/tick/zarr.json",
         "out/fields.zarr/cell_h3/zarr.json",
         "out/fields.zarr/capacity/zarr.json",
+        "out/fields.zarr/cultivation/zarr.json",
+        "out/fields.zarr/domestication/zarr.json",
+        "out/fields.zarr/soil/zarr.json",
         "out/summary.parquet",
         "out/panel.parquet",
     ] {
@@ -105,6 +108,26 @@ fn writes_zarr_fields_and_parquet_tables() {
         })
         .sum();
     assert_eq!(row_total, final_summary.population);
+}
+
+#[test]
+fn shares_are_recorded_as_parts_per_10000_over_time() {
+    let (_, files) = run(&unit(2, Some(spec())));
+    for name in ["cultivation", "domestication", "soil"] {
+        let meta: serde_json::Value =
+            serde_json::from_slice(&files[&format!("out/fields.zarr/{name}/zarr.json")]).unwrap();
+        assert_eq!(meta["shape"], serde_json::json!([13, 2401]), "{name}");
+        assert_eq!(meta["attributes"]["scale_factor"], serde_json::json!(1e-4), "{name}");
+        assert_eq!(meta["attributes"]["unit"], "1", "{name}");
+    }
+    assert!(
+        !files.keys().any(|f| f.contains("/land/") || f.contains("obsidian")),
+        "the toy has no such packs"
+    );
+    let soil = decode(&files["out/fields.zarr/soil/c/0/0"]);
+    assert!(soil[..1000].iter().all(|&s| s == 10_000), "soils start whole");
+    let farming = decode(&files["out/fields.zarr/cultivation/c/2/0"]);
+    assert!(farming.iter().all(|&e| e == 0), "toy worlds never cultivate");
 }
 
 #[test]

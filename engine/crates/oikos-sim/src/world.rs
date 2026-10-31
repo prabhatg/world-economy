@@ -184,6 +184,8 @@ pub const CELL_COST: u64 = 1;
 pub const BALANCE_EVERY: u64 = 16;
 /// Re-split when the costliest partition exceeds the mean by more than this.
 pub const IMBALANCE_TOLERANCE_PCT: u64 = 10;
+/// Recorded shares are parts per this ([`World::recorded_fields`]).
+pub const FIELD_ONE: u64 = 10_000;
 
 /// Exact accounting for one step (used by conservation checks).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -492,6 +494,39 @@ impl World {
                 e => self.crop_sum[c] as f64 / e as f64,
             })
             .collect()
+    }
+
+    /// Per-cell shares that run outputs record, in parts per [`FIELD_ONE`] (truncated,
+    /// from the fixed-point state, so exact on every platform): cultivation, domestication
+    /// and soil; dry land where packs restrict it; each obsidian source group's
+    /// availability as `obsidian_<group>`.
+    pub fn recorded_fields(&self) -> Vec<(String, Vec<u64>)> {
+        let one = SHARE_ONE as u128;
+        let part = |num: u128, den: u128| (num * FIELD_ONE as u128).checked_div(den).unwrap_or(0) as u64;
+        let n = self.grid.len();
+        let mut fields = vec![
+            (
+                "cultivation".into(),
+                (0..n).map(|c| part(self.effort_sum[c] as u128, self.population[c] as u128 * one)).collect(),
+            ),
+            (
+                "domestication".into(),
+                (0..n).map(|c| part(self.crop_sum[c] as u128, self.effort_sum[c] as u128)).collect(),
+            ),
+            ("soil".into(), self.soil.iter().map(|&s| part(s as u128, one)).collect()),
+        ];
+        let surface = environment::Surface::new(&self.inputs, land_year(self.tick, &self.params));
+        if surface.restricted() {
+            let dry = (0..n).map(|c| (surface.dry(c) * FIELD_ONE as f64).round() as u64).collect();
+            fields.push(("land".into(), dry));
+        }
+        for (name, available) in self.obsidian.sources.iter().zip(&self.obsidian.available) {
+            fields.push((
+                format!("obsidian_{name}"),
+                available.iter().map(|&x| part(x as u128, one)).collect(),
+            ));
+        }
+        fields
     }
 
     /// Replaces the mechanisms; fails if their declared accesses are ambiguous.

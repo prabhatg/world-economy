@@ -22,5 +22,9 @@ assert [int(x) for x in pop.sum(axis=1)] == summary["population"], "field totals
 final = result["summaries"][-1]
 assert summary["tick"][-1] == final["tick"] and summary["population"][-1] == final["population"]
 assert panel.num_rows > 0 and set(panel.column_names) == {"tick", "id", "cell", "weight"}
-print(f"outputs ok: population {pop.shape}, {panel.num_rows} panel rows, "
+for name in ("cultivation", "domestication", "soil"):
+    share = group[name][:]
+    assert share.shape == pop.shape and share.max() <= 10_000, f"{name}: parts per 10,000"
+    assert group[name].attrs["scale_factor"] == 1e-4
+print(f"outputs ok: population and shares {pop.shape}, {panel.num_rows} panel rows, "
       f"final population {final['population']}, engine {group.attrs['engine']}")

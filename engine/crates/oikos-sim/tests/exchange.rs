@@ -284,3 +284,23 @@ fn checkpoints_from_before_exchange_restore_without_obsidian() {
     let err = checkpoint::decode_with(&bad, inputs(&[&g, &c])).err().expect("refused");
     assert!(err.contains("obsidian"), "{err}");
 }
+
+#[test]
+fn recorded_fields_hold_each_source_groups_obsidian_in_parts_per_10000() {
+    let (g, c, o) = packs();
+    let mut w = world(&[&g, &c, &o], 3);
+    w.run_years(200, 2, 200);
+    let fields = w.recorded_fields();
+    let names: Vec<&str> = fields.iter().map(|(n, _)| n.as_str()).collect();
+    assert_eq!(
+        names,
+        ["cultivation", "domestication", "soil", "obsidian_west", "obsidian_east"],
+        "no coastline: no land"
+    );
+    for (k, name) in ["obsidian_west", "obsidian_east"].iter().enumerate() {
+        let recorded = &fields.iter().find(|(n, _)| n == name).unwrap().1;
+        let exact: Vec<u64> = w.obsidian(k).iter().map(|&x| (x * 10_000.0) as u64).collect();
+        assert!(recorded.iter().zip(&exact).all(|(&r, &e)| r.abs_diff(e) <= 1), "{name}: truncated share");
+        assert!(recorded.contains(&10_000) && recorded.iter().any(|&r| r > 0 && r < 10_000));
+    }
+}

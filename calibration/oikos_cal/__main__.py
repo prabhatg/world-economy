@@ -5,6 +5,7 @@
     python -m oikos_cal wave --runs 200 --previous runs/m1/wave1.json --out runs/m1/wave2.json
     python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
     python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
+    python -m oikos_cal ensemble runs/m1/round5/best.json --out ../viewer/data/m1
 
 Each command records what it ran (unit-cube points, parameter values, seeds, outputs,
 targets with their variances, the code revision) in one JSON file, so waves can be
@@ -351,6 +352,14 @@ def main(argv=None):
     pr.add_argument("--seeds", type=int, default=3)
     pr.add_argument("--workers", type=int, default=workers)
     pr.add_argument("--out", required=True)
+    e = sub.add_parser("ensemble", help="run plausible worlds with outputs for the viewer")
+    e.add_argument("best", help="a best file: its consistent candidates join the calibrated defaults")
+    e.add_argument("--worlds", type=int, default=8, help="candidates besides the defaults")
+    e.add_argument("--seed", type=int, default=1)
+    e.add_argument("--every", type=int, default=100, help="years between recorded fields")
+    e.add_argument("--oikos", default="../engine/target/release/oikos", help="the oikos CLI")
+    e.add_argument("--workers", type=int, default=workers)
+    e.add_argument("--out", required=True)
     r = sub.add_parser("report", help="report a screening, wave or best file (and the waves before it)")
     r.add_argument("files", nargs="+")
     args = ap.parse_args(argv)
@@ -362,6 +371,12 @@ def main(argv=None):
         best(args)
     elif args.command == "profile":
         profile(args)
+    elif args.command == "ensemble":
+        from . import ensemble
+
+        c = ensemble.build(args.best, args.out, k=args.worlds, seed=args.seed, every=args.every, oikos=args.oikos,
+                           workers=args.workers)
+        print(f"wrote {args.out}/catalog.json: {len(c['worlds'])} worlds, {len(c['years'])} times", file=sys.stderr)
     else:
         docs = [json.loads(Path(f).read_text()) for f in args.files]
         report = {"screen": lambda: report_screening(docs[0]), "best": lambda: report_best(docs[0]),

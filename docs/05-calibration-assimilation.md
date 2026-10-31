@@ -130,7 +130,9 @@ Round 5 (ADR-0061) adds the obsidian zones and `obsidian_loss`: 0.8% of the prio
 survives and 70 of 300 worlds fit all four records. The best of them ties the defaults
 (-4,280.2 against -4,282.9 on the same seeds) as a different world, so the defaults
 stay; a profile at the defaults calibrates `obsidian_loss` (0.0028), which the tracer
-lets vary without changing the world.
+lets vary without changing the world. The viewer's ensemble of these worlds (ADR-0063) shows that
+all of them cultivate far too early: no record judged so far dates the onset of
+cultivation (open question 30, #29).
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

@@ -64,6 +64,7 @@
 | 0060 | Down-the-line exchange of obsidian as a tracer: cells hold a fixed-point availability per source group; every step, occupied cells within one res-5 step of a group's volcanoes (an `obsidian` forcing pack from DObsiSS 2.0) have all they want, other occupied cells take (1 - `obsidian_loss`) times the mean of themselves and their occupied neighbors, empty cells hold none; nothing else reads it, so it never changes history; checkpoint layout `OIKOSCK4` (`OIKOSCK3` restores with none held); sourced assemblages (DObsiSS, ASPRO periods) become an observation table | Accepted |
 | 0061 | Obsidian sourcing operator and calibration round 5: the share of Cappadocian (against Eastern Anatolian) obsidian in each DObsiSS context with at least three artefacts of the two, against the obsidian in use in the site's cell and its neighbors over its period, beta-binomial (φ = 2); contexts no chain of habitable cells joins to a volcano (Cyprus) are dropped; targets are mean shares in four zones of relative distance to the sources (edges -250, 0, 250 km) before and after 6,900 BCE, bootstrap covariance, one group, discrepancy 0.1. A parameter new to the registry joins a later wave as an active factor. A round's best world replaces the defaults only if it fits clearly better than they do on the same seeds; `profile` calibrates one parameter at the defaults when a new record constrains it and leaves history alone: `obsidian_loss` 0.0028 (`calibration/runs/m1/round5/obsidian_loss.json`) | Accepted |
 | 0062 | AI inside the simulation has four roles: the source of simulated people's behavior (behavior models distilled into per-archetype policy networks with calibrated free parameters), actors in the modern world (AI systems as a class of agents and capital; optional LLM notable actors replayed from content-addressed decision packs), analyst of ensembles, and scientist. Inside a run, AI is integer inference or replayed, never a live model call; behavior models used before the twin's start are trained on experiments and surveys, not on narratives of the period, and tested on held-out periods; every AI component is ablatable (docs/07) | Accepted |
+| 0063 | Viewer v0: a TypeScript page (`viewer/`; Vite, deck.gl core and layers, h3-js) that plays back an ensemble of plausible worlds. It reads each world's own run outputs (`fields.zarr`, with a minimal uint64 + gzip Zarr reader) and a `catalog.json` written by `python -m oikos_cal ensemble` (the calibrated defaults and the best consistent worlds of a `best` record, run as ordinary work units by the CLI). Run outputs gain per-cell shares over time in parts per 10,000: cultivation, domestication, soil, dry land, obsidian per source group. The map shows one world on the night surface with no basemap; the charts show every world. Ensemble data is built locally, not committed | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -612,6 +613,51 @@ productivity parameter. And it helps people read the results: grouping worlds in
 pathways, finding what separates better worlds from the rest, answering questions with
 the runs as evidence, and narrating a world's history. Every such component can be
 switched off, and results report how much they depend on it.
+
+## ADR-0063 rationale (viewer v0)
+
+The viewer has two jobs: to let people see what the simulated worlds do, and to keep
+the uncertainty in front of them. One world on a map invites the reader to take it as
+the forecast. So the unit the viewer shows is an ensemble: the calibrated defaults and
+the best worlds that the calibration found consistent with the record, all from the
+same start. The map shows one of them at a time, and the charts show all of them, with
+the mapped world as one strong line among faint ones (design system §6). In M1 the nine
+worlds end between 0.55 and 12 million people, and the viewer says so in words.
+
+The viewer reads what the engine recorded and computes nothing of its own. Each world is
+an ordinary work unit run by the `oikos` CLI with outputs, so what the viewer shows is
+what any volunteer's run of the same unit would produce, down to the state hash in the
+catalog. Run outputs therefore gain the fields a map needs: cultivation, domestication,
+soil, dry land and obsidian per source group. They are per-cell shares in parts per
+10,000, computed by integer division from the engine's fixed-point state, so they are
+exact on every platform. Recording them changes no history (tested), and an output time
+costs one pass over the cells. The engine writes uint64 Zarr with gzip, and browsers
+decompress gzip natively, so a 120-line reader replaces a Zarr library. Chunks are
+fetched lazily, so the map loads one band of times at a time.
+
+deck.gl is the stack ADR-0007 chose. The viewer takes only its core and layers packages:
+the umbrella package pulls in 3D tiles, glTF and CARTO loaders that the viewer never
+uses, along with 13 advisories in them. Hexagons come from h3-js boundaries, drawn as
+polygons. There is no basemap. Cells without dry land in that century are not drawn,
+so the paleo-coastline (the dry Gulf basin, Cyprus apart from the mainland) appears
+from the coastline pack itself, and no tile service sees the viewer's users. Fields are
+drawn in six fixed classes of a single-hue ramp, which is new to the design system
+(`map-ramp-1..6`). The classes step about evenly in the logarithm where values span
+orders of magnitude, and colors compare across worlds and times.
+
+An ensemble is about 13 MB per world in M1 (91 times, 22,198 cells), so ensembles are
+built locally (`viewer/data/`, not committed) and served next to the page. Publishing
+one for the public site waits for the coordinator's analysis store (doc 11).
+Dependencies are pinned exactly in the lock file. The gate typechecks, unit-tests and
+builds the viewer (`npm ci` when the lock changes), and smoke-renders it at phone and
+desktop widths when an ensemble is built. It skips these with a notice where Node,
+Chromium or an ensemble is missing.
+
+Seeing the worlds found what the calibration's numbers had not. Every consistent world
+gets more than half its food from planted crops by 11,500 BCE, more than a millennium
+before cultivation is first seen and at far too high a share. None of the four records
+dates the onset of cultivation (open question 30, #29). The page says so, next to its
+claim that the worlds match the evidence checked so far (design review, ADR-0032).
 
 ## Notes
 

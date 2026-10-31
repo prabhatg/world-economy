@@ -93,6 +93,22 @@ else
   echo "SKIP calibration: needs h3, numpy, pyarrow, pytest (source scripts/env.sh)"
 fi
 
+step "viewer: typecheck, unit tests, build; smoke render if an ensemble is built"
+if command -v npm >/dev/null && node -e '
+  const [a, b] = process.versions.node.split(".").map(Number);
+  process.exit((a === 20 && b >= 19) || (a === 22 && b >= 12) || a > 22 ? 0 : 1)'; then
+  (
+    cd ../viewer
+    # Reinstall exactly from the lock file only when it changed.
+    if ! cmp -s package-lock.json node_modules/.lock-installed 2>/dev/null; then
+      npm ci --no-audit --no-fund --loglevel=error && cp package-lock.json node_modules/.lock-installed
+    fi
+    npm run --silent build >/dev/null && npm test --silent && npm run --silent smoke
+  )
+else
+  echo "SKIP viewer: needs Node 20.19+ or 22.12+ with npm (https://nodejs.org)"
+fi
+
 step "dense determinism smoke (bench hashes across partition counts)"
 h1=$(./target/release/oikos bench --res 5 --years 10 --parts 1 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')
 h7=$(./target/release/oikos bench --res 5 --years 10 --parts 7 | sed 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/')

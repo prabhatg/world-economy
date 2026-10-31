@@ -254,3 +254,24 @@ fn lakes_are_uninhabitable_with_or_without_a_coastline() {
         }
     }
 }
+
+#[test]
+fn recorded_fields_include_the_dry_land_of_the_current_year() {
+    let mut w = world(1);
+    let land =
+        |w: &World| w.recorded_fields().into_iter().find(|(n, _)| n == "land").expect("a land field").1;
+    let at_start = land(&w);
+    assert_eq!(at_start.len(), w.grid.len());
+    for (c, &v) in at_start.iter().enumerate() {
+        let expect = if sea(c) {
+            0
+        } else if c % 5 == 2 {
+            5_000
+        } else {
+            10_000
+        };
+        assert_eq!(v, expect, "cell {c}: dry land in parts per 10,000");
+    }
+    w.run_years(600, 2, 600);
+    assert!((0..w.grid.len()).filter(|&c| flooded(c)).all(|c| land(&w)[c] == 0), "flooded by 11,400 BCE");
+}

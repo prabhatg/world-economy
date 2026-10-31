@@ -40,6 +40,15 @@ Tonal, calm neutrals with a slight teal bias; one warm accent.
 | `night`, `on-night` | The always-dark "deep time" band used for heroes and the viewer's globe |
 | `outline-variant` | Only for data-viz gridlines and focus rings, never for boxing content |
 
+**Map fields** sit on the always-dark `night` surface in both themes. Empty land is
+`map-land`, a step above the sea; values use the sequential `map-ramp-1` to `map-ramp-6`,
+one hue (teal to pale green) rising in lightness, so order reads without color vision
+and amber stays free for the one thing that matters most. The step that matters most,
+from none to some, is the strongest (land to `map-ramp-1` 2.5:1, and `map-ramp-1` is
+3.4:1 on `night`); neighbors after it are 1.3-1.5:1. Legends outline the land swatch,
+which is close to the legend's own surface. Sea and cells outside the region are not
+drawn.
+
 **Welfare dimensions** use a color-blind-safe set (Okabe & Ito 2008), always paired
 with an icon and a label:
 

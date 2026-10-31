@@ -83,6 +83,9 @@ Work items are GitHub issues under the M1 milestone.
   distance-decay, domestication timing.
 - Calibration: sensitivity analysis + first history-matching waves on cloud batch.
 - Viewer v0: TS + deck.gl map playing back fields and settlements over time.
+  *Implemented (ADR-0063):* `viewer/` plays back an ensemble of plausible M1 worlds
+  (`python -m oikos_cal ensemble`). The map shows one world's people, farming, soil
+  loss or obsidian; the charts show every world.
 - **Coordinator v0** (work generator, dispatcher, result ingest, validator) with cloud
   spot workers as the first client class.
 - **Browser client v0**: closed alpha, runs M1 work units and shows "your world".

@@ -25,6 +25,7 @@ volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start wit
 | [engine/python/](engine/python/tests/test_bindings.py) | Python binding tests (pytest) and examples |
 | [data/](data/README.md) | Regions, dataset manifests, ingestion pipelines (`oikos_data`), forcing-pack lock file |
 | [calibration/](calibration/README.md) | Observation operators, screening, emulators and history matching (`oikos_cal`); recorded runs in `calibration/runs/` |
+| [viewer/](viewer/README.md) | Web viewer (TypeScript, Vite, deck.gl): plays back ensembles of simulated worlds from their run outputs |
 | [engine/params/](engine/params/m0-toy.toml) | Parameter registry: every parameter's unit, range, prior, status and sources |
 | [engine/golden/](engine/golden/) | Golden work unit and its committed result (reproducibility oracle) |
 | [engine/scripts/](engine/scripts/) | `check.sh` (verification gate), `bench.sh`, `compare-reports.sh`, git hooks |
@@ -68,7 +69,8 @@ maturin develop --release -m crates/oikos-py/Cargo.toml   # Python module `oikos
 pytest python/tests                               # Python binding tests
 (cd ../data && python -m oikos_data check)        # rebuild locked forcing packs, compare ids
 pytest ../calibration/tests                       # observation operators, emulators, history matching
-(cd ../calibration && PYTHONPATH=.:../data python -m oikos_cal screen --out runs/m1/screening.json)  # calibration waves: calibration/README.md
+(cd ../calibration && PYTHONPATH=.:../data python -m oikos_cal screen --out runs/m1/screening.json)  # calibration waves: calibration/README.md(cd ../calibration && PYTHONPATH=.:../data python -m oikos_cal ensemble runs/m1/round5/best.json --out ../viewer/data/m1)  # worlds for the viewer
+(cd ../viewer && npm ci && npm test && npm run dev)  # viewer: http://localhost:5173/
 ```
 
 The gate's Python steps (zarr-python and pyarrow read our outputs; maturin builds the
@@ -85,6 +87,9 @@ wrappers: simulation logic belongs in `oikos-sim`, and Python must see the same 
 as the CLI.
 
 WebAssembly tests need `wasmtime`; the gate skips them with a notice if it is missing.
+The viewer needs Node 20.19+ or 22.12+; its dependencies are pinned exactly in
+`viewer/package-lock.json` (`.npmrc`: exact saves, legacy peer resolution), and the gate
+typechecks, tests and builds it, or skips it with a notice if Node is missing.
 `cargo test` does **not** rebuild the `oikos` binary: run
 `cargo build --release -p oikos-cli` before benchmarking.
 

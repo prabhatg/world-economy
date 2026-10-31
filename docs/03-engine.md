@@ -162,7 +162,10 @@ The local verification gate runs golden runs on every target and fails on any ha
 `write(path, bytes)` callback, `fields.zarr` (Zarr v3: `population[time, cell]`, `tick`,
 `cell_h3`, `capacity`; group attributes record engine, seed, H3 base cell/resolution,
 registry and parameters), `summary.parquet` (totals and flows per output time) and
-`panel.parquet` (agents sampled by id hash). Recording only reads the world: the state
+`panel.parquet` (agents sampled by id hash). The fields also hold, per cell over time in
+parts per 10,000 (`scale_factor` 1e-4), the shares a viewer maps
+(`World::recorded_fields`, ADR-0063): `cultivation`, `domestication`, `soil`, `land`
+(dry land, where packs restrict it) and `obsidian_<group>`. Recording only reads the world: the state
 hash is unchanged and output bytes are identical across partition counts and between
 native and wasm32. The gate verifies them with zarr-python and pyarrow.
 
