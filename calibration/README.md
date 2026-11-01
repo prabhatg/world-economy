@@ -52,15 +52,19 @@ Screening and history-matching waves, from `calibration/` with `PYTHONPATH=.:../
 python -m oikos_cal screen --trajectories 10 --out runs/m1/screening.json
 python -m oikos_cal wave --runs 220 --screening runs/m1/screening.json --out runs/m1/wave1.json
 python -m oikos_cal wave --runs 220 --previous runs/m1/wave1.json --out runs/m1/wave2.json
+python -m oikos_cal wave --runs 300 --previous ... --activate adoption_rate --out runs/m1/wave8.json
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
 python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-python -m oikos_cal ensemble runs/m1/round6/best.json --out ../viewer/data/m1   # needs the release CLI
+python -m oikos_cal ensemble runs/m1/round7/best.json --out ../viewer/data/m1   # needs the release CLI
 ```
 
 `best` reruns the best consistent runs (by both log-likelihoods) with only their emulated
 parameters set and the others at their defaults, with three seeds, and records which
 stay consistent; the chosen world becomes the registry defaults (ADR-0057, ADR-0059).
+A later wave appends parameters new to the registry as active factors; `--activate`
+also makes active a factor the earlier waves varied as noise, when a new mechanism makes
+it matter (ADR-0065). NROY points take such factors uniformly, as the earlier waves did.
 `profile` varies one parameter with every other at its default and chooses the
 consistent value with the best log-likelihoods: for a parameter a new record
 constrains but that leaves the world's history alone (ADR-0061).
@@ -76,8 +80,11 @@ Round 5 (obsidian zones added, ADR-0061) is in `runs/m1/round5/`: `wave5.json`,
 `best.json` (whose best world ties the defaults, so it is not adopted) and
 `obsidian_loss.json`, the profile that calibrates `obsidian_loss` at the defaults.
 Round 6 (cultivation-onset eras added, ADR-0064) is in `runs/m1/round6/`: `wave6.json`
-and `best.json`, the source of the current calibrated defaults (wave 6, run 236). The
-onset record's tables are downloaded by hand (`data/README.md`); without them the M1
+and `best.json` (wave 6, run 236, the defaults before round 7).
+Round 7 (social learning of cultivation, ADR-0065) is in `runs/m1/round7/`:
+`innovation_share.json` (a profile at the round-6 defaults), `wave7.json`, `wave8.json`
+(`adoption_rate` activated), `wave9.json` and `best.json` over waves 7-9, the source of
+the current calibrated defaults (wave 9, run 208). The onset record's tables are downloaded by hand (`data/README.md`); without them the M1
 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

@@ -108,6 +108,19 @@
     and abundance, which it reaches early. Yields that improve with domestication,
     accumulated knowledge spread by social learning, or storage and sedentism could
     each make planting grow; each would need a prior and a nested test.
+    Resolved (ADR-0065): with cultivation learned mostly from the people around them
+    (innovation share about 10⁻⁴, adoption rate 0.007), a world consistent with all five
+    records puts in 0.09, 0.57, 0.75 and 0.54. Yields and storage were not needed.
+
+32. Do the records pull apart on when planting began (ADR-0065)? The consistent world
+    that plants as the onset record does fits radiocarbon, rachis and obsidian worse
+    (log-likelihood -4,404 against -4,260) than the best-fitting one, which plants 0.40
+    before 10,000 BCE, near the cutoff. The log-likelihood diagnostics that choose the
+    defaults cover only those three records; the onset and the site counts are judged as
+    targets. Either the records disagree (early planting raises populations and spreads
+    domestic barley in time, late planting delays both), or the model's demography or
+    selection ties them too tightly, or the ranking should weigh the onset record too.
+    More waves near the late-planting worlds, and an onset log-likelihood, would tell.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

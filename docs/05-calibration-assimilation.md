@@ -149,6 +149,14 @@ worlds fit all five records, and the best of them (wave 6, run 236) is the regis
 default, with 18 parameters `calibrated`. It passes by planting about a third
 throughout; no world rises from little planting to much as the record does (open
 question 31, #30).
+Round 7 (ADR-0065) adds social learning of cultivation: bands learn mostly from the
+people around them, so planting takes off late and then fast. Three more waves (the
+third with the adoption rate emulated) leave 0.13% of the prior space and 154 of 300
+worlds consistent; one of them plants as the record does (0.09, 0.57, 0.75, 0.54 against
+0.09, 0.52, 0.64, 0.62). The best-fitting consistent world (wave 9, run 208) learns
+socially and becomes the registry default, but plants 0.40 before 10,000 BCE: the
+log-likelihood diagnostics, which cover radiocarbon, rachis and obsidian, prefer early
+planting (open question 32).
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

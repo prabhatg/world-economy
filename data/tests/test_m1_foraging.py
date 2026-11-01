@@ -31,7 +31,9 @@ def m1(tmp_path_factory):
     def cell(lat, lng):
         return np.searchsorted(cells, h3.str_to_int(h3.latlng_to_cell(lat, lng, 5)))
 
-    return oikos.World.from_packs([str(p) for p in paths], seed=1), area, cell
+    # Capacity in proportion to productivity (elasticity 1), whatever the calibrated value:
+    # the map's contrasts are the climate's, not the calibration's (ADR-0065).
+    return oikos.World.from_packs([str(p) for p in paths], seed=1, params={"npp_elasticity": 1.0}), area, cell
 
 
 def test_capacity_map(m1):

@@ -104,6 +104,8 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         npp_elasticity: 1.0,
         soil_critical: 0.5,
         wild_yield_ratio: 0.5,
+        adoption_rate: 0.02,
+        innovation_share: 1.0,
         ..Params::default()
     }
 }
@@ -588,4 +590,73 @@ fn checkpoints_from_before_soil_restore_with_whole_soil() {
     bad[soil_at..soil_at + 4].copy_from_slice(&(SHARE_ONE + 1).to_le_bytes());
     let err = checkpoint::decode_with(&bad, inputs(&[&g, &c])).err().expect("refused");
     assert!(err.contains("soil"), "{err}");
+}
+
+#[test]
+fn bands_that_learn_from_others_move_at_the_pace_of_what_they_see() {
+    // Social learning (Bass 1969; Henrich 2001): a band closes the gap to its target at
+    // adoption_rate * (i + (1 - i) * seen), `seen` being the mean effort of the people in
+    // its cell and i the innovation share. i = 1 (as `only` pins it) is individual learning.
+    let p = Params { innovation_share: 0.01, adoption_rate: 0.1, ..only(0.0, 0.0, 0.5) };
+    let c = Cultivation::from_params(&p);
+    assert!(
+        (c.adopt(0.0, 0.5, 0.0) - 0.1 * 0.01 * 0.5).abs() < 1e-12,
+        "nobody around plants: only innovation"
+    );
+    assert!((c.adopt(0.0, 0.5, 1.0) - 0.1 * 0.5).abs() < 1e-12, "everyone around plants: the full rate");
+    assert!((c.adopt(0.4, 0.0, 0.5) - (0.4 - 0.1 * 0.505 * 0.4)).abs() < 1e-12, "unlearning too");
+    let alone = Cultivation::from_params(&only(0.0, 0.0, 0.5));
+    assert_eq!(alone.adopt(0.0, 0.5, 0.0), alone.adopt(0.0, 0.5, 1.0), "individual learning ignores others");
+}
+
+/// Mean effort after each of `years` (cumulative), in a full land of wild cereals where
+/// abundance alone drives cultivation.
+fn effort_path(innovation_share: f64, years: &[u64]) -> Vec<f64> {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let p = Params { initial_occupancy: 0.9, innovation_share, ..only(0.0, 0.0, 0.5) };
+    let mut w = world(&[&g, &c], 3, p);
+    let mut done = 0;
+    years
+        .iter()
+        .map(|&y| {
+            w.run_years(y - done, 2, y - done);
+            done = y;
+            mean_effort(&w)
+        })
+        .collect()
+}
+
+#[test]
+fn practice_learned_from_others_takes_off_late_and_then_fast() {
+    let years = [300, 600, 900, 1200, 1500, 1800, 2100, 2400];
+    let alone = effort_path(1.0, &years);
+    assert!(alone[0] > 0.4, "individual learning reaches the target within centuries: {alone:?}");
+    let social = effort_path(1e-3, &years);
+    assert!(social[0] < 0.05, "an innovation few have seen spreads slowly at first: {social:?}");
+    assert!(social[7] > 0.4, "then it reaches the same target: {social:?}");
+    let steps: Vec<f64> = social.windows(2).map(|w| w[1] - w[0]).collect();
+    let fastest = steps.iter().cloned().fold(0.0, f64::max);
+    assert!(fastest > 3.0 * social[0], "an S-curve: the rise is fastest after the start: {social:?}");
+}
+
+#[test]
+fn checkpoints_from_before_social_learning_restore_with_individual_learning() {
+    let (mut w, g, c) = farming_world(9, |p| Params { innovation_share: 1.0, ..p });
+    w.run_years(100, 2, 100);
+    let now = checkpoint::encode(&w);
+    // The parameters before ADR-0065 had no innovation share: drop it from the JSON.
+    let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
+    let len = u32::from_le_bytes(now[at..at + 4].try_into().unwrap()) as usize;
+    let mut params: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&now[at + 4..at + 4 + len]).unwrap();
+    assert!(params.remove("innovation_share").is_some());
+    let old = serde_json::to_vec(&params).unwrap();
+    let mut before = now[..at].to_vec();
+    before.extend_from_slice(&(old.len() as u32).to_le_bytes());
+    before.extend_from_slice(&old);
+    before.extend_from_slice(&now[at + 4 + len..]);
+    let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
+    assert_eq!(restored.params.innovation_share, 1.0, "whatever the registry default");
+    assert_eq!(checkpoint::encode(&restored), now);
 }

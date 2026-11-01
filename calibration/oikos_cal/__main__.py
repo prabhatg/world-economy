@@ -5,7 +5,7 @@
     python -m oikos_cal wave --runs 200 --previous runs/m1/wave1.json --out runs/m1/wave2.json
     python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
     python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-    python -m oikos_cal ensemble runs/m1/round6/best.json --out ../viewer/data/m1
+    python -m oikos_cal ensemble runs/m1/round7/best.json --out ../viewer/data/m1
 
 Each command records what it ran (unit-cube points, parameter values, seeds, outputs,
 targets with their variances, the code revision) in one JSON file, so waves can be
@@ -133,6 +133,16 @@ def extend_factors(previous, free):
     return list(previous) + new, list(range(len(previous), len(previous) + len(new)))
 
 
+def activate(factors, active, names):
+    """`active` plus the indices of the factors `names`: factors earlier waves varied as
+    noise that a later wave's emulators should see (when a new mechanism makes them
+    matter). NROY points still take them as earlier waves did, uniformly."""
+    unknown = [n for n in names if n not in factors]
+    if unknown:
+        raise SystemExit(f"--activate: {unknown} not a factor of the earlier waves; factors: {factors}")
+    return sorted(set(active) | {factors.index(n) for n in names})
+
+
 def _fit_wave(doc, rng):
     ts = _targets(doc["targets"])
     y = np.array(doc["outputs"])[:, : len(ts)]
@@ -149,7 +159,9 @@ def wave(args):
         if args.screening:  # refocus: later emulators may see more factors than earlier ones
             active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
         factors, new = extend_factors(factors, screening.free_parameters(oikos.registry()))
-        active = sorted(set(active) | set(new))
+        active = activate(factors, sorted(set(active) | set(new)), args.activate)
+        if args.activate:
+            print(f"activated: {args.activate}", file=sys.stderr)
         if new:
             print(f"new factors, active in this wave: {[factors[i] for i in new]}", file=sys.stderr)
         waves = [_fit_wave(d, np.random.default_rng(0)) for d in previous]
@@ -206,6 +218,16 @@ def candidates(docs, top):
     return found[:top]
 
 
+def ranges(every):
+    """10-50-90% quantiles of each factor over the consistent runs `every` whose waves
+    emulated it: a wave that varied a factor as noise says nothing of it."""
+    values = {}
+    for c in every:
+        for f, v in c["params"].items():
+            values.setdefault(f, []).append(v)
+    return {f: dict(zip(["q10", "q50", "q90"], np.quantile(v, [0.1, 0.5, 0.9]).tolist())) for f, v in values.items()}
+
+
 def best(args):
     docs = [json.loads(Path(p).read_text()) for p in args.waves]
     cs = candidates(docs, args.top)
@@ -221,10 +243,8 @@ def best(args):
     ok = [i for i, c in enumerate(cs) if c["consistent"]]
     chosen = max(ok, key=lambda i: cs[i]["rerun_log_likelihood"]) if ok else None
     every = candidates(docs, top=None)
-    values = {f: [c["params"][f] for c in every] for f in cs[0]["params"]} if cs else {}
-    ranges = {f: dict(zip(["q10", "q50", "q90"], np.quantile(v, [0.1, 0.5, 0.9]).tolist())) for f, v in values.items()}
     _write(args.out, {"command": "best", "revision": _revision(), "waves": [str(p) for p in args.waves],
-                      "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges,
+                      "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges(every),
                       "candidates": cs, "chosen": chosen})
     report_best(json.loads(Path(args.out).read_text()))
 
@@ -337,6 +357,7 @@ def main(argv=None):
     w.add_argument("--screening", help="screening file choosing the emulators' active factors (else the last wave's)")
     w.add_argument("--threshold", type=float, default=0.5, help="active if max mu*/tol reaches this")
     w.add_argument("--max-active", type=int, default=10)
+    w.add_argument("--activate", nargs="*", default=[], help="factors earlier waves varied as noise to emulate now")
     w.add_argument("--seed", type=int, default=1)
     w.add_argument("--workers", type=int, default=workers)
     w.add_argument("--out", required=True)

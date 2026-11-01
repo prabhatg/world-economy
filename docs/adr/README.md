@@ -66,6 +66,7 @@
 | 0062 | AI inside the simulation has four roles: the source of simulated people's behavior (behavior models distilled into per-archetype policy networks with calibrated free parameters), actors in the modern world (AI systems as a class of agents and capital; optional LLM notable actors replayed from content-addressed decision packs), analyst of ensembles, and scientist. Inside a run, AI is integer inference or replayed, never a live model call; behavior models used before the twin's start are trained on experiments and surveys, not on narratives of the period, and tested on held-out periods; every AI component is ablatable (docs/07) | Accepted |
 | 0063 | Viewer v0: a TypeScript page (`viewer/`; Vite, deck.gl core and layers, h3-js) that plays back an ensemble of plausible worlds. It reads each world's own run outputs (`fields.zarr`, with a minimal uint64 + gzip Zarr reader) and a `catalog.json` written by `python -m oikos_cal ensemble` (the calibrated defaults and the best consistent worlds of a `best` record, run as ordinary work units by the CLI). Run outputs gain per-cell shares over time in parts per 10,000: cultivation, domestication, soil, dry land, obsidian per source group. The map shows one world on the night surface with no basemap; the charts show every world. Ensemble data is built locally, not committed | Accepted |
 | 0064 | Cultivation-onset operator and calibration round 6: the share of crops (domesticates, crop progenitors, presumed crops) among the charred grains and seeds of dated site phases in the Origins of agriculture database (Wallace et al. 2018; under the ADS terms it is downloaded by hand and its phase table built in memory, never committed or packed), against a world's people-weighted cultivation effort in the site's cell and its neighbors over the phase. Shares are not diets: the share of a farming world is anchored on the record's Pottery Neolithic phases (mean 0.50 over 18 phases), and an era's mean share over the anchor is the effort the record implies; phases are not scored one by one. Targets are four eras (edges 10,000, 8,800 and 7,600 BCE), joint bootstrap over phases and anchors, one group, discrepancy 0.1. A sixth wave judges all five records, and its best consistent world (wave 6, run 236) becomes the registry defaults: 18 parameters `calibrated`, `obsidian_loss` included, sources in `calibration/runs/m1/round6/best.json` | Accepted |
+| 0065 | Social learning of cultivation and calibration round 7: a band closes the gap between its cultivation effort and its target at `adoption_rate × (i + (1 − i) × seen)`, `seen` being the people-weighted mean effort in its cell after the previous step and `i` the new `innovation_share` (1 is individual learning, the model before; checkpoints without it restore with 1). Cultivation then spreads as an innovation does (Bass 1969; Henrich 2001): slowly while few plant, then fast. `wave --activate` lets a later wave emulate a factor earlier waves varied as noise (`adoption_rate`, which now sets when planting takes off). Three waves (7-9) with the five records; the best consistent world (wave 9, run 208) becomes the registry defaults, `adoption_rate` and `innovation_share` now `calibrated`, sources in `calibration/runs/m1/round7/best.json` | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -749,6 +750,85 @@ domestic crops do not dominate before 9,500 BCE now weights cells by cultivators
 the round-6 world two cells at the region's northwest edge (243 people), where no wild
 stands dilute the crop, drift past half domestic, while rapid selection (0.02) would put
 98% of cultivators in such cells.
+
+## ADR-0065 rationale (social learning of cultivation; calibration round 7)
+
+Round 6 found that no world plants more over time as the onset record does (0.09 before
+10,000 BCE to about 0.6 in the PPNB; open question 31, #30). Across wave 6 the first
+era's effort and the last era's correlate at 0.92, and the world of the defaults
+reaches 0.29 by 11,000 BCE and holds near 0.4 after: every band moves toward its target
+from the first year, so the onset is set by when the run starts, not by anything in
+the world. Climate variability, the only driver that could hold planting back early,
+differs little on average between the late glacial and the Holocene in the region.
+
+Practices are not reinvented by each band; they are learned from others. Diffusion
+studies find S-shaped adoption curves, slow while few have adopted and then fast, which
+Henrich (2001) reads as the mark of biased cultural transmission and Bass (1969) fits
+as innovation plus imitation; Ackland et al. (2007) model farming spreading with its
+practitioners in the same way. The mechanism nests this: the rate at which a band closes
+the gap to its target is `adoption_rate × (i + (1 − i) × seen)`, where `seen` is the
+people-weighted mean cultivation effort in the band's cell after the previous step
+(`effort_sum`, recomputed at each commit with the population), and `i`, the innovation
+share, is the part a band learns on its own. `i = 1` is individual learning, the model
+before; small `i` makes planting an innovation that takes off only after about
+`ln(1/i) / adoption_rate` years. `seen` is read from committed state, so it is the same
+for any partition count; checkpoints written before the parameter existed restore with
+`i = 1`. The test world with abundance alone shows the S-curve: with `i = 10⁻³` effort is
+0.02 after 300 years, 0.22 after 600 and at the target (0.5) by 1,200, while individual
+learning is there in 300.
+
+A profile at the round-6 defaults (`runs/m1/round7/innovation_share.json`, three seeds)
+shows the effect and its cost: `i` = 1, 0.1, 0.01 and 0.001 put in a first-era effort of
+0.34, 0.27, 0.08 and 0.00, but below 0.1 the world is no longer consistent (domestic
+barley after 7,000 BCE is too low: planting starts later, so selection has less time).
+Other parameters have to move with it, so it is calibrated with them.
+
+Wave 7 (300 runs, `innovation_share` the new active factor) is drawn from the NROY space
+of waves 1-6, whose emulators ran at `i = 1`: the earlier waves' judgment of the other
+factors is conditional on individual learning, and NROY points take `i` uniformly over
+its prior. 101 of 300 worlds are consistent (55 in wave 6) and the largest rise among
+them is 0.25 (0.19); worlds that rise like the record exist (0.02, 0.58, 0.80, 0.64) but
+domesticate too slowly. They all have `adoption_rate` near 0.005, the bottom of its
+prior: with the default 0.02 a take-off near 10,000 BCE would need `i` far below its
+prior. `adoption_rate` had been varied as noise in every wave, so no emulator saw it and
+`best` set it back to its default; `wave --activate adoption_rate` makes it active from
+wave 8. In wave 8, 110 of 300 worlds are consistent and the largest rise among them is
+0.36; in wave 9 (NROY 0.13% of the prior space), 154, and 0.46. `best` over waves 7-9
+(the top 16, three seeds) keeps 12 consistent at the defaults. It ranks waves with
+different active factors; each factor's consistent range now comes from the waves that
+emulated it.
+
+The model can now plant as the record does. Wave 9, run 84 (`i` = 1.1 × 10⁻⁴,
+`adoption_rate` 0.0069) puts in 0.09, 0.57, 0.75 and 0.54 against the record's 0.09,
+0.52, 0.64 and 0.62, consistent with all five records for each of three seeds, with an
+onset group distance of 0.8 (cutoff 14.9). That settles the structural finding of round
+6 (#30).
+
+It does not become the default. The best consistent world by the log-likelihood
+diagnostics, the rule of every round (ADR-0057, ADR-0059, ADR-0064), is wave 9, run 208
+(-4,260.0 at the defaults against -4,275.0 for the round-6 world), and it becomes the
+registry defaults: 20 parameters `calibrated`, `adoption_rate` (0.017) and
+`innovation_share` (0.0037) among them. It learns cultivation socially, and puts in
+0.40, 0.59, 0.61 and 0.47: nearer the record in the PPNA and PPNB than the round-6
+world (0.34, 0.39, 0.39, 0.34), farther before 10,000 BCE (implausibility 2.8-2.9, the
+largest of its targets). Its groups are 6.9, 7.3, 14.2, 14.6 and 9.4 (cutoffs 23.6,
+18.5, 18.5, 22.0, 14.9) and it has 5.0 million people at 3,000 BCE. Its forager growth
+(0.0033) and productivity elasticity (0.51) are below the consistent worlds' 10-90%
+ranges and its dispersal probability (0.47) above: one world among many, not an
+estimate. Run 84 fits radiocarbon (-4,058.5 against -3,992.7), rachis (-115.3 against
+-75.1) and obsidian (-230.0 against -192.2) worse. The diagnostics cover those three
+records only, while the onset and the site counts are judged as targets, so the ranking
+does not see that run 84 fits the onset far better; whether the records really pull
+apart or the ranking should weigh the onset is open question 32.
+
+The new defaults change the golden toy world (no cultivation packs; forager growth
+0.0033 and dispersal 0.47): it grows to 23,297 people by 9,000 BCE (7,505 before), and
+its hash changes (f93c62f9). The cultivation mechanism tests pin individual learning and
+the earlier adoption rate with the other values they were written for, and the capacity
+tests (the toy world and the M1 capacity map) pin a productivity elasticity of 1, so
+later rounds leave them alone. Checkpoint parameters missing a key take the registry
+default, which is now social learning; `Params::from_checkpoint` restores one written
+before ADR-0065 with `innovation_share` 1 instead, as it was run.
 
 ## Notes
 

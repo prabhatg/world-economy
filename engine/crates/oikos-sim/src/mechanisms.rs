@@ -12,7 +12,7 @@
 //! it before the next tile starts. Mechanisms must therefore be local to the cells of
 //! the tile they are given (reading anything else only through [`Sense`]).
 
-use crate::agents::{Agents, Traits};
+use crate::agents::{Agents, SHARE_ONE, Traits};
 use crate::params::Params;
 use crate::schedule::{Component, MechanismSpec};
 use crate::world::StepStats;
@@ -56,6 +56,9 @@ pub struct Sense<'a> {
     pub climate_variability: &'a [f64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],
+    /// People-weighted sum of the agents' cultivation effort per cell (in
+    /// [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
+    pub effort_sum: &'a [u64],
     pub tick: Tick,
     pub seed: u64,
 }
@@ -426,7 +429,11 @@ impl Mechanism for Inundation {
 /// period:
 ///
 /// - **Effort.** A band moves its share of effort spent cultivating wild cereals toward a
-///   target, at `adoption_rate` (social learning). The target is zero where wild cereals
+///   target, at `adoption_rate`, all of it on its own (individual learning) or, by the
+///   `innovation_share` hypothesis, mostly from the people around it: then the gap
+///   closes at the rate times the effort it sees, and cultivation spreads as an
+///   innovation does, slowly while few plant and then fast (Bass 1969; Henrich 2001;
+///   ADR-0065). The target is zero where wild cereals
 ///   do not grow; elsewhere it adds three drivers the literature disagrees on, each with
 ///   its own weight, so calibration can weigh them against the record: *population
 ///   pressure* (people beyond `crowding` times forager capacity, full at one capacity
@@ -458,6 +465,7 @@ pub struct Cultivation {
     pub abundance_weight: f64,
     pub variability_weight: f64,
     pub adoption_rate: f64,
+    pub innovation_share: f64,
     pub selection: f64,
     pub wild_frequency: f64,
     pub introgression: f64,
@@ -474,6 +482,7 @@ impl Cultivation {
             abundance_weight: p.cultivation_abundance_weight,
             variability_weight: p.cultivation_variability_weight,
             adoption_rate: p.adoption_rate,
+            innovation_share: p.innovation_share,
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
@@ -504,9 +513,11 @@ impl Cultivation {
         oikos_math::finite(drive * reliability).clamp(0.0, 1.0)
     }
 
-    /// Effort after one period of moving from `effort` toward `target`.
-    pub fn adopt(&self, effort: f64, target: f64) -> f64 {
-        effort + self.adoption_rate * (target - effort)
+    /// Effort after one period of moving from `effort` toward `target`, for a band that
+    /// sees a mean effort of `seen` around it.
+    pub fn adopt(&self, effort: f64, target: f64, seen: f64) -> f64 {
+        let rate = self.adoption_rate * (self.innovation_share + (1.0 - self.innovation_share) * seen);
+        effort + rate * (target - effort)
     }
 
     /// Domestic share of the crop after one period at `effort`, from `d`.
@@ -552,10 +563,14 @@ impl Mechanism for Cultivation {
                 continue;
             }
             let (e, d) = (Traits::share(traits.cultivation), Traits::share(traits.domestication));
+            let seen = match sense.population[cell] {
+                0 => e,
+                n => sense.effort_sum[cell] as f64 / (n as f64 * SHARE_ONE as f64),
+            };
             agents.set_traits(
                 i,
                 Traits {
-                    cultivation: Traits::toward(traits.cultivation, self.adopt(e, target)),
+                    cultivation: Traits::toward(traits.cultivation, self.adopt(e, target, seen)),
                     domestication: Traits::toward(traits.domestication, self.domesticate(d, e)),
                 },
             );

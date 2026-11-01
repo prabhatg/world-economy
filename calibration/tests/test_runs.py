@@ -75,6 +75,15 @@ def test_candidates_rank_consistent_runs_by_both_log_likelihoods_and_keep_active
     assert cli.candidates([{**second, "wave": 4}], top=1)[0]["wave"] == 3, "a wave keeps its own number"
 
 
+def test_ranges_take_each_factor_from_the_runs_that_emulated_it():
+    # A later wave activated y: the earlier wave's runs varied it as noise, so say nothing of it.
+    every = [{"params": {"x": 1.0}}, {"params": {"x": 3.0, "y": 10.0}}, {"params": {"x": 2.0, "y": 20.0}}]
+    r = cli.ranges(every)
+    assert list(r) == ["x", "y"]
+    assert r["x"]["q50"] == 2.0 and r["y"]["q50"] == 15.0
+    assert cli.ranges([]) == {}
+
+
 def test_a_later_wave_can_refocus_on_more_factors():
     d = screening.morris(k=4, trajectories=6, levels=4, rng=np.random.default_rng(4))
     y = np.stack([d[..., 0] + 0.5 * d[..., 2] + 0.2 * d[..., 3]], axis=-1)
@@ -84,6 +93,14 @@ def test_a_later_wave_can_refocus_on_more_factors():
     assert cli.active_factors(doc, threshold=3, max_active=4) == [0, 2]
     assert cli.active_factors(doc, threshold=1, max_active=4) == [0, 2, 3]
     assert cli.active_factors(doc, threshold=1, max_active=2) == [0, 2], "the most influential first"
+
+
+def test_a_later_wave_can_activate_factors_by_name():
+    assert cli.activate(["a", "b", "c", "d"], [0, 3], ["c"]) == [0, 2, 3]
+    assert cli.activate(["a", "b"], [1], []) == [1]
+    assert cli.activate(["a", "b"], [1], ["b"]) == [1], "already active"
+    with pytest.raises(SystemExit, match="not a factor"):
+        cli.activate(["a", "b"], [1], ["z"])
 
 
 def test_a_later_wave_adds_parameters_new_to_the_registry_as_active_factors():

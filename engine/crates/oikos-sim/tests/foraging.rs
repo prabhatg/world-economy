@@ -71,9 +71,13 @@ fn id(bytes: &[u8]) -> String {
 }
 
 fn world(packs: &[&[u8]], seed: u64) -> World {
+    world_with(packs, seed, Params::default())
+}
+
+fn world_with(packs: &[&[u8]], seed: u64, params: Params) -> World {
     let inputs =
         Inputs::from_packs(packs.iter().map(|b| Pack::parse(b.to_vec()).unwrap()).collect()).unwrap();
-    World::with_inputs(WorldConfig::geometry(&id(packs[0])), seed, Params::default(), inputs).unwrap()
+    World::with_inputs(WorldConfig::geometry(&id(packs[0])), seed, params, inputs).unwrap()
 }
 
 /// Wet cells (even) get 800 mm, dry cells (odd) 250 mm, at 15 degC.
@@ -94,8 +98,9 @@ fn expected(t: f64, p: f64, params: &Params, aquatic: bool) -> u64 {
 #[test]
 fn capacity_follows_productivity_and_area() {
     let h3 = h3_cells();
-    let w = world(&[&geometry_pack(&h3), &climate_pack(&h3, &[-12_000], wet_dry)], 1);
-    let p = Params::default();
+    // Capacity in proportion to productivity (elasticity 1), whatever the calibrated value.
+    let p = Params { npp_elasticity: 1.0, ..Params::default() };
+    let w = world_with(&[&geometry_pack(&h3), &climate_pack(&h3, &[-12_000], wet_dry)], 1, p.clone());
     for c in 0..h3.len() {
         let (t, pr) = wet_dry(0, c);
         assert_eq!(w.forage_capacity[c], expected(t, pr, &p, false), "cell {c}");

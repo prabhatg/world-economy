@@ -43,11 +43,14 @@ enters the model, and the starting mechanisms.
   hypothesis; capacity blends foraging and farming by effort, so domestic crops feed
   more people and the transition can ratchet (`mechanisms::Cultivation`,
   `environment::cereal_suitability`, ADR-0049). A fourth, nested hypothesis scales the
-  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 4.0 in the
-  calibrated defaults, ADR-0064).
+  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 14 in the
+  calibrated defaults, ADR-0065). A fifth, nested hypothesis has bands learn cultivation
+  mostly from the people around them (innovation share below 1): it then spreads as an
+  innovation does, slowly while few plant and then fast (Bass 1969, Henrich 2001;
+  ADR-0065; innovation share 0.0037 and adoption rate 0.017 in the calibrated defaults).
   Fields wear the soil down and yields fall once it thins below a critical share (land
-  degradation, ADR-0055; 5.8e-4 per year at full effort in the calibrated defaults,
-  against soil formation 7.0e-4).
+  degradation, ADR-0055; 4.1e-5 per year at full effort in the calibrated defaults,
+  against soil formation 8.3e-5).
   Wild-cereal suitability comes from temperature and precipitation; soils, irrigation
   and animals are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
@@ -96,7 +99,7 @@ Not brain simulation. Agents implement validated regularities:
   (`obsidian_loss`), so availability falls off about exponentially along settled land
   and never crosses empty land. It changes nothing else yet; goods with value, and
   exchange that responds to them, come later. Sourced assemblages constrain the loss:
-  0.0041 in the calibrated defaults, an e-fold about every 105 km (ADR-0061, ADR-0064).
+  0.0030 in the calibrated defaults, an e-fold about every 120 km (ADR-0061, ADR-0065).
 - Markets: local price formation via decentralized bargaining/matching; routes with
   transport costs by terrain, technology (pack animals, ships, rail, containers).
 - Specialization and division of labor tied to market size (Smith) and urbanization.

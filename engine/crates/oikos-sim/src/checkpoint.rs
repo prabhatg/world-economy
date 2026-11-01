@@ -12,7 +12,9 @@
 //! restores with full soil everywhere, which is what it meant. `OIKOSCK1` was the layout before agents
 //! carried traits (ADR-0049). Everything derived (carrying capacity under cultivation,
 //! farmland, habitability) is recomputed from the packs, the parameters, the soil and
-//! the agents on restore.
+//! the agents on restore. Parameters missing from a checkpoint take the registry
+//! defaults, except those of hypotheses added since, which restore switched off
+//! (`Params::from_checkpoint`).
 //!
 //! The version says how the region is named: 1 = `base_cell u8 | resolution u8`;
 //! 2 = `geometry pack id [u8; 32] | packs u32 | pack id [u8; 32]×packs` (all forcing
@@ -170,7 +172,7 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
     let seed = r.u64()?;
     let tick = Tick(r.u64()?);
     let plen = r.u32()? as usize;
-    let params: Params = serde_json::from_slice(r.take(plen)?).map_err(|e| e.to_string())?;
+    let params = Params::from_checkpoint(r.take(plen)?)?;
     let grid = Arc::new(config.build_grid(&inputs)?);
     let cells = r.u32()? as usize;
     if cells != grid.len() {

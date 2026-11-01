@@ -72,8 +72,12 @@ zones of distance to the sources; with them a fifth wave leaves 0.8%, the defaul
 stay (the best world only ties them) and the obsidian loss is calibrated at them.
 Cultivation-onset operator (ADR-0064): crops among charred plant remains of dated site
 phases, anchored on the Pottery Neolithic; they rule out the defaults, a sixth wave
-leaves 0.23%, and its best world is the new registry default. No world yet rises from
+leaves 0.23%, and its best world became the registry default. No world rose from
 little planting to much as the record does (#30).
+Social learning of cultivation (ADR-0065): bands learn planting mostly from those around
+them; three more waves find a consistent world that plants as the record does, and the
+best-fitting world, which learns socially, is the new registry default. It still plants
+too early, as the log-likelihoods prefer (open question 32).
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

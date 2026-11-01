@@ -54,6 +54,7 @@ pub struct Params {
     pub cultivation_variability_weight: f64,
     pub stress_window_years: u64,
     pub adoption_rate: f64,
+    pub innovation_share: f64,
     pub selection_coefficient: f64,
     pub domestic_wild_frequency: f64,
     pub introgression_rate: f64,
@@ -126,6 +127,7 @@ impl Params {
             cultivation_variability_weight: real("cultivation_variability_weight")?,
             stress_window_years: int("stress_window_years")?,
             adoption_rate: real("adoption_rate")?,
+            innovation_share: real("innovation_share")?,
             selection_coefficient: real("selection_coefficient")?,
             domestic_wild_frequency: real("domestic_wild_frequency")?,
             introgression_rate: real("introgression_rate")?,
@@ -179,6 +181,24 @@ impl Params {
             ));
         }
         Ok(())
+    }
+}
+
+/// Parameters added after checkpoints first stored theirs, with the value that keeps the
+/// model a checkpoint without them was written with: the nested hypothesis switched off,
+/// whatever the registry default has since been calibrated to.
+const ADDED_SINCE_CHECKPOINTS: &[(&str, f64)] = &[("innovation_share", 1.0)];
+
+impl Params {
+    /// Parameters stored in a checkpoint (JSON): as a work unit's overrides, except that
+    /// one lacking a parameter added since is restored with that parameter switched off.
+    pub fn from_checkpoint(json: &[u8]) -> Result<Params, String> {
+        let mut overrides: BTreeMap<String, Value> =
+            serde_json::from_slice(json).map_err(|e| e.to_string())?;
+        for &(k, v) in ADDED_SINCE_CHECKPOINTS {
+            overrides.entry(k.to_string()).or_insert(Value::Real(v));
+        }
+        Params::from_registry(registry(), &overrides)
     }
 }
 

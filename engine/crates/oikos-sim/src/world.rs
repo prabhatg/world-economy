@@ -677,6 +677,7 @@ impl World {
                 climate_stress: &self.farmland.stress,
                 climate_variability: &self.farmland.variability,
                 population: &self.population,
+                effort_sum: &self.effort_sum,
                 tick: self.tick,
                 seed: self.seed,
             };
