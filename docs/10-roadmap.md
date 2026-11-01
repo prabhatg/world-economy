@@ -76,8 +76,10 @@ leaves 0.23%, and its best world became the registry default. No world rose from
 little planting to much as the record does (#30).
 Social learning of cultivation (ADR-0065): bands learn planting mostly from those around
 them; three more waves find a consistent world that plants as the record does, and the
-best-fitting world, which learns socially, is the new registry default. It still plants
-too early, as the log-likelihoods prefer (open question 32).
+best-fitting world, which learns socially, became the registry default; it still
+planted too early. Ranking worlds by their summaries (ADR-0066), as history matching
+judges them, shows the records agree: a tenth wave and the new ranking choose a world
+that plants late, as the onset record does, and it is the registry default.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

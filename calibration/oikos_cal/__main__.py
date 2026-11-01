@@ -5,7 +5,7 @@
     python -m oikos_cal wave --runs 200 --previous runs/m1/wave1.json --out runs/m1/wave2.json
     python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
     python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-    python -m oikos_cal ensemble runs/m1/round7/best.json --out ../viewer/data/m1
+    python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1
 
 Each command records what it ran (unit-cube points, parameter values, seeds, outputs,
 targets with their variances, the code revision) in one JSON file, so waves can be
@@ -200,21 +200,33 @@ def consistent(doc):
     return ok
 
 
+def summary_log_likelihood(doc, outputs):
+    """`history.log_likelihood` of `outputs` [run, name] against `doc`'s targets and groups."""
+    y = np.asarray(outputs, dtype=float)
+    return history.log_likelihood(y, _targets(doc["targets"]), _groups(doc.get("groups")))
+
+
 def candidates(docs, top):
-    """The `top` consistent runs of waves `docs`, best first by the sum of their
-    log-likelihood diagnostics, with only their active factors' values (`wave` counts from
-    0 by the file's own wave number): the factors the emulators did not see were varied as
-    noise, so their values say nothing and a candidate leaves them at the registry
-    defaults."""
+    """The `top` consistent runs of waves `docs`, best first by how near their summaries
+    sit to the record under history matching's own error model (ADR-0066), with only
+    their active factors' values (`wave` counts from 0 by the file's own wave number): the
+    factors the emulators did not see were varied as noise, so their values say nothing
+    and a candidate leaves them at the registry defaults. The item log-likelihood
+    diagnostics, summed, are kept beside it. Densities of different records do not
+    compare, so every wave must have the same targets."""
     found = []
     for k, doc in enumerate(docs):
+        if [t["name"] for t in doc["targets"]] != [t["name"] for t in docs[0]["targets"]]:
+            raise ValueError(f"wave {doc.get('wave', k + 1)} is not judged against the same record as the first; "
+                             "rank waves of one round of targets together")
         ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
         y = np.array(doc["outputs"])
+        fit = summary_log_likelihood(doc, y)
         active = [doc["factors"][i] for i in doc["active"]]
         for i in np.flatnonzero(consistent(doc)):
-            found.append({"wave": doc.get("wave", k + 1) - 1, "run": int(i), "log_likelihood": float(y[i, ll].sum()),
-                          "params": {f: doc["params"][i][f] for f in active}})
-    found.sort(key=lambda c: -c["log_likelihood"])
+            found.append({"wave": doc.get("wave", k + 1) - 1, "run": int(i), "summary_log_likelihood": float(fit[i]),
+                          "log_likelihood": float(y[i, ll].sum()), "params": {f: doc["params"][i][f] for f in active}})
+    found.sort(key=lambda c: -c["summary_log_likelihood"])
     return found[:top]
 
 
@@ -240,23 +252,24 @@ def best(args):
         c["outputs"] = o.tolist()
         c["consistent"] = bool(consistent({**check, "outputs": o}).all())
         c["rerun_log_likelihood"] = float(o[:, ll].sum(axis=1).mean())
+        c["rerun_summary_log_likelihood"] = float(summary_log_likelihood(check, o).mean())
     ok = [i for i, c in enumerate(cs) if c["consistent"]]
-    chosen = max(ok, key=lambda i: cs[i]["rerun_log_likelihood"]) if ok else None
+    chosen = max(ok, key=lambda i: cs[i]["rerun_summary_log_likelihood"]) if ok else None
     every = candidates(docs, top=None)
-    _write(args.out, {"command": "best", "revision": _revision(), "waves": [str(p) for p in args.waves],
-                      "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges(every),
+    _write(args.out, {"command": "best", "revision": _revision(), "rank": "summaries",
+                      "waves": [str(p) for p in args.waves], "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges(every),
                       "candidates": cs, "chosen": chosen})
     report_best(json.loads(Path(args.out).read_text()))
 
 
 def profile_choice(doc):
-    """The value (index) of a profile whose worlds are consistent with every seed and have
-    the best log-likelihood diagnostics summed, averaged over seeds; None if none is."""
-    ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
+    """The value (index) of a profile whose worlds are consistent with every seed and whose
+    summaries sit nearest the record (`summary_log_likelihood`, averaged over seeds);
+    None if none is."""
     ok, score = [], []
     for o in doc["outputs"]:
         ok.append(bool(consistent({**doc, "outputs": o}).all()))
-        score.append(np.array(o)[:, ll].sum(axis=1).mean())
+        score.append(summary_log_likelihood(doc, o).mean())
     return max((i for i in range(len(ok)) if ok[i]), key=lambda i: score[i], default=None)
 
 
@@ -271,24 +284,30 @@ def profile(args):
            "seeds": seeds, "names": names, "outputs": out.reshape(len(args.values), len(seeds), -1).tolist(),
            "targets": _targets_json(ts), "groups": _groups_json(groups)}
     doc["chosen"] = profile_choice(doc)
+    doc["rank"] = "summaries"
     _write(args.out, doc)
     report_profile(doc)
 
 
 def report_profile(doc):
     ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
-    print(f"{doc['parameter']:>14} {'log-lik':>9}  consistent")
+    print(f"{doc['parameter']:>14} {'summaries':>9} {'items':>9}  consistent")
     for v, o in zip(doc["values"], doc["outputs"]):
-        print(f"{v:14.4g} {np.array(o)[:, ll].sum(axis=1).mean():9.1f}  "
+        print(f"{v:14.4g} {summary_log_likelihood(doc, o).mean():9.1f} {np.array(o)[:, ll].sum(axis=1).mean():9.1f}  "
               f"{'yes' if consistent({**doc, 'outputs': o}).all() else 'no'}")
-    c = doc["chosen"]
-    print("no value is consistent" if c is None else f"chosen: {doc['parameter']} = {doc['values'][c]:.4g}")
+    c, by = doc["chosen"], "chosen" if doc.get("rank") == "summaries" else \
+        "chosen by the item log-likelihoods (before ADR-0066)"
+    print("no value is consistent" if c is None else f"{by}: {doc['parameter']} = {doc['values'][c]:.4g}")
 
 
 def report_best(doc):
-    print(f"{'wave':>4} {'run':>4} {'log-lik in wave':>15} {'rerun':>9}  consistent at defaults")
+    """Files before ADR-0066 ranked by the item log-likelihoods alone."""
+    by_summaries = doc.get("rank") == "summaries"
+    print(f"{'wave':>4} {'run':>4} {'in wave':>9} {'rerun':>9} {'items':>9}  consistent at defaults")
     for c in doc["candidates"]:
-        print(f"{c['wave'] + 1:4} {c['run']:4} {c['log_likelihood']:15.1f} {c['rerun_log_likelihood']:9.1f}  "
+        fit = (c["summary_log_likelihood"], c["rerun_summary_log_likelihood"]) if by_summaries else \
+            (c["log_likelihood"], c["rerun_log_likelihood"])
+        print(f"{c['wave'] + 1:4} {c['run']:4} {fit[0]:9.1f} {fit[1]:9.1f} {c['rerun_log_likelihood']:9.1f}  "
               f"{'yes' if c['consistent'] else 'no'}")
     if doc["chosen"] is None:
         print("no candidate stays consistent with the other parameters at their defaults")

@@ -29,7 +29,7 @@ from scipy.stats import chi2
 
 from .emulator import GP
 
-__all__ = ["Target", "Group", "implausibility", "chi2_cutoff", "Wave", "nroy", "CUTOFF"]
+__all__ = ["Target", "Group", "implausibility", "chi2_cutoff", "log_likelihood", "Wave", "nroy", "CUTOFF"]
 
 CUTOFF = 3.0
 
@@ -83,6 +83,31 @@ class Group:
         d = z - mean[:, self.indices]
         total = self.covariance + np.einsum("pi,ij->pij", disc + var[:, self.indices], np.eye(len(z)))
         return np.einsum("pi,pi->p", d, np.linalg.solve(total, d[..., None])[..., 0])
+
+
+def log_likelihood(outputs, targets, groups=()):
+    """log density [run] of the record's summaries given each run's `outputs` [run,
+    target], under the model history matching rules out with: each group jointly normal
+    with its observation covariance plus discrepancy, every other target on its own with
+    its variance plus discrepancy (Kennedy and O'Hagan 2001, doi:10.1111/1467-9868.00294).
+    Unlike likelihoods of the items of a record, it allows for how far a good world may
+    honestly sit from it, and weighs records by what their summaries tell, not by how
+    many items they hold (Brynjarsdottir and O'Hagan 2014, doi:10.1088/0266-5611/30/11/114007).
+    A group of centered log shares has a singular observation covariance, so it needs a
+    positive discrepancy."""
+    y = np.atleast_2d(np.asarray(outputs, dtype=float))[:, : len(targets)]
+    z = np.array([t.observed for t in targets])
+    v = np.array([t.variance + t.discrepancy for t in targets])
+    out = np.zeros(len(y))
+    alone = np.ones(len(targets), dtype=bool)
+    for g in groups:
+        alone[g.indices] = False
+        total = g.covariance + np.diag([targets[i].discrepancy for i in g.indices])
+        _, logdet = np.linalg.slogdet(2 * np.pi * total)
+        d = z[g.indices] - y[:, g.indices]
+        out -= 0.5 * (np.einsum("pi,pi->p", d, np.linalg.solve(total, d.T).T) + logdet)
+    d = z[alone] - y[:, alone]
+    return out - 0.5 * (d * d / v[alone] + np.log(2 * np.pi * v[alone])).sum(axis=1)
 
 
 @dataclass

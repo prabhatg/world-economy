@@ -8,7 +8,7 @@ ordinary work unit by the `oikos` CLI with run outputs (`fields.zarr`), and a
 it reads from each world's own `fields.zarr`, so it shows exactly what the engine
 recorded.
 
-    python -m oikos_cal ensemble runs/m1/round7/best.json --out ../viewer/data/m1
+    python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1
 """
 
 import json
@@ -33,9 +33,10 @@ FIELDS = [
 
 def choose(best, k):
     """The calibrated defaults, then up to `k` consistent candidates of a `best` record,
-    best first by their rerun log-likelihood."""
+    best first as it ranks them (`rank`; before ADR-0066 by the item log-likelihoods)."""
     worlds = [{"id": "w0", "label": "Calibrated defaults", "params": {}}]
-    ok = sorted((c for c in best["candidates"] if c["consistent"]), key=lambda c: -c["rerun_log_likelihood"])
+    key = "rerun_summary_log_likelihood" if best.get("rank") == "summaries" else "rerun_log_likelihood"
+    ok = sorted((c for c in best["candidates"] if c["consistent"]), key=lambda c: -c[key])
     for i, c in enumerate(ok[:k], start=1):
         worlds.append({"id": f"w{i}", "label": f"Wave {c['wave'] + 1} run {c['run']}", "params": c["params"]})
     return worlds

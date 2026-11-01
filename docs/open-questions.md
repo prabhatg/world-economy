@@ -121,6 +121,13 @@
     domestic barley in time, late planting delays both), or the model's demography or
     selection ties them too tightly, or the ranking should weigh the onset record too.
     More waves near the late-planting worlds, and an onset log-likelihood, would tell.
+    Resolved (ADR-0066): they do not pull apart. Under history matching's own error
+    model (each record's summaries with observation covariance plus discrepancy), the
+    consistent worlds nearest the record plant late, and the best of them (0.20, 0.55,
+    0.61, 0.48) sits nearer than the early planter on four records and about as near on
+    the radiocarbon eras. What preferred early planting was the per-date radiocarbon
+    likelihood, which allows for no discrepancy. Defaults are now ranked by the
+    summaries, and the late planter is the registry default.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

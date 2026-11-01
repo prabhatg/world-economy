@@ -64,15 +64,22 @@ def test_consistent_runs_pass_every_target_and_every_group():
     assert cli.consistent(doc).tolist() == [True, False, False]
 
 
-def test_candidates_rank_consistent_runs_by_both_log_likelihoods_and_keep_active_factors():
+def test_candidates_rank_consistent_runs_by_how_near_their_summaries_sit_and_keep_active_factors():
     p = [{"x": i, "y": 10 + i, "z": 20 + i} for i in range(4)]
-    first = _wave_doc([[0, 0, -10, -5, 1], [0, 0, -1, -1, 1]], p[:2])
-    second = _wave_doc([[0, 0, -3, -3, 1], [0.4, 0, 0, 0, 1]], p[2:])
+    # The item log-likelihoods (columns 2-3) prefer (0, 0); the summaries prefer (0, 1).
+    first = _wave_doc([[0.2, 0.1, -1, -1, 1], [0, 0, -10, -5, 1]], p[:2])
+    second = _wave_doc([[0.1, 0, -3, -3, 1], [0.4, 0, 0, 0, 1]], p[2:])
     c = cli.candidates([first, second], top=5)
     assert [(k["wave"], k["run"]) for k in c] == [(0, 1), (1, 0), (0, 0)], "the inconsistent run is left out"
-    assert c[0]["log_likelihood"] == -2 and c[0]["params"] == {"x": 1, "z": 21}, "inactive y is left at its default"
+    ts, gs = cli._targets(first["targets"]), cli._groups(first["groups"])
+    assert c[0]["summary_log_likelihood"] == pytest.approx(history.log_likelihood([[0, 0]], ts, gs)[0])
+    assert c[0]["log_likelihood"] == -15, "the item log-likelihoods are kept as diagnostics"
+    assert c[0]["params"] == {"x": 1, "z": 21}, "inactive y is left at its default"
     assert len(cli.candidates([first, second], top=1)) == 1
     assert cli.candidates([{**second, "wave": 4}], top=1)[0]["wave"] == 3, "a wave keeps its own number"
+    renamed = {**second, "targets": [{**t, "name": "c"} for t in second["targets"]]}
+    with pytest.raises(ValueError, match="the same record"):
+        cli.candidates([first, renamed], top=5)
 
 
 def test_ranges_take_each_factor_from_the_runs_that_emulated_it():
@@ -115,14 +122,23 @@ def test_a_later_wave_adds_parameters_new_to_the_registry_as_active_factors():
     assert (w.plausible(x) == w.plausible(np.c_[x[:, :2], 1 - x[:, 2]])).all()
 
 
-def test_a_profile_chooses_the_consistent_value_with_the_best_log_likelihood():
+def test_a_profile_chooses_the_consistent_value_whose_summaries_sit_nearest():
     doc = _wave_doc([], [])
     # three values of one parameter, two seeds each: outputs [value][seed]
-    doc["outputs"] = [[[0.0, 0.0, -9, -1, 5], [0.0, 0.0, -9, -1, 5]],
-                      [[0.0, 0.0, -2, -1, 5], [0.4, 0.0, -2, -1, 5]],  # best, but 4 sd off on one seed
+    doc["outputs"] = [[[0.2, 0.0, -1, -1, 5], [0.2, 0.0, -1, -1, 5]],
+                      [[0.0, 0.0, -9, -1, 5], [0.4, 0.0, -9, -1, 5]],  # nearest, but 4 sd off on one seed
                       [[0.1, 0.0, -5, -1, 5], [0.0, 0.1, -4, -1, 5]]]
-    assert cli.profile_choice(doc) == 2
+    assert cli.profile_choice(doc) == 2, "not the best item log-likelihoods (value 0)"
     doc["outputs"][2][1][0] = 0.4
     assert cli.profile_choice(doc) == 0
     doc["outputs"] = [[[0.4, 0.0, -1, -1, 5]]]
     assert cli.profile_choice(doc) is None, "no value stays consistent"
+
+
+def test_reports_say_what_an_older_file_ranked_by(capsys):
+    doc = {**_wave_doc([], []), "command": "profile", "parameter": "x", "values": [1.0], "chosen": 0,
+           "outputs": [[[0.0, 0.0, -1, -1, 5]]]}
+    cli.report_profile(doc)
+    assert "chosen by the item log-likelihoods (before ADR-0066): x = 1" in capsys.readouterr().out
+    cli.report_profile({**doc, "rank": "summaries"})
+    assert "chosen: x = 1" in capsys.readouterr().out

@@ -58,7 +58,7 @@
 | 0054 | Stable-climate hypothesis of cultivation (Richerson, Boyd and Bettinger 2001) as a fourth nested driver: the cultivation target is scaled by 1 - `cultivation_variability_weight` × climate variability (mean change of wild-cereal suitability per century over the stress window, between century boundaries, recomputed once per century); weight 0 (the default) switches it off; with century-resolution forcing it does not delay the onset | Accepted |
 | 0055 | Land degradation as a nested hypothesis: cells keep a fixed-point soil share, eroded at `soil_erosion_rate` × effort per year and re-forming at `soil_formation_rate` × what is missing, updated each capacity period; field yields scale by min(1, soil / `soil_critical`); checkpoint layout `OIKOSCK3` (soil per cell; `OIKOSCK2` restores with whole soil); erosion 0 (the default) switches it off | Accepted |
 | 0056 | Calibration round 2: radiocarbon eras of 800 years (10), judged one by one and together by a multivariate implausibility (Mahalanobis distance with the block-bootstrap covariance plus discrepancy and emulator variances, against the 99.5% chi-square quantile, Vernon et al. 2010); 27 free parameters including the nested hypotheses of ADR-0053-0055; runs in `calibration/runs/m1/round2/` | Accepted |
-| 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted; values superseded by 0059 |
+| 0057 | Calibrated M1 defaults: the registry defaults of the 12 emulated parameters are the best-fitting consistent world of round 2 (wave 2, run 28; joint radiocarbon and rachis log-likelihood), status `calibrated` with the run as source and the consistent worlds' 10-90% range in the note; parameters the emulators did not see keep their defaults, and `sedentary_growth_rate` follows `growth_rate` (no transition). `python -m oikos_cal best` reruns the top consistent runs with the other parameters at their defaults (three seeds) and records the choice in `calibration/runs/m1/round2/best.json`; a test keeps the default world consistent with the record. Hypothesis tests pin the pre-calibration values, so calibration never moves what they test | Accepted; values superseded by 0059; ranking by 0066 |
 | 0058 | Calibration round 3: a third wave refocuses the emulators on the 17 factors whose round-2 screening effect reaches 0.4 tolerances (adding sedentary growth, soil critical share, NPP elasticity, dispersal crowding and wild yield ratio); earlier waves keep their own active sets and still rule out. `wave --previous ... --screening` refocuses. Defaults unchanged | Accepted |
 | 0059 | Site-count operator and calibration round 4: survey site phases of Palmisano et al. 2021 (Anatolia, Upper Mesopotamia) counted aoristically in 500-year eras from 6,500 to 3,000 BCE; a world's cultivator activity in each survey's landscape (cells with any recorded site) is dated through the surveys' own period scheme; centered log shares, bootstrap covariance, one group per survey, discrepancy 0.25. A fourth wave judges radiocarbon, rachis and site counts together, and the best consistent world (wave 4, run 251) becomes the registry defaults: 17 parameters `calibrated`, sources in `calibration/runs/m1/round4/best.json` | Accepted |
 | 0060 | Down-the-line exchange of obsidian as a tracer: cells hold a fixed-point availability per source group; every step, occupied cells within one res-5 step of a group's volcanoes (an `obsidian` forcing pack from DObsiSS 2.0) have all they want, other occupied cells take (1 - `obsidian_loss`) times the mean of themselves and their occupied neighbors, empty cells hold none; nothing else reads it, so it never changes history; checkpoint layout `OIKOSCK4` (`OIKOSCK3` restores with none held); sourced assemblages (DObsiSS, ASPRO periods) become an observation table | Accepted |
@@ -66,7 +66,8 @@
 | 0062 | AI inside the simulation has four roles: the source of simulated people's behavior (behavior models distilled into per-archetype policy networks with calibrated free parameters), actors in the modern world (AI systems as a class of agents and capital; optional LLM notable actors replayed from content-addressed decision packs), analyst of ensembles, and scientist. Inside a run, AI is integer inference or replayed, never a live model call; behavior models used before the twin's start are trained on experiments and surveys, not on narratives of the period, and tested on held-out periods; every AI component is ablatable (docs/07) | Accepted |
 | 0063 | Viewer v0: a TypeScript page (`viewer/`; Vite, deck.gl core and layers, h3-js) that plays back an ensemble of plausible worlds. It reads each world's own run outputs (`fields.zarr`, with a minimal uint64 + gzip Zarr reader) and a `catalog.json` written by `python -m oikos_cal ensemble` (the calibrated defaults and the best consistent worlds of a `best` record, run as ordinary work units by the CLI). Run outputs gain per-cell shares over time in parts per 10,000: cultivation, domestication, soil, dry land, obsidian per source group. The map shows one world on the night surface with no basemap; the charts show every world. Ensemble data is built locally, not committed | Accepted |
 | 0064 | Cultivation-onset operator and calibration round 6: the share of crops (domesticates, crop progenitors, presumed crops) among the charred grains and seeds of dated site phases in the Origins of agriculture database (Wallace et al. 2018; under the ADS terms it is downloaded by hand and its phase table built in memory, never committed or packed), against a world's people-weighted cultivation effort in the site's cell and its neighbors over the phase. Shares are not diets: the share of a farming world is anchored on the record's Pottery Neolithic phases (mean 0.50 over 18 phases), and an era's mean share over the anchor is the effort the record implies; phases are not scored one by one. Targets are four eras (edges 10,000, 8,800 and 7,600 BCE), joint bootstrap over phases and anchors, one group, discrepancy 0.1. A sixth wave judges all five records, and its best consistent world (wave 6, run 236) becomes the registry defaults: 18 parameters `calibrated`, `obsidian_loss` included, sources in `calibration/runs/m1/round6/best.json` | Accepted |
-| 0065 | Social learning of cultivation and calibration round 7: a band closes the gap between its cultivation effort and its target at `adoption_rate × (i + (1 − i) × seen)`, `seen` being the people-weighted mean effort in its cell after the previous step and `i` the new `innovation_share` (1 is individual learning, the model before; checkpoints without it restore with 1). Cultivation then spreads as an innovation does (Bass 1969; Henrich 2001): slowly while few plant, then fast. `wave --activate` lets a later wave emulate a factor earlier waves varied as noise (`adoption_rate`, which now sets when planting takes off). Three waves (7-9) with the five records; the best consistent world (wave 9, run 208) becomes the registry defaults, `adoption_rate` and `innovation_share` now `calibrated`, sources in `calibration/runs/m1/round7/best.json` | Accepted |
+| 0065 | Social learning of cultivation and calibration round 7: a band closes the gap between its cultivation effort and its target at `adoption_rate × (i + (1 − i) × seen)`, `seen` being the people-weighted mean effort in its cell after the previous step and `i` the new `innovation_share` (1 is individual learning, the model before; checkpoints without it restore with 1). Cultivation then spreads as an innovation does (Bass 1969; Henrich 2001): slowly while few plant, then fast. `wave --activate` lets a later wave emulate a factor earlier waves varied as noise (`adoption_rate`, which now sets when planting takes off). Three waves (7-9) with the five records; the best consistent world (wave 9, run 208) becomes the registry defaults, `adoption_rate` and `innovation_share` now `calibrated`, sources in `calibration/runs/m1/round7/best.json` | Accepted; values superseded by 0066 |
+| 0066 | Calibrated defaults are ranked by the summaries, not the item log-likelihoods, and calibration round 8: `best` and `profile` choose the consistent world whose summaries of all five records sit nearest the record under history matching's own error model (`history.log_likelihood`: each group's observation covariance plus discrepancy, the other targets on their own; Kennedy and O'Hagan 2001), recording the item diagnostics beside it; waves ranked together must share their targets, and `ensemble` follows the ranking its best file records. Answers open question 32: the records do not pull apart, the per-date radiocarbon likelihood (no discrepancy) preferred early planting. A tenth wave (NROY 0.10%); `best` over waves 7-10 chooses wave 9, run 180, which plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry defaults (20 parameters; sources in `calibration/runs/m1/round8/best.json`) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -829,6 +830,75 @@ tests (the toy world and the M1 capacity map) pin a productivity elasticity of 1
 later rounds leave them alone. Checkpoint parameters missing a key take the registry
 default, which is now social learning; `Params::from_checkpoint` restores one written
 before ADR-0065 with `innovation_share` 1 instead, as it was run.
+
+## ADR-0066 rationale (ranking worlds by their summaries; calibration round 8)
+
+Round 7 left open question 32. The consistent world that plants as the onset record
+does (wave 9, run 84) fit radiocarbon, rachis and obsidian worse than the world chosen
+as the defaults (run 208), which plants 0.40 before 10,000 BCE. Every round since
+ADR-0057 chose its defaults by the item log-likelihood diagnostics, summed: the
+multinomial of the binned radiocarbon date mass over blocks, classes and centuries, the
+beta-binomial of each rachis assemblage and the beta-binomial of each obsidian context.
+Those see every item. But they allow for no model discrepancy, and they leave out the
+onset and site records. ADR-0064 found that the onset record cannot be scored item by
+item: phases vary too much at the same level of farming.
+
+History matching judges a world by a different model: each record's summaries, with
+their observation covariance plus a discrepancy that says how far a good world may
+honestly sit from them. `history.log_likelihood` is that model's density, with each
+group joint and the other targets on their own. It is the likelihood of Kennedy and
+O'Hagan (2001) at the best input, which weighs records by what their summaries tell,
+not by how many items they hold. Calibrating a model without its discrepancy gives
+biased, overconfident parameters (Brynjarsdóttir and O'Hagan 2014).
+
+Across the 365 consistent worlds of waves 7-9 the two rankings agree only loosely
+(correlation 0.38). Under the summaries, the nearest worlds plant late. The leaders by
+the summaries, rerun at the defaults over three seeds, include wave 9, run 180. It puts
+in 0.20, 0.55, 0.61 and 0.48 against the record's 0.09, 0.52, 0.64 and 0.62, and its
+summaries sit 6.0 log units nearer the record than run 208's (seed spread 0.3 at most).
+By record, run 180 is nearer on the onset (3.8 log units), sites (1.1), obsidian (0.9)
+and domestic barley (0.7), and 0.4 farther on the radiocarbon eras. Its item
+diagnostics are 44 lower: 35 from radiocarbon, 7 from rachis and 2 from obsidian.
+
+So the records do not pull apart. A world can plant as late as the onset record says
+and sit as near or nearer every other record's summaries. What preferred early planting
+was the radiocarbon date likelihood: about 35 log units over 938 units of binned date
+mass, without discrepancy. That is detail of where and when dates fall within the
+eras, which a model this coarse cannot honestly claim. Choosing by it gave the
+radiocarbon record the deciding vote over the onset record, which the item diagnostics
+do not cover at all.
+
+`best` and `profile` now rank consistent worlds by `history.log_likelihood`, and the
+item diagnostics are recorded beside it. Densities over different targets do not
+compare, so waves ranked together must share their targets. `ensemble` follows the
+ranking its best file records; files before this ADR keep their item ranking, and their
+reports say so.
+
+Round 8 adds a tenth wave of 300 worlds from the NROY space of waves 1-9 (0.10% of the
+prior space): 169 are consistent with all five records, and the largest rise in
+planting among them is 0.54. `best` over waves 7-10 (the top 16 by the summaries,
+three seeds) keeps 10 consistent at the defaults and chooses wave 9, run 180, 0.5 log
+units ahead of wave 9, run 179 (seed spread under 0.1). It becomes the registry
+defaults: 20 parameters `calibrated`, with the consistent worlds' 10-90% ranges (over
+534 consistent runs) in their notes. At the defaults it puts in 0.20, 0.55, 0.61 and
+0.48 of the record's 0.09, 0.52, 0.64 and 0.62 (run 208: 0.40, 0.59, 0.61, 0.47);
+domestic barley is 0.01, 0.11, 0.22 and 0.79 (record 0.01, 0.14, 0.34, 0.80). Its
+largest single implausibility is 2.3 (Upper Mesopotamian sites 3,500-3,000 BCE), against
+2.9 before, and its groups are 7.7, 6.2, 13.1, 12.8 and 1.8 (cutoffs 23.6, 18.5, 18.5,
+22.0, 14.9; run 208: 6.9, 7.3, 14.2, 14.6, 9.4). It has 4.1 million people at 3,000
+BCE. Its forager growth (0.023 per year) is near the top of the consistent range and
+its sedentary growth only 1.14 times that: little Neolithic demographic transition.
+Like run 208, it is one world among many, not an estimate.
+
+The new defaults change the golden toy world (no cultivation packs, so forager growth
+0.023 and dispersal 0.30 drive it): it fills its 2,401 cells and reaches 506,594 people
+by 9,000 BCE (23,297 before), and its hash changes (31e6b2fb). The domestication-speed
+test now pins the wild mutant frequency and introgression it was written for, as the
+other cultivation tests do. With more people per agent the toy world costs 1,139 wasm
+instructions per agent-step (1,178 before), and an M1 run 65 s (97 s).
+
+Profiles chosen before this ADR keep their values: `obsidian_loss` is now emulated, so
+the chosen world sets it (0.0040).
 
 ## Notes
 

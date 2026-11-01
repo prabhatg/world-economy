@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 fn defaults_from_registry_match_the_m0_values() {
     let p = Params::default();
     assert_eq!(p.period_ticks, 365);
-    assert_eq!((p.growth_rate, p.sedentary_growth_rate), (0.003274, 0.00934));
+    assert_eq!((p.growth_rate, p.sedentary_growth_rate), (0.02316, 0.02648));
     assert_eq!((p.capacity_min, p.capacity_max), (20, 400));
     assert_eq!(p.fission_threshold, 60);
     assert_eq!(p.fission_probability, 0.2);
@@ -22,9 +22,9 @@ fn defaults_from_registry_match_the_m0_values() {
         (p.miami_npp_max, p.miami_temp_offset, p.miami_temp_slope, p.miami_precip_slope),
         (3000.0, 1.315, 0.119, 0.000664)
     );
-    assert_eq!((p.npp_reference, p.forager_density_ref, p.npp_elasticity), (1000.0, 0.09515, 0.5117));
+    assert_eq!((p.npp_reference, p.forager_density_ref, p.npp_elasticity), (1000.0, 0.2598, 1.371));
     assert_eq!((p.aquatic_bonus, p.perennial_discharge), (0.5, 1.0));
-    assert_eq!((p.dispersal_crowding, p.dispersal_probability, p.dispersal_fraction), (0.8086, 0.4674, 0.5));
+    assert_eq!((p.dispersal_crowding, p.dispersal_probability, p.dispersal_fraction), (0.5007, 0.3026, 0.5));
 }
 
 #[test]

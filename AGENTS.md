@@ -70,7 +70,7 @@ pytest python/tests                               # Python binding tests
 (cd ../data && python -m oikos_data check)        # rebuild locked forcing packs, compare ids
 pytest ../calibration/tests                       # observation operators, emulators, history matching
 (cd ../calibration && PYTHONPATH=.:../data python -m oikos_cal screen --out runs/m1/screening.json)  # calibration waves: calibration/README.md
-(cd ../calibration && PYTHONPATH=.:../data python -m oikos_cal ensemble runs/m1/round7/best.json --out ../viewer/data/m1)  # worlds for the viewer
+(cd ../calibration && PYTHONPATH=.:../data python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1)  # worlds for the viewer
 (cd ../viewer && npm ci && npm test && npm run dev)  # viewer: http://localhost:5173/
 ```
 

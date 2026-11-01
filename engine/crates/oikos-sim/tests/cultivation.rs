@@ -160,9 +160,10 @@ fn hypotheses_set_the_target_effort() {
     assert_eq!(all.target_effort(500, 100, 1.0, 0.5, 0.0), 1.0);
 }
 
-/// Years of full-effort cultivation until half the crop is of the domestic type.
+/// Years of full-effort cultivation until half the crop is of the domestic type, from the
+/// wild mutant frequency and introgression `only` pins.
 fn years_to_half(selection: f64) -> u32 {
-    let c = Cultivation::from_params(&Params { selection_coefficient: selection, ..Params::default() });
+    let c = Cultivation::from_params(&Params { selection_coefficient: selection, ..only(0.0, 0.0, 0.0) });
     let mut d = 0.0;
     for year in 1..20_000 {
         d = c.domesticate(d, 1.0);

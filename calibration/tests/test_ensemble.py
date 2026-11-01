@@ -22,6 +22,16 @@ def test_the_defaults_come_first_then_consistent_candidates_best_first():
     assert len(ensemble.choose(_best(2), k=5)) == 2, "as many as there are"
 
 
+def test_candidates_come_in_the_order_their_best_file_ranks_them():
+    b = _best(3)
+    for c, fit in zip(b["candidates"], [-5.0, 0.0, 2.0]):
+        c["rerun_summary_log_likelihood"] = fit
+    assert [w["label"] for w in ensemble.choose({**b, "rank": "summaries"}, k=2)][1:] == ["Wave 5 run 12",
+                                                                                          "Wave 5 run 10"]
+    assert [w["label"] for w in ensemble.choose(b, k=2)][1:] == ["Wave 5 run 10", "Wave 5 run 12"], \
+        "files before ADR-0066 ranked by the item log-likelihoods"
+
+
 def test_a_world_runs_as_an_ordinary_work_unit_with_outputs():
     packs = [{"kind": "geometry", "id": "g" * 64, "path": "/d/m1-swasia.geometry.oikospack"},
              {"kind": "climate", "id": "c" * 64, "path": "/d/m1-swasia.climate.oikospack"}]

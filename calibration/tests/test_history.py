@@ -104,3 +104,16 @@ def test_a_wave_with_a_group_keeps_the_truth_and_rules_out_more():
     assert grouped.plausible(truth)[0]
     assert grouped.plausible(space).mean() < plain.plausible(space).mean()
     assert not (grouped.plausible(space) & ~plain.plausible(space)).any(), "a group only adds a check"
+
+
+def test_log_likelihood_is_the_gaussian_density_of_the_summaries_under_their_variances():
+    from scipy.stats import multivariate_normal, norm
+
+    ts, g = correlated_targets()
+    ts = [history.Target(t.name, t.observed, t.variance, 0.01) for t in ts] + [history.Target("d", 0.5, 0.04, 0.05)]
+    y = np.array([[0.1, 0.2, 0.0, 0.8], [0.0, 0.0, 0.0, 0.5]])
+    z = np.array([t.observed for t in ts])
+    joint = multivariate_normal(z[:3], g.covariance + 0.01 * np.eye(3))
+    expected = joint.logpdf(y[:, :3]) + norm(0.5, np.sqrt(0.09)).logpdf(y[:, 3])
+    assert history.log_likelihood(y, ts, [g]) == pytest.approx(expected)
+    assert history.log_likelihood(y, ts, [g])[1] > history.log_likelihood(y, ts, [g])[0], "the record itself fits best"

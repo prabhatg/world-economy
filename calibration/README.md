@@ -56,17 +56,22 @@ python -m oikos_cal wave --runs 300 --previous ... --activate adoption_rate --ou
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
 python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-python -m oikos_cal ensemble runs/m1/round7/best.json --out ../viewer/data/m1   # needs the release CLI
+python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1   # needs the release CLI
 ```
 
-`best` reruns the best consistent runs (by both log-likelihoods) with only their emulated
-parameters set and the others at their defaults, with three seeds, and records which
-stay consistent; the chosen world becomes the registry defaults (ADR-0057, ADR-0059).
+`best` reruns the best consistent runs with only their emulated parameters set and the
+others at their defaults, with three seeds, and records which stay consistent; the
+chosen world becomes the registry defaults (ADR-0057, ADR-0059). Runs are ranked by how
+near their summaries sit to the record under history matching's own error model, every
+record's observation covariance plus discrepancy (`history.log_likelihood`, ADR-0066);
+the item log-likelihood diagnostics, which allow for no discrepancy, are recorded beside
+it. Waves ranked together must be judged against the same targets.
 A later wave appends parameters new to the registry as active factors; `--activate`
 also makes active a factor the earlier waves varied as noise, when a new mechanism makes
 it matter (ADR-0065). NROY points take such factors uniformly, as the earlier waves did.
 `profile` varies one parameter with every other at its default and chooses the
-consistent value with the best log-likelihoods: for a parameter a new record
+consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
+log-likelihoods): for a parameter a new record
 constrains but that leaves the world's history alone (ADR-0061).
 
 Round 1 (ADR-0052) is in `runs/m1/`, round 2 (ten radiocarbon eras judged one by one
@@ -83,9 +88,12 @@ Round 6 (cultivation-onset eras added, ADR-0064) is in `runs/m1/round6/`: `wave6
 and `best.json` (wave 6, run 236, the defaults before round 7).
 Round 7 (social learning of cultivation, ADR-0065) is in `runs/m1/round7/`:
 `innovation_share.json` (a profile at the round-6 defaults), `wave7.json`, `wave8.json`
-(`adoption_rate` activated), `wave9.json` and `best.json` over waves 7-9, the source of
-the current calibrated defaults (wave 9, run 208). The onset record's tables are downloaded by hand (`data/README.md`); without them the M1
-problem cannot be built.
+(`adoption_rate` activated), `wave9.json` and `best.json` over waves 7-9 (wave 9, run
+208, the defaults before round 8; ranked by the item log-likelihoods).
+Round 8 (ranking by the summaries, ADR-0066) is in `runs/m1/round8/`: `wave10.json` and
+`best.json` over waves 7-10, the source of the current calibrated defaults (wave 9,
+run 180). The onset record's tables are downloaded by hand (`data/README.md`); without
+them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
 validated by the engine's state hash, never by an operator's output.

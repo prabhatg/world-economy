@@ -61,8 +61,8 @@ def test_worlds_are_run_in_parallel_and_reproducibly(problem):
 
 
 def test_the_default_world_is_consistent_with_the_record(problem):
-    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round7/best.json,
-    ADR-0065): with any seed, every target and every group pass history matching."""
+    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round8/best.json,
+    ADR-0066): with any seed, every target and every group pass history matching."""
     from oikos_cal import __main__ as cli
     from oikos_cal import m1
 

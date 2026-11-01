@@ -157,6 +157,12 @@ worlds consistent; one of them plants as the record does (0.09, 0.57, 0.75, 0.54
 socially and becomes the registry default, but plants 0.40 before 10,000 BCE: the
 log-likelihood diagnostics, which cover radiocarbon, rachis and obsidian, prefer early
 planting (open question 32).
+Round 8 (ADR-0066) ranks consistent worlds by how near their summaries of all five
+records sit to the record under history matching's own error model (observation
+covariance plus discrepancy), not by the item log-likelihoods, which allow for no
+discrepancy. Under it the late planters lead: the records do not pull apart. A tenth
+wave leaves 0.10% of the prior space, and the nearest consistent world (wave 9, run
+180) plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry default.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.
