@@ -69,6 +69,14 @@ simplifications make the test lenient. Phases vary too much at the same level of
 farming to score one by one, so only four era means are targets (split at 10,000, 8,800
 and 7,600 BCE). Before 10,000 BCE the record implies an effort of 0.09.
 
+**Implemented (juvenile-index operator, ADR-0068):** `juvenile.Operator` reads the
+juvenile index of a cemetery (15p5, the share of 5-19 year olds among the dead over 5;
+Bocquet-Appel 2002) from the fertility and local growth of a world's people there and
+then, through a stable population with the average hunter-gatherer Siler mortality of
+Gurven and Kaplan (2007), scaled to that birth rate. It sees the Neolithic demographic
+transition, which the stock records cannot (ADR-0067). The Levant cemetery record is to
+come (#33).
+
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
 

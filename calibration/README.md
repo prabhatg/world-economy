@@ -13,6 +13,7 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
 | `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settled activity dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
+| `oikos_cal/juvenile.py` | Juvenile-index operator (ADR-0068): a cemetery's share of 5-19 year olds among its dead over 5, from the world's fertility and local growth there, through a stable population with hunter-gatherer Siler mortality; the Levant record is to come (#33) |
 | `oikos_cal/onset.py` | Cultivation-onset operator (ADR-0064): people-weighted cultivation effort at dated site phases, against the effort their crops among charred plant remains imply (anchored on Pottery Neolithic phases) |
 | `oikos_cal/screening.py` | Morris elementary-effects screening of the registry's free parameters (ADR-0052) |
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
@@ -74,6 +75,9 @@ emulators are rebuilt from there, exactly as the search left them (#32).
 A later wave appends parameters new to the registry as active factors; `--activate`
 also makes active a factor the earlier waves varied as noise, when a new mechanism makes
 it matter (ADR-0065). NROY points take such factors uniformly, as the earlier waves did.
+`--inactive` keeps parameters new to the registry as noise when no record of the wave
+sees them yet (`fertility` and `sedentary_fertility` until the juvenile-index record
+joins, ADR-0068).
 `profile` varies one parameter with every other at its default and chooses the
 consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
 log-likelihoods): for a parameter a new record

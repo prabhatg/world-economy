@@ -125,13 +125,18 @@ def report_screening(doc):
     print("seed noise / tol: " + ", ".join(f"{t.name} {n:.2f}" for t, n in zip(ts, noise)))
 
 
-def extend_factors(previous, free):
+def extend_factors(previous, free, inactive=()):
     """Factors of a wave after waves over `previous`: those plus the free parameters new
     to the registry, appended so earlier waves' factor indices hold, and the indices of
-    the new ones. Earlier waves never judged the new factors (they ran at the defaults),
-    so NROY points take them uniformly and the new wave's emulators see them."""
+    the new ones to emulate. Earlier waves never judged the new factors (they ran at the
+    defaults), so NROY points take them uniformly and the new wave's emulators see them,
+    except those `inactive`: parameters no record of the wave can see yet, sampled as
+    noise (ADR-0068)."""
     new = [f for f in free if f not in previous]
-    return list(previous) + new, list(range(len(previous), len(previous) + len(new)))
+    unknown = [n for n in inactive if n not in new]
+    if unknown:
+        raise SystemExit(f"--inactive: {unknown} not a parameter new to the registry; new: {new}")
+    return list(previous) + new, [len(previous) + i for i, f in enumerate(new) if f not in inactive]
 
 
 def activate(factors, active, names):
@@ -184,7 +189,7 @@ def wave(args):
         factors, active = previous[-1]["factors"], previous[-1]["active"]
         if args.screening:  # refocus: later emulators may see more factors than earlier ones
             active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
-        factors, new = extend_factors(factors, screening.free_parameters(oikos.registry()))
+        factors, new = extend_factors(factors, screening.free_parameters(oikos.registry()), args.inactive)
         active = activate(factors, sorted(set(active) | set(new)), args.activate)
         if args.activate:
             print(f"activated: {args.activate}", file=sys.stderr)
@@ -403,6 +408,8 @@ def main(argv=None):
     w.add_argument("--threshold", type=float, default=0.5, help="active if max mu*/tol reaches this")
     w.add_argument("--max-active", type=int, default=10)
     w.add_argument("--activate", nargs="*", default=[], help="factors earlier waves varied as noise to emulate now")
+    w.add_argument("--inactive", nargs="*", default=[],
+                   help="parameters new to the registry to sample as noise, not emulate (no record sees them yet)")
     w.add_argument("--seed", type=int, default=1)
     w.add_argument("--workers", type=int, default=workers)
     w.add_argument("--out", required=True)

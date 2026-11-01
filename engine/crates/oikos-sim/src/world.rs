@@ -750,6 +750,10 @@ impl World {
             }
         });
 
+        if self.obsidian.active() {
+            self.obsidian.abandon(&self.population);
+        }
+
         let mut stats = StepStats::default();
         for p in &self.parts {
             stats.add(p.stats);

@@ -423,6 +423,57 @@ fn sedentary_cultivators_grow_faster_than_mobile_foragers() {
 }
 
 #[test]
+fn births_and_deaths_split_the_logistic_change() {
+    // Fertility moves with cultivation effort as growth does (Bocquet-Appel 2002); mortality
+    // takes the rest, so the net change is still logistic and bands still settle at capacity.
+    let p = Params {
+        growth_rate: 0.01,
+        sedentary_growth_rate: 0.02,
+        fertility: 0.03,
+        sedentary_fertility: 0.05,
+        ..Params::default()
+    };
+    let g = mechanisms::Growth::from_params(&p);
+    assert_eq!((g.fertility(0.0), g.fertility(1.0)), (0.03, 0.05));
+    let (b, d) = g.vital_rates(0.5, 50.0, 100.0);
+    assert!((b - 0.04).abs() < 1e-15);
+    assert!((b - d - 0.015 * 0.5).abs() < 1e-15, "net change r (1 - N/K)");
+    let (b, d) = g.vital_rates(1.0, 100.0, 100.0);
+    assert_eq!(b, d, "at capacity births and deaths balance");
+    let (b, d) = g.vital_rates(0.0, 150.0, 100.0);
+    assert!(d > b && (d - b - 0.005).abs() < 1e-15, "beyond capacity deaths exceed births");
+    // A population cannot grow faster than it bears children.
+    let fast = mechanisms::Growth::from_params(&Params { growth_rate: 0.05, fertility: 0.03, ..p });
+    assert_eq!(fast.vital_rates(0.0, 0.0, 100.0), (0.03, 0.0));
+}
+
+#[test]
+fn cultivators_bear_more_children_at_the_same_numbers() {
+    // The transition's signature in the skeletal record (Bocquet-Appel 2002) is fertility:
+    // in a world at capacity, higher sedentary fertility means more births and as many
+    // more deaths, not more people.
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let c = climate_pack(&h3, &[-12_000], |_, _| (15.0, 500.0));
+    let run = |sedentary: f64| {
+        let p = Params { fertility: 0.0325, sedentary_fertility: sedentary, ..only(0.0, 0.0, 0.8) };
+        let mut w = world(&[&g, &c], 6, p);
+        w.run_years(600, 2, 600);
+        let (mut births, before) = (0, w.total_population());
+        w.run_years_observed(100, 2, 100, &mut |_, s| {
+            births += s.births;
+            Ok(())
+        })
+        .unwrap();
+        (births as f64 / (100.0 * (before + w.total_population()) as f64 / 2.0), w.total_population())
+    };
+    let ((none, people_none), (transition, people)) = (run(0.0325), run(0.06));
+    assert!((none - 0.0325).abs() < 0.002, "births per person-year at forager fertility: {none}");
+    assert!(transition > none + 0.01, "{transition} vs {none}");
+    assert!((people as f64 / people_none as f64 - 1.0).abs() < 0.05, "{people} vs {people_none}");
+}
+
+#[test]
 fn the_demographic_transition_follows_cultivation() {
     let h3 = h3_cells();
     let g = geometry_pack(&h3);

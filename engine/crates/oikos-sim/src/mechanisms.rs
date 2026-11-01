@@ -123,29 +123,54 @@ fn habitable_neighbors<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Ite
     sense.grid.neighbors(cell).iter().copied().filter(|&c| sense.habitable[c as usize])
 }
 
-/// Logistic growth toward each cell's carrying capacity: dw = r w (1 - N/K),
-/// stochastically rounded to whole people.
+/// Logistic growth toward each cell's carrying capacity, dw = r w (1 - N/K), as gross
+/// births and deaths, each stochastically rounded to whole people.
 ///
 /// The intrinsic rate r is the Neolithic demographic transition (Bocquet-Appel 2002,
 /// 2011): it moves linearly with a band's cultivation effort from the mobile foragers'
 /// rate to the sedentary cultivators'. Sedentism and cereal weaning foods shorten birth
 /// intervals (Sellen and Mace 1997; Page et al. 2016); the net effect is what the rates
 /// encode. Foragers' bands (and toy worlds, which never cultivate) grow at `rate`.
+///
+/// Births are the band's fertility (crude birth rate), which moves with effort in the
+/// same way; deaths are the rest of the change, so the net is still logistic (ADR-0068).
+/// Fertility is what the skeletal record sees (the juvenile index), and at capacity it
+/// changes births and deaths, not numbers. Net growth beyond fertility is capped at it.
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
     pub rate: f64,
     pub sedentary_rate: f64,
+    pub fertility: f64,
+    pub sedentary_fertility: f64,
 }
 
 impl Growth {
     pub fn from_params(p: &Params) -> Growth {
-        Growth { period_ticks: p.period_ticks, rate: p.growth_rate, sedentary_rate: p.sedentary_growth_rate }
+        Growth {
+            period_ticks: p.period_ticks,
+            rate: p.growth_rate,
+            sedentary_rate: p.sedentary_growth_rate,
+            fertility: p.fertility,
+            sedentary_fertility: p.sedentary_fertility,
+        }
     }
 
     /// Intrinsic growth rate of a band spending `effort` of its effort cultivating.
     pub fn rate(&self, effort: f64) -> f64 {
         self.rate + (self.sedentary_rate - self.rate) * effort
+    }
+
+    /// Crude birth rate of a band spending `effort` of its effort cultivating.
+    pub fn fertility(&self, effort: f64) -> f64 {
+        self.fertility + (self.sedentary_fertility - self.fertility) * effort
+    }
+
+    /// Births and deaths per person and period of a band at `effort` in a cell of `pop`
+    /// people and capacity `k`.
+    pub fn vital_rates(&self, effort: f64, pop: f64, k: f64) -> (f64, f64) {
+        let b = self.fertility(effort);
+        (b, (b - self.rate(effort) * (1.0 - pop / k)).max(0.0))
     }
 }
 
@@ -171,18 +196,13 @@ impl Mechanism for Growth {
             let w = agents.weight[i];
             let pop = sense.population[cell] as f64;
             let k = sense.capacity[cell] as f64;
-            let r = self.rate(Traits::share(agents.cultivation[i]));
-            let dw = oikos_math::finite(r * w as f64 * (1.0 - pop / k));
-            let draw = rng.u32(agents.id[i].0, t, 0, 0);
-            if dw >= 0.0 {
-                let b = stochastic_round(dw, draw);
-                agents.weight[i] = w + b;
-                births += b;
-            } else {
-                let d = stochastic_round(-dw, draw).min(w);
-                agents.weight[i] = w - d;
-                deaths += d;
-            }
+            let (b, d) = self.vital_rates(Traits::share(agents.cultivation[i]), pop, k);
+            let draw = rng.block(agents.id[i].0, t, 0);
+            let born = stochastic_round(oikos_math::finite(b * w as f64), draw[0]);
+            let died = stochastic_round(oikos_math::finite(d * w as f64), draw[1]).min(w + born);
+            agents.weight[i] = w + born - died;
+            births += born;
+            deaths += died;
         }
         part.stats.births += births;
         part.stats.deaths += deaths;

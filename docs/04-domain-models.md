@@ -68,7 +68,10 @@ enters the model, and the starting mechanisms.
   no-transition hypothesis. The M1 records do not identify the rates (ADR-0067):
   populations follow carrying capacity, which cultivation raises far slower than any
   band grows, so the transition in M1 worlds is in capacity. Age structure and the
-  juvenile index of rural cemeteries would test it (#33).
+  juvenile index of rural cemeteries would test it (#33). Births and deaths are gross
+  events (ADR-0068): births at the band's fertility, which moves with cultivation
+  effort from `fertility` to `sedentary_fertility` (equal by default), deaths the rest
+  of the logistic change.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.

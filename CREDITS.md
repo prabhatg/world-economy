@@ -84,6 +84,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Nature Communications 4: 2486, doi:10.1038/ncomms3486; Timpson, A. et al. (2014),
   Journal of Archaeological Science 52: 549–557, doi:10.1016/j.jas.2014.08.011;
   rcarbon, Crema, E.R. & Bevan, A. (2021), Radiocarbon 63: 23–39, doi:10.1017/RDC.2020.95.
+- **Juvenile index:** Bocquet-Appel, J.-P. (2002), Current Anthropology 43: 637–650,
+  doi:10.1086/342429; read through a stable population with the Siler mortality of
+  Gurven, M. & Kaplan, H. (2007), Population and Development Review 33: 321–365,
+  doi:10.1111/j.1728-4457.2007.00171.x (Siler, W. (1979), Ecology 60: 750–757, doi:10.2307/1936612).
 - **Aoristic site counts:** Crema, E.R. (2012), Journal of Archaeological Method and
   Theory 19: 440–461, doi:10.1007/s10816-011-9122-3; as applied to these surveys by
   Palmisano et al. (2021).

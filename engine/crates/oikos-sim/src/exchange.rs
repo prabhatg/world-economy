@@ -65,6 +65,19 @@ impl Obsidian {
             std::mem::swap(x, &mut self.next);
         }
     }
+
+    /// Clears the obsidian of cells that ended a step empty: only people hold it. The next
+    /// exchange would clear them anyway and never reads empty cells, so this changes no
+    /// history, only what the world shows between steps.
+    pub fn abandon(&mut self, population: &[u64]) {
+        for x in &mut self.available {
+            for (held, &people) in x.iter_mut().zip(population) {
+                if people == 0 {
+                    *held = 0;
+                }
+            }
+        }
+    }
 }
 
 /// One step of down-the-line exchange of one source group: `new[c]` from `old`

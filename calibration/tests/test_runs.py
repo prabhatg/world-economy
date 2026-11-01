@@ -148,6 +148,10 @@ def test_a_later_wave_adds_parameters_new_to_the_registry_as_active_factors():
     factors, new = cli.extend_factors(["a", "c", "d"], ["a", "b", "c", "d", "e"])
     assert factors == ["a", "c", "d", "b", "e"] and new == [3, 4], "appended, so earlier waves' indices hold"
     assert cli.extend_factors(["a", "b"], ["a", "b"]) == (["a", "b"], [])
+    factors, new = cli.extend_factors(["a"], ["a", "b", "c"], inactive=["c"])
+    assert factors == ["a", "b", "c"] and new == [1], "a factor kept inactive is sampled, not emulated"
+    with pytest.raises(SystemExit, match="z"):
+        cli.extend_factors(["a"], ["a", "b"], inactive=["z"])
     # Earlier waves judge only their own factors: a point's new coordinates never matter.
     u = emulator.latin_hypercube(30, 2, np.random.default_rng(1))
     ts = [history.Target("a", 0.5, 0.0001, 0.0)]

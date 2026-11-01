@@ -161,10 +161,15 @@ fn geometry_pack(h3: &[u64]) -> Vec<u8> {
 
 /// Wild-cereal country everywhere (15 degC, 500 mm), so foragers live in every cell.
 fn climate_pack(h3: &[u64]) -> Vec<u8> {
+    climate_pack_with(h3, 500)
+}
+
+/// Temperature 15 degC and `precip` mm a year everywhere.
+fn climate_pack_with(h3: &[u64], precip: u16) -> Vec<u8> {
     let mut b = PackBuilder::new("climate", region(h3));
     b.time(vec![-13000, 3000], TimeRule::Linear);
     b.field(spec("temp_mean", Dims::TimeCell, 0.01), Data::I16(vec![1500; 2 * h3.len()])).unwrap();
-    b.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(vec![500; 2 * h3.len()])).unwrap();
+    b.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(vec![precip; 2 * h3.len()])).unwrap();
     b.build()
 }
 
@@ -231,6 +236,42 @@ fn each_source_supplies_its_own_side_of_the_region() {
         }
     }
     assert!(checked > 100, "{checked}");
+}
+
+#[test]
+fn only_people_hold_obsidian() {
+    // A cell its people leave or die out of during a step holds no obsidian after it,
+    // whenever the world is read. Sparse foragers: cells of a few people with many births
+    // and as many deaths drift, and die out.
+    let (g, _, o) = packs();
+    let c = climate_pack_with(&h3_cells(), 150);
+    let id = blake3::hash(&g).to_hex().to_string();
+    let p = Params {
+        initial_occupancy: 0.5,
+        capacity_min: 1,
+        forager_density_ref: 0.005,
+        growth_rate: 0.0,
+        sedentary_growth_rate: 0.0,
+        fertility: 0.06,
+        sedentary_fertility: 0.06,
+        cultivation_pressure_weight: 0.0,
+        ..Params::default()
+    };
+    let mut w = World::with_inputs(WorldConfig::geometry(&id), 3, p, inputs(&[&g, &c, &o])).unwrap();
+    let mut held = vec![false; w.grid.len()];
+    let (mut emptied, mut stale) = (0, 0);
+    w.run_years_observed(300, 2, 300, &mut |w, _| {
+        for (cell, had) in held.iter_mut().enumerate() {
+            let empty = w.population[cell] == 0;
+            emptied += (*had && empty) as u32;
+            stale += (empty && (0..2).any(|s| w.obsidian(s)[cell] > 0.0)) as u32;
+            *had = !empty && (0..2).any(|s| w.obsidian(s)[cell] > 0.0);
+        }
+        Ok(())
+    })
+    .unwrap();
+    assert!(emptied > 10, "cells holding obsidian died out during the run: {emptied}");
+    assert_eq!(stale, 0, "empty cells holding obsidian");
 }
 
 #[test]

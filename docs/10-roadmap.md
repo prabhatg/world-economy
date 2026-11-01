@@ -82,7 +82,9 @@ judges them, shows the records agree: a tenth wave and the new ranking choose a 
 that plants late, as the onset record does, and it is the registry default.
 The records do not identify the Neolithic demographic transition's growth rates
 (ADR-0067): populations follow carrying capacity; age structure and the juvenile
-index would test it (#33).
+index would test it (#33). Births and deaths are now gross events with fertility
+moving with cultivation, and a juvenile-index operator reads them (ADR-0068); the
+Levant cemetery record is to come.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

@@ -69,6 +69,7 @@
 | 0065 | Social learning of cultivation and calibration round 7: a band closes the gap between its cultivation effort and its target at `adoption_rate × (i + (1 − i) × seen)`, `seen` being the people-weighted mean effort in its cell after the previous step and `i` the new `innovation_share` (1 is individual learning, the model before; checkpoints without it restore with 1). Cultivation then spreads as an innovation does (Bass 1969; Henrich 2001): slowly while few plant, then fast. `wave --activate` lets a later wave emulate a factor earlier waves varied as noise (`adoption_rate`, which now sets when planting takes off). Three waves (7-9) with the five records; the best consistent world (wave 9, run 208) becomes the registry defaults, `adoption_rate` and `innovation_share` now `calibrated`, sources in `calibration/runs/m1/round7/best.json` | Accepted; values superseded by 0066 |
 | 0066 | Calibrated defaults are ranked by the summaries, not the item log-likelihoods, and calibration round 8: `best` and `profile` choose the consistent world whose summaries of all five records sit nearest the record under history matching's own error model (`history.log_likelihood`: each group's observation covariance plus discrepancy, the other targets on their own; Kennedy and O'Hagan 2001), recording the item diagnostics beside it; waves ranked together must share their targets, and `ensemble` follows the ranking its best file records. Answers open question 32: the records do not pull apart, the per-date radiocarbon likelihood (no discrepancy) preferred early planting. A tenth wave (NROY 0.10%); `best` over waves 7-10 chooses wave 9, run 180, which plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry defaults (20 parameters; sources in `calibration/runs/m1/round8/best.json`) | Accepted |
 | 0067 | The M1 records do not identify the Neolithic demographic transition's growth rates (open question 27): populations follow carrying capacity, which at the defaults grows nearly 20 times slower than a band's growth rate even with sedentary growth at the prior's floor, so the rates only set a lag of a few percent, and the records measure stocks, not vital rates. Over the 534 consistent worlds of waves 7-10 the sedentary/forager ratio keeps its prior distribution, and a profile of `sedentary_growth_rate` at the defaults (0.1 to 4 times the forager rate) is flat. The transition in M1 worlds is in capacity, which cultivation raises; the rates stay as calibrated, marked unidentified. A test needs age structure and the juvenile index of rural cemeteries (#33) | Accepted |
+| 0068 | Births and deaths are gross vital events, and the juvenile-index operator: growth keeps the logistic net change but counts births at the band's fertility (crude birth rate, moving with cultivation effort from `fertility` to `sedentary_fertility`, equal by default: no transition, nested) and deaths as the rest, net growth capped at fertility. `juvenile.Operator` reads a cemetery's juvenile index (15p5, Bocquet-Appel 2002) from the fertility and local growth of the people there and then, through a stable population with the average hunter-gatherer Siler mortality of Gurven and Kaplan (2007) at the level that gives that birth rate. Forager fertility is that schedule's stationary birth rate, 1/e0 = 0.0325. The Levant cemetery record (Guerrero, Naji and Bocquet-Appel 2008) is to come (#33) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -939,6 +940,70 @@ arrives and is the transition's own signature. Testing against it needs age stru
 the bands and an operator for the index (#33). Until then the two rates stay at the
 calibrated world's values, marked in the registry as unidentified. Later waves may drop
 `sedentary_growth_rate` from the emulators' active factors as noise.
+
+## ADR-0068 rationale (gross births and deaths; the juvenile index)
+
+ADR-0067 found that the M1 records cannot see the Neolithic demographic transition: they
+measure stocks, and populations follow capacity. The skeletal record measures something
+else. The juvenile index of a cemetery, the share of 5-19 year olds among the dead over 5,
+rises with the birth rate and hardly depends on mortality, and it rises a few centuries
+after farming arrives (Bocquet-Appel 2002). It is a test of fertility, not of numbers.
+
+The model's bands had a net growth rate and no births or deaths of their own. Two ways
+to give them a juvenile index were weighed: age classes inside each band (counts of
+0-4, 5-19 and 20+ year olds, ageing, deaths by age), or gross vital rates with a stable
+population read off them. Age classes would read the index from simulated deaths, but
+cost three arrays per agent, a new checkpoint format and age-aware split and merge. The
+index is read here through stable-population theory instead, which is how it is
+interpreted in the first place.
+
+`Growth` now draws births at the band's fertility, linear in its cultivation effort as
+its growth rate is, and deaths as the rest of the logistic change, so the expected net
+is unchanged. Net growth beyond fertility is capped at it: a population cannot grow
+faster than it bears children. Priors keep fertility (0.03-0.06) at or above growth
+(0.001-0.03). At capacity, higher fertility means more births and as many more deaths,
+not more people (`cultivators_bear_more_children_at_the_same_numbers`).
+
+`juvenile.Operator` reads a cemetery's index from the people within a ring of its site
+over the centuries of its use. Their birth rate is their people-weighted fertility,
+exact since fertility is linear in effort. Their growth is the trend of log
+people-years, up to the bands' intrinsic growth rate either way: people arriving or
+leaving faster than bands grow are migrants, whose ages a stable population does not
+describe. Rates are per year, converted from the registry's per-period ones. Their dead
+are those of a stable population with that birth and growth rate (Lotka), integrated to
+300 years so that low mortality keeps its old ages. Its mortality has the Siler shape of the average of five hunter-gatherer
+populations (Gurven and Kaplan 2007, Table 2: a1 0.422, b1 1.131, a2 0.013, a3 1.47e-4,
+b3 0.086), scaled to give that birth rate. The schedule reproduces the paper's own
+survivorship (57% to 15; 30.8 years at birth), and its stationary birth rate, 1/e0 =
+0.0325, is the forager fertility default. At it the stationary index is 0.184.
+
+In the default M1 world, scored at Abu Hureyra in 500-year slices from 12,000 to 6,000
+BCE, the index stays at 0.184 without a transition. With sedentary fertility 0.06 it
+follows the cultivation effort, from 0.184 while people forage to 0.21-0.25 as they farm
+(effort 0.17-0.46). A fertility transition shows in the index whether or not it shows in
+numbers.
+
+Sedentary fertility stays equal to forager fertility, the no-transition hypothesis
+nested, until a record can calibrate it. The Levant juvenile indices are tabulated in
+Guerrero, Naji and Bocquet-Appel (2008, doi:10.1007/978-1-4020-8539-0_4), a chapter
+without an open licence. They join as the sixth record once the chapter is in hand
+(#33). Until then the two fertility parameters change only noise in the five records,
+so a wave before that record names them in `--inactive`: new registry parameters are
+then sampled as noise, not emulated.
+
+Gross deaths empty small cells more often: a lone survivor at capacity now dies about
+one year in thirty, where the net change almost never removed one. That exposed a stale
+state. Obsidian exchange runs at the start of a step, so a cell emptied during the step
+kept its obsidian until the next exchange cleared it. Cells that end a step empty now
+lose their obsidian at once (`Obsidian::abandon`). The exchange never reads empty cells,
+so no history changes, only what the world shows between steps
+(`only_people_hold_obsidian`).
+
+The golden toy world changes on purpose: births and deaths are rounded separately, so
+its history differs by chance (506,094 people by 9,000 BCE against 506,594; hash
+f91b4dec). Two roundings per band cost 1,217.28 wasm instructions per agent-step against
+1,139.23 (+6.9%). Native time is unchanged within noise (`bench --res 6 --years 20
+--parts 4`: 13.4-14.6 ns per agent-step against 14.0-16.8, alternating runs).
 
 ## Notes
 

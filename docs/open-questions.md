@@ -79,7 +79,8 @@
     The 534 consistent worlds of waves 7-10 keep the ratio's prior distribution, and a
     profile at the defaults from 0.1 to 4 times the forager rate is flat. In M1 worlds
     the transition is in capacity. Testing the rates needs age structure and the
-    juvenile index (#33).
+    juvenile index (#33). The model side is built (ADR-0068): fertility moves with
+    cultivation and a juvenile-index operator reads it; the Levant record is to come.
 28. How did obsidian move beyond the settled chain (ADR-0060, ADR-0061)? Down-the-line
     exchange passes obsidian only between neighboring settled cells, so Cyprus, supplied
     with Cappadocian obsidian by boat, is never reached and its assemblages are dropped.

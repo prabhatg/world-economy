@@ -54,6 +54,32 @@ sources = [
   { citation = "Page, A.E. et al. (2016). Reproductive trade-offs in extant hunter-gatherers suggest adaptive mechanism for the Neolithic expansion. PNAS 113, 4694-4699.", doi = "10.1073/pnas.1524031113" },
 ]
 
+[params.fertility]
+group = "demography"
+unit = "1/period"
+description = "Crude birth rate of mobile foragers: births per person and period. Deaths are the rest of the logistic change, so births and deaths are gross vital events (see sedentary_fertility)."
+kind = { type = "real", min = 0.0, max = 0.2 }
+default = 0.0325
+prior = { dist = "uniform", lo = 0.03, hi = 0.06 }
+status = "literature"
+note = "The birth rate of a stationary population with the average hunter-gatherer mortality of Gurven and Kaplan (2007, Table 2: Siler a1 0.422, b1 1.131, a2 0.013, a3 1.47e-4, b3 0.086), 1/e0 with e0 30.8 years. The prior starts at the top of growth_rate's: a population cannot grow faster than it bears children."
+sources = [
+  { citation = "Gurven, M., Kaplan, H. (2007). Longevity among hunter-gatherers: a cross-cultural examination. Population and Development Review 33, 321-365.", doi = "10.1111/j.1728-4457.2007.00171.x" },
+]
+
+[params.sedentary_fertility]
+group = "demography"
+unit = "1/period"
+description = "Crude birth rate of fully sedentary cultivators; a band's moves linearly from fertility (mobile foragers) to this with its cultivation effort. The Neolithic demographic transition's signature in the skeletal record (juvenile index)."
+kind = { type = "real", min = 0.0, max = 0.2 }
+default = 0.0325
+prior = { dist = "uniform", lo = 0.03, hi = 0.06 }
+status = "placeholder"
+note = "Equal to fertility: the no-transition hypothesis, nested. The juvenile index of cemeteries rises a few centuries after farming arrives (Bocquet-Appel 2002), read as a rise in fertility, so the literature fixes the sign, not the size; the Levant cemeteries (#33) are to calibrate it. At capacity it changes births and deaths, not numbers (ADR-0068)."
+sources = [
+  { citation = "Bocquet-Appel, J.-P. (2002). Paleoanthropological traces of a Neolithic demographic transition. Current Anthropology 43, 637-650.", doi = "10.1086/342429" },
+]
+
 [params.capacity_min]
 group = "environment"
 unit = "people per cell"

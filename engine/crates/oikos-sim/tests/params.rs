@@ -11,6 +11,7 @@ fn defaults_from_registry_match_the_m0_values() {
     let p = Params::default();
     assert_eq!(p.period_ticks, 365);
     assert_eq!((p.growth_rate, p.sedentary_growth_rate), (0.02316, 0.02648));
+    assert_eq!((p.fertility, p.sedentary_fertility), (0.0325, 0.0325));
     assert_eq!((p.capacity_min, p.capacity_max), (20, 400));
     assert_eq!(p.fission_threshold, 60);
     assert_eq!(p.fission_probability, 0.2);
