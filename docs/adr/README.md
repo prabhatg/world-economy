@@ -68,6 +68,7 @@
 | 0064 | Cultivation-onset operator and calibration round 6: the share of crops (domesticates, crop progenitors, presumed crops) among the charred grains and seeds of dated site phases in the Origins of agriculture database (Wallace et al. 2018; under the ADS terms it is downloaded by hand and its phase table built in memory, never committed or packed), against a world's people-weighted cultivation effort in the site's cell and its neighbors over the phase. Shares are not diets: the share of a farming world is anchored on the record's Pottery Neolithic phases (mean 0.50 over 18 phases), and an era's mean share over the anchor is the effort the record implies; phases are not scored one by one. Targets are four eras (edges 10,000, 8,800 and 7,600 BCE), joint bootstrap over phases and anchors, one group, discrepancy 0.1. A sixth wave judges all five records, and its best consistent world (wave 6, run 236) becomes the registry defaults: 18 parameters `calibrated`, `obsidian_loss` included, sources in `calibration/runs/m1/round6/best.json` | Accepted |
 | 0065 | Social learning of cultivation and calibration round 7: a band closes the gap between its cultivation effort and its target at `adoption_rate × (i + (1 − i) × seen)`, `seen` being the people-weighted mean effort in its cell after the previous step and `i` the new `innovation_share` (1 is individual learning, the model before; checkpoints without it restore with 1). Cultivation then spreads as an innovation does (Bass 1969; Henrich 2001): slowly while few plant, then fast. `wave --activate` lets a later wave emulate a factor earlier waves varied as noise (`adoption_rate`, which now sets when planting takes off). Three waves (7-9) with the five records; the best consistent world (wave 9, run 208) becomes the registry defaults, `adoption_rate` and `innovation_share` now `calibrated`, sources in `calibration/runs/m1/round7/best.json` | Accepted; values superseded by 0066 |
 | 0066 | Calibrated defaults are ranked by the summaries, not the item log-likelihoods, and calibration round 8: `best` and `profile` choose the consistent world whose summaries of all five records sit nearest the record under history matching's own error model (`history.log_likelihood`: each group's observation covariance plus discrepancy, the other targets on their own; Kennedy and O'Hagan 2001), recording the item diagnostics beside it; waves ranked together must share their targets, and `ensemble` follows the ranking its best file records. Answers open question 32: the records do not pull apart, the per-date radiocarbon likelihood (no discrepancy) preferred early planting. A tenth wave (NROY 0.10%); `best` over waves 7-10 chooses wave 9, run 180, which plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry defaults (20 parameters; sources in `calibration/runs/m1/round8/best.json`) | Accepted |
+| 0067 | The M1 records do not identify the Neolithic demographic transition's growth rates (open question 27): populations follow carrying capacity, which at the defaults grows nearly 20 times slower than a band's growth rate even with sedentary growth at the prior's floor, so the rates only set a lag of a few percent, and the records measure stocks, not vital rates. Over the 534 consistent worlds of waves 7-10 the sedentary/forager ratio keeps its prior distribution, and a profile of `sedentary_growth_rate` at the defaults (0.1 to 4 times the forager rate) is flat. The transition in M1 worlds is in capacity, which cultivation raises; the rates stay as calibrated, marked unidentified. A test needs age structure and the juvenile index of rural cemeteries (#33) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -899,6 +900,45 @@ instructions per agent-step (1,178 before), and an M1 run 65 s (97 s).
 
 Profiles chosen before this ADR keep their values: `obsidian_loss` is now emulated, so
 the chosen world sets it (0.0040).
+
+## ADR-0067 rationale (the transition's growth rates are not identified)
+
+Open question 27 asked whether cultivation speeds population growth in M1. Rounds 3 to 8
+each found consistent worlds with sedentary growth from under half to several times the
+forager rate. Round 8's chosen world has a ratio of 1.14, and its forager growth is
+near the top of the consistent range.
+
+The consistent worlds learn nothing about the ratio. Over the 534 consistent runs of
+waves 7-10, the ratio of sedentary to forager growth has the 10, 50 and 90% quantiles
+0.28, 0.94 and 3.69, against 0.25, 1.0 and 4.0 under the prior (both rates uniform on
+0.001-0.03). Each rate spans its prior: forager growth 0.0038 to 0.027, sedentary
+0.0039 to 0.026. The summary log-likelihood is unrelated to either rate, to their ratio
+or to their difference (Spearman |rho| at most 0.06), also among the worlds with slow
+foragers. At the defaults, a profile of `sedentary_growth_rate` from 0.0023 to 0.093,
+0.1 to 4 times the forager rate (three seeds each;
+`calibration/runs/m1/round8/sedentary_growth_rate.json`), keeps every world consistent.
+It moves the summary log-likelihood only between 4.7 and 5.2, about its seed spread, and
+the item diagnostics by 11 log units.
+
+The reason is structural. Logistic growth toward a capacity that itself grows at rate g
+lags it by N/K = 1 - g/r. At the defaults, M1 capacity grows at most about 0.05% a year,
+as cultivation spreads over millennia. A band's effective rate, between the forager and
+sedentary rates by its cultivation effort (at most 0.65), is at least 0.9% a year: nearly
+20 times faster, even with sedentary growth at the prior's floor. So worlds sit at 95-100% of capacity
+from 11,000 BCE. Population at 3,000 BCE is 4.04, 4.10 and 4.11 million at sedentary
+rates 0.1, 1.14 and 4 times the forager rate. Its rise from 1.0 million at 11,000 BCE
+to 4.5 million at 5,000 BCE is cultivation raising capacity, whatever the rates. The
+records measure stocks: dated activity, sites, crop shares and obsidian in use. Their
+summaries cannot see a lag of a few percent. As ADR-0053 found for the radiocarbon
+rise, the transition in M1 worlds is in capacity.
+
+A rate would show only if it were near g, below the prior's floor, or if the record
+measured vital rates. The juvenile index of rural cemeteries, the share of 5-19 year
+olds among skeletons over 5 (Bocquet-Appel 2002), rises a few centuries after farming
+arrives and is the transition's own signature. Testing against it needs age structure in
+the bands and an operator for the index (#33). Until then the two rates stay at the
+calibrated world's values, marked in the registry as unidentified. Later waves may drop
+`sedentary_growth_rate` from the emulators' active factors as noise.
 
 ## Notes
 

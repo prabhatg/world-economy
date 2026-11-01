@@ -64,8 +64,11 @@ enters the model, and the starting mechanisms.
   *Implemented (M1):* logistic growth whose intrinsic rate moves with a band's
   cultivation effort from the mobile foragers' rate to the sedentary cultivators'
   (`mechanisms::Growth`, ADR-0053), the net effect of the Neolithic demographic
-  transition; age structure is not yet modelled. Equal rates (the default) nest the
-  no-transition hypothesis.
+  transition; age structure is not yet modelled. Equal rates nest the
+  no-transition hypothesis. The M1 records do not identify the rates (ADR-0067):
+  populations follow carrying capacity, which cultivation raises far slower than any
+  band grows, so the transition in M1 worlds is in capacity. Age structure and the
+  juvenile index of rural cemeteries would test it (#33).
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.

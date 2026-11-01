@@ -80,6 +80,9 @@ best-fitting world, which learns socially, became the registry default; it still
 planted too early. Ranking worlds by their summaries (ADR-0066), as history matching
 judges them, shows the records agree: a tenth wave and the new ranking choose a world
 that plants late, as the onset record does, and it is the registry default.
+The records do not identify the Neolithic demographic transition's growth rates
+(ADR-0067): populations follow carrying capacity; age structure and the juvenile
+index would test it (#33).
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

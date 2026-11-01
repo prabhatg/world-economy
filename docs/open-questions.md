@@ -72,6 +72,14 @@
     (ADR-0061) fits the four records as well with sedentary growth 0.4 times the
     forager rate. The rural-cemetery juvenile index (Bocquet-Appel 2002) could test
     it directly.
+    Answered (ADR-0067): not with these records. Populations follow carrying capacity,
+    which at the defaults grows nearly 20 times slower than a band's growth rate, even
+    with sedentary growth at the prior's floor. The rates only set a lag of a few
+    percent, and the records measure stocks, not vital rates.
+    The 534 consistent worlds of waves 7-10 keep the ratio's prior distribution, and a
+    profile at the defaults from 0.1 to 4 times the forager rate is flat. In M1 worlds
+    the transition is in capacity. Testing the rates needs age structure and the
+    juvenile index (#33).
 28. How did obsidian move beyond the settled chain (ADR-0060, ADR-0061)? Down-the-line
     exchange passes obsidian only between neighboring settled cells, so Cyprus, supplied
     with Cappadocian obsidian by boat, is never reached and its assemblages are dropped.

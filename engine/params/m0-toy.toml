@@ -31,7 +31,7 @@ kind = { type = "real", min = 0.0, max = 0.1 }
 default = 0.02316
 prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0038 to 0.027 (10-90%). Local growth of foragers between filling empty land and holding at capacity; the Neolithic demographic transition is sedentary_growth_rate."
+note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0038 to 0.027 (10-90%). Local growth of foragers between filling empty land and holding at capacity; the Neolithic demographic transition is sedentary_growth_rate. Not identified by the records (ADR-0067): populations follow carrying capacity, which grows far slower."
 sources = [
   { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
   { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
@@ -45,7 +45,7 @@ kind = { type = "real", min = 0.0, max = 0.1 }
 default = 0.02648
 prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0039 to 0.026 (10-90%). Sedentism and cereal weaning foods shorten birth intervals: fertility rises with dependence on cultivation, followed by higher child mortality, with net growth higher than foragers'. The record does not identify the ratio to growth_rate (open question Q27); the calibrated world has one, at 1.1 times the forager rate."
+note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0039 to 0.026 (10-90%). Sedentism and cereal weaning foods shorten birth intervals: fertility rises with dependence on cultivation, followed by higher child mortality, with net growth higher than foragers'. The records do not identify it (ADR-0067): populations follow carrying capacity, so the rate only sets a lag of a few percent, and a profile at the defaults from 0.1 to 4 times the forager rate is flat (calibration/runs/m1/round8/sedentary_growth_rate.json). The calibrated world has 1.1 times the forager rate, as one world among many; testing it needs age structure and the juvenile index (#33)."
 sources = [
   { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
   { citation = "Bocquet-Appel, J.-P. (2002). Paleoanthropological traces of a Neolithic demographic transition. Current Anthropology 43, 637-650.", doi = "10.1086/342429" },

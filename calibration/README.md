@@ -97,7 +97,8 @@ Round 7 (social learning of cultivation, ADR-0065) is in `runs/m1/round7/`:
 208, the defaults before round 8; ranked by the item log-likelihoods).
 Round 8 (ranking by the summaries, ADR-0066) is in `runs/m1/round8/`: `wave10.json` and
 `best.json` over waves 7-10, the source of the current calibrated defaults (wave 9,
-run 180). The onset record's tables are downloaded by hand (`data/README.md`); without
+run 180), and `sedentary_growth_rate.json`, a profile at those defaults from 0.1 to 4
+times the forager rate: flat, the records do not identify it (ADR-0067). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

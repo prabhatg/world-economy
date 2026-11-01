@@ -162,7 +162,10 @@ records sit to the record under history matching's own error model (observation
 covariance plus discrepancy), not by the item log-likelihoods, which allow for no
 discrepancy. Under it the late planters lead: the records do not pull apart. A tenth
 wave leaves 0.10% of the prior space, and the nearest consistent world (wave 9, run
-180) plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry default.
+180) plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry default. At it, the
+records do not identify the Neolithic demographic transition's growth rates (ADR-0067):
+populations follow carrying capacity, and a profile of sedentary growth from 0.1 to 4
+times the forager rate is flat.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.
