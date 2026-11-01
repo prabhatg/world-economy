@@ -13,6 +13,7 @@ refitted, continued or audited on any machine.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -143,10 +144,35 @@ def activate(factors, active, names):
     return sorted(set(active) | {factors.index(n) for n in names})
 
 
-def _fit_wave(doc, rng):
+def _fit_wave(doc, path=None, workers=1):
+    """A wave file's emulators. Searching for their hyperparameters is the costly part of
+    a later wave (#32), so they are kept in emulators/ beside the file, with a key of the
+    runs they were fitted to, and rebuilt from there while the runs and the search stay
+    the same."""
     ts = _targets(doc["targets"])
-    y = np.array(doc["outputs"])[:, : len(ts)]
-    return history.Wave.fit(np.array(doc["u"]), y, ts, active=doc["active"], rng=rng, groups=_groups(doc.get("groups")))
+    u, y = np.array(doc["u"]), np.array(doc["outputs"])[:, : len(ts)]
+    key = hashlib.sha256(json.dumps({"fit": emulator.FIT, "u": u.tolist(), "outputs": y.tolist(),
+                                     "active": doc["active"]}).encode()).hexdigest()
+    kept = Path(path).parent / "emulators" / Path(path).name if path else None
+    thetas = None
+    if kept and kept.exists():
+        try:
+            saved = json.loads(kept.read_text())
+        except json.JSONDecodeError:
+            saved = {}
+        if saved.get("key") == key:
+            thetas = saved["thetas"]
+        else:
+            print(f"{kept}: unreadable, or fitted to other runs or by another search; fitting again", file=sys.stderr)
+    w = history.Wave.fit(u, y, ts, active=doc["active"], rng=np.random.default_rng(0), groups=_groups(doc.get("groups")),
+                         thetas=thetas, workers=workers)
+    if kept and thetas is None:  # whole or not at all, for a command reading it meanwhile
+        kept.parent.mkdir(parents=True, exist_ok=True)
+        part = kept.with_name(f"{kept.name}.{os.getpid()}.tmp")
+        part.write_text(json.dumps({"key": key, "fit": emulator.FIT, "thetas": w.thetas}, indent=1) + "\n")
+        part.replace(kept)
+        print(f"wrote {kept}", file=sys.stderr)
+    return w
 
 
 def wave(args):
@@ -164,7 +190,7 @@ def wave(args):
             print(f"activated: {args.activate}", file=sys.stderr)
         if new:
             print(f"new factors, active in this wave: {[factors[i] for i in new]}", file=sys.stderr)
-        waves = [_fit_wave(d, np.random.default_rng(0)) for d in previous]
+        waves = [_fit_wave(d, p, args.workers) for d, p in zip(previous, args.previous)]
         u, kept = history.nroy(waves, len(factors), args.runs, rng)
         print(f"NROY after {len(waves)} waves: {kept:.4f} of the space", file=sys.stderr)
         if len(u) < args.runs:
@@ -186,7 +212,7 @@ def wave(args):
            "outputs": out.tolist(), "targets": _targets_json(ts), "groups": _groups_json(groups),
            "previous": [str(p) for p in args.previous]}
     _write(args.out, doc)
-    report_wave(previous + [doc])
+    report_wave(previous + [doc], args.previous + [args.out], args.workers)
 
 
 def consistent(doc):
@@ -319,7 +345,7 @@ def report_best(doc):
         print(f"  {f:32} {v:<11.4g} consistent runs 10-90%: {r['q10']:.3g} to {r['q90']:.3g}")
 
 
-def report_wave(docs):
+def report_wave(docs, paths=None, workers=1):
     doc = docs[-1]
     ts = _targets(doc["targets"])
     y = np.array(doc["outputs"])[:, : len(ts)]
@@ -347,7 +373,7 @@ def report_wave(docs):
         print(f"  group {k} ({len(g.indices)} targets, dof {g.dof}): cutoff {history.chi2_cutoff(g.dof):.1f}, "
               f"runs within {(run_g[:, k] <= history.chi2_cutoff(g.dof)).mean():.2f}, best {run_g[:, k].min():.1f}")
     print("  " + ", ".join(f"{k}={v:.4g}" for k, v in sorted(doc["params"][best].items())))
-    waves = [_fit_wave(d, np.random.default_rng(0)) for d in docs]
+    waves = [_fit_wave(d, p, workers) for d, p in zip(docs, paths or [None] * len(docs))]
     space = np.random.default_rng(1).random((200_000, len(doc["factors"])))
     ok = np.ones(len(space), dtype=bool)
     for w in waves:
@@ -402,6 +428,7 @@ def main(argv=None):
     e.add_argument("--out", required=True)
     r = sub.add_parser("report", help="report a screening, wave or best file (and the waves before it)")
     r.add_argument("files", nargs="+")
+    r.add_argument("--workers", type=int, default=workers)
     args = ap.parse_args(argv)
     if args.command == "screen":
         screen(args)
@@ -421,7 +448,7 @@ def main(argv=None):
         docs = [json.loads(Path(f).read_text()) for f in args.files]
         report = {"screen": lambda: report_screening(docs[0]), "best": lambda: report_best(docs[0]),
                   "profile": lambda: report_profile(docs[0])}
-        report.get(docs[0]["command"], lambda: report_wave(docs))()
+        report.get(docs[0]["command"], lambda: report_wave(docs, args.files, args.workers))()
 
 
 if __name__ == "__main__":

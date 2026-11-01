@@ -54,6 +54,17 @@ def test_uncertainty_grows_away_from_the_runs():
     assert var[1] > 100 * var[0]
 
 
+def test_an_emulator_rebuilt_from_its_hyperparameters_predicts_as_the_fitted_one():
+    rng = np.random.default_rng(6)
+    x = emulator.latin_hypercube(40, 2, rng)
+    y = smooth(x) + rng.normal(0, 0.05, len(x))
+    gp = emulator.GP.fit(x, y, rng=rng)
+    again = emulator.GP.at(x, y, [float(v) for v in gp.theta])  # as kept in JSON
+    t = rng.uniform(size=(100, 2))
+    for noise in (False, True):
+        assert all(np.array_equal(a, b) for a, b in zip(gp.predict(t, noise), again.predict(t, noise)))
+
+
 def test_fitting_refuses_unusable_runs():
     x = np.zeros((4, 2))
     with pytest.raises(ValueError, match="finite"):

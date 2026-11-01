@@ -66,6 +66,11 @@ near their summaries sit to the record under history matching's own error model,
 record's observation covariance plus discrepancy (`history.log_likelihood`, ADR-0066);
 the item log-likelihood diagnostics, which allow for no discrepancy, are recorded beside
 it. Waves ranked together must be judged against the same targets.
+`wave` and `report` refit every earlier wave's emulators. Searching for their
+hyperparameters is the costly part, so it runs in worker processes (`--workers`), and the
+hyperparameters found are kept in `emulators/` beside each wave file (committed with it),
+keyed by the wave's runs and the search (`emulator.FIT`); while those stay the same the
+emulators are rebuilt from there, exactly as the search left them (#32).
 A later wave appends parameters new to the registry as active factors; `--activate`
 also makes active a factor the earlier waves varied as noise, when a new mechanism makes
 it matter (ADR-0065). NROY points take such factors uniformly, as the earlier waves did.

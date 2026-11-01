@@ -29,10 +29,44 @@ def test_a_wave_file_refits_to_the_same_emulators():
     ts = [history.Target("a", 1.0, 0.01, 0.01), history.Target("b", 0.5, 0.01, 0.01)]
     doc = json.loads(json.dumps({"u": u.tolist(), "outputs": np.hstack([y, y[:, :1]]).tolist(),
                                  "targets": cli._targets_json(ts), "active": [0, 1]}))
-    a, b = cli._fit_wave(doc, np.random.default_rng(0)), cli._fit_wave(doc, np.random.default_rng(0))
+    a, b = cli._fit_wave(doc), cli._fit_wave(doc)
     x = rng.random((50, 3))
     assert (a.implausibility(x) == b.implausibility(x)).all()
     assert a.active == [0, 1] and len(a.emulators) == 2
+
+
+def test_a_wave_file_keeps_its_fitted_emulators_and_refits_them_when_its_runs_change(tmp_path, monkeypatch):
+    rng = np.random.default_rng(4)
+    u = emulator.latin_hypercube(30, 2, rng)
+    y = np.stack([u[:, 0] + u[:, 1], u[:, 0]], axis=1)
+    ts = [history.Target("a", 1.0, 0.01, 0.01), history.Target("b", 0.5, 0.01, 0.01)]
+    doc = json.loads(json.dumps({"u": u.tolist(), "outputs": y.tolist(), "targets": cli._targets_json(ts),
+                                 "active": [0, 1]}))
+    path = tmp_path / "round1" / "wave1.json"
+    fitted = cli._fit_wave(doc, path)
+    saved = tmp_path / "round1" / "emulators" / "wave1.json"
+    assert json.loads(saved.read_text())["thetas"] == fitted.thetas
+
+    def search(*_):
+        raise AssertionError("searched for hyperparameters already kept")
+
+    with monkeypatch.context() as m:
+        m.setattr(emulator, "optimize", search)
+        kept = cli._fit_wave(doc, path)
+    x = rng.random((50, 2))
+    assert np.array_equal(kept.implausibility(x), fitted.implausibility(x))
+
+    searched = []
+    with monkeypatch.context() as m:
+        m.setattr(emulator, "optimize", lambda x, y, s: searched.append(1) or [0.0] * 4)
+        refitted = cli._fit_wave({**doc, "outputs": (y + np.sin(6 * u)).tolist()}, path)
+    assert len(searched) == 2, "other runs are searched again"
+    assert json.loads(saved.read_text())["thetas"] == refitted.thetas == [[0.0] * 4] * 2
+
+    saved.write_text('{"key": ')  # cut short, as by an interrupted write
+    again = cli._fit_wave(doc, path)
+    assert np.array_equal(again.implausibility(x), fitted.implausibility(x)), "an unreadable file is fitted again"
+    assert not list(saved.parent.glob("*.tmp")), "and written whole, then moved into place"
 
 
 def test_a_wave_file_keeps_its_groups():
@@ -43,10 +77,10 @@ def test_a_wave_file_keeps_its_groups():
     g = history.Group([0, 1], [[0.01, -0.01], [-0.01, 0.01]], dof=1)
     doc = json.loads(json.dumps({"u": u.tolist(), "outputs": y.tolist(), "targets": cli._targets_json(ts),
                                  "groups": cli._groups_json([g]), "active": [0, 1]}))
-    w = cli._fit_wave(doc, np.random.default_rng(0))
+    w = cli._fit_wave(doc)
     assert len(w.groups) == 1 and w.groups[0].dof == 1
     assert np.array_equal(w.groups[0].covariance, g.covariance)
-    assert cli._fit_wave({**doc, "groups": None}, np.random.default_rng(0)).groups == [], "round-1 files have none"
+    assert cli._fit_wave({**doc, "groups": None}).groups == [], "round-1 files have none"
 
 
 def _wave_doc(outputs, params):

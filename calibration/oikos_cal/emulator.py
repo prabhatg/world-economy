@@ -7,7 +7,9 @@ exponential correlation with one length scale per input (a long one marks an inp
 does not matter) and a nugget for run-to-run noise - the seed's variability and that of
 the inputs left out of the emulator. The trend's coefficients are estimated with the
 rest (universal kriging), so the predictive variance includes their uncertainty.
-Hyperparameters maximize the restricted likelihood (L-BFGS-B, several starts).
+Hyperparameters maximize the restricted likelihood (L-BFGS-B, several starts). The
+search is the costly part; `GP.at` rebuilds an emulator from hyperparameters found
+before, exactly as the search left it (#32).
 """
 
 from dataclasses import dataclass
@@ -16,7 +18,9 @@ import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from scipy.optimize import minimize
 
-__all__ = ["latin_hypercube", "GP"]
+__all__ = ["latin_hypercube", "GP", "start_points", "optimize", "FIT"]
+
+FIT = 1  # the search below; change it when the search changes, so kept hyperparameters are found again
 
 _BOUNDS = [(np.log(0.03), np.log(30.0))]  # length scales in units of the unit cube
 _SIGNAL = (np.log(1e-3), np.log(1e2))  # signal variance of the standardized output
@@ -56,6 +60,42 @@ def _restricted_nll(theta, x, y, h):
     return float(np.log(np.diag(f[0])).sum() + np.log(np.diag(fa[0])).sum() + 0.5 * r @ cho_solve(f, r))
 
 
+def _check(x, y):
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    if y.shape != (len(x),):
+        raise ValueError(f"need one output per run: {len(x)} runs, outputs of shape {y.shape}")
+    if not np.isfinite(y).all() or not np.isfinite(x).all():
+        raise ValueError("runs and outputs must be finite; drop failed runs before fitting")
+    return x, y
+
+
+def _standardize(y):
+    mean, sd = y.mean(), y.std() or 1.0
+    return mean, sd, (y - mean) / sd
+
+
+def start_points(k, rng, n=4):
+    """Starting hyperparameters of the search for `k` inputs: unit length scales, then
+    random ones."""
+    return [np.concatenate([np.log(rng.uniform(0.2, 2.0, k)) if s else np.zeros(k),
+                            [0.0, np.log(rng.uniform(1e-4, 0.1))]]) for s in range(n)]
+
+
+def optimize(x, y, theta0s):
+    """The hyperparameters maximizing the restricted likelihood of outputs `y` at `x`,
+    best of searches from each of `theta0s`."""
+    x, y = _check(x, y)
+    z = _standardize(y)[2]
+    k, h = x.shape[1], _basis(x)
+    bounds = _BOUNDS * k + [_SIGNAL, _NUGGET]
+    best = None
+    for theta0 in theta0s:
+        res = minimize(_restricted_nll, theta0, args=(x, z, h), method="L-BFGS-B", bounds=bounds)
+        if best is None or res.fun < best.fun:
+            best = res
+    return best.x
+
+
 @dataclass
 class GP:
     x: np.ndarray
@@ -67,34 +107,28 @@ class GP:
     chol: tuple
     chol_a: tuple
     scale: tuple  # (mean, sd) the output was standardized with
+    theta: np.ndarray  # log length scales, log signal and log nugget of the standardized output
 
     @classmethod
     def fit(cls, x, y, rng=None, starts=4):
-        x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
-        if y.shape != (len(x),):
-            raise ValueError(f"need one output per run: {len(x)} runs, outputs of shape {y.shape}")
-        if not np.isfinite(y).all() or not np.isfinite(x).all():
-            raise ValueError("runs and outputs must be finite; drop failed runs before fitting")
+        x, y = _check(x, y)
         rng = rng or np.random.default_rng(0)
-        mean, sd = y.mean(), y.std() or 1.0
-        z = (y - mean) / sd
+        return cls.at(x, y, optimize(x, y, start_points(x.shape[1], rng, starts)))
+
+    @classmethod
+    def at(cls, x, y, theta):
+        """The emulator with hyperparameters `theta`, as `optimize` found them."""
+        x, y = _check(x, y)
+        mean, sd, z = _standardize(y)
         k, h = x.shape[1], _basis(x)
-        bounds = _BOUNDS * k + [_SIGNAL, _NUGGET]
-        best = None
-        for s in range(starts):
-            theta0 = np.concatenate([np.log(rng.uniform(0.2, 2.0, k)) if s else np.zeros(k),
-                                     [0.0, np.log(rng.uniform(1e-4, 0.1))]])
-            res = minimize(_restricted_nll, theta0, args=(x, z, h), method="L-BFGS-B", bounds=bounds)
-            if best is None or res.fun < best.fun:
-                best = res
-        theta = best.x
+        theta = np.asarray(theta, dtype=float)
         scales, signal, nugget = np.exp(theta[:k]), np.exp(theta[k]), np.exp(theta[k + 1])
         c = signal * _corr(x, x, scales) + (nugget + 1e-10 * signal) * np.eye(len(x))
         f = cho_factor(c, lower=True)
         fa = cho_factor(h.T @ cho_solve(f, h), lower=True)
         beta = cho_solve(fa, h.T @ cho_solve(f, z))
         return cls(x, scales, signal * sd * sd, nugget * sd * sd, beta, cho_solve(f, z - h @ beta), f, fa,
-                   (mean, sd))
+                   (mean, sd), theta)
 
     def predict(self, x, noise=False):
         """Mean and variance of the output at `x`; with `noise`, of a new run there."""

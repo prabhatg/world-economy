@@ -22,11 +22,15 @@ An empty NROY space means no parameter values reconcile the model with the recor
 mechanism is missing or wrong.
 """
 
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+from itertools import repeat
 
 import numpy as np
 from scipy.stats import chi2
 
+from . import emulator
 from .emulator import GP
 
 __all__ = ["Target", "Group", "implausibility", "chi2_cutoff", "log_likelihood", "Wave", "nroy", "CUTOFF"]
@@ -119,15 +123,32 @@ class Wave:
     groups: list = None
 
     @classmethod
-    def fit(cls, u, outputs, targets, active=None, rng=None, cutoff=CUTOFF, groups=None):
-        """Emulators of `outputs` [run, target] from runs at unit-cube points `u` [run, factor]."""
+    def fit(cls, u, outputs, targets, active=None, rng=None, cutoff=CUTOFF, groups=None, thetas=None, workers=1):
+        """Emulators of `outputs` [run, target] from runs at unit-cube points `u` [run, factor].
+        With `thetas` (a wave's `thetas`), the emulators are rebuilt without searching;
+        otherwise the searches run in `workers` processes, with the same result."""
         u, y = np.asarray(u, dtype=float), np.asarray(outputs, dtype=float)
         if y.shape != (len(u), len(targets)):
             raise ValueError(f"outputs must be [run, target] = {(len(u), len(targets))}, not {y.shape}")
         active = list(range(u.shape[1])) if active is None else list(active)
-        rng = rng or np.random.default_rng(0)
-        return cls(list(targets), [GP.fit(u[:, active], y[:, j], rng=rng) for j in range(len(targets))], active,
-                   cutoff, list(groups or []))
+        x, columns = u[:, active], list(y.T)
+        if thetas is None:
+            rng = rng or np.random.default_rng(0)
+            starts = [emulator.start_points(len(active), rng) for _ in targets]
+            if workers > 1:
+                with ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn")) as pool:
+                    thetas = list(pool.map(emulator.optimize, repeat(x), columns, starts))
+            else:
+                thetas = [emulator.optimize(x, c, s) for c, s in zip(columns, starts)]
+        if len(thetas) != len(targets):
+            raise ValueError(f"need hyperparameters for each of {len(targets)} targets, not {len(thetas)}")
+        return cls(list(targets), [GP.at(x, c, t) for c, t in zip(columns, thetas)], active, cutoff,
+                   list(groups or []))
+
+    @property
+    def thetas(self):
+        """Each emulator's hyperparameters, to keep and rebuild the wave from."""
+        return [g.theta.tolist() for g in self.emulators]
 
     def _predict(self, u):
         x = np.asarray(u, dtype=float)[:, self.active]

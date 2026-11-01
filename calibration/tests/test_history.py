@@ -55,6 +55,18 @@ def test_a_wave_emulates_only_the_active_factors():
     assert w.plausible(TRUTH[None])[0]
 
 
+def test_a_wave_fitted_in_worker_processes_or_from_its_hyperparameters_is_the_same_wave():
+    rng = np.random.default_rng(4)
+    u = emulator.latin_hypercube(30, 3, rng)
+    one = history.Wave.fit(u, simulator(u), targets(), rng=np.random.default_rng(0))
+    two = history.Wave.fit(u, simulator(u), targets(), rng=np.random.default_rng(0), workers=2)
+    kept = history.Wave.fit(u, simulator(u), targets(), thetas=one.thetas)
+    x = rng.random((200, 3))
+    assert one.thetas == two.thetas
+    assert np.array_equal(one.implausibility(x), two.implausibility(x))
+    assert np.array_equal(one.implausibility(x), kept.implausibility(x))
+
+
 def test_an_empty_space_is_reported_not_sampled_forever():
     rng = np.random.default_rng(3)
     u = emulator.latin_hypercube(30, 3, rng)
