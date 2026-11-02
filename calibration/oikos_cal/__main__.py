@@ -112,17 +112,24 @@ def active_factors(doc, threshold, max_active):
     """Indices of the factors a wave's emulators see: at most `max_active` of those whose
     largest μ*/tolerance in screening `doc` reaches `threshold`, most influential first."""
     _, scaled, _ = screening_ranks(doc)
-    ranked = [int(i) for i in np.argsort(-scaled.max(axis=1), kind="stable") if scaled[i].max() >= threshold]
+    peak = _defined(scaled).max(axis=1)
+    ranked = [int(i) for i in np.argsort(-peak, kind="stable") if peak[i] >= threshold]
     return sorted(ranked[:max_active])
+
+
+def _defined(scaled):
+    """Effects with those no run defined (NaN) as -inf: a factor is ranked by the targets
+    its effects are defined for."""
+    return np.where(np.isnan(scaled), -np.inf, scaled)
 
 
 def report_screening(doc):
     e, scaled, noise = screening_ranks(doc)
     ts = _targets(doc["targets"])
-    order = np.argsort(-scaled.max(axis=1))
+    order = np.argsort(-_defined(scaled).max(axis=1))
     print(f"{'factor':32} {'max mu*/tol':>11}  most affected target")
     for i in order:
-        j = int(scaled[i].argmax())
+        j = int(_defined(scaled[i]).argmax())
         print(f"{doc['factors'][i]:32} {scaled[i, j]:11.2f}  {ts[j].name}")
     print("seed noise / tol: " + ", ".join(f"{t.name} {n:.2f}" for t, n in zip(ts, noise)))
 
@@ -182,6 +189,12 @@ def _fit_wave(doc, path=None, workers=1):
     return w
 
 
+def sampling_seed(seed, previous):
+    """The seed of a wave's points: `seed` if given, else the wave's number, so waves never
+    draw the same NROY candidates (and repeat the points earlier waves kept)."""
+    return len(previous) + 1 if seed is None else seed
+
+
 def wave(args):
     import oikos
 
@@ -190,7 +203,8 @@ def wave(args):
     chosen_by = json.loads(Path(args.screening).read_text()) if args.screening else None
     if chosen_by:
         require_sites([chosen_by], "choose factors by")
-    rng = np.random.default_rng(args.seed)
+    seed = sampling_seed(args.seed, previous)
+    rng = np.random.default_rng(seed)
     if previous:
         factors, active = previous[-1]["factors"], previous[-1]["active"]
         if args.screening:  # refocus: later emulators may see more factors than earlier ones
@@ -218,7 +232,7 @@ def wave(args):
     seeds = [1000 * number + i for i in range(len(u))]
     ts, names, groups = _problem_targets()
     out = _run(list(zip(params, seeds)), args.workers)
-    doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": args.seed, "sites": SITES,
+    doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": seed, "sites": SITES,
            "factors": factors,
            "active": active, "u": u.tolist(), "params": params, "seeds": seeds, "names": names,
            "outputs": out.tolist(), "targets": _targets_json(ts), "groups": _groups_json(groups),
@@ -377,6 +391,21 @@ def report_best(doc):
         print(f"  {f:32} {v:<11.4g} consistent runs 10-90%: {r['q10']:.3g} to {r['q90']:.3g}")
 
 
+def holdout_coverage(u, y, ts, active, workers=1):
+    """Emulator check: per target, the share of held-out runs within 3 standard errors of
+    emulators fitted to the others (the first 80% of the runs whose outputs are defined)."""
+    defined = np.isfinite(y).all(axis=1)
+    u, y = u[defined], y[defined]
+    cut = int(0.8 * len(u))
+    test = history.Wave.fit(u[:cut], y[:cut], ts, active=active, rng=np.random.default_rng(0), workers=workers)
+    x = u[cut:][:, active]
+    coverage = []
+    for j, g in enumerate(test.emulators):
+        m, v = g.predict(x, noise=True)
+        coverage.append(float((np.abs(y[cut:, j] - m) / np.sqrt(v) < 3).mean()))
+    return coverage
+
+
 def best_run(implausibility):
     """The run [run, target] whose largest implausibility is smallest; runs with an
     undefined summary are ruled out, never best."""
@@ -390,21 +419,14 @@ def report_wave(docs, paths=None, workers=1):
     y = np.array(doc["outputs"])[:, : len(ts)]
     u = np.array(doc["u"])
     print(f"wave {doc['wave']}: {len(u)} runs; active factors: {[doc['factors'][i] for i in doc['active']]}")
-    # emulator check: fit on 80% of the runs, standardized errors on the rest
-    n = len(u)
-    cut = int(0.8 * n)
-    test = history.Wave.fit(u[:cut], y[:cut], ts, active=doc["active"], rng=np.random.default_rng(0),
-                            workers=workers)
-    x = u[cut:][:, doc["active"]]
+    coverage = holdout_coverage(u, y, ts, doc["active"], workers)
     run_i = history.implausibility(y, 0.0, ts)
     gs = _groups(doc.get("groups"))
     run_g = np.stack([g.implausibility(y, 0.0, ts) for g in gs], axis=1) if gs else np.zeros((len(y), 0))
     print(f"{'target':36} {'observed':>9} {'tol':>6} {'runs in 3 tol':>13} {'emulator |z|<3':>14}")
     for j, t in enumerate(ts):
-        m, v = test.emulators[j].predict(x, noise=True)
-        z = (y[cut:, j] - m) / np.sqrt(v)
         print(f"{t.name:36} {t.observed:9.3f} {np.sqrt(t.variance + t.discrepancy):6.3f} "
-              f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {(np.abs(z) < 3).mean():14.2f}")
+              f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {coverage[j]:14.2f}")
     best = best_run(run_i)
     kept = consistent(doc)
     print(f"best run {best}: max implausibility {run_i[best].max():.2f} ({ts[int(run_i[best].argmax())].name}); "
@@ -445,7 +467,7 @@ def main(argv=None):
     w.add_argument("--activate", nargs="*", default=[], help="factors earlier waves varied as noise to emulate now")
     w.add_argument("--inactive", nargs="*", default=[],
                    help="parameters new to the registry to sample as noise, not emulate (no record sees them yet)")
-    w.add_argument("--seed", type=int, default=1)
+    w.add_argument("--seed", type=int, help="seed of the wave's points (default: its number)")
     w.add_argument("--workers", type=int, default=workers)
     w.add_argument("--out", required=True)
     b = sub.add_parser("best", help="rerun the best consistent runs with the other parameters at their defaults")

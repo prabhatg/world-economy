@@ -104,8 +104,15 @@ Round 8 (ranking by the summaries, ADR-0066) is in `runs/m1/round8/`: `wave10.js
 run 180), and `sedentary_growth_rate.json`, a profile at those defaults from 0.1 to 4
 times the forager rate: flat, the records do not identify it (ADR-0067).
 Waves up to round 8 judged sites by settled people-years; since ADR-0072 the engine
-counts settlements, so `wave --previous` and `best` refuse them and the next wave starts
-a new round. The onset record's tables are downloaded by hand (`data/README.md`); without
+counts settlements, so `wave --previous` and `best` refuse them (and `wave --screening`
+a screening of the old model).
+Round 9 (ADR-0073), a new history, is in `runs/m1/round9/`: `screening.json` (all 33
+free parameters), `wave1.json` (Latin hypercube over the prior, the 24 factors whose
+effect reaches one tolerance emulated: `--threshold 1.0 --max-active 24`), `wave2.json`,
+`wave3.json` and `best.json` over them, whose best world does not beat the calibrated
+defaults, so they stay. Waves number afresh in a new round; a wave's NROY points take
+its number as seed unless `--seed` is given (round 9's wave 3, drawn with wave 2's seed,
+repeats 63 of its points, run again with new world seeds). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

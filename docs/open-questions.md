@@ -137,6 +137,16 @@
     the radiocarbon eras. What preferred early planting was the per-date radiocarbon
     likelihood, which allows for no discrepancy. Defaults are now ranked by the
     summaries, and the late planter is the registry default.
+33. What record sees village size and aggregation (ADR-0073)? Farmers' villages split
+    by scalar stress (`village_fission_size`, ADR-0070) and settled groups join the
+    largest village of their cell (`aggregation_rate`, ADR-0071), but none of the five
+    M1 records responds to either: across round 9's consistent worlds both spread over
+    their priors as all runs do, so the size limit stays at its literature value (127,
+    Alberti 2014) and the joining rate a placeholder. Survey site areas (settlement-size
+    distributions by era, as in the Anatolian and Upper Mesopotamian surveys already
+    used) or excavated house counts per phase could; an operator would compare them
+    with the distribution of group sizes the model's settlements reach. The same holds
+    for fertility and sedentary growth until the juvenile-index record (#33) joins.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

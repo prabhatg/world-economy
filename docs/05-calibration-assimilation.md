@@ -176,6 +176,14 @@ wave leaves 0.10% of the prior space, and the nearest consistent world (wave 9, 
 records do not identify the Neolithic demographic transition's growth rates (ADR-0067):
 populations follow carrying capacity, and a profile of sedentary growth from 0.1 to 4
 times the forager rate is flat.
+Round 9 (ADR-0073) starts a new history after villages and settlements changed the model
+and the site summaries (ADR-0070 to ADR-0072): a new screening of all 33 free
+parameters and three waves over the prior, 24 factors emulated. Worlds whose summaries
+are undefined (a surveyed landscape without settlements for a whole era) are ruled out
+by their own outputs and left out of the emulators. The waves leave 1.35% of the prior
+and keep the calibrated defaults, and none of their best worlds sits nearer the record,
+so the defaults stay. Village size, aggregation, fertility and sedentary growth are not
+constrained by any of the five records (open question 33).
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

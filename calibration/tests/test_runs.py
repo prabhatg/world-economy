@@ -205,3 +205,30 @@ def test_factors_are_not_chosen_by_a_screening_of_another_site_model(tmp_path):
 def test_the_best_run_of_a_wave_is_never_one_its_summaries_cannot_describe():
     i = np.array([[2.0, 1.0], [np.nan, 0.5], [1.5, 1.5]])
     assert cli.best_run(i) == 2
+
+
+def test_each_wave_samples_with_its_own_seed_unless_given_one():
+    # Waves drawing NROY points from one seed repeat the points earlier waves kept (round 9,
+    # wave 3 repeated 63 of wave 2's), so a wave's seed defaults to its number.
+    assert [cli.sampling_seed(None, [{}] * k) for k in range(3)] == [1, 2, 3]
+    assert cli.sampling_seed(7, [{}, {}]) == 7
+
+
+def test_a_factor_is_ranked_by_the_targets_its_effects_are_defined_for():
+    d = screening.morris(k=3, trajectories=6, levels=4, rng=np.random.default_rng(1))
+    y = np.stack([d[..., 0], np.full(d.shape[:2], np.nan)], axis=-1)  # target b never defined
+    ts = [history.Target("a", 0, 0.0, 1.0), history.Target("b", 0, 0.01, 0.0)]
+    doc = json.loads(json.dumps({"design": d.tolist(), "outputs": y.reshape(-1, 2).tolist(),
+                                 "targets": cli._targets_json(ts), "noise_outputs": [[0.0, 0.0], [0.0, 0.0]]}))
+    assert cli.active_factors(doc, threshold=0.5, max_active=3) == [0]
+
+
+def test_emulators_are_checked_on_held_out_runs_whose_outputs_are_defined():
+    rng = np.random.default_rng(3)
+    u = emulator.latin_hypercube(40, 2, rng)
+    y = np.stack([u[:, 0] + u[:, 1], u[:, 0] - u[:, 1]], axis=1)
+    ts = [history.Target("a", 0, 0.01, 0.0), history.Target("b", 0, 0.01, 0.0)]
+    y[:20] = np.nan  # undefined runs, all among the first 80%
+    y[-1, 1] = np.nan  # and one held out
+    coverage = cli.holdout_coverage(u, y, ts, active=[0, 1])
+    assert coverage == pytest.approx([1.0, 1.0]), "undefined runs neither train nor count as misses"
