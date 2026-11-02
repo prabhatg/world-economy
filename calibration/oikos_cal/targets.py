@@ -36,7 +36,7 @@ import numpy as np
 from .history import Group, Target
 from .radiocarbon import SUROVELL_2009
 
-__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras", "ObsidianZones"]
+__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras", "ObsidianZones", "OnsetEras", "HouseGinis"]
 
 
 def _era(first, end):
@@ -251,3 +251,19 @@ def obsidian_groups():
     from .obsidian import GROUPS
 
     return GROUPS
+
+
+class HouseGinis:
+    def __init__(self, op, discrepancy_sd=0.05):
+        """One target per site of `op` (`inequality.Operator`): its house-size Gini, with
+        the sampling variance of a Gini of its few houses; judged one by one (the sites
+        are far apart in time and place)."""
+        self.op = op
+        year = lambda y: f"{-y} BCE" if y < 0 else f"{y} CE"
+        self.targets = [_target(f"house Gini {n} {year(y)}", g, op.sampling_variance(i), discrepancy_sd**2)
+                        for i, (n, y, g) in enumerate(zip(op.names, op.years, op.observed))]
+
+    def model(self, activity):
+        """Expected house-size Gini at each site (NaN where nobody farmed around it)."""
+        return self.op.expected(activity)
+

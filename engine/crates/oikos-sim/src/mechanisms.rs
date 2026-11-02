@@ -103,6 +103,7 @@ pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
         Box::new(Inundation::from_params(params)),
         Box::new(Aggregation::from_params(params)),
         Box::new(Cultivation::from_params(params)),
+        Box::new(Inequality::from_params(params)),
     ]
 }
 
@@ -538,6 +539,7 @@ impl Mechanism for Aggregation {
                 Traits {
                     cultivation: pooled(wb, tb.cultivation, w, ta.cultivation),
                     domestication: pooled(wb, tb.domestication, w, ta.domestication),
+                    inequality: pooled(wb, tb.inequality, w, ta.inequality),
                 },
             );
             agents.weight[b] = wb + w;
@@ -735,7 +737,7 @@ impl Mechanism for Cultivation {
                 sense.climate_stress[cell],
                 sense.climate_variability[cell],
             );
-            if target == 0.0 && traits == Traits::FORAGER {
+            if target == 0.0 && traits.cultivation == 0 && traits.domestication == 0 {
                 continue;
             }
             let (e, d) = (Traits::share(traits.cultivation), Traits::share(traits.domestication));
@@ -748,8 +750,176 @@ impl Mechanism for Cultivation {
                 Traits {
                     cultivation: Traits::toward(traits.cultivation, self.adopt(e, target, seen)),
                     domestication: Traits::toward(traits.domestication, self.domesticate(d, e)),
+                    ..traits
                 },
             );
+        }
+    }
+}
+
+/// Wealth inequality among a group's households (ADR-0074), as the variance of their log
+/// wealth, after the dynamic model of Borgerhoff Mulder et al. (2009): each generation a
+/// household keeps a share `beta` of its parents' deviation from the mean (bequests,
+/// assortative marriage, returns to wealth) and meets chance shocks of variance `sigma^2`
+/// (illness, luck in the hunt or the harvest), so inequality relaxes toward
+/// `sigma^2 / (1 - beta^2)`.
+///
+/// The drivers are social. Where land is open, norms of sharing and levelling keep wealth
+/// from being passed on (Woodburn 1982; Boehm 1993): foragers and horticulturalists pass
+/// on little (beta 0.19 and 0.18) and are about as equal (Gini 0.25 and 0.27). Where
+/// farmland is scarce and closed in, it becomes property and is inherited (Demsetz 1967;
+/// Bowles and Choi 2013), and those without it cannot move away from those who claim it
+/// (circumscription, Carneiro 1970): agriculturalists pass on more (0.36) and are unequal
+/// (0.48). A group's ownership of land is its cultivation effort times how closed in its
+/// land is ([`Inequality::closure`]); transmission and shocks move between the two
+/// economies with it (linearly, per generation), so farming islands on an open frontier
+/// stay equal and inequality rises as farmland fills the landscape.
+///
+/// Inequality changes nothing else yet: no feedback on fertility, fission, aggregation
+/// or conflict. It is updated every period by the equivalent fraction of a generation
+/// (tabulated over ownership), so a generation of periods is the generational recursion
+/// whatever the period length. Merged groups pool it,
+/// people-weighted (the spread between their mean wealth is left out), and split-off
+/// groups take their parent's.
+#[derive(Clone, Debug)]
+pub struct Inequality {
+    pub period_ticks: u64,
+    /// Per period, at ownership k / [`Inequality::STEPS`]: the share of the variance kept
+    /// and the variance added.
+    pub per_period: Vec<(f64, f64)>,
+    /// The stored inequality of foragers that the update keeps exactly (most agents, most
+    /// of the time), so they are skipped; None if rounding has no such fixed point.
+    pub forager_fixed: Option<u32>,
+    pub after: Vec<&'static str>,
+}
+
+impl Inequality {
+    /// Ownership steps tabulated: linear interpolation between them errs by under 1e-7.
+    pub const STEPS: usize = 1024;
+
+    pub fn from_params(p: &Params) -> Inequality {
+        assert!(p.wealth_transmission < 1.0 && p.landed_wealth_transmission < 1.0, "validated parameters");
+        let generations =
+            p.period_ticks as f64 / (oikos_core::time::TICKS_PER_YEAR as f64 * p.generation_years);
+        let per_period = (0..=Self::STEPS)
+            .map(|k| {
+                let owned = k as f64 / Self::STEPS as f64;
+                let beta =
+                    p.wealth_transmission + owned * (p.landed_wealth_transmission - p.wealth_transmission);
+                let shock = p.wealth_shock + owned * (p.landed_wealth_shock - p.wealth_shock);
+                let kept = oikos_math::pow(beta * beta, generations);
+                // A generation of periods adds shock: the geometric sum of what each adds.
+                (kept, shock * (1.0 - kept) / (1.0 - beta * beta))
+            })
+            .collect();
+        let mut m = Inequality {
+            period_ticks: p.period_ticks,
+            per_period,
+            forager_fixed: None,
+            after: vec!["cultivation"],
+        };
+        let fixed = Self::stored(m.stationary(0.0));
+        m.forager_fixed = (m.next_stored(fixed, 0.0) == fixed).then_some(fixed);
+        m
+    }
+
+    /// Foragers at the inequality they settle at: how new worlds start (ADR-0074).
+    pub fn foragers(p: &Params) -> Traits {
+        Traits { inequality: Self::stored(Self::from_params(p).stationary(0.0)), ..Traits::FORAGER }
+    }
+
+    fn stored(v: f64) -> u32 {
+        (oikos_math::finite(v) * SHARE_ONE as f64).round().min(u32::MAX as f64) as u32
+    }
+
+    /// (share kept, variance added) per period at ownership `owned` in [0, 1].
+    fn coefficients(&self, owned: f64) -> (f64, f64) {
+        let x = owned * Self::STEPS as f64;
+        let k = (x as usize).min(Self::STEPS);
+        if k == Self::STEPS {
+            return self.per_period[k];
+        }
+        let ((a0, b0), (a1, b1), f) = (self.per_period[k], self.per_period[k + 1], x - k as f64);
+        (a0 + f * (a1 - a0), b0 + f * (b1 - b0))
+    }
+
+    /// [`Inequality::next`] of a stored variance, stored.
+    pub fn next_stored(&self, v: u32, owned: f64) -> u32 {
+        Self::stored(self.next(v as f64 / SHARE_ONE as f64, owned))
+    }
+
+    /// The variance of log wealth a period after `v`, for a group owning its land to the
+    /// extent `owned` in [0, 1].
+    pub fn next(&self, v: f64, owned: f64) -> f64 {
+        let (kept, added) = self.coefficients(owned);
+        kept * v + added
+    }
+
+    /// The variance of log wealth a group owning its land to the extent `owned` settles at.
+    pub fn stationary(&self, owned: f64) -> f64 {
+        let (kept, added) = self.coefficients(owned);
+        added / (1.0 - kept)
+    }
+
+    /// How closed in a cell's land is, from its neighbors as (habitable, people's mean
+    /// cultivation effort): the mean of their effort, uninhabitable neighbors (sea,
+    /// desert) counting as closed. Open forager country is 0, a farmed landscape 1.
+    pub fn closure(neighbors: impl Iterator<Item = (bool, f64)>) -> f64 {
+        let (mut sum, mut n) = (0.0, 0u32);
+        for (habitable, effort) in neighbors {
+            sum += if habitable { effort } else { 1.0 };
+            n += 1;
+        }
+        if n == 0 { 1.0 } else { sum / n as f64 }
+    }
+
+    fn closure_of(sense: &Sense<'_>, cell: u32) -> f64 {
+        Self::closure(sense.grid.neighbors(cell).iter().map(|&c| {
+            let c = c as usize;
+            let effort = match sense.population[c] {
+                0 => 0.0,
+                n => sense.effort_sum[c] as f64 / (n as f64 * SHARE_ONE as f64),
+            };
+            (sense.habitable[c], effort)
+        }))
+    }
+}
+
+impl Mechanism for Inequality {
+    fn spec(&self) -> MechanismSpec {
+        MechanismSpec {
+            name: "inequality",
+            period_ticks: self.period_ticks,
+            reads: vec![Component::Population, Component::Forcing, Component::AgentTraits],
+            writes: vec![Component::AgentTraits],
+            after: self.after.clone(),
+        }
+    }
+
+    fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
+        let agents = &mut *part.agents;
+        // Foragers at their fixed point stay there; u32::MAX (no fixed point) skips none
+        // that the update would change, since stored values only reach it for log
+        // variances above 4.29, where it clamps.
+        let fixed = self.forager_fixed.unwrap_or(u32::MAX);
+        let mut closure: Option<(u32, f64)> = None; // per cell, only where someone farms
+        let cultivation = &agents.cultivation[tile.clone()];
+        let cells = &agents.cell[tile.clone()];
+        for ((&c, &cell), v) in cultivation.iter().zip(cells).zip(&mut agents.inequality[tile]) {
+            if c == 0 && *v == fixed {
+                continue;
+            }
+            let owned = if c == 0 {
+                0.0
+            } else {
+                let closed = match closure {
+                    Some((at, closed)) if at == cell => closed,
+                    _ => Self::closure_of(sense, cell),
+                };
+                closure = Some((cell, closed));
+                Traits::share(c) * closed
+            };
+            *v = self.next_stored(*v, owned);
         }
     }
 }

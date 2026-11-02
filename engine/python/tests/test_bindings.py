@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "539e0f221d989b3a90643470e8c783f7d7b7eb140513a4b34317116f5748e92e"
+GOLDEN_HASH = "0c2f19093de10c013e818ec7a2278124df0f6de5087dcc5a7d788c8c52ede889"
 
 
 def run(world, years=300, parts=1):
@@ -254,7 +254,8 @@ def test_obsidian_without_a_pack():
 def test_cultivation_fields():
     w = oikos.World(seed=3)
     w.run_years(300, parts=2)
-    for name in ("cultivation", "domestication", "suitability", "climate_stress", "climate_variability", "settlements"):
+    for name in ("cultivation", "domestication", "suitability", "climate_stress", "climate_variability", "settlements",
+                 "inequality"):
         v = getattr(w, name)()
         assert v.dtype == np.float64 and v.shape == (w.cells,), name
         assert not v.any(), f"{name}: toy worlds never cultivate"
@@ -264,3 +265,6 @@ def test_cultivation_fields():
     for name in ("cultivation", "domestication"):
         assert agents[name].dtype == np.float64 and len(agents[name]) == len(agents["id"])
         assert not agents[name].any()
+    p = w.params
+    forager = p["wealth_shock"] / (1 - p["wealth_transmission"] ** 2)
+    np.testing.assert_allclose(agents["inequality"], forager, rtol=1e-6, err_msg="foragers' inequality (ADR-0074)")

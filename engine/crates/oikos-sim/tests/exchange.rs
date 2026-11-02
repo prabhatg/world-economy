@@ -303,6 +303,20 @@ fn obsidian_is_partition_independent_and_restores() {
     assert_eq!(checkpoint::state_hash(&restored), run(1));
 }
 
+/// A checkpoint's agents as layouts before ADR-0074 wrote them (no inequality), and the
+/// checkpoint its restored world encodes to (every group at foragers' inequality).
+fn before_inequality(now: &[u8], agents: usize, params: &Params) -> (Vec<u8>, Vec<u8>) {
+    let forager = oikos_sim::mechanisms::Inequality::foragers(params).inequality.to_le_bytes();
+    let at = now.len() - 32 * agents;
+    let (mut before, mut restored) = (now[..at].to_vec(), now[..at].to_vec());
+    for r in now[at..].chunks(32) {
+        before.extend_from_slice(&r[..28]);
+        restored.extend_from_slice(&r[..28]);
+        restored.extend_from_slice(&forager);
+    }
+    (before, restored)
+}
+
 #[test]
 fn checkpoints_from_before_exchange_restore_without_obsidian() {
     let (g, c, _) = packs();
@@ -314,11 +328,11 @@ fn checkpoints_from_before_exchange_restore_without_obsidian() {
     let params_len = serde_json::to_vec(&w.params).unwrap().len();
     let header = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8 + 4 + params_len + 4;
     let sources_at = header + 20 * cells;
-    let mut before = now.clone();
+    let (mut before, zeroed) = before_inequality(&now, w.agent_count(), &w.params);
     before[..8].copy_from_slice(b"OIKOSCK3");
     before.drain(sources_at..sources_at + 4);
     let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
-    assert_eq!(checkpoint::encode(&restored), now);
+    assert_eq!(checkpoint::encode(&restored), zeroed);
     // A checkpoint whose source count does not match its packs is refused.
     let mut bad = now.clone();
     bad[sources_at..sources_at + 4].copy_from_slice(&2u32.to_le_bytes());

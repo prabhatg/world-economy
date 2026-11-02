@@ -1,0 +1,56 @@
+# House-size Gini coefficients of archaeological sites: wealth inequality among households.
+dataset = "kohler2017-house-ginis"
+title = "Greater post-Neolithic wealth disparities in Eurasia than in North America and Mesoamerica: Supplementary Table 2 (data used in the study)"
+version = "author manuscript (Europe PMC PMC5714260)"
+homepage = "https://europepmc.org/article/PMC/PMC5714260"
+citation = "Kohler, T.A., Smith, M.E., Bogaard, A., et al. (2017). Greater post-Neolithic wealth disparities in Eurasia than in North America and Mesoamerica. Nature 551: 619-622. https://doi.org/10.1038/nature24646 (corrected: Nature 555: 126, 2018). Supplementary Table 2, from the author manuscript in Europe PMC (PMC5714260)."
+doi = "10.1038/nature24646"
+notes = """
+One Excel 97 spreadsheet: 63 sites or groups of contemporaneous sites of one culture, each
+with a best date (Date_AD), the Gini coefficient of its house sizes (floor areas; the
+small-sample correction of Dixon et al. 1987), its 80% bootstrap interval where computed,
+the number of households measured, its political scale and subsistence (adaptation), and
+who provided the data (with sources in its comment column and the chapters of Kohler and
+Smith, eds., Ten Thousand Years of Inequality, 2018). The table gives no coordinates:
+sites in the region are located by the coordinates of their radiocarbon samples in p3k14c
+(`oikos_data.inequality.SITES`). Europe PMC builds the supplement archive on request, so
+its bytes vary; the spreadsheet inside is checked by its SHA-256. The Nature correction
+(2018) adds Methods text on three sites outside the region.
+"""
+
+[license]
+# Europe PMC (searched through its REST API, 2026-11-02) lists the article as an author
+# manuscript deposited under European Research Council funding, with no licence: it may
+# be read and text-mined for research, not redistributed. So nothing derived from it is
+# committed or packed: each user downloads it and builds the site table locally.
+id = "Europe-PMC-author-manuscript"
+url = "https://europepmc.org/Copyright"
+derived_redistribution = false
+attribution = "Uses house-size Gini coefficients from Kohler et al. 2017 (Nature 551: 619-622, https://doi.org/10.1038/nature24646), Supplementary Table 2, and the excavation reports and analyses it compiles (Bogaard; Demirergi et al.)."
+verified = "2026-11-02"
+
+[access]
+kind = "europepmc_supplement"
+url = "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC5714260/supplementaryFiles"
+member = "NIHMS74617-supplement-Supplementary_table_2.xls"
+sha256 = "a5051cf6aea4ed4d57e3113229440919d12287c982fe134b15766ff72ba7602b"
+sheet = "Table 2 Data"
+
+[coverage]
+spatial = "Worldwide; in the M1 region Jerf el Ahmar, Catalhoyuk, Tell Sabi Abyad, Tepe Gawra and Tell Brak"
+temporal = "9,200 BCE to the present; in the M1 region 9,200 to 3,800 BCE"
+
+[[variables]]
+name = "Gini"
+unit = "1"
+description = "Gini coefficient of the house floor areas of the households sampled, corrected for small samples."
+
+[[variables]]
+name = "Households_in_sample"
+unit = "1"
+description = "Houses (households) whose areas the Gini is computed from."
+
+[[variables]]
+name = "Date_AD"
+unit = "calendar year (negative BC)"
+description = "Best point estimate of the date of the site or context."

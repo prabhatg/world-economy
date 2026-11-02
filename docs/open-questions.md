@@ -147,6 +147,16 @@
     used) or excavated house counts per phase could; an operator would compare them
     with the distribution of group sizes the model's settlements reach. The same holds
     for fertility and sedentary growth until the juvenile-index record (#33) joins.
+34. How strongly do houses track wealth, and when did inequality rise (ADR-0074)? The
+    house-size operator takes floor area to grow as wealth to the power 0.7, a judgment
+    from comparing house-size and wealth Ginis across two compilations; within-site data
+    on house size and household wealth would set it. The five M1 sites' Ginis rise from
+    the PPNA to the Late Chalcolithic, while the calibrated defaults' stay near 0.25-0.27
+    throughout: people around every site plant from early on, so land is partly closed
+    everywhere. With two to nineteen houses a site the record cannot yet tell these
+    apart. More sites with measured houses (Kohler and Smith 2018 list others outside the
+    supplement) would. The generation length (28 years, Fenner 2005) is to be checked
+    against the paper.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

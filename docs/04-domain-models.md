@@ -122,6 +122,16 @@ Not brain simulation. Agents implement validated regularities:
   largest village of their cell that has room (`mechanisms::Aggregation`, ADR-0071):
   sedentism, defence, exchange, marriage and ritual draw them together, up to the limit
   of face-to-face coordination.
+- Wealth inequality. *Implemented (M1):* each group carries the spread of its households'
+  wealth (the variance of log wealth; `mechanisms::Inequality`, ADR-0074), after the
+  intergenerational model of Borgerhoff Mulder et al. (2009): a share of wealth passes
+  from parents to children, and chance shocks add to it. Its drivers are social: where
+  land is open, sharing and levelling norms keep wealth from being inherited (foragers
+  and horticulturalists, Gini about 0.25); where farmland is scarce and closed in by
+  other farmers, sea or desert, it becomes property and is inherited (agriculturalists,
+  about 0.48; Demsetz 1967, Carneiro 1970, Bowles and Choi 2013). It feeds back on
+  nothing yet: status competition, patronage, inequality's effect on fertility, fission
+  and conflict, and the spread between merged groups' mean wealth are left out.
 - **Polities:** chiefdoms → states → empires, with state capacity (taxation,
   bureaucracy, coercion), legitimacy, and elite structure.
 - Competing state-formation modules: circumscription (Carneiro), military technology

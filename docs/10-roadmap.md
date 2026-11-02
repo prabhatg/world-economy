@@ -91,6 +91,9 @@ villages up to that limit (ADR-0071), and survey sites are compared with settlem
 (ADR-0072). Calibration round 9 (ADR-0073) starts a new history for that model: a new
 screening and three waves leave 1.35% of the prior and keep the calibrated defaults,
 which no candidate beats; no record yet sees village size or aggregation.
+Wealth inequality within groups (ADR-0074): households pass on wealth more where farmland
+is owned, so inequality rises as farming closes the land in; the house-size Ginis of five
+dated sites (Kohler et al. 2017) join the record, and the calibrated defaults fit them.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

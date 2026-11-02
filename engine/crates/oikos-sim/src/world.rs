@@ -247,6 +247,7 @@ impl World {
 
         let mut birth_counter = vec![0; n];
         let mut agents = Agents::default();
+        let foragers = mechanisms::Inequality::foragers(&params);
         // Without a climate (or with zero occupancy), initial bands cluster around one
         // seed-chosen habitable cell and its habitable neighbors.
         let mut habitable = vec![true; n];
@@ -265,7 +266,7 @@ impl World {
                 let w = (params.initial_occupancy * capacity[cell as usize] as f64) as u64;
                 if w > 0 {
                     let id = next_id(&mut birth_counter, cell);
-                    agents.push(id, cell, w);
+                    agents.push_with(id, cell, w, foragers);
                 }
             }
             return Ok(World::assemble(
@@ -287,7 +288,7 @@ impl World {
         for b in 0..params.initial_bands {
             let cell = home[init.below(1, 0, b, 0, home.len() as u32) as usize];
             let id = next_id(&mut birth_counter, cell);
-            agents.push(id, cell, params.initial_weight);
+            agents.push_with(id, cell, params.initial_weight, foragers);
         }
         agents.sort_canonical();
         Ok(World::assemble(config, grid, inputs, seed, Tick::EPOCH, params, capacity, birth_counter, agents))
@@ -321,11 +322,12 @@ impl World {
         let mut birth_counter = vec![0; w.grid.len()];
         let mut agents = Agents::default();
         let bands = bands_per_cell.max(1) as u64;
+        let foragers = mechanisms::Inequality::foragers(&w.params);
         for cell in cells {
             let per_band = (w.forage_capacity[cell as usize] / bands).max(1);
             for _ in 0..bands {
                 let id = next_id(&mut birth_counter, cell);
-                agents.push(id, cell, per_band);
+                agents.push_with(id, cell, per_band, foragers);
             }
         }
         Ok(World::assemble(
@@ -495,6 +497,30 @@ impl World {
             }
         }
         sum.into_iter().map(|x| x as f64 / SHARE_ONE as f64).collect()
+    }
+
+    /// Wealth inequality of each cell's settled people (ADR-0074): the variance of log
+    /// household wealth of its groups, weighted by their settled people (people times
+    /// cultivation effort), as excavated houses of a village would show it; 0 where nobody
+    /// farms. Sums are exact integers, so the result is the same on every host.
+    pub fn inequality(&self) -> Vec<f64> {
+        let n = self.grid.len();
+        let (mut settled, mut sum) = (vec![0u128; n], vec![0u128; n]);
+        for a in self.agent_slices() {
+            for i in 0..a.len() {
+                let s = a.weight[i] as u128 * a.cultivation[i] as u128;
+                settled[a.cell[i] as usize] += s;
+                sum[a.cell[i] as usize] += s * a.inequality[i] as u128;
+            }
+        }
+        (0..n)
+            .map(|c| match settled[c] {
+                0 => 0.0,
+                s => {
+                    (sum[c] / s) as f64 / SHARE_ONE as f64 + (sum[c] % s) as f64 / s as f64 / SHARE_ONE as f64
+                }
+            })
+            .collect()
     }
 
     /// Domestic share of each cell's cultivated crop: the effort-weighted mean of its

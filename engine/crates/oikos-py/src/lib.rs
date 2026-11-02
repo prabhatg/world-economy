@@ -210,6 +210,12 @@ impl PyWorld {
         f64_array(py, self.0.domestication().into_iter())
     }
 
+    /// Wealth inequality of each cell's settled people: the variance of log household
+    /// wealth of its groups, weighted by settled people (0 where nobody farms; ADR-0074).
+    fn inequality<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.inequality().into_iter())
+    }
+
     /// Wild-cereal suitability per cell in [0, 1] (float64; zeros without a climate pack).
     fn suitability<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let s = &self.0.farmland.suitability;
@@ -253,7 +259,8 @@ impl PyWorld {
 
     /// Agents in canonical (cell, id) order: `id` (uint64), `cell` (uint32 grid index),
     /// `weight` (uint64, people the agent stands for), and their practice as float64
-    /// shares: `cultivation` (of effort) and `domestication` (of the sown crop).
+    /// shares: `cultivation` (of effort) and `domestication` (of the sown crop), and
+    /// `inequality`, the variance of log household wealth among the group's households.
     fn agents<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let slices = || self.0.agent_slices();
         let out = PyDict::new(py);
@@ -264,6 +271,7 @@ impl PyWorld {
         let share = |v: &[u32]| v.iter().map(|&x| Traits::share(x)).collect::<Vec<_>>();
         out.set_item("cultivation", f64_array(py, slices().flat_map(|a| share(&a.cultivation)))?)?;
         out.set_item("domestication", f64_array(py, slices().flat_map(|a| share(&a.domestication)))?)?;
+        out.set_item("inequality", f64_array(py, slices().flat_map(|a| share(&a.inequality)))?)?;
         Ok(out)
     }
 

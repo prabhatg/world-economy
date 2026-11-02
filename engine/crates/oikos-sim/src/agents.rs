@@ -3,7 +3,8 @@
 //! Each agent represents `weight` people (Scheffer et al. 1995). Splitting and merging
 //! change resolution while conserving people exactly. Agents also carry their practice
 //! ([`Traits`]): split-off groups inherit it and merged bands take the people-weighted
-//! mean, so practice travels with people (demic diffusion).
+//! mean, so practice travels with people (demic diffusion). The wealth inequality among
+//! a group's households (ADR-0074) travels and pools the same way.
 
 use oikos_core::EntityId;
 use std::ops::Range;
@@ -19,11 +20,14 @@ pub struct Traits {
     pub cultivation: u32,
     /// Share of domestic-type plants in the crop the band sows.
     pub domestication: u32,
+    /// Variance of the logarithm of household wealth among the group's households
+    /// (ADR-0074), in units of [`SHARE_ONE`] (so up to about 4.3, a Gini of 0.86).
+    pub inequality: u32,
 }
 
 impl Traits {
     /// Foragers: no cultivation, wild crops.
-    pub const FORAGER: Traits = Traits { cultivation: 0, domestication: 0 };
+    pub const FORAGER: Traits = Traits { cultivation: 0, domestication: 0, inequality: 0 };
 
     pub fn share(x: u32) -> f64 {
         x as f64 / SHARE_ONE as f64
@@ -52,6 +56,8 @@ pub struct Agents {
     pub cultivation: Vec<u32>,
     /// [`Traits::domestication`] per agent.
     pub domestication: Vec<u32>,
+    /// [`Traits::inequality`] per agent.
+    pub inequality: Vec<u32>,
 }
 
 /// People-weighted trait sums of the small bands merging into one absorber. In u64:
@@ -62,6 +68,8 @@ struct Pool {
     weight: u64,
     cultivation: u64,
     domestication: u64,
+    /// In u128: inequality reaches u32::MAX, four times the shares' one.
+    inequality: u128,
 }
 
 impl Pool {
@@ -69,15 +77,24 @@ impl Pool {
         self.weight += w;
         self.cultivation += w * t.cultivation as u64;
         self.domestication += w * t.domestication as u64;
+        self.inequality += w as u128 * t.inequality as u128;
     }
 
     /// People-weighted mean traits (rounded down).
     fn mean(&self) -> Traits {
-        if self.cultivation == 0 && self.domestication == 0 {
+        if self.cultivation == 0 && self.domestication == 0 && self.inequality == 0 {
             return Traits::FORAGER;
         }
         let w = self.weight.max(1);
-        Traits { cultivation: (self.cultivation / w) as u32, domestication: (self.domestication / w) as u32 }
+        Traits {
+            cultivation: (self.cultivation / w) as u32,
+            domestication: (self.domestication / w) as u32,
+            // u128 division is slow on wasm; the sum fits u64 below 4.3 billion people.
+            inequality: match u64::try_from(self.inequality) {
+                Ok(sum) => (sum / w) as u32,
+                Err(_) => (self.inequality / w as u128) as u32,
+            },
+        }
     }
 }
 
@@ -101,15 +118,21 @@ impl Agents {
         self.weight.push(weight);
         self.cultivation.push(traits.cultivation);
         self.domestication.push(traits.domestication);
+        self.inequality.push(traits.inequality);
     }
 
     pub fn traits(&self, i: usize) -> Traits {
-        Traits { cultivation: self.cultivation[i], domestication: self.domestication[i] }
+        Traits {
+            cultivation: self.cultivation[i],
+            domestication: self.domestication[i],
+            inequality: self.inequality[i],
+        }
     }
 
     pub fn set_traits(&mut self, i: usize, t: Traits) {
         self.cultivation[i] = t.cultivation;
         self.domestication[i] = t.domestication;
+        self.inequality[i] = t.inequality;
     }
 
     pub fn append(&mut self, other: &mut Agents) {
@@ -118,6 +141,7 @@ impl Agents {
         self.weight.append(&mut other.weight);
         self.cultivation.append(&mut other.cultivation);
         self.domestication.append(&mut other.domestication);
+        self.inequality.append(&mut other.inequality);
     }
 
     /// Appends copies of `other`'s agents at indices `span`.
@@ -126,7 +150,8 @@ impl Agents {
         self.cell.extend_from_slice(&other.cell[span.clone()]);
         self.weight.extend_from_slice(&other.weight[span.clone()]);
         self.cultivation.extend_from_slice(&other.cultivation[span.clone()]);
-        self.domestication.extend_from_slice(&other.domestication[span]);
+        self.domestication.extend_from_slice(&other.domestication[span.clone()]);
+        self.inequality.extend_from_slice(&other.inequality[span]);
     }
 
     pub fn total_weight(&self) -> u64 {
@@ -142,6 +167,7 @@ impl Agents {
         self.weight = order.iter().map(|&i| self.weight[i]).collect();
         self.cultivation = order.iter().map(|&i| self.cultivation[i]).collect();
         self.domestication = order.iter().map(|&i| self.domestication[i]).collect();
+        self.inequality = order.iter().map(|&i| self.inequality[i]).collect();
     }
 
     /// Range of agents in `cells` (requires canonical order).
@@ -176,6 +202,7 @@ impl Agents {
                     let t = Traits {
                         cultivation: mean(&self.cultivation),
                         domestication: mean(&self.domestication),
+                        inequality: mean(&self.inequality),
                     };
                     out.push_with(self.id[j], cell, people, t);
                 }
@@ -191,6 +218,7 @@ impl Agents {
         self.weight.clear();
         self.cultivation.clear();
         self.domestication.clear();
+        self.inequality.clear();
     }
 
     /// Sorts into canonical (cell, id) order. All cells must lie in `cells`.
@@ -220,6 +248,8 @@ impl Agents {
         scratch.cultivation.resize(n, 0);
         scratch.domestication.clear();
         scratch.domestication.resize(n, 0);
+        scratch.inequality.clear();
+        scratch.inequality.resize(n, 0);
         // Scatter; afterwards counts[k] is the end of cell k's group.
         for i in 0..n {
             let k = (self.cell[i] - cells.start) as usize;
@@ -230,6 +260,7 @@ impl Agents {
             scratch.weight[dst] = self.weight[i];
             scratch.cultivation[dst] = self.cultivation[i];
             scratch.domestication[dst] = self.domestication[i];
+            scratch.inequality[dst] = self.inequality[i];
         }
 
         let mut start = 0;
@@ -248,6 +279,7 @@ impl Agents {
                     scratch.weight[i] = scratch.weight[i - 1];
                     scratch.cultivation[i] = scratch.cultivation[i - 1];
                     scratch.domestication[i] = scratch.domestication[i - 1];
+                    scratch.inequality[i] = scratch.inequality[i - 1];
                     i -= 1;
                 }
                 scratch.id[i] = id;
@@ -354,30 +386,53 @@ mod tests {
     #[test]
     fn merged_bands_take_the_people_weighted_mean_practice() {
         let mut a = Agents::default();
-        let t = |e: f64, d: f64| Traits {
+        let t = |e: f64, d: f64, v: f64| Traits {
             cultivation: Traits::from_share(e),
             domestication: Traits::from_share(d),
+            inequality: Traits::from_share(v),
         };
-        a.push_with(EntityId::new(0, 1), 0, 3, t(1.0, 0.5));
-        a.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.1));
-        a.push_with(EntityId::new(0, 3), 0, 50, t(0.2, 0.2));
+        a.push_with(EntityId::new(0, 1), 0, 3, t(1.0, 0.5, 0.8));
+        a.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.1, 0.2));
+        a.push_with(EntityId::new(0, 3), 0, 50, t(0.2, 0.2, 0.3));
         let mut out = Agents::default();
         a.merge_small_into(10, &mut out, 0, &mut [0]);
         assert_eq!(out.len(), 2);
-        assert_eq!(out.traits(0), t(0.75, 0.4), "(3 x 1 + 1 x 0) / 4, (3 x 0.5 + 1 x 0.1) / 4");
-        assert_eq!(out.traits(1), t(0.2, 0.2), "large bands keep their own");
+        assert_eq!(out.traits(0), t(0.75, 0.4, 0.65), "(3 x 1 + 1 x 0) / 4, (3 x 0.5 + 1 x 0.1) / 4, ...");
+        assert_eq!(out.traits(1), t(0.2, 0.2, 0.3), "large bands keep their own");
+    }
+
+    #[test]
+    fn pooled_inequality_does_not_overflow() {
+        // Some 4.3 billion people at the largest inequality would overflow a u64 sum.
+        let mut pool = Pool::default();
+        let t = Traits { inequality: u32::MAX, ..Traits::FORAGER };
+        for _ in 0..3 {
+            pool.add(2_000_000_000, t);
+        }
+        assert_eq!(pool.mean().inequality, u32::MAX);
+    }
+
+    #[test]
+    fn merged_foragers_keep_their_inequality() {
+        let mut a = Agents::default();
+        let t = Traits { inequality: 200_000_000, ..Traits::FORAGER };
+        a.push_with(EntityId::new(0, 1), 0, 3, t);
+        a.push_with(EntityId::new(0, 2), 0, 1, t);
+        let mut out = Agents::default();
+        a.merge_small_into(10, &mut out, 0, &mut [0]);
+        assert_eq!(out.traits(0), t, "foragers are not reset to no inequality when they merge");
     }
 
     use proptest::prelude::*;
 
     /// Random agents in `cells` cells with unique ids.
     fn arb_agents(cells: u32) -> impl Strategy<Value = Agents> {
-        let row = (0..cells, 0u64..1_000, 0u64..40, 0..=SHARE_ONE, 0..=SHARE_ONE);
+        let row = (0..cells, 0u64..1_000, 0u64..40, 0..=SHARE_ONE, 0..=SHARE_ONE, 0..=u32::MAX);
         prop::collection::vec(row, 0..300).prop_map(|rows| {
             let mut a = Agents::default();
-            for (i, (cell, counter, w, e, d)) in rows.into_iter().enumerate() {
+            for (i, (cell, counter, w, e, d, v)) in rows.into_iter().enumerate() {
                 // Unique ids: counter space partitioned by row index.
-                let t = Traits { cultivation: e, domestication: d };
+                let t = Traits { cultivation: e, domestication: d, inequality: v };
                 a.push_with(EntityId::new(cell, counter * 1_000 + i as u64), cell, w, t);
             }
             a

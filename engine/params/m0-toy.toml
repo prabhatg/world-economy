@@ -142,6 +142,75 @@ sources = [
   { citation = "Dunbar, R. I. M. (1993). Coevolution of neocortical size, group size and language in humans. Behavioral and Brain Sciences 16, 681-694.", doi = "10.1017/S0140525X00032325" },
 ]
 
+[params.wealth_transmission]
+group = "social"
+unit = "per generation"
+description = "Intergenerational transmission of household wealth where land is not owned (foragers, and farmers whose land is open around them): the regression of a household's log wealth on its parents' (beta, Borgerhoff Mulder et al. 2009 eq. 1). Inequality within a group (ADR-0074) moves from this toward landed_wealth_transmission with its ownership of land: its cultivation effort times how closed in its land is."
+kind = { type = "probability" }
+default = 0.19
+prior = { dist = "uniform", lo = 0.05, hi = 0.35 }
+status = "literature"
+note = "Hunter-gatherers' importance-weighted average beta over embodied, relational and material wealth, 0.19 +- 0.05 (Borgerhoff Mulder et al. 2009, Table 2); horticulturalists' is 0.18 +- 0.04, as low: cultivating alone does not make wealth heritable. Low transmission reflects egalitarian norms of sharing and levelling (Woodburn 1982; Boehm 1993). The prior spans three standard errors."
+sources = [
+  { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
+  { citation = "Woodburn, J. (1982). Egalitarian societies. Man 17, 431-451.", doi = "10.2307/2801707" },
+  { citation = "Boehm, C. (1993). Egalitarian behavior and reverse dominance hierarchy. Current Anthropology 34, 227-254.", doi = "10.1086/204166" },
+]
+
+[params.wealth_shock]
+group = "social"
+unit = "variance of log wealth per generation"
+description = "Variance of the chance shocks to household log wealth per generation (sigma^2, Borgerhoff Mulder et al. 2009 eq. 2) where land is not owned: illness, luck in the hunt or harvest, accidents. With wealth_transmission it sets the inequality foragers settle at, shock / (1 - transmission^2)."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.1957
+prior = { dist = "uniform", lo = 0.1, hi = 0.3 }
+status = "literature"
+note = "Derived: the shock that gives hunter-gatherers' Gini of 0.25 +- 0.04 (Borgerhoff Mulder et al. 2009, Table 2) at transmission 0.19 under lognormal wealth (stationary log variance 0.2031). The prior spans Ginis of about 0.18-0.31."
+sources = [
+  { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
+]
+
+[params.landed_wealth_transmission]
+group = "social"
+unit = "per generation"
+description = "Intergenerational transmission of household wealth where farmland is owned: farmed by the group and closed in by farmed land, sea or desert, so land is property and inherited (ADR-0074). See wealth_transmission."
+kind = { type = "probability" }
+default = 0.36
+prior = { dist = "uniform", lo = 0.2, hi = 0.6 }
+status = "literature"
+note = "Agriculturalists' importance-weighted average beta, 0.36 +- 0.05 (Borgerhoff Mulder et al. 2009, Table 2; land alone 0.45, material wealth 0.55). Land becomes property where it is scarce and defensible (Demsetz 1967; Bowles and Choi 2013) and where people cannot move away from those who claim it (circumscription, Carneiro 1970)."
+sources = [
+  { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
+  { citation = "Bowles, S., Choi, J.-K. (2013). Coevolution of farming and private property during the early Holocene. Proceedings of the National Academy of Sciences 110, 8830-8835.", doi = "10.1073/pnas.1212149110" },
+  { citation = "Carneiro, R. L. (1970). A theory of the origin of the state. Science 169, 733-738.", doi = "10.1126/science.169.3947.733" },
+]
+
+[params.landed_wealth_shock]
+group = "social"
+unit = "variance of log wealth per generation"
+description = "Variance of the chance shocks to household log wealth per generation where farmland is owned (see wealth_shock): harvest failure, loss of stores and herds, partible inheritance."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.7205
+prior = { dist = "uniform", lo = 0.45, hi = 1.0 }
+status = "literature"
+note = "Derived: the shock that gives agriculturalists' Gini of 0.48 +- 0.04 (Borgerhoff Mulder et al. 2009, Table 2) at transmission 0.36 under lognormal wealth (stationary log variance 0.8278). The prior spans Ginis of about 0.40-0.55."
+sources = [
+  { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
+]
+
+[params.generation_years]
+group = "social"
+unit = "years"
+description = "Length of a generation, over which wealth_transmission and the shocks act; inequality is updated every period by the equivalent fraction of a generation."
+kind = { type = "real", min = 10.0, max = 50.0 }
+default = 28.0
+prior = { dist = "uniform", lo = 20.0, hi = 35.0 }
+status = "placeholder"
+note = "A human generation of about 25-32 years, women's shorter than men's; the cross-cultural estimates of Fenner (2005) are to be checked against the paper. Inequality approaches its level within a few decades, far faster than the records resolve, so little depends on it."
+sources = [
+  { citation = "Fenner, J. N. (2005). Cross-cultural estimation of the human generation interval for use in genetics-based population divergence studies. American Journal of Physical Anthropology 128, 415-423.", doi = "10.1002/ajpa.20188" },
+]
+
 [params.fission_probability]
 group = "social"
 unit = "probability per period"

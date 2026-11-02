@@ -47,6 +47,12 @@ and Access (checked 2026-10-31): research use with acknowledgement, no sale, and
 data or anything derived from it given only to registered users. ADS serves it to
 browsers only, so it is downloaded by hand, and its phase table is built in memory and
 never committed or packed.
+House-size Gini coefficients come from Supplementary Table 2 of Kohler et al. (2017,
+Nature 551: 619-622, doi:10.1038/nature24646; ADR-0074): 63 sites worldwide, five of them
+in the M1 region. The author manuscript's supplement at Europe PMC (PMC5714260) carries no
+licence (checked 2026-11-02), so it is used for research only: it is fetched through the
+Europe PMC API, its spreadsheet checked by SHA-256, and the site table built in memory,
+never committed or packed. Sites are located by their radiocarbon samples in p3k14c.
 
 ## Forcing (inputs)
 

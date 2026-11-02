@@ -73,6 +73,11 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Vegetation History and Archaeobotany 28: 449–463, doi:10.1007/s00334-018-0702-y. Those
   who collected and compiled the data bear no responsibility for our analysis or
   interpretation of it.
+- **House-size Gini coefficients** (inequality record): Kohler, T.A., Smith, M.E.,
+  Bogaard, A. et al. (2017), Nature 551: 619–622, doi:10.1038/nature24646, Supplementary
+  Table 2 (author manuscript, Europe PMC PMC5714260), and the analyses it compiles
+  (Bogaard; Demirergi et al.), from Kohler, T.A. & Smith, M.E. (eds.) (2018), Ten Thousand
+  Years of Inequality. Used for research only, never redistributed.
 - **PROJ** (via rasterio) projects SoilGrids' Homolosine grid.
 - **GDAL** (via rasterio and pyogrio) reads raster data in the pipelines.
 
@@ -88,6 +93,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   doi:10.1086/342429; read through a stable population with the Siler mortality of
   Gurven, M. & Kaplan, H. (2007), Population and Development Review 33: 321–365,
   doi:10.1111/j.1728-4457.2007.00171.x (Siler, W. (1979), Ecology 60: 750–757, doi:10.2307/1936612).
+- **House-size Gini:** the small-sample Gini of Dixon, P.M., Weiner, J.,
+  Mitchell-Olds, T. & Woodley, R. (1987), Ecology 68: 1548–1551, doi:10.2307/1939238, as
+  used by Kohler et al. (2017); wealth dynamics after Borgerhoff Mulder, M. et al.
+  (2009), Science 326: 682–688, doi:10.1126/science.1178336.
 - **Aoristic site counts:** Crema, E.R. (2012), Journal of Archaeological Method and
   Theory 19: 440–461, doi:10.1007/s10816-011-9122-3; as applied to these surveys by
   Palmisano et al. (2021).

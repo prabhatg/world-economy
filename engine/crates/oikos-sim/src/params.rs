@@ -32,6 +32,11 @@ pub struct Params {
     pub fission_threshold: u64,
     pub village_fission_size: u64,
     pub aggregation_rate: f64,
+    pub wealth_transmission: f64,
+    pub wealth_shock: f64,
+    pub landed_wealth_transmission: f64,
+    pub landed_wealth_shock: f64,
+    pub generation_years: f64,
     pub fission_probability: f64,
     pub exploration_probability: f64,
     pub merge_threshold: u64,
@@ -109,6 +114,11 @@ impl Params {
             fission_threshold: int("fission_threshold")?,
             village_fission_size: int("village_fission_size")?,
             aggregation_rate: real("aggregation_rate")?,
+            wealth_transmission: real("wealth_transmission")?,
+            wealth_shock: real("wealth_shock")?,
+            landed_wealth_transmission: real("landed_wealth_transmission")?,
+            landed_wealth_shock: real("landed_wealth_shock")?,
+            generation_years: real("generation_years")?,
             fission_probability: real("fission_probability")?,
             exploration_probability: real("exploration_probability")?,
             merge_threshold: int("merge_threshold")?,
@@ -181,6 +191,17 @@ impl Params {
                 "cereal_temp_min ({}) must be below cereal_temp_full ({})",
                 self.cereal_temp_min, self.cereal_temp_full
             ));
+        }
+        for (key, beta) in [
+            ("wealth_transmission", self.wealth_transmission),
+            ("landed_wealth_transmission", self.landed_wealth_transmission),
+        ] {
+            if beta >= 1.0 {
+                return Err(format!(
+                    "{key} ({beta}) must be below 1: with every generation keeping all of its parents' \
+                     inequality, inequality grows without bound (ADR-0074)"
+                ));
+            }
         }
         if self.capacity_min > self.capacity_max {
             return Err(format!(
@@ -276,6 +297,12 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("village_fission_size", Restore::Value(0.0)),
     // ADR-0071: no aggregation.
     ("aggregation_rate", Restore::Value(0.0)),
+    // ADR-0074: wealth inequality is a trait nothing else reads yet.
+    ("wealth_transmission", Restore::Inert),
+    ("wealth_shock", Restore::Inert),
+    ("landed_wealth_transmission", Restore::Inert),
+    ("landed_wealth_shock", Restore::Inert),
+    ("generation_years", Restore::Inert),
 ];
 
 impl Params {

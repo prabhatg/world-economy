@@ -393,7 +393,10 @@ fn cultivation_runs_after_bands_move() {
     let specs: Vec<_> = mechanisms::defaults(&Params::default()).iter().map(|m| m.spec()).collect();
     let order = Schedule::build(&specs).unwrap();
     let names: Vec<&str> = order.order().iter().map(|&i| specs[i].name).collect();
-    assert_eq!(names, ["growth", "fission", "dispersal", "inundation", "aggregation", "cultivation"]);
+    assert_eq!(
+        names,
+        ["growth", "fission", "dispersal", "inundation", "aggregation", "cultivation", "inequality"]
+    );
 }
 
 #[test]
@@ -623,6 +626,20 @@ fn soil_is_partition_independent_and_restores() {
     assert_eq!(checkpoint::state_hash(&restored), run(1));
 }
 
+/// A checkpoint's agents as layouts before ADR-0074 wrote them (no inequality), and the
+/// checkpoint its restored world encodes to (every group at foragers' inequality).
+fn before_inequality(now: &[u8], agents: usize, params: &Params) -> (Vec<u8>, Vec<u8>) {
+    let forager = oikos_sim::mechanisms::Inequality::foragers(params).inequality.to_le_bytes();
+    let at = now.len() - 32 * agents;
+    let (mut before, mut restored) = (now[..at].to_vec(), now[..at].to_vec());
+    for r in now[at..].chunks(32) {
+        before.extend_from_slice(&r[..28]);
+        restored.extend_from_slice(&r[..28]);
+        restored.extend_from_slice(&forager);
+    }
+    (before, restored)
+}
+
 #[test]
 fn checkpoints_from_before_soil_restore_with_whole_soil() {
     let (mut w, g, c) = farming_world(9, |p| Params { soil_erosion_rate: 0.0, ..p });
@@ -634,12 +651,12 @@ fn checkpoints_from_before_soil_restore_with_whole_soil() {
     let params_len = serde_json::to_vec(&w.params).unwrap().len();
     let header = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8 + 4 + params_len + 4;
     let soil_at = header + 16 * cells;
-    let mut before = now.clone();
+    let (mut before, zeroed) = before_inequality(&now, w.agent_count(), &w.params);
     before[..8].copy_from_slice(b"OIKOSCK2");
     before.drain(soil_at..soil_at + 4 * cells + 4);
     let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
     assert!(restored.soil().iter().all(|&s| s == 1.0));
-    assert_eq!(checkpoint::encode(&restored), now, "nothing eroded, so nothing is lost");
+    assert_eq!(checkpoint::encode(&restored), zeroed, "nothing eroded, so nothing is lost");
     let mut bad = now.clone();
     bad[soil_at..soil_at + 4].copy_from_slice(&(SHARE_ONE + 1).to_le_bytes());
     let err = checkpoint::decode_with(&bad, inputs(&[&g, &c])).err().expect("refused");

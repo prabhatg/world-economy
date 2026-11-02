@@ -176,6 +176,13 @@ wave leaves 0.10% of the prior space, and the nearest consistent world (wave 9, 
 records do not identify the Neolithic demographic transition's growth rates (ADR-0067):
 populations follow carrying capacity, and a profile of sedentary growth from 0.1 to 4
 times the forager rate is flat.
+House-size inequality (ADR-0074) is a sixth record: the Gini coefficient of house floor
+areas at five dated sites of the region (Kohler et al. 2017), from Jerf el Ahmar (PPNA)
+to Tell Brak (Late Chalcolithic). A world's settled people around a site give the
+variance of log wealth; house area is taken to grow as wealth to the power 0.7 (a
+judgment from the ratio of house-size to wealth Ginis in the two compilations), and the
+summary is the small-sample Gini the site's two to nineteen measured houses would show,
+with its sampling variance as the observation variance and a discrepancy of 0.05.
 Round 9 (ADR-0073) starts a new history after villages and settlements changed the model
 and the site summaries (ADR-0070 to ADR-0072): a new screening of all 33 free
 parameters and three waves over the prior, 24 factors emulated. Worlds whose summaries

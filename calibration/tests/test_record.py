@@ -62,6 +62,9 @@ class _ObsidianWorld:
     def settlements(self):
         return np.zeros(2)
 
+    def inequality(self):
+        return np.zeros(2)
+
     def run_years(self, n, parts):
         self.year += n
 
@@ -85,3 +88,24 @@ def test_settlements_are_groups_counted_by_how_settled_they_are():
     # Surveys find settlements, not people: a group leaves a site as far as it is settled.
     a = record.activity(_VillageWorld(), end=-11_900, every=50, parts=1)
     np.testing.assert_allclose(a.settlements[:, 0], [100 * 1.5, 0])
+
+
+class _UnequalWorld(_ObsidianWorld):
+    """Cell 0: ten people, 0.4 of their effort cultivating, whose settled households'
+    log wealth varies by 0.5 then 0.9; cell 1: nobody farms."""
+
+    def cultivation(self):
+        return np.array([0.4, 0.0])
+
+    def inequality(self):
+        return np.array([0.5 if self.year < -11_950 else 0.9, 0.0])
+
+
+def test_inequality_is_recorded_per_settled_person_year():
+    # An operator divides by the settled people-years (cultivators) of the same cells and
+    # centuries for the settled people's mean inequality (ADR-0074).
+    a = record.activity(_UnequalWorld(), end=-11_900, every=50, parts=1)
+    np.testing.assert_allclose(a.inequality[:, 0], [50 * 10 * 0.4 * 0.5 + 50 * 10 * 0.4 * 0.9, 0])
+    assert a.inequality[0, 0] / a.cultivators[0, 0] == pytest.approx(0.7)
+    toy = record.activity(oikos.World(seed=4), end=-11_900)
+    assert toy.inequality.shape == toy.people.shape and not toy.inequality.any(), "toy worlds never settle"
