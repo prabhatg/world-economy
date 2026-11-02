@@ -67,6 +67,21 @@ def test_a_wave_fitted_in_worker_processes_or_from_its_hyperparameters_is_the_sa
     assert np.array_equal(one.implausibility(x), kept.implausibility(x))
 
 
+def test_a_wave_is_fitted_to_the_runs_whose_outputs_are_defined():
+    # Runs a summary cannot describe (a surveyed landscape left empty) are ruled out by
+    # their own outputs and left out of the emulators (screening round 9).
+    rng = np.random.default_rng(4)
+    u = emulator.latin_hypercube(31, 3, rng)
+    y = simulator(u)
+    y[7, 1] = np.nan
+    w = history.Wave.fit(u, y, targets(), rng=np.random.default_rng(0))
+    keep = np.arange(31) != 7
+    clean = history.Wave.fit(u[keep], y[keep], targets(), rng=np.random.default_rng(0))
+    assert w.thetas == clean.thetas
+    x = rng.random((50, 3))
+    assert np.array_equal(w.implausibility(x), clean.implausibility(x))
+
+
 def test_an_empty_space_is_reported_not_sampled_forever():
     rng = np.random.default_rng(3)
     u = emulator.latin_hypercube(30, 3, rng)

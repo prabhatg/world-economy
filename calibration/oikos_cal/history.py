@@ -126,10 +126,13 @@ class Wave:
     def fit(cls, u, outputs, targets, active=None, rng=None, cutoff=CUTOFF, groups=None, thetas=None, workers=1):
         """Emulators of `outputs` [run, target] from runs at unit-cube points `u` [run, factor].
         With `thetas` (a wave's `thetas`), the emulators are rebuilt without searching;
-        otherwise the searches run in `workers` processes, with the same result."""
+        otherwise the searches run in `workers` processes, with the same result. Runs with
+        an undefined output are left out: their own outputs rule them out."""
         u, y = np.asarray(u, dtype=float), np.asarray(outputs, dtype=float)
         if y.shape != (len(u), len(targets)):
             raise ValueError(f"outputs must be [run, target] = {(len(u), len(targets))}, not {y.shape}")
+        defined = np.isfinite(y).all(axis=1)
+        u, y = u[defined], y[defined]
         active = list(range(u.shape[1])) if active is None else list(active)
         x, columns = u[:, active], list(y.T)
         if thetas is None:

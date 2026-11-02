@@ -88,7 +88,8 @@ def screen(args):
     ts, names, _ = _problem_targets()
     out = _run([(p, args.seed) for p in params] + [({}, s) for s in noise], args.workers)
     runs, noisy = out[: len(params)], out[len(params) :]
-    _write(args.out, {"command": "screen", "revision": _revision(), "seed": args.seed, "levels": args.levels,
+    _write(args.out, {"command": "screen", "revision": _revision(), "seed": args.seed, "sites": SITES,
+                      "levels": args.levels,
                       "factors": factors, "design": design.tolist(), "params": params, "names": names,
                       "outputs": runs.tolist(), "noise_seeds": noise, "noise_outputs": noisy.tolist(),
                       "targets": _targets_json(ts)})
@@ -186,11 +187,14 @@ def wave(args):
 
     previous = [json.loads(Path(p).read_text()) for p in args.previous]
     require_sites(previous, "continue")
+    chosen_by = json.loads(Path(args.screening).read_text()) if args.screening else None
+    if chosen_by:
+        require_sites([chosen_by], "choose factors by")
     rng = np.random.default_rng(args.seed)
     if previous:
         factors, active = previous[-1]["factors"], previous[-1]["active"]
         if args.screening:  # refocus: later emulators may see more factors than earlier ones
-            active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
+            active = active_factors(chosen_by, args.threshold, args.max_active)
         factors, new = extend_factors(factors, screening.free_parameters(oikos.registry()), args.inactive)
         active = activate(factors, sorted(set(active) | set(new)), args.activate)
         if args.activate:
@@ -205,7 +209,7 @@ def wave(args):
     else:
         factors = screening.free_parameters(oikos.registry())
         if args.screening:
-            active = active_factors(json.loads(Path(args.screening).read_text()), args.threshold, args.max_active)
+            active = active_factors(chosen_by, args.threshold, args.max_active)
         else:
             active = list(range(len(factors)))
         u = emulator.latin_hypercube(args.runs, len(factors), rng)
@@ -249,10 +253,10 @@ def _sites(doc):
 def require_sites(docs, what):
     """Refuse to `what` (continue, rerun) waves whose site targets used another model than
     the engine's now: emulators and scores of the two do not mix (ADR-0072)."""
-    other = [d.get("wave", "?") for d in docs if _sites(d) != SITES]
+    other = [f"wave {d['wave']}" if "wave" in d else "the screening" for d in docs if _sites(d) != SITES]
     if other:
-        raise SystemExit(f"cannot {what} waves {other}: they judged sites by settled people-years, the engine now by "
-                         f"{SITES} (ADR-0072); start a new round of waves")
+        raise SystemExit(f"cannot {what} {', '.join(other)}: they judged sites by settled people-years, the engine "
+                         f"now by {SITES} (ADR-0072); start a new round, from a new screening")
 
 
 def candidates(docs, top):

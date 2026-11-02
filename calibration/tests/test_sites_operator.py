@@ -96,3 +96,17 @@ def test_eras_give_centered_log_shares_with_bootstrap_variances_and_one_group_pe
 def test_an_era_without_sites_is_an_error():
     with pytest.raises(ValueError, match="no sites"):
         targets.SiteEras(sites.Operator(table(("w", "a", 0, -6000, -5000)), WINDOW, EDGES))
+
+
+def test_a_world_without_settlements_in_a_surveyed_era_has_no_site_shares():
+    # The surveys found sites in every era (the targets require it); a world that leaves a
+    # surveyed landscape empty for an era has no log shares there, and is ruled out, not
+    # given an infinite summary (screening round 9).
+    phases = [("north", f"n{i}", 0, lo, lo + 1000) for i, lo in enumerate([-6000, -5000, -4000] * 10)]
+    phases += [("south", f"s{i}", 1, lo, lo + 1000) for i, lo in enumerate([-6000, -5000, -4000] * 10)]
+    eras = targets.SiteEras(sites.Operator(table(*phases), WINDOW, EDGES))
+    a = history(2, 1.0)
+    a[0, WINDOW.midpoints() < -5000] = 0  # north empty in 6000-5000 BCE
+    with np.errstate(all="raise"):
+        z = eras.model(a)
+    assert np.isnan(z[:3]).all() and np.allclose(z[3:], 0)

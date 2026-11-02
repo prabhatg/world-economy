@@ -45,3 +45,14 @@ def test_elementary_effects_of_several_outputs():
     e = screening.elementary_effects(d, y)
     assert e.mu_star.shape == (3, 2)
     assert e.mu_star[:, 0] == pytest.approx([1, 0, 0]) and e.mu_star[:, 1] == pytest.approx([0, 0, 2])
+
+
+def test_elementary_effects_leave_out_steps_of_failed_runs():
+    # A run with an undefined output spoils the two steps beside it in its trajectory only.
+    f = lambda x: 3 * x[..., 0] - x[..., 1]
+    d = screening.morris(k=3, trajectories=10, levels=4, rng=np.random.default_rng(2))
+    y = f(d)
+    y[4, 1] = np.nan
+    e = screening.elementary_effects(d, y)
+    assert e.mu_star == pytest.approx([3, 1, 0]) and e.mu == pytest.approx([3, -1, 0])
+    assert e.sigma == pytest.approx([0, 0, 0], abs=1e-12)

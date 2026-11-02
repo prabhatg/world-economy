@@ -139,13 +139,16 @@ class SiteEras:
     def model(self, activity):
         """Summaries of a world: its settlements (`activity.settlements`, ADR-0072: survey
         sites are settlements, not people), else settled people-years
-        (`activity.cultivators`), or an array [cell, century] given directly."""
+        (`activity.cultivators`), or an array [cell, century] given directly. A survey
+        whose landscape the world leaves empty for an era has no log shares (NaN): the
+        surveys found sites in every era, so such a world is ruled out by its own outputs."""
         if getattr(activity, "settlements", None) is not None:
             a = activity.settlements
         else:
             a = activity.cultivators if hasattr(activity, "cultivators") else activity
         e = self.op.expected(a)
-        return np.concatenate([_clr(e[n]) for n in self.op.windows])
+        return np.concatenate([_clr(e[n]) if (e[n] > 0).all() else np.full(len(e[n]), np.nan)
+                               for n in self.op.windows])
 
 
 def _target(name, observed, variance, discrepancy):

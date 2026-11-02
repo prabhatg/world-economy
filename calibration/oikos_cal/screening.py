@@ -51,7 +51,8 @@ class Effects:
 
 def elementary_effects(design, outputs):
     """Effects of a `morris` design from its outputs [trajectory, step] or
-    [trajectory, step, output]."""
+    [trajectory, step, output]. An undefined output (NaN: a run its summaries cannot
+    describe) spoils the effects of the steps beside it, which are left out."""
     design, y = np.asarray(design, dtype=float), np.asarray(outputs, dtype=float)
     r, steps, k = design.shape
     if y.shape[:2] != (r, steps):
@@ -64,5 +65,5 @@ def elementary_effects(design, outputs):
     ee = np.empty((r, k) + y.shape[2:])
     rows = np.arange(r)[:, None]
     ee[rows, factor] = dy / size.reshape(size.shape + extra)
-    return Effects(ee.mean(axis=0), np.abs(ee).mean(axis=0), ee.std(axis=0, ddof=1) if r > 1 else
-                   np.zeros(ee.shape[1:]), ee)
+    return Effects(np.nanmean(ee, axis=0), np.nanmean(np.abs(ee), axis=0),
+                   np.nanstd(ee, axis=0, ddof=1) if r > 1 else np.zeros(ee.shape[1:]), ee)

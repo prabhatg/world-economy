@@ -96,6 +96,8 @@ def test_consistent_runs_pass_every_target_and_every_group():
     doc = _wave_doc([[0.0, 0.0, -1, -1, 5], [0.4, 0.0, -1, -1, 5], [0.25, 0.25, -1, -1, 5]], [{}] * 3)
     # run 1 is 4 sd off on a; run 2 is 2.5 sd off on both: fine one by one, not together (chi2 12.5 > 10.6)
     assert cli.consistent(doc).tolist() == [True, False, False]
+    failed = _wave_doc([[0.0, 0.0, -1, -1, 5], [np.nan, 0.0, -1, -1, 5]], [{}] * 2)
+    assert cli.consistent(failed).tolist() == [True, False], "an undefined summary is not consistent"
 
 
 def test_candidates_rank_consistent_runs_by_how_near_their_summaries_sit_and_keep_active_factors():
@@ -191,3 +193,10 @@ def test_waves_judged_by_another_site_model_are_not_continued_or_rerun():
     with pytest.raises(SystemExit, match="ADR-0072"):
         cli.require_sites([{"wave": 10}], "continue")
     cli.require_sites([{"wave": 11, "sites": cli.SITES}], "continue")
+
+
+def test_factors_are_not_chosen_by_a_screening_of_another_site_model(tmp_path):
+    old = tmp_path / "screening.json"
+    old.write_text(json.dumps({"command": "screen"}))
+    with pytest.raises(SystemExit, match="screening.*ADR-0072"):
+        cli.main(["wave", "--screening", str(old), "--out", str(tmp_path / "wave1.json")])
