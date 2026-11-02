@@ -200,3 +200,8 @@ def test_factors_are_not_chosen_by_a_screening_of_another_site_model(tmp_path):
     old.write_text(json.dumps({"command": "screen"}))
     with pytest.raises(SystemExit, match="screening.*ADR-0072"):
         cli.main(["wave", "--screening", str(old), "--out", str(tmp_path / "wave1.json")])
+
+
+def test_the_best_run_of_a_wave_is_never_one_its_summaries_cannot_describe():
+    i = np.array([[2.0, 1.0], [np.nan, 0.5], [1.5, 1.5]])
+    assert cli.best_run(i) == 2

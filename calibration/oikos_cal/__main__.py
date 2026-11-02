@@ -377,6 +377,13 @@ def report_best(doc):
         print(f"  {f:32} {v:<11.4g} consistent runs 10-90%: {r['q10']:.3g} to {r['q90']:.3g}")
 
 
+def best_run(implausibility):
+    """The run [run, target] whose largest implausibility is smallest; runs with an
+    undefined summary are ruled out, never best."""
+    worst = implausibility.max(axis=1)
+    return int(np.where(np.isnan(worst), np.inf, worst).argmin())
+
+
 def report_wave(docs, paths=None, workers=1):
     doc = docs[-1]
     ts = _targets(doc["targets"])
@@ -386,7 +393,8 @@ def report_wave(docs, paths=None, workers=1):
     # emulator check: fit on 80% of the runs, standardized errors on the rest
     n = len(u)
     cut = int(0.8 * n)
-    test = history.Wave.fit(u[:cut], y[:cut], ts, active=doc["active"], rng=np.random.default_rng(0))
+    test = history.Wave.fit(u[:cut], y[:cut], ts, active=doc["active"], rng=np.random.default_rng(0),
+                            workers=workers)
     x = u[cut:][:, doc["active"]]
     run_i = history.implausibility(y, 0.0, ts)
     gs = _groups(doc.get("groups"))
@@ -397,13 +405,13 @@ def report_wave(docs, paths=None, workers=1):
         z = (y[cut:, j] - m) / np.sqrt(v)
         print(f"{t.name:36} {t.observed:9.3f} {np.sqrt(t.variance + t.discrepancy):6.3f} "
               f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {(np.abs(z) < 3).mean():14.2f}")
-    best = int(run_i.max(axis=1).argmin())
+    best = best_run(run_i)
     kept = consistent(doc)
     print(f"best run {best}: max implausibility {run_i[best].max():.2f} ({ts[int(run_i[best].argmax())].name}); "
           f"runs not ruled out by their own outputs: {kept.sum()} ({(run_i.max(axis=1) <= CUTOFF).sum()} one by one)")
     for k, g in enumerate(gs):
         print(f"  group {k} ({len(g.indices)} targets, dof {g.dof}): cutoff {history.chi2_cutoff(g.dof):.1f}, "
-              f"runs within {(run_g[:, k] <= history.chi2_cutoff(g.dof)).mean():.2f}, best {run_g[:, k].min():.1f}")
+              f"runs within {(run_g[:, k] <= history.chi2_cutoff(g.dof)).mean():.2f}, best {np.nanmin(run_g[:, k]):.1f}")
     print("  " + ", ".join(f"{k}={v:.4g}" for k, v in sorted(doc["params"][best].items())))
     waves = [_fit_wave(d, p, workers) for d, p in zip(docs, paths or [None] * len(docs))]
     space = np.random.default_rng(1).random((200_000, len(doc["factors"])))
