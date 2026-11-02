@@ -86,6 +86,34 @@ fn golden_result() {
     assert_eq!(result.summaries, expected.summaries);
 }
 
+#[test]
+fn zero_fertility_is_the_growth_before_births_and_deaths_were_split() {
+    // Fertility 0 keeps the net change rounded once (ADR-0068 off), so checkpoints from
+    // before it continue as they ran (ADR-0069): the golden summaries of that engine.
+    let mut wu = golden_unit();
+    let p = wu.params.clone().unwrap_or_default();
+    wu.params = Some(Params { fertility: 0.0, sedentary_fertility: 0.0, ..p });
+    let result = run_work_unit(&wu, |p| Err(p.to_string()), |_, _| Ok(())).unwrap();
+    let before: Vec<(i64, u64, u64)> = vec![
+        (-12000, 360, 12),
+        (-11750, 9276, 400),
+        (-11500, 45310, 1882),
+        (-11250, 92709, 3770),
+        (-11000, 151120, 6038),
+        (-10750, 224442, 8863),
+        (-10500, 300268, 11624),
+        (-10250, 373245, 14268),
+        (-10000, 442222, 16749),
+        (-9750, 490618, 18424),
+        (-9500, 506307, 18942),
+        (-9250, 506596, 18934),
+        (-9000, 506594, 18934),
+    ];
+    let got: Vec<(i64, u64, u64)> =
+        result.summaries.iter().map(|s| (s.calendar_year, s.population, s.agents)).collect();
+    assert_eq!(got, before);
+}
+
 /// Dense world (every cell occupied, many cross-partition migrants).
 #[test]
 fn dense_world_identical_across_partition_counts() {

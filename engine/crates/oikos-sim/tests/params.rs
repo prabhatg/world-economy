@@ -1,10 +1,11 @@
 //! Parameters come from the registry (engine/params/m0-toy.toml), never ad hoc.
 
 use oikos_params::Value;
+use oikos_sim::params;
 use oikos_sim::params::registry;
 use oikos_sim::workunit::Start;
 use oikos_sim::{Params, WorkUnit, WorldConfig, run_work_unit};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[test]
 fn defaults_from_registry_match_the_m0_values() {
@@ -75,4 +76,49 @@ fn work_unit_with_out_of_range_params_fails() {
     };
     let e = run_work_unit(&wu, |p| Err(p.into()), |_, _| Ok(())).unwrap_err();
     assert!(e.contains("growth_rate"), "{e}");
+}
+
+#[test]
+fn every_parameter_is_in_the_first_checkpoints_or_restores_by_a_rule() {
+    // A checkpoint stores every parameter its engine had, so one lacking a parameter
+    // predates it: each parameter added since the oldest restorable format needs a rule.
+    let keys: BTreeSet<&str> = registry().keys().collect();
+    let first: BTreeSet<&str> = params::IN_FIRST_CHECKPOINTS.iter().copied().collect();
+    let added: BTreeSet<&str> = params::ADDED_SINCE_CHECKPOINTS.iter().map(|(k, _)| *k).collect();
+    assert!(first.is_disjoint(&added));
+    let covered: BTreeSet<&str> = first.union(&added).copied().collect();
+    let missing: Vec<_> = keys.difference(&covered).collect();
+    assert!(missing.is_empty(), "add a Restore rule to ADDED_SINCE_CHECKPOINTS for {missing:?}");
+    assert_eq!(covered, keys, "rules for parameters the registry no longer has");
+}
+
+#[test]
+fn checkpoints_from_before_each_added_parameter_restore_the_model_they_were_written_with() {
+    // The parameters of the first checkpoints (OIKOSCK2, ADR-0049), with a forager growth
+    // rate of their own.
+    let first: serde_json::Map<String, serde_json::Value> =
+        match serde_json::to_value(Params::default()).unwrap() {
+            serde_json::Value::Object(m) => {
+                m.into_iter().filter(|(k, _)| params::IN_FIRST_CHECKPOINTS.contains(&k.as_str())).collect()
+            }
+            _ => unreachable!(),
+        };
+    let mut old = first.clone();
+    old.insert("growth_rate".into(), serde_json::json!(0.017));
+    let p = Params::from_checkpoint(&serde_json::to_vec(&old).unwrap()).unwrap();
+    assert_eq!(p.growth_rate, 0.017);
+    assert_eq!(p.sedentary_growth_rate, 0.017, "before ADR-0053 every band grew at the forager rate");
+    assert_eq!(p.cultivation_variability_weight, 0.0, "ADR-0054 switched off");
+    assert_eq!(p.soil_erosion_rate, 0.0, "ADR-0055: no erosion, soil stays full");
+    assert_eq!(p.innovation_share, 1.0, "ADR-0065: individual learning");
+    assert_eq!((p.fertility, p.sedentary_fertility), (0.0, 0.0), "ADR-0068: births and deaths not split");
+    // Parameters a checkpoint stored keep its values, whatever the rules.
+    let now = serde_json::to_vec(&Params {
+        sedentary_growth_rate: 0.03,
+        soil_erosion_rate: 1e-4,
+        ..Params::default()
+    })
+    .unwrap();
+    let kept = Params::from_checkpoint(&now).unwrap();
+    assert_eq!((kept.sedentary_growth_rate, kept.soil_erosion_rate), (0.03, 1e-4));
 }

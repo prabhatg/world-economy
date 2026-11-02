@@ -70,6 +70,7 @@
 | 0066 | Calibrated defaults are ranked by the summaries, not the item log-likelihoods, and calibration round 8: `best` and `profile` choose the consistent world whose summaries of all five records sit nearest the record under history matching's own error model (`history.log_likelihood`: each group's observation covariance plus discrepancy, the other targets on their own; Kennedy and O'Hagan 2001), recording the item diagnostics beside it; waves ranked together must share their targets, and `ensemble` follows the ranking its best file records. Answers open question 32: the records do not pull apart, the per-date radiocarbon likelihood (no discrepancy) preferred early planting. A tenth wave (NROY 0.10%); `best` over waves 7-10 chooses wave 9, run 180, which plants 0.20, 0.55, 0.61 and 0.48 and becomes the registry defaults (20 parameters; sources in `calibration/runs/m1/round8/best.json`) | Accepted |
 | 0067 | The M1 records do not identify the Neolithic demographic transition's growth rates (open question 27): populations follow carrying capacity, which at the defaults grows nearly 20 times slower than a band's growth rate even with sedentary growth at the prior's floor, so the rates only set a lag of a few percent, and the records measure stocks, not vital rates. Over the 534 consistent worlds of waves 7-10 the sedentary/forager ratio keeps its prior distribution, and a profile of `sedentary_growth_rate` at the defaults (0.1 to 4 times the forager rate) is flat. The transition in M1 worlds is in capacity, which cultivation raises; the rates stay as calibrated, marked unidentified. A test needs age structure and the juvenile index of rural cemeteries (#33) | Accepted |
 | 0068 | Births and deaths are gross vital events, and the juvenile-index operator: growth keeps the logistic net change but counts births at the band's fertility (crude birth rate, moving with cultivation effort from `fertility` to `sedentary_fertility`, equal by default: no transition, nested) and deaths as the rest, net growth capped at fertility. `juvenile.Operator` reads a cemetery's juvenile index (15p5, Bocquet-Appel 2002) from the fertility and local growth of the people there and then, through a stable population with the average hunter-gatherer Siler mortality of Gurven and Kaplan (2007) at the level that gives that birth rate. Forager fertility is that schedule's stationary birth rate, 1/e0 = 0.0325. The Levant cemetery record (Guerrero, Naji and Bocquet-Appel 2008) is to come (#33) | Accepted |
+| 0069 | Checkpoints restore parameters added since them as the model they were written with: every parameter is either stored by the oldest restorable checkpoints (`OIKOSCK2`, `params::IN_FIRST_CHECKPOINTS`) or has a `Restore` rule in `ADDED_SINCE_CHECKPOINTS` (a value: the hypothesis off; the same as another parameter; or inert, when the rules before it make it change nothing), and a test fails for a new parameter without one. Replaces ADR-0065's single entry and closes #31 | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -831,7 +832,7 @@ the earlier adoption rate with the other values they were written for, and the c
 tests (the toy world and the M1 capacity map) pin a productivity elasticity of 1, so
 later rounds leave them alone. Checkpoint parameters missing a key take the registry
 default, which is now social learning; `Params::from_checkpoint` restores one written
-before ADR-0065 with `innovation_share` 1 instead, as it was run.
+before ADR-0065 with `innovation_share` 1 instead, as it was run (generalized in ADR-0069).
 
 ## ADR-0066 rationale (ranking worlds by their summaries; calibration round 8)
 
@@ -1004,6 +1005,40 @@ its history differs by chance (506,094 people by 9,000 BCE against 506,594; hash
 f91b4dec). Two roundings per band cost 1,217.28 wasm instructions per agent-step against
 1,139.23 (+6.9%). Native time is unchanged within noise (`bench --res 6 --years 20
 --parts 4`: 13.4-14.6 ns per agent-step against 14.0-16.8, alternating runs).
+
+## ADR-0069 rationale (checkpoints restore the model they were written with)
+
+Parameters in a checkpoint were read as overrides of the registry defaults, so one
+written before a parameter existed restored with its current default. For a nested
+hypothesis added switched off and later calibrated on, that resumes an old run under a
+different model: `cultivation_variability_weight` was added at 0 and is now 15,
+`soil_erosion_rate` at 0 and now 2.1e-4. ADR-0065 fixed one parameter
+(`innovation_share`). Others had the same gap (#31), and so would the next one.
+
+A checkpoint stores every parameter of the engine that wrote it, so a missing parameter
+means the checkpoint predates it. The oldest format that still restores is `OIKOSCK2`
+(ADR-0049), whose parameters are listed once, from the registry at that commit (41).
+Each of the nine added since has a rule saying how a checkpoint without it restores:
+
+- `sedentary_growth_rate` the same as `growth_rate` (ADR-0053: one rate for all bands);
+- `cultivation_variability_weight` 0 (ADR-0054 off);
+- `soil_erosion_rate` 0 (ADR-0055: soil stays full, as `OIKOSCK2` checkpoints restore
+  it); `soil_formation_rate` and `soil_critical` are then inert;
+- `obsidian_loss` inert (a tracer, ADR-0060);
+- `innovation_share` 1 (ADR-0065: individual learning);
+- `fertility` 0, and `sedentary_fertility` the same: births and deaths not split
+  (ADR-0068). Fertility is not inert, since splitting caps net growth at it and rounds
+  births and deaths apart. So fertility 0 now means the growth before ADR-0068, the net
+  change alone rounded once with the same draw. With it, the golden work unit
+  reproduces every summary of the engine before ADR-0068 (506,594 people by 9,000 BCE).
+  The branch costs 1,222.29 wasm instructions per agent-step against 1,217.28.
+
+A "same as" rule reads the checkpoint's stored value, else that parameter's own rule or
+default. A test fails when a registry parameter is neither in the first checkpoints nor
+has a rule, so adding a parameter now means saying what it was before. No checkpoints
+from those versions are known to exist (no volunteers yet), so nothing stored changes.
+Schema versions in the header were the alternative. They would say that something
+changed, not what the old model was, so each version would still need these rules.
 
 ## Notes
 

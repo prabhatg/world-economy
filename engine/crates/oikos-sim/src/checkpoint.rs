@@ -12,9 +12,9 @@
 //! restores with full soil everywhere, which is what it meant. `OIKOSCK1` was the layout before agents
 //! carried traits (ADR-0049). Everything derived (carrying capacity under cultivation,
 //! farmland, habitability) is recomputed from the packs, the parameters, the soil and
-//! the agents on restore. Parameters missing from a checkpoint take the registry
-//! defaults, except those of hypotheses added since, which restore switched off
-//! (`Params::from_checkpoint`).
+//! the agents on restore. Parameters missing from a checkpoint were added since it was
+//! written; they restore as the model it was written with, by their `Restore` rules
+//! (`Params::from_checkpoint`, ADR-0069).
 //!
 //! The version says how the region is named: 1 = `base_cell u8 | resolution u8`;
 //! 2 = `geometry pack id [u8; 32] | packs u32 | pack id [u8; 32]×packs` (all forcing

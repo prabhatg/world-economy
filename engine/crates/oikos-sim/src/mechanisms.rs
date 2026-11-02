@@ -136,6 +136,8 @@ fn habitable_neighbors<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Ite
 /// same way; deaths are the rest of the change, so the net is still logistic (ADR-0068).
 /// Fertility is what the skeletal record sees (the juvenile index), and at capacity it
 /// changes births and deaths, not numbers. Net growth beyond fertility is capped at it.
+/// Fertility 0 (forager and sedentary) is the growth before ADR-0068: the net change
+/// alone, rounded once, which checkpoints from before it restore with (ADR-0069).
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -190,16 +192,27 @@ impl Mechanism for Growth {
         let t = sense.tick.0;
         let agents = &mut *part.agents;
         // Count in locals: writing shared stats per agent would cause cache-line traffic.
+        let net_only = self.fertility == 0.0 && self.sedentary_fertility == 0.0;
         let (mut births, mut deaths) = (0, 0);
         for i in tile {
             let cell = agents.cell[i] as usize;
             let w = agents.weight[i];
             let pop = sense.population[cell] as f64;
             let k = sense.capacity[cell] as f64;
-            let (b, d) = self.vital_rates(Traits::share(agents.cultivation[i]), pop, k);
+            let effort = Traits::share(agents.cultivation[i]);
             let draw = rng.block(agents.id[i].0, t, 0);
-            let born = stochastic_round(oikos_math::finite(b * w as f64), draw[0]);
-            let died = stochastic_round(oikos_math::finite(d * w as f64), draw[1]).min(w + born);
+            let (born, died) = if net_only {
+                let dw = oikos_math::finite(self.rate(effort) * w as f64 * (1.0 - pop / k));
+                if dw >= 0.0 {
+                    (stochastic_round(dw, draw[0]), 0)
+                } else {
+                    (0, stochastic_round(-dw, draw[0]).min(w))
+                }
+            } else {
+                let (b, d) = self.vital_rates(effort, pop, k);
+                let born = stochastic_round(oikos_math::finite(b * w as f64), draw[0]);
+                (born, stochastic_round(oikos_math::finite(d * w as f64), draw[1]).min(w + born))
+            };
             agents.weight[i] = w + born - died;
             births += born;
             deaths += died;

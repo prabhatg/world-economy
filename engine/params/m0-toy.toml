@@ -62,7 +62,7 @@ kind = { type = "real", min = 0.0, max = 0.2 }
 default = 0.0325
 prior = { dist = "uniform", lo = 0.03, hi = 0.06 }
 status = "literature"
-note = "The birth rate of a stationary population with the average hunter-gatherer mortality of Gurven and Kaplan (2007, Table 2: Siler a1 0.422, b1 1.131, a2 0.013, a3 1.47e-4, b3 0.086), 1/e0 with e0 30.8 years. The prior starts at the top of growth_rate's: a population cannot grow faster than it bears children."
+note = "The birth rate of a stationary population with the average hunter-gatherer mortality of Gurven and Kaplan (2007, Table 2: Siler a1 0.422, b1 1.131, a2 0.013, a3 1.47e-4, b3 0.086), 1/e0 with e0 30.8 years. The prior starts at the top of growth_rate's: a population cannot grow faster than it bears children. Fertility 0 (with sedentary_fertility 0) is the growth before ADR-0068, the net change alone, rounded once: checkpoints from before it restore with it (ADR-0069)."
 sources = [
   { citation = "Gurven, M., Kaplan, H. (2007). Longevity among hunter-gatherers: a cross-cultural examination. Population and Development Review 33, 321-365.", doi = "10.1111/j.1728-4457.2007.00171.x" },
 ]

@@ -148,6 +148,10 @@ The local verification gate runs golden runs on every target and fails on any ha
   parent link. Forms a run tree; the viewer navigates it.
 - Particle-filter assimilation (doc 5) and scenario ensembles are both "fork many from
   one", so this path must be cheap.
+- A checkpoint restores the model it was written with: parameters added since it was
+  written take the value their hypothesis had before (`Restore` rules in
+  `params::ADDED_SINCE_CHECKPOINTS`, ADR-0069), not the registry's current default, and
+  a test requires a rule for every new parameter.
 
 ## 3.8 Outputs
 

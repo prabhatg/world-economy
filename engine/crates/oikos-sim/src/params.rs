@@ -188,19 +188,108 @@ impl Params {
     }
 }
 
-/// Parameters added after checkpoints first stored theirs, with the value that keeps the
-/// model a checkpoint without them was written with: the nested hypothesis switched off,
-/// whatever the registry default has since been calibrated to.
-const ADDED_SINCE_CHECKPOINTS: &[(&str, f64)] = &[("innovation_share", 1.0)];
+/// How a checkpoint written before a parameter existed restores it: as the model it was
+/// written with, whatever the registry default has since been calibrated to.
+#[derive(Clone, Copy, Debug)]
+pub enum Restore {
+    /// This value: the nested hypothesis switched off.
+    Value(f64),
+    /// The value (stored or restored) of another parameter.
+    SameAs(&'static str),
+    /// The registry default: without the parameters restored before it, it changes nothing.
+    Inert,
+}
+
+/// Parameters the oldest restorable checkpoints store (format `OIKOSCK2`, ADR-0049).
+/// Checkpoints store every parameter of their engine, so one lacking a parameter predates
+/// it.
+pub const IN_FIRST_CHECKPOINTS: &[&str] = &[
+    "adoption_rate",
+    "aquatic_bonus",
+    "capacity_max",
+    "capacity_min",
+    "capacity_period_ticks",
+    "cereal_precip_full",
+    "cereal_precip_max",
+    "cereal_precip_min",
+    "cereal_precip_wet",
+    "cereal_temp_full",
+    "cereal_temp_min",
+    "cultivation_abundance_weight",
+    "cultivation_crowding",
+    "cultivation_pressure_weight",
+    "cultivation_stress_weight",
+    "dispersal_crowding",
+    "dispersal_fraction",
+    "dispersal_probability",
+    "domestic_wild_frequency",
+    "exploration_probability",
+    "farm_density",
+    "fission_probability",
+    "fission_threshold",
+    "forager_density_ref",
+    "growth_rate",
+    "initial_bands",
+    "initial_occupancy",
+    "initial_weight",
+    "introgression_rate",
+    "merge_threshold",
+    "miami_npp_max",
+    "miami_precip_slope",
+    "miami_temp_offset",
+    "miami_temp_slope",
+    "npp_elasticity",
+    "npp_reference",
+    "perennial_discharge",
+    "period_ticks",
+    "selection_coefficient",
+    "stress_window_years",
+    "wild_yield_ratio",
+];
+
+/// Parameters added since [`IN_FIRST_CHECKPOINTS`], in the order they were added, with how
+/// a checkpoint lacking them restores (#31). Every new parameter needs a rule here; a
+/// test enforces it.
+pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
+    // ADR-0053: every band grew at the forager rate.
+    ("sedentary_growth_rate", Restore::SameAs("growth_rate")),
+    // ADR-0054: the stable-climate hypothesis switched off.
+    ("cultivation_variability_weight", Restore::Value(0.0)),
+    // ADR-0055: no erosion, so soil stays full (as OIKOSCK2 checkpoints restore it) and
+    // its formation and critical share change nothing.
+    ("soil_erosion_rate", Restore::Value(0.0)),
+    ("soil_formation_rate", Restore::Inert),
+    ("soil_critical", Restore::Inert),
+    // ADR-0060: obsidian is a tracer that never changes history.
+    ("obsidian_loss", Restore::Inert),
+    // ADR-0065: individual learning.
+    ("innovation_share", Restore::Value(1.0)),
+    // ADR-0068: births and deaths not split (fertility 0 is the net change alone, rounded
+    // once, as before), and no fertility transition.
+    ("fertility", Restore::Value(0.0)),
+    ("sedentary_fertility", Restore::SameAs("fertility")),
+];
 
 impl Params {
     /// Parameters stored in a checkpoint (JSON): as a work unit's overrides, except that
-    /// one lacking a parameter added since is restored with that parameter switched off.
+    /// one lacking a parameter added since restores it by its [`Restore`] rule.
     pub fn from_checkpoint(json: &[u8]) -> Result<Params, String> {
         let mut overrides: BTreeMap<String, Value> =
             serde_json::from_slice(json).map_err(|e| e.to_string())?;
-        for &(k, v) in ADDED_SINCE_CHECKPOINTS {
-            overrides.entry(k.to_string()).or_insert(Value::Real(v));
+        for &(k, rule) in ADDED_SINCE_CHECKPOINTS {
+            if overrides.contains_key(k) {
+                continue;
+            }
+            let v = match rule {
+                Restore::Value(v) => Value::Real(v),
+                Restore::SameAs(other) => overrides
+                    .get(other)
+                    .copied()
+                    .or_else(|| registry().get(other).map(|d| d.default))
+                    .ok_or_else(|| format!("restore rule for {k}: no parameter {other}"))?,
+                Restore::Inert => continue,
+            };
+            overrides.insert(k.to_string(), v);
         }
         Params::from_registry(registry(), &overrides)
     }
