@@ -8,10 +8,10 @@ through the Python bindings (`oikos`) and never change them.
 
 | Module | What it is |
 |---|---|
-| `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years, domestic-crop people-years and obsidian in use per source group, per cell and century while a world runs |
+| `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years, domestic-crop people-years, obsidian in use per source group and settlement-years (ADR-0072), per cell and century while a world runs |
 | `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; `synthetic_dates` for validation |
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
-| `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settled activity dated through the surveys' own period scheme |
+| `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settlements (ADR-0072; settled people-years before) dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
 | `oikos_cal/juvenile.py` | Juvenile-index operator (ADR-0068): a cemetery's share of 5-19 year olds among its dead over 5, from the world's fertility and local growth there, through a stable population with hunter-gatherer Siler mortality; the Levant record is to come (#33) |
 | `oikos_cal/onset.py` | Cultivation-onset operator (ADR-0064): people-weighted cultivation effort at dated site phases, against the effort their crops among charred plant remains imply (anchored on Pottery Neolithic phases) |
@@ -102,7 +102,10 @@ Round 7 (social learning of cultivation, ADR-0065) is in `runs/m1/round7/`:
 Round 8 (ranking by the summaries, ADR-0066) is in `runs/m1/round8/`: `wave10.json` and
 `best.json` over waves 7-10, the source of the current calibrated defaults (wave 9,
 run 180), and `sedentary_growth_rate.json`, a profile at those defaults from 0.1 to 4
-times the forager rate: flat, the records do not identify it (ADR-0067). The onset record's tables are downloaded by hand (`data/README.md`); without
+times the forager rate: flat, the records do not identify it (ADR-0067).
+Waves up to round 8 judged sites by settled people-years; since ADR-0072 the engine
+counts settlements, so `wave --previous` and `best` refuse them and the next wave starts
+a new round. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

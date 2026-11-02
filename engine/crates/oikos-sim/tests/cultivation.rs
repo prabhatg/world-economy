@@ -891,3 +891,23 @@ fn a_joined_village_stays_within_the_limit_of_its_pooled_practice() {
     assert!(agg.fits(70, share(1.0), 20, share(1.0)));
     assert!(!agg.fits(100, share(1.0), 27, share(1.0)), "127 is the limit itself");
 }
+
+#[test]
+fn settlements_count_groups_by_how_settled_they_are() {
+    // What surveys find (ADR-0072): each group as far as it is settled.
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let mut w = world(&[&g, &c], 7, only(0.0, 0.0, 0.6));
+    w.run_years(600, 2, 600);
+    let mut expected = vec![0u64; w.grid.len()];
+    for a in w.agent_slices() {
+        for i in 0..a.len() {
+            expected[a.cell[i] as usize] += a.cultivation[i] as u64;
+        }
+    }
+    let got = w.settlements();
+    assert!(got.iter().any(|&x| x > 1.0), "some cells hold more than one settled group");
+    for (x, e) in got.iter().zip(&expected) {
+        assert_eq!(*x, *e as f64 / SHARE_ONE as f64);
+    }
+}

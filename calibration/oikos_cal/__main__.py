@@ -26,6 +26,7 @@ import numpy as np
 from . import emulator, history, screening
 
 CUTOFF = history.CUTOFF
+SITES = "settlements"  # what the site targets compare with the surveys (ADR-0072)
 
 
 def _revision():
@@ -184,6 +185,7 @@ def wave(args):
     import oikos
 
     previous = [json.loads(Path(p).read_text()) for p in args.previous]
+    require_sites(previous, "continue")
     rng = np.random.default_rng(args.seed)
     if previous:
         factors, active = previous[-1]["factors"], previous[-1]["active"]
@@ -212,7 +214,8 @@ def wave(args):
     seeds = [1000 * number + i for i in range(len(u))]
     ts, names, groups = _problem_targets()
     out = _run(list(zip(params, seeds)), args.workers)
-    doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": args.seed, "factors": factors,
+    doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": args.seed, "sites": SITES,
+           "factors": factors,
            "active": active, "u": u.tolist(), "params": params, "seeds": seeds, "names": names,
            "outputs": out.tolist(), "targets": _targets_json(ts), "groups": _groups_json(groups),
            "previous": [str(p) for p in args.previous]}
@@ -237,6 +240,21 @@ def summary_log_likelihood(doc, outputs):
     return history.log_likelihood(y, _targets(doc["targets"]), _groups(doc.get("groups")))
 
 
+def _sites(doc):
+    """What a file's site targets compared with the surveys: settled people-years before
+    ADR-0072, settlements since."""
+    return doc.get("sites", "settled people-years")
+
+
+def require_sites(docs, what):
+    """Refuse to `what` (continue, rerun) waves whose site targets used another model than
+    the engine's now: emulators and scores of the two do not mix (ADR-0072)."""
+    other = [d.get("wave", "?") for d in docs if _sites(d) != SITES]
+    if other:
+        raise SystemExit(f"cannot {what} waves {other}: they judged sites by settled people-years, the engine now by "
+                         f"{SITES} (ADR-0072); start a new round of waves")
+
+
 def candidates(docs, top):
     """The `top` consistent runs of waves `docs`, best first by how near their summaries
     sit to the record under history matching's own error model (ADR-0066), with only
@@ -250,6 +268,9 @@ def candidates(docs, top):
         if [t["name"] for t in doc["targets"]] != [t["name"] for t in docs[0]["targets"]]:
             raise ValueError(f"wave {doc.get('wave', k + 1)} is not judged against the same record as the first; "
                              "rank waves of one round of targets together")
+        if _sites(doc) != _sites(docs[0]):
+            raise ValueError(f"wave {doc.get('wave', k + 1)} judges sites by {_sites(doc)}, the first by "
+                             f"{_sites(docs[0])} (ADR-0072); rank waves of one site model together")
         ll = [j for j, n in enumerate(doc["names"]) if n.startswith("log-likelihood")]
         y = np.array(doc["outputs"])
         fit = summary_log_likelihood(doc, y)
@@ -273,6 +294,7 @@ def ranges(every):
 
 def best(args):
     docs = [json.loads(Path(p).read_text()) for p in args.waves]
+    require_sites(docs, "rerun the best runs of")
     cs = candidates(docs, args.top)
     seeds = list(range(1, args.seeds + 1))
     ts, names, groups = _problem_targets()
@@ -287,7 +309,7 @@ def best(args):
     ok = [i for i, c in enumerate(cs) if c["consistent"]]
     chosen = max(ok, key=lambda i: cs[i]["rerun_summary_log_likelihood"]) if ok else None
     every = candidates(docs, top=None)
-    _write(args.out, {"command": "best", "revision": _revision(), "rank": "summaries",
+    _write(args.out, {"command": "best", "revision": _revision(), "rank": "summaries", "sites": SITES,
                       "waves": [str(p) for p in args.waves], "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges(every),
                       "candidates": cs, "chosen": chosen})
     report_best(json.loads(Path(args.out).read_text()))
@@ -311,7 +333,8 @@ def profile(args):
     ts, names, groups = _problem_targets()
     seeds = list(range(1, args.seeds + 1))
     out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers)
-    doc = {"command": "profile", "revision": _revision(), "parameter": args.parameter, "values": args.values,
+    doc = {"command": "profile", "revision": _revision(), "sites": SITES, "parameter": args.parameter,
+           "values": args.values,
            "seeds": seeds, "names": names, "outputs": out.reshape(len(args.values), len(seeds), -1).tolist(),
            "targets": _targets_json(ts), "groups": _groups_json(groups)}
     doc["chosen"] = profile_choice(doc)

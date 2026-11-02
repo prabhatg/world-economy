@@ -21,6 +21,7 @@ def test_activity_is_people_years_per_cell_and_century():
     np.testing.assert_array_equal(a.people, people)
     assert twin.state_hash() == w.state_hash(), "recording never changes the world"
     assert a.people[:, 2].sum() > 0 and not a.cultivators.any() and not a.domestic.any(), "toy worlds never cultivate"
+    assert a.settlements.shape == a.people.shape and not a.settlements.any(), "nor settle"
     np.testing.assert_array_equal(a.visible(3.0), a.people)
 
 
@@ -58,6 +59,9 @@ class _ObsidianWorld:
     def obsidian(self):
         return {"west": np.array([(self.year + 12_000) / 1000, 0.0]), "east": np.array([0.5, 0.0])}
 
+    def settlements(self):
+        return np.zeros(2)
+
     def run_years(self, n, parts):
         self.year += n
 
@@ -68,3 +72,16 @@ def test_obsidian_in_use_is_people_years_times_availability():
     np.testing.assert_allclose(a.obsidian["west"][:, 0], [50 * 10 * 0.0 + 50 * 10 * 0.05, 0])
     np.testing.assert_allclose(a.obsidian["east"][:, 0], [100 * 10 * 0.5, 0])
     assert record.activity(oikos.World(seed=4), end=-11_900).obsidian == {}, "no obsidian pack, no obsidian"
+
+
+class _VillageWorld(_ObsidianWorld):
+    """Cell 0: a village (effort 1) and a hamlet half settled (effort 0.5); cell 1: a camp."""
+
+    def settlements(self):
+        return np.array([1.5, 0.0])
+
+
+def test_settlements_are_groups_counted_by_how_settled_they_are():
+    # Surveys find settlements, not people: a group leaves a site as far as it is settled.
+    a = record.activity(_VillageWorld(), end=-11_900, every=50, parts=1)
+    np.testing.assert_allclose(a.settlements[:, 0], [100 * 1.5, 0])

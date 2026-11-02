@@ -73,6 +73,7 @@
 | 0069 | Checkpoints restore parameters added since them as the model they were written with: every parameter is either stored by the oldest restorable checkpoints (`OIKOSCK2`, `params::IN_FIRST_CHECKPOINTS`) or has a `Restore` rule in `ADDED_SINCE_CHECKPOINTS` (a value: the hypothesis off; the same as another parameter; or inert, when the rules before it make it change nothing), and a test fails for a new parameter without one. Replaces ADR-0065's single entry and closes #31 | Accepted |
 | 0070 | Fission by scalar stress, and farming villages: a group's size limit rises with its cultivation effort, in proportion, from foragers' camps (`fission_threshold`, 60) to sedentary villages (`village_fission_size`, 127: Hutterite fissioning reaches probability 0.5 there, Alberti 2014; Kosse 1990; Johnson 1982), and a group above it splits; the daughter founds a settlement in its own cell while the land has room, else is placed by crowding as before. Village size 0 is the fission before (restore rule, ADR-0069). The calibrated defaults fit as well (summary 5.1-5.3 against 4.9-5.2) | Accepted |
 | 0071 | Aggregation of farming villages: each year a group joins, with probability `aggregation_rate` (0.05, placeholder) times its cultivation effort, the largest group of its cell at least its own size whose joined size stays below the scalar-stress limit (ADR-0070) of their pooled practice. Its drivers are social and psychological: settled farmers drew together for defence, exchange, marriage partners and ritual (Kuijt 2000) toward the larger community, up to the limit of face-to-face coordination (Johnson 1982; Dunbar 1993). Foragers never join; rate 0 is off (restore rule). Typical farming group 58-68 people (was 31-36) | Accepted |
+| 0072 | Survey sites are compared with settlements, not settled people: the recorder adds settlement-years per cell and century (`World::settlements`: each group counted as far as it is settled, its cultivation effort), and the site targets use them. Run files record their site model (`sites`), and waves of different models are not ranked together. The calibrated defaults stay consistent | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -1130,6 +1131,38 @@ only its hash moves, since the parameters are part of the state (539e0f22). A ti
 no farmers is skipped after one scan. Cost: 1,239.14 wasm instructions per agent-step
 against 1,219.88 in the toy world. A full M1 world takes 55.1 s against 54.7 s on one
 core: every farming group draws once a year, and there are fewer groups.
+
+## ADR-0072 rationale (survey sites are settlements)
+
+Surface surveys count sites: places where people lived long enough, and built enough,
+to leave pottery and rubble that a walker finds. The site-count operator (ADR-0059)
+compared the survey counts with settled people-years, cultivator people-years per cell
+and century. That was the best available while bands had a fixed size. Since villages
+form (ADR-0070, ADR-0071), a world's groups are its settlements. So the model can count
+what surveyors count, and the era shares of the survey record now judge settlements.
+
+How people live shapes what they leave. A settled group, living year-round in houses
+near its fields and stores, leaves a site. A mobile camp leaves little that surveys
+recover. So each group counts as far as it is settled: its cultivation effort, the
+model's measure of sedentism. Settlement-years per cell and century are summed in fixed
+point by the engine (`World::settlements`), so they are exact whatever the partitions
+and cost a fraction of reading every group. Left out: larger villages are easier to
+find, and reoccupied places count once in surveys, not once per occupation. Both would
+need survey-specific detection models.
+
+In the default M1 world the change is small: settlements track settled people closely
+(villages of 58-68 people). The two survey groups score 7.1-7.2 and 13.2-13.8 over
+three seeds (cutoff 18.5), against 6.2 and 13.1 for the same world judged by settled
+people-years in round 8. The largest implausibility is 2.31-2.36 (Upper Mesopotamian
+sites, 3,500-3,000 BCE), and the summary log-likelihood is 3.8-4.1. The defaults stay
+consistent with all five records.
+
+Wave files before this ADR judged sites by settled people-years, under the same target
+names. Wave, profile and best files now record `sites` ("settlements"). `candidates`
+refuses to rank waves of different site models together, as it does waves of different
+targets (ADR-0066). `wave --previous` and `best` refuse waves of the old model: their
+emulators would rule out parameters, and their scores pick candidates, by what the
+engine no longer compares. The next wave starts a new round.
 
 ## Notes
 

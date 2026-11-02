@@ -111,6 +111,9 @@ def test_candidates_rank_consistent_runs_by_how_near_their_summaries_sit_and_kee
     assert c[0]["params"] == {"x": 1, "z": 21}, "inactive y is left at its default"
     assert len(cli.candidates([first, second], top=1)) == 1
     assert cli.candidates([{**second, "wave": 4}], top=1)[0]["wave"] == 3, "a wave keeps its own number"
+    with pytest.raises(ValueError, match="sites"):
+        cli.candidates([first, {**second, "sites": "settlements"}], top=5)  # ADR-0072 changed what sites are
+    assert len(cli.candidates([{**first, "sites": "settlements"}, {**second, "sites": "settlements"}], top=5)) == 3
     renamed = {**second, "targets": [{**t, "name": "c"} for t in second["targets"]]}
     with pytest.raises(ValueError, match="the same record"):
         cli.candidates([first, renamed], top=5)
@@ -180,3 +183,11 @@ def test_reports_say_what_an_older_file_ranked_by(capsys):
     assert "chosen by the item log-likelihoods (before ADR-0066): x = 1" in capsys.readouterr().out
     cli.report_profile({**doc, "rank": "summaries"})
     assert "chosen: x = 1" in capsys.readouterr().out
+
+
+def test_waves_judged_by_another_site_model_are_not_continued_or_rerun():
+    # Waves before ADR-0072 compared sites with settled people-years; the engine now counts
+    # settlements, so continuing them or rerunning their best would mix the two.
+    with pytest.raises(SystemExit, match="ADR-0072"):
+        cli.require_sites([{"wave": 10}], "continue")
+    cli.require_sites([{"wave": 11, "sites": cli.SITES}], "continue")

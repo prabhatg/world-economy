@@ -484,6 +484,19 @@ impl World {
             .collect()
     }
 
+    /// Settlements per cell: its groups, each counted as far as it is settled (its
+    /// cultivation effort), which is what surveys find (ADR-0072). Summed in fixed point,
+    /// so exact whatever the partitions.
+    pub fn settlements(&self) -> Vec<f64> {
+        let mut sum = vec![0u64; self.grid.len()];
+        for a in self.agent_slices() {
+            for (&cell, &effort) in a.cell.iter().zip(&a.cultivation) {
+                sum[cell as usize] += effort as u64;
+            }
+        }
+        sum.into_iter().map(|x| x as f64 / SHARE_ONE as f64).collect()
+    }
+
     /// Domestic share of each cell's cultivated crop: the effort-weighted mean of its
     /// bands' domestication (0 where nobody cultivates), as archaeobotanical assemblages
     /// would show it.

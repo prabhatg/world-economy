@@ -198,6 +198,12 @@ impl PyWorld {
         f64_array(py, self.0.cultivation().into_iter())
     }
 
+    /// Settlements per cell (float64): its groups, each counted as far as it is settled
+    /// (its cultivation effort); what surveys find (ADR-0072).
+    fn settlements<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.settlements().into_iter())
+    }
+
     /// Domestic share of each cell's cultivated crop (float64; effort-weighted mean over
     /// its bands, 0 where nobody cultivates).
     fn domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {

@@ -50,6 +50,8 @@ landscape the same way: each century goes to the periods surveyors used that con
 it, by their popularity, and spreads over them. On synthetic surveys drawn from a known
 history it recovers the era shares to 0.01. The surveys rise into the Late Chalcolithic
 where radiocarbon falls, so they rule out the region-wide bust of the round-2 defaults.
+Since villages form (ADR-0070, ADR-0071), sites are compared with settlements, not
+settled people: each group counted as far as it is settled (ADR-0072).
 
 **Implemented (obsidian sourcing operator, ADR-0061):** `obsidian.Operator` scores the
 share of Cappadocian obsidian in use around each sourced assemblage of DObsiSS

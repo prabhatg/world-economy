@@ -1,6 +1,8 @@
 """Site-count operator: survey site phases dated to cultural periods, and the same dating
 applied to a world's settled activity (docs/05 §5.1, #17)."""
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
@@ -85,6 +87,10 @@ def test_eras_give_centered_log_shares_with_bootstrap_variances_and_one_group_pe
     assert [x.indices for x in g] == [[4, 5, 6], [7, 8, 9]] and all(x.dof == 2 for x in g)
     a = history(2, 1.0)
     assert np.allclose(eras.model(a), 0), "an even history is even in every era"
+    rising = history(2, np.linspace(1, 3, WINDOW.centuries))
+    recorded = SimpleNamespace(cultivators=a, settlements=rising)
+    assert np.allclose(eras.model(recorded), eras.model(rising)), "settlements, where recorded, are the sites"
+    assert np.allclose(eras.model(SimpleNamespace(cultivators=a)), 0), "else settled people-years"
 
 
 def test_an_era_without_sites_is_an_error():

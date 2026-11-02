@@ -137,9 +137,13 @@ class SiteEras:
                 for k, c in enumerate(self.covariances)]
 
     def model(self, activity):
-        """Summaries of a world: settled activity is `activity.cultivators` (survey sites
-        are villages), or people-years [cell, century] given directly."""
-        a = activity.cultivators if hasattr(activity, "cultivators") else activity
+        """Summaries of a world: its settlements (`activity.settlements`, ADR-0072: survey
+        sites are settlements, not people), else settled people-years
+        (`activity.cultivators`), or an array [cell, century] given directly."""
+        if getattr(activity, "settlements", None) is not None:
+            a = activity.settlements
+        else:
+            a = activity.cultivators if hasattr(activity, "cultivators") else activity
         e = self.op.expected(a)
         return np.concatenate([_clr(e[n]) for n in self.op.windows])
 
