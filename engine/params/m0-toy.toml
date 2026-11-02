@@ -108,9 +108,24 @@ kind = { type = "integer", min = 2, max = 10000 }
 default = 60
 prior = { dist = "uniform", lo = 30.0, hi = 150.0 }
 status = "placeholder"
-note = "About twice a typical forager residential group size; scalar-stress fission theory to be added in M1."
+note = "About twice a typical forager residential group size. The size limit of mobile foragers' camps; sedentary cultivators' rises to village_fission_size (scalar stress, ADR-0070)."
 sources = [
   { citation = "Marlowe, F. W. (2005). Hunter-gatherers and human evolution. Evolutionary Anthropology 14, 54-67.", doi = "10.1002/evan.20046" },
+]
+
+[params.village_fission_size]
+group = "social"
+unit = "people"
+description = "Size limit of a fully sedentary farming village: a group's limit rises from fission_threshold (mobile foragers) to this with its cultivation effort, in proportion (log-linear), and a group above its limit may split (scalar stress). 0: no villages, the fission before ADR-0070 (one limit, daughters placed by crowding whether or not their cell has room)."
+kind = { type = "integer", min = 0, max = 10000 }
+default = 127
+prior = { dist = "uniform", lo = 100.0, hi = 300.0 }
+status = "literature"
+note = "Scalar stress: decisions among more than about six units overload a group, which then splits or builds hierarchy (Johnson 1982). Fissioning of Hutterite colonies, farming communities without such hierarchy, reaches probability 0.5 at 127 people (95% CI 122-132) and 0.99 at 158 (Alberti 2014), a fit that holds for early villages of the Titicaca basin and elsewhere; Kosse (1990) puts the first threshold of face-to-face communities between 100 and 200. The prior spans that range and the larger early villages Alberti tested (to 277)."
+sources = [
+  { citation = "Alberti, G. (2014). Modeling group size and scalar stress by logistic regression from an archaeological perspective. PLoS ONE 9, e91510.", doi = "10.1371/journal.pone.0091510" },
+  { citation = "Kosse, K. (1990). Group size and societal complexity: thresholds in the long-term memory. Journal of Anthropological Archaeology 9, 275-303.", doi = "10.1016/0278-4165(90)90009-3" },
+  { citation = "Johnson, G. A. (1982). Organizational structure and scalar stress. In C. Renfrew, M. Rowlands and B. A. Segraves (eds.), Theory and Explanation in Archaeology, 389-421. Academic Press." },
 ]
 
 [params.fission_probability]

@@ -346,6 +346,7 @@ fn merging_keeps_practice() {
         after: vec![],
         probability: 1.0,
         threshold: 2,
+        village: 0,
         ..Fission::from_params(&p)
     })])
     .unwrap();
@@ -711,4 +712,84 @@ fn checkpoints_from_before_social_learning_restore_with_individual_learning() {
     let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
     assert_eq!(restored.params.innovation_share, 1.0, "whatever the registry default");
     assert_eq!(checkpoint::encode(&restored), now);
+}
+
+#[test]
+fn the_size_limit_rises_from_camp_to_village_with_cultivation() {
+    // Scalar stress (Johnson 1982): a group splits when it outgrows how its members
+    // decide together; farming villages hold more people before they split (Alberti 2014).
+    let f = Fission::from_params(&Params {
+        fission_threshold: 60,
+        village_fission_size: 127,
+        ..Params::default()
+    });
+    assert_eq!(f.limit(0.0), 60.0);
+    assert_eq!(f.limit(1.0), 127.0);
+    assert!((f.limit(0.5) - (60.0_f64 * 127.0).sqrt()).abs() < 1e-9, "in between, in proportion");
+    assert!(f.splits(127, 1.0) && !f.splits(126, 1.0) && f.splits(60, 0.0) && !f.splits(59, 0.0));
+    let one =
+        Fission::from_params(&Params { fission_threshold: 2, village_fission_size: 1, ..Params::default() });
+    assert!(!one.splits(1, 1.0), "one person cannot split");
+    let off =
+        Fission::from_params(&Params { fission_threshold: 60, village_fission_size: 0, ..Params::default() });
+    assert!(off.splits(60, 1.0) && !off.splits(59, 1.0), "no villages: one limit");
+}
+
+/// Sizes of the groups whose effort is mostly cultivation.
+fn farming_groups(w: &World) -> Vec<u64> {
+    w.agent_slices()
+        .flat_map(|a| {
+            a.weight.iter().zip(a.cultivation.iter()).filter(|(_, e)| **e > SHARE_ONE / 2).map(|(w, _)| *w)
+        })
+        .collect()
+}
+
+#[test]
+fn farmers_live_in_villages_and_foragers_in_camps() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let c = climate_pack(&h3, &[-12_000], |_, _| (15.0, 500.0));
+    let run = |village: u64| {
+        let p = Params { fission_probability: 0.2, village_fission_size: village, ..only(0.0, 0.0, 0.8) };
+        let mut w = world(&[&g, &c], 6, p);
+        w.run_years(800, 2, 800);
+        farming_groups(&w)
+    };
+    let (villages, camps) = (run(127), run(0));
+    assert!(!villages.is_empty() && !camps.is_empty());
+    let largest = |x: &[u64]| *x.iter().max().unwrap();
+    assert!(largest(&villages) > 100 && largest(&villages) < 150, "villages: {}", largest(&villages));
+    assert!(largest(&camps) < 80, "without villages farmers split as camps do: {}", largest(&camps));
+}
+
+#[test]
+fn village_daughters_settle_nearby_while_the_land_has_room() {
+    // A village that splits founds another in its own territory while the land feeds
+    // more; only a full one sends its daughter away. The fission before villages
+    // (village size 0) placed it by crowding, often in a neighbor.
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let c = climate_pack(&h3, &[-12_000], |_, _| (15.0, 500.0));
+    let run = |village: u64| {
+        let p = Params {
+            fission_probability: 0.2,
+            fission_threshold: 40,
+            village_fission_size: village,
+            dispersal_probability: 0.0,
+            ..only(0.0, 0.0, 0.8)
+        };
+        let mut w = world(&[&g, &c], 6, p);
+        let start = w.agent_count();
+        let mut migrants = 0;
+        w.run_years_observed(150, 2, 150, &mut |_, s| {
+            migrants += s.migrants;
+            Ok(())
+        })
+        .unwrap();
+        (migrants, w.agent_count() - start)
+    };
+    let (moved, more) = run(127);
+    assert!(more > 0, "villages split");
+    assert_eq!(moved, 0, "into their own land");
+    assert!(run(0).0 > 0, "the fission before villages sent daughters to neighbors");
 }

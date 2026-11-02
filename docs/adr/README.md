@@ -71,6 +71,7 @@
 | 0067 | The M1 records do not identify the Neolithic demographic transition's growth rates (open question 27): populations follow carrying capacity, which at the defaults grows nearly 20 times slower than a band's growth rate even with sedentary growth at the prior's floor, so the rates only set a lag of a few percent, and the records measure stocks, not vital rates. Over the 534 consistent worlds of waves 7-10 the sedentary/forager ratio keeps its prior distribution, and a profile of `sedentary_growth_rate` at the defaults (0.1 to 4 times the forager rate) is flat. The transition in M1 worlds is in capacity, which cultivation raises; the rates stay as calibrated, marked unidentified. A test needs age structure and the juvenile index of rural cemeteries (#33) | Accepted |
 | 0068 | Births and deaths are gross vital events, and the juvenile-index operator: growth keeps the logistic net change but counts births at the band's fertility (crude birth rate, moving with cultivation effort from `fertility` to `sedentary_fertility`, equal by default: no transition, nested) and deaths as the rest, net growth capped at fertility. `juvenile.Operator` reads a cemetery's juvenile index (15p5, Bocquet-Appel 2002) from the fertility and local growth of the people there and then, through a stable population with the average hunter-gatherer Siler mortality of Gurven and Kaplan (2007) at the level that gives that birth rate. Forager fertility is that schedule's stationary birth rate, 1/e0 = 0.0325. The Levant cemetery record (Guerrero, Naji and Bocquet-Appel 2008) is to come (#33) | Accepted |
 | 0069 | Checkpoints restore parameters added since them as the model they were written with: every parameter is either stored by the oldest restorable checkpoints (`OIKOSCK2`, `params::IN_FIRST_CHECKPOINTS`) or has a `Restore` rule in `ADDED_SINCE_CHECKPOINTS` (a value: the hypothesis off; the same as another parameter; or inert, when the rules before it make it change nothing), and a test fails for a new parameter without one. Replaces ADR-0065's single entry and closes #31 | Accepted |
+| 0070 | Fission by scalar stress, and farming villages: a group's size limit rises with its cultivation effort, in proportion, from foragers' camps (`fission_threshold`, 60) to sedentary villages (`village_fission_size`, 127: Hutterite fissioning reaches probability 0.5 there, Alberti 2014; Kosse 1990; Johnson 1982), and a group above it splits; the daughter founds a settlement in its own cell while the land has room, else is placed by crowding as before. Village size 0 is the fission before (restore rule, ADR-0069). The calibrated defaults fit as well (summary 5.1-5.3 against 4.9-5.2) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -1039,6 +1040,46 @@ has a rule, so adding a parameter now means saying what it was before. No checkp
 from those versions are known to exist (no volunteers yet), so nothing stored changes.
 Schema versions in the header were the alternative. They would say that something
 changed, not what the old model was, so each version would still need these rules.
+
+## ADR-0070 rationale (fission by scalar stress; farming villages)
+
+Fission was a placeholder: any group of 60 or more split with probability 0.2 a year,
+and the daughter went to the least crowded of its cell and neighbors, or explored a neighbor. That caps every group at about 60 people, and a
+farming cell of 200-750 people became 8-24 groups of about 31 (default M1 world, 7,000
+BCE). Early Neolithic villages held hundreds.
+
+Scalar stress is the reason groups split: decisions among more than about six units
+overload a group, which splits unless it builds hierarchy (Johnson 1982). Face-to-face
+farming communities reach that point at about 100-200 people (Kosse 1990). Hutterite
+colonies, communal farmers without that hierarchy, fission with probability 0.5 at 127
+people (95% CI 122-132) and 0.99 at 158. The same fit holds for early villages of the
+Titicaca basin and elsewhere (Alberti 2014). Mobile foragers split far smaller, as camps
+of a few families. A group's limit therefore moves, in proportion (log-linear), from
+`fission_threshold` (60, still a placeholder at about twice a forager residential group)
+to `village_fission_size` (127) with its cultivation effort. Above it the group splits
+with the existing probability per year. A village that splits founds another in its
+own cell while the land feeds more people (population below capacity). Only a full
+cell places the daughter by crowding, as all fission did before.
+
+In the default M1 world, farming groups now reach about 100 people (99th percentile;
+up to 123, against a cap of about 63), with 27% fewer agents by 3,000 BCE and the same
+population. The calibrated defaults fit the five records as well: summary
+log-likelihood 5.1-5.3 over three seeds against 4.9-5.2 before, largest implausibility
+2.32 both ways. So the defaults stand and no new wave is needed. The median farming
+group stays near 35 people. In a full cell nobody grows, so the two halves of a split
+village stay small, and nothing brings groups together. Aggregation into larger
+villages (defence, exchange, ritual; Kuijt 2000) is the other half of #14. So are
+settlement counts in the site-count operator, which still compares surveys with
+settled people-years.
+
+`village_fission_size` 0 is the fission before: one limit, daughters placed by crowding whatever the room. With
+fertility 0 it reproduces the golden summaries of the engine before ADR-0068 (the
+regression test now switches both off), and checkpoints from before restore with it
+(ADR-0069). The golden toy world changes on purpose: it never cultivates, so its limit
+stays 60, but daughters now stay in cells with room (506,203 people and 18,582 agents
+by 9,000 BCE against 506,094 and 18,891; hash 6bc3bc28). Fewer, larger groups cut
+agent-steps by 6% (787,203 against 837,656 in `instructions.sh`), at the same cost per
+agent-step (1,219.88 wasm instructions against 1,222.29).
 
 ## Notes
 

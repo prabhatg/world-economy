@@ -222,12 +222,23 @@ impl Mechanism for Growth {
     }
 }
 
-/// Band fission: large bands split in half with some probability; the daughter moves
-/// to the least crowded neighbor (by N/K), or explores a random neighbor.
+/// Fission by scalar stress: a group above its size limit splits in half with some
+/// probability per period (Johnson 1982: decisions among too many units overload a group,
+/// which splits unless it builds hierarchy). The limit rises with the group's cultivation
+/// effort, in proportion, from mobile foragers' camps (`threshold`) to sedentary farming
+/// villages (`village`; Alberti 2014, Kosse 1990), so farmers live in villages and
+/// foragers in camps (ADR-0070). The daughter founds a new settlement in the group's own
+/// cell while its land feeds more people (population below capacity, last step), and
+/// otherwise goes to the least crowded of its cell and neighbors (by N/K), or explores a
+/// random neighbor.
+///
+/// `village` 0 is the fission before villages: one limit, `threshold`, and the daughter
+/// always placed by crowding or exploration, room or not.
 #[derive(Clone, Debug)]
 pub struct Fission {
     pub period_ticks: u64,
     pub threshold: u64,
+    pub village: u64,
     pub probability: f64,
     pub exploration: f64,
     pub after: Vec<&'static str>,
@@ -238,10 +249,33 @@ impl Fission {
         Fission {
             period_ticks: p.period_ticks,
             threshold: p.fission_threshold,
+            village: p.village_fission_size,
             probability: p.fission_probability,
             exploration: p.exploration_probability,
             after: vec!["growth"],
         }
+    }
+
+    /// The smallest group any limit lets split (at least two people).
+    fn smallest(&self) -> u64 {
+        (if self.village == 0 { self.threshold } else { self.threshold.min(self.village) }).max(2)
+    }
+
+    /// Whether a group of `weight` people spending `effort` cultivating is above its limit.
+    pub fn splits(&self, weight: u64, effort: f64) -> bool {
+        weight >= self.smallest() && (self.village == 0 || weight as f64 >= self.limit(effort))
+    }
+
+    /// Size limit of a group spending `effort` of its effort cultivating.
+    pub fn limit(&self, effort: f64) -> f64 {
+        if self.village == 0 || effort == 0.0 {
+            return self.threshold as f64;
+        }
+        if effort == 1.0 {
+            return self.village as f64;
+        }
+        let (camp, village) = (oikos_math::ln(self.threshold as f64), oikos_math::ln(self.village as f64));
+        oikos_math::exp(camp + (village - camp) * effort)
     }
 
     fn destination(
@@ -287,10 +321,11 @@ impl Mechanism for Fission {
         let fission_rng = Philox4x32::new(sense.seed, Stream::Fission);
         let migration_rng = Philox4x32::new(sense.seed, Stream::Migration);
         let t = sense.tick.0;
+        let smallest = self.smallest();
         for i in tile {
-            // Weight first: most agents are below the threshold, so skip them after one load.
+            // Weight first: most agents are below every limit, so skip them after one load.
             let mut w = part.agents.weight[i];
-            if w < self.threshold {
+            if w < smallest || !self.splits(w, Traits::share(part.agents.cultivation[i])) {
                 continue;
             }
             let cell = part.agents.cell[i];
@@ -306,7 +341,9 @@ impl Mechanism for Fission {
             let half = Agents::split_weight(&mut w, take);
             part.agents.weight[i] = w;
             part.stats.fissions += 1;
-            let dest = self.destination(sense, &migration_rng, explore, id, cell);
+            let c = cell as usize;
+            let room = self.village != 0 && sense.population[c] < sense.capacity[c];
+            let dest = if room { cell } else { self.destination(sense, &migration_rng, explore, id, cell) };
             let traits = part.agents.traits(i);
             part.spawn(cell, dest, half, traits);
         }

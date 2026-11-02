@@ -30,6 +30,7 @@ pub struct Params {
     pub capacity_min: u64,
     pub capacity_max: u64,
     pub fission_threshold: u64,
+    pub village_fission_size: u64,
     pub fission_probability: f64,
     pub exploration_probability: f64,
     pub merge_threshold: u64,
@@ -105,6 +106,7 @@ impl Params {
             capacity_min: int("capacity_min")?,
             capacity_max: int("capacity_max")?,
             fission_threshold: int("fission_threshold")?,
+            village_fission_size: int("village_fission_size")?,
             fission_probability: real("fission_probability")?,
             exploration_probability: real("exploration_probability")?,
             merge_threshold: int("merge_threshold")?,
@@ -268,6 +270,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     // once, as before), and no fertility transition.
     ("fertility", Restore::Value(0.0)),
     ("sedentary_fertility", Restore::SameAs("fertility")),
+    // ADR-0070: no villages, the fission before them.
+    ("village_fission_size", Restore::Value(0.0)),
 ];
 
 impl Params {
@@ -281,7 +285,10 @@ impl Params {
                 continue;
             }
             let v = match rule {
-                Restore::Value(v) => Value::Real(v),
+                Restore::Value(v) => match registry().get(k).map(|d| d.default) {
+                    Some(Value::Int(_)) => Value::Int(v as u64),
+                    _ => Value::Real(v),
+                },
                 Restore::SameAs(other) => overrides
                     .get(other)
                     .copied()

@@ -115,6 +115,11 @@ Not brain simulation. Agents implement validated regularities:
 ## 4.6 Institutions & power (political economy — first class)
 
 - Groups form, merge and split by cooperative benefit vs. coordination cost.
+  *Implemented (M1):* fission by scalar stress (`mechanisms::Fission`, ADR-0070): a
+  group's size limit rises with its cultivation effort from foragers' camps (60) to
+  farming villages (127; Alberti 2014), and a group above it splits, founding a new
+  settlement in its own cell while the land has room. Aggregation into larger villages
+  is still to come (#14).
 - **Polities:** chiefdoms → states → empires, with state capacity (taxation,
   bureaucracy, coercion), legitimacy, and elite structure.
 - Competing state-formation modules: circumscription (Carneiro), military technology
