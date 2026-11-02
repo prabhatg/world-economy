@@ -118,8 +118,10 @@ Not brain simulation. Agents implement validated regularities:
   *Implemented (M1):* fission by scalar stress (`mechanisms::Fission`, ADR-0070): a
   group's size limit rises with its cultivation effort from foragers' camps (60) to
   farming villages (127; Alberti 2014), and a group above it splits, founding a new
-  settlement in its own cell while the land has room. Aggregation into larger villages
-  is still to come (#14).
+  settlement in its own cell while the land has room. Farming groups gather into the
+  largest village of their cell that has room (`mechanisms::Aggregation`, ADR-0071):
+  sedentism, defence, exchange, marriage and ritual draw them together, up to the limit
+  of face-to-face coordination.
 - **Polities:** chiefdoms → states → empires, with state capacity (taxation,
   bureaucracy, coercion), legitimacy, and elite structure.
 - Competing state-formation modules: circumscription (Carneiro), military technology

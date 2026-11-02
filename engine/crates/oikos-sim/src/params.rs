@@ -31,6 +31,7 @@ pub struct Params {
     pub capacity_max: u64,
     pub fission_threshold: u64,
     pub village_fission_size: u64,
+    pub aggregation_rate: f64,
     pub fission_probability: f64,
     pub exploration_probability: f64,
     pub merge_threshold: u64,
@@ -107,6 +108,7 @@ impl Params {
             capacity_max: int("capacity_max")?,
             fission_threshold: int("fission_threshold")?,
             village_fission_size: int("village_fission_size")?,
+            aggregation_rate: real("aggregation_rate")?,
             fission_probability: real("fission_probability")?,
             exploration_probability: real("exploration_probability")?,
             merge_threshold: int("merge_threshold")?,
@@ -272,6 +274,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("sedentary_fertility", Restore::SameAs("fertility")),
     // ADR-0070: no villages, the fission before them.
     ("village_fission_size", Restore::Value(0.0)),
+    // ADR-0071: no aggregation.
+    ("aggregation_rate", Restore::Value(0.0)),
 ];
 
 impl Params {

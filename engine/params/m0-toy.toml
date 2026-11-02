@@ -128,6 +128,20 @@ sources = [
   { citation = "Johnson, G. A. (1982). Organizational structure and scalar stress. In C. Renfrew, M. Rowlands and B. A. Segraves (eds.), Theory and Explanation in Archaeology, 389-421. Academic Press." },
 ]
 
+[params.aggregation_rate]
+group = "social"
+unit = "probability per period"
+description = "Probability per period that a fully sedentary group joins the largest village of its cell, if the joined village stays within its scalar-stress size limit; it scales with the group's cultivation effort, so mobile foragers never join. 0: no aggregation (before ADR-0071)."
+kind = { type = "probability" }
+default = 0.05
+prior = { dist = "uniform", lo = 0.0, hi = 0.2 }
+status = "placeholder"
+note = "Settled farmers drew together into villages for defence, exchange, marriage partners and shared ritual (Kuijt 2000), and are drawn to the larger community; what stops them is the scalar-stress limit of face-to-face coordination (Johnson 1982), the social-brain group size of about 150 (Dunbar 1993). A join within about twenty years of settling; the rate is to be calibrated."
+sources = [
+  { citation = "Kuijt, I. (2000). People and space in early agricultural villages: exploring daily lives, community size, and architecture in the late Pre-Pottery Neolithic. Journal of Anthropological Archaeology 19, 75-102.", doi = "10.1006/jaar.1999.0352" },
+  { citation = "Dunbar, R. I. M. (1993). Coevolution of neocortical size, group size and language in humans. Behavioral and Brain Sciences 16, 681-694.", doi = "10.1017/S0140525X00032325" },
+]
+
 [params.fission_probability]
 group = "social"
 unit = "probability per period"

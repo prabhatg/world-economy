@@ -86,7 +86,8 @@ index would test it (#33). Births and deaths are now gross events with fertility
 moving with cultivation, and a juvenile-index operator reads them (ADR-0068); the
 Levant cemetery record is to come.
 Fission by scalar stress (ADR-0070): farmers live in villages of up to about 127 people,
-foragers in camps; the calibrated defaults fit as well.
+foragers in camps; the calibrated defaults fit as well. Farming groups gather into
+villages up to that limit (ADR-0071).
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

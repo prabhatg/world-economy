@@ -72,6 +72,7 @@
 | 0068 | Births and deaths are gross vital events, and the juvenile-index operator: growth keeps the logistic net change but counts births at the band's fertility (crude birth rate, moving with cultivation effort from `fertility` to `sedentary_fertility`, equal by default: no transition, nested) and deaths as the rest, net growth capped at fertility. `juvenile.Operator` reads a cemetery's juvenile index (15p5, Bocquet-Appel 2002) from the fertility and local growth of the people there and then, through a stable population with the average hunter-gatherer Siler mortality of Gurven and Kaplan (2007) at the level that gives that birth rate. Forager fertility is that schedule's stationary birth rate, 1/e0 = 0.0325. The Levant cemetery record (Guerrero, Naji and Bocquet-Appel 2008) is to come (#33) | Accepted |
 | 0069 | Checkpoints restore parameters added since them as the model they were written with: every parameter is either stored by the oldest restorable checkpoints (`OIKOSCK2`, `params::IN_FIRST_CHECKPOINTS`) or has a `Restore` rule in `ADDED_SINCE_CHECKPOINTS` (a value: the hypothesis off; the same as another parameter; or inert, when the rules before it make it change nothing), and a test fails for a new parameter without one. Replaces ADR-0065's single entry and closes #31 | Accepted |
 | 0070 | Fission by scalar stress, and farming villages: a group's size limit rises with its cultivation effort, in proportion, from foragers' camps (`fission_threshold`, 60) to sedentary villages (`village_fission_size`, 127: Hutterite fissioning reaches probability 0.5 there, Alberti 2014; Kosse 1990; Johnson 1982), and a group above it splits; the daughter founds a settlement in its own cell while the land has room, else is placed by crowding as before. Village size 0 is the fission before (restore rule, ADR-0069). The calibrated defaults fit as well (summary 5.1-5.3 against 4.9-5.2) | Accepted |
+| 0071 | Aggregation of farming villages: each year a group joins, with probability `aggregation_rate` (0.05, placeholder) times its cultivation effort, the largest group of its cell at least its own size whose joined size stays below the scalar-stress limit (ADR-0070) of their pooled practice. Its drivers are social and psychological: settled farmers drew together for defence, exchange, marriage partners and ritual (Kuijt 2000) toward the larger community, up to the limit of face-to-face coordination (Johnson 1982; Dunbar 1993). Foragers never join; rate 0 is off (restore rule). Typical farming group 58-68 people (was 31-36) | Accepted |
 
 ## ADR-0007 rationale (frontend)
 
@@ -1080,6 +1081,55 @@ stays 60, but daughters now stay in cells with room (506,203 people and 18,582 a
 by 9,000 BCE against 506,094 and 18,891; hash 6bc3bc28). Fewer, larger groups cut
 agent-steps by 6% (787,203 against 837,656 in `instructions.sh`), at the same cost per
 agent-step (1,219.88 wasm instructions against 1,222.29).
+
+## ADR-0071 rationale (aggregation of farming villages)
+
+Fission by scalar stress (ADR-0070) lets villages grow to their limit, but in a full
+cell nobody grows. The two halves of a split village stayed small: the typical farming
+group in the default M1 world held 31-36 people against a limit of about 104 at its
+effort. Early farming villages drew people together, and this mechanism models that.
+
+Drivers, as the project's standing rule asks of every mechanism:
+
+- **Why people gather (social):** sedentism ties people to fields and stores, and a
+  village gives defence, exchange partners, marriage partners and shared ritual. The
+  late PPNB villages grew this way (Kuijt 2000). The pull grows with sedentism, so the
+  probability scales with cultivation effort and mobile foragers never join.
+- **Where they go (social attraction):** to the larger community. A group joins the
+  largest group of its cell that is at least its own size, never a smaller one.
+- **What stops them (cognitive):** the limit of face-to-face coordination. Decisions
+  among more than about six units overload a group (Johnson 1982), and that matches the
+  social-brain group size of about 150 (Dunbar 1993). A group joins only a village whose
+  joined size stays below the scalar-stress limit of their pooled practice, where fission
+  would split it again.
+- **What they bring (social learning):** joined groups pool their practice, weighted by
+  people, as merging bands already do. Imitation of successful neighbors is modelled in
+  cultivation (ADR-0065).
+- **Left out:** conflict and status within villages, kin-group (household) structure,
+  and leaders who raise the limit by adding hierarchy. Those belong to emerging
+  inequality (#16). Integration that let PPNB megasites pass the limit is not modelled,
+  so villages here stay below it.
+
+The first rule joined only the cell's largest group, which usually sits near its limit.
+That raised the typical group only to 47-52. The rule above, the largest group with
+room, gives villages in the default M1 world of 58-68 people (median group; 86-92 for
+the group the typical farmer lives in), up to about 109 (99th percentile), with 31% fewer
+agents by 3,000 BCE. The rate, 0.05 a year at full effort (a join within about twenty years of
+settling), is a placeholder to calibrate. The calibrated defaults stay consistent with
+all five records: largest implausibility 2.30-2.32 either way, summary log-likelihood
+4.2-4.7 over three seeds against 5.1-5.3 without. That small drop comes through pooled
+practice; the records see people-years, not group sizes. Settlement counts in the
+site-count operator, the rest of #14, would let the survey record judge villages
+directly.
+
+Joining a village pools practice, and less farming lowers the limit, so the check uses
+the pooled effort (`Aggregation::fits`).
+
+The golden toy world never cultivates, so nobody joins: its summaries are unchanged and
+only its hash moves, since the parameters are part of the state (539e0f22). A tile with
+no farmers is skipped after one scan. Cost: 1,239.14 wasm instructions per agent-step
+against 1,219.88 in the toy world. A full M1 world takes 55.1 s against 54.7 s on one
+core: every farming group draws once a year, and there are fewer groups.
 
 ## Notes
 

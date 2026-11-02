@@ -10,7 +10,7 @@ use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule,
 use oikos_sim::agents::SHARE_ONE;
 use oikos_sim::environment::{Farmland, cereal_suitability};
 use oikos_sim::inputs::Inputs;
-use oikos_sim::mechanisms::{self, Cultivation, Fission};
+use oikos_sim::mechanisms::{self, Aggregation, Cultivation, Fission};
 use oikos_sim::schedule::Schedule;
 use oikos_sim::{Params, World, WorldConfig, checkpoint};
 
@@ -106,6 +106,7 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         wild_yield_ratio: 0.5,
         adoption_rate: 0.02,
         innovation_share: 1.0,
+        aggregation_rate: 0.0,
         ..Params::default()
     }
 }
@@ -392,7 +393,7 @@ fn cultivation_runs_after_bands_move() {
     let specs: Vec<_> = mechanisms::defaults(&Params::default()).iter().map(|m| m.spec()).collect();
     let order = Schedule::build(&specs).unwrap();
     let names: Vec<&str> = order.order().iter().map(|&i| specs[i].name).collect();
-    assert_eq!(names, ["growth", "fission", "dispersal", "inundation", "cultivation"]);
+    assert_eq!(names, ["growth", "fission", "dispersal", "inundation", "aggregation", "cultivation"]);
 }
 
 #[test]
@@ -792,4 +793,101 @@ fn village_daughters_settle_nearby_while_the_land_has_room() {
     assert!(more > 0, "villages split");
     assert_eq!(moved, 0, "into their own land");
     assert!(run(0).0 > 0, "the fission before villages sent daughters to neighbors");
+}
+
+fn median(mut x: Vec<u64>) -> u64 {
+    x.sort_unstable();
+    x[x.len() / 2]
+}
+
+#[test]
+fn farming_groups_gather_into_villages() {
+    // Sedentary farmers draw together (Kuijt 2000) up to the size at which villages split
+    // (ADR-0070), so villages fill toward that limit instead of staying split in halves.
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let c = climate_pack(&h3, &[-12_000], |_, _| (15.0, 500.0));
+    // Cells that fill: about 200 farmers each, as M1's do; in a full cell nobody grows, so
+    // only joining makes villages larger.
+    let run = |rate: f64| {
+        let p = Params {
+            fission_probability: 0.2,
+            aggregation_rate: rate,
+            farm_density: 0.05,
+            forager_density_ref: 0.01,
+            growth_rate: 0.03,
+            sedentary_growth_rate: 0.03,
+            ..only(0.0, 0.0, 0.8)
+        };
+        let mut w = world(&[&g, &c], 6, p);
+        w.run_years(800, 2, 800);
+        farming_groups(&w)
+    };
+    let (gathered, apart) = (run(0.1), run(0.0));
+    assert!(
+        median(gathered.clone()) > 3 * median(apart.clone()) / 2,
+        "{} vs {}",
+        median(gathered),
+        median(apart)
+    );
+    assert!(*gathered.iter().max().unwrap() < 150, "within the village limit, give or take a year's growth");
+}
+
+#[test]
+fn foragers_never_gather() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let forest = climate_pack(&h3, &[-12_000], |_, _| (15.0, 1900.0));
+    let run = |rate: f64| {
+        let p = Params { fission_probability: 0.2, aggregation_rate: rate, ..only(0.0, 0.0, 0.8) };
+        let mut w = world(&[&g, &forest], 6, p);
+        w.run_years(300, 2, 300);
+        w.agent_slices().flat_map(|a| a.weight.to_vec()).collect::<Vec<_>>()
+    };
+    assert_eq!(run(0.5), run(0.0));
+}
+
+#[test]
+fn gathering_keeps_people_and_practice() {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let p = Params { fission_probability: 0.2, ..only(0.0, 0.0, 0.6) };
+    let mut w = world(&[&g, &c], 7, p.clone());
+    w.run_years(600, 2, 600);
+    w.set_mechanisms(vec![Box::new(Aggregation {
+        rate: 1.0,
+        after: vec![],
+        ..Aggregation::from_params(&p)
+    })])
+    .unwrap();
+    let mass = |w: &World| -> (u64, u128) {
+        let people = w.agent_slices().map(|a| a.weight.iter().sum::<u64>()).sum();
+        let effort = w
+            .agent_slices()
+            .map(|a| (0..a.len()).map(|i| a.weight[i] as u128 * a.cultivation[i] as u128).sum::<u128>())
+            .sum();
+        (people, effort)
+    };
+    let ((p0, m0), agents) = (mass(&w), w.agent_count());
+    for _ in 0..10 {
+        w.step(2);
+    }
+    let (p1, m1) = mass(&w);
+    assert!(w.agent_count() < agents, "groups joined");
+    assert_eq!(p1, p0, "people are conserved");
+    assert!(m0 > 0 && m1 <= m0 && m0 - m1 < m0 / 1_000_000, "effort mass {m0} -> {m1}");
+}
+
+#[test]
+fn a_joined_village_stays_within_the_limit_of_its_pooled_practice() {
+    // 40 people farming little lower a village's effort, and so its limit, when they join.
+    let agg = Aggregation::from_params(&Params {
+        fission_threshold: 60,
+        village_fission_size: 127,
+        ..Params::default()
+    });
+    let share = |x: f64| (x * SHARE_ONE as f64) as u32;
+    assert!(!agg.fits(70, share(1.0), 40, share(0.1)), "pooled effort 0.67 allows about 99, not 110");
+    assert!(agg.fits(70, share(1.0), 20, share(1.0)));
+    assert!(!agg.fits(100, share(1.0), 27, share(1.0)), "127 is the limit itself");
 }

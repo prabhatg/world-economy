@@ -39,6 +39,7 @@ pub enum Stream {
     Fission = 4,
     Migration = 5,
     Dispersal = 6,
+    Aggregation = 7,
 }
 
 /// A keyed generator for one run and stream.

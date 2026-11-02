@@ -101,6 +101,7 @@ pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
         Box::new(Fission::from_params(params)),
         Box::new(Dispersal::from_params(params)),
         Box::new(Inundation::from_params(params)),
+        Box::new(Aggregation::from_params(params)),
         Box::new(Cultivation::from_params(params)),
     ]
 }
@@ -440,6 +441,111 @@ impl Mechanism for Dispersal {
     }
 }
 
+/// Aggregation of farming villages (ADR-0071): within a cell, a group joins with
+/// probability `rate` times its cultivation effort per period the largest group at least
+/// its own size that has room for it, one whose joined size stays below the scalar-stress
+/// limit ([`Fission::limit`]) of their pooled practice.
+///
+/// The drivers are social and psychological. Settled farmers drew together into villages
+/// for defence, exchange, marriage partners and shared ritual (Kuijt 2000), so the pull
+/// grows with sedentism and draws people to the larger community, never a smaller one;
+/// mobile foragers (effort 0) never join. What stops a village growing is the limit of face-to-face coordination
+/// (scalar stress, Johnson 1982; the social-brain group size, Dunbar 1993), where fission
+/// splits it again (ADR-0070). Joined groups pool their practice, people-weighted.
+/// `rate` 0 switches it off.
+#[derive(Clone, Debug)]
+pub struct Aggregation {
+    pub period_ticks: u64,
+    pub rate: f64,
+    pub fission: Fission,
+    pub after: Vec<&'static str>,
+}
+
+/// People-weighted mean of a share held by groups of `wb` and `w` people (rounded down).
+fn pooled(wb: u64, xb: u32, w: u64, x: u32) -> u32 {
+    ((wb as u128 * xb as u128 + w as u128 * x as u128) / (wb + w) as u128) as u32
+}
+
+impl Aggregation {
+    /// Whether a group of `w` people at cultivation `ca` can join one of `wb` at `cb`: the
+    /// joined village stays below the limit of its pooled practice.
+    pub fn fits(&self, wb: u64, cb: u32, w: u64, ca: u32) -> bool {
+        ((wb + w) as f64) < self.fission.limit(Traits::share(pooled(wb, cb, w, ca)))
+    }
+
+    pub fn from_params(p: &Params) -> Aggregation {
+        Aggregation {
+            period_ticks: p.period_ticks,
+            rate: p.aggregation_rate,
+            fission: Fission::from_params(p),
+            after: vec!["inundation"],
+        }
+    }
+}
+
+impl Mechanism for Aggregation {
+    fn spec(&self) -> MechanismSpec {
+        MechanismSpec {
+            name: "aggregation",
+            period_ticks: self.period_ticks,
+            reads: vec![Component::AgentTraits],
+            writes: vec![Component::AgentWeight, Component::AgentTraits],
+            after: self.after.clone(),
+        }
+    }
+
+    fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
+        if self.rate == 0.0 {
+            return;
+        }
+        let rng = Philox4x32::new(sense.seed, Stream::Aggregation);
+        let t = sense.tick.0;
+        let agents = &mut *part.agents;
+        if agents.cultivation[tile.clone()].iter().all(|&c| c == 0) {
+            return; // foragers' tiles: nobody joins
+        }
+        // Tiles hold whole cells (agents spawned this step lie past the tile), and groups
+        // are taken in canonical order; a cell's range is found only for groups that join.
+        for a in tile.clone() {
+            let w = agents.weight[a];
+            if w == 0 || agents.cultivation[a] == 0 {
+                continue;
+            }
+            let join = Probability::from_f64(self.rate * Traits::share(agents.cultivation[a]));
+            if !join.hit(rng.u32(agents.id[a].0, t, 0, 0)) {
+                continue;
+            }
+            let cell = agents.cell[a];
+            let first = a - agents.cell[tile.start..a].iter().rev().take_while(|&&c| c == cell).count();
+            let end = a + agents.cell[a..tile.end].iter().take_while(|&&c| c == cell).count();
+            // The largest other group at least this one's size that has room for it (first
+            // in canonical order on ties).
+            let mut target: Option<usize> = None;
+            for b in first..end {
+                let wb = agents.weight[b];
+                if b == a || wb < w || target.is_some_and(|t| agents.weight[t] >= wb) {
+                    continue;
+                }
+                if self.fits(wb, agents.cultivation[b], w, agents.cultivation[a]) {
+                    target = Some(b);
+                }
+            }
+            let Some(b) = target else { continue };
+            let wb = agents.weight[b];
+            let (tb, ta) = (agents.traits(b), agents.traits(a));
+            agents.set_traits(
+                b,
+                Traits {
+                    cultivation: pooled(wb, tb.cultivation, w, ta.cultivation),
+                    domestication: pooled(wb, tb.domestication, w, ta.domestication),
+                },
+            );
+            agents.weight[b] = wb + w;
+            agents.weight[a] = 0;
+        }
+    }
+}
+
 /// Bands in a cell the sea has flooded move to the least crowded habitable neighbor
 /// (by N/K) as new agents born there, or are lost if no neighbor is habitable. A
 /// res-5 cell floods only when none of it is land, so a neighbor is usually open.
@@ -556,7 +662,7 @@ impl Cultivation {
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
-            after: vec!["inundation"],
+            after: vec!["aggregation"],
         }
     }
 
