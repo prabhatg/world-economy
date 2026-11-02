@@ -22,6 +22,16 @@ def test_the_defaults_come_first_then_consistent_candidates_best_first():
     assert len(ensemble.choose(_best(2), k=5)) == 2, "as many as there are"
 
 
+def test_a_candidate_that_became_the_defaults_is_not_shown_twice():
+    # Adopted defaults are the candidate's values rounded to four significant figures.
+    b = _best(3)
+    defaults = {"growth_rate": 0.01101, "dispersal_probability": 0.3}
+    b["candidates"][2]["params"] = {"growth_rate": 0.011006, "dispersal_probability": 0.30003}
+    labels = [w["label"] for w in ensemble.choose(b, k=5, defaults=defaults)]
+    assert labels == ["Calibrated defaults", "Wave 5 run 10"], "run 12 is the defaults' world"
+    assert len(ensemble.choose(b, k=5)) == 3, "without the defaults nothing is dropped"
+
+
 def test_candidates_come_in_the_order_their_best_file_ranks_them():
     b = _best(3)
     for c, fit in zip(b["candidates"], [-5.0, 0.0, 2.0]):

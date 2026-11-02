@@ -12,7 +12,7 @@ docs/03 §3.8) and a `catalog.json` listing the worlds and the series the charts
 ```sh
 # 1. Build the engine CLI and the M1 forcing packs (see AGENTS.md and data/README.md).
 (cd engine && cargo build --release -p oikos-cli)
-# 2. Run an ensemble: the calibrated defaults and the 8 best consistent worlds of round 5.
+# 2. Run an ensemble: the calibrated defaults and the 8 best consistent worlds of round 8.
 (cd calibration && PYTHONPATH=.:../data python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1)
 # 3. Serve the viewer.
 cd viewer && npm ci && npm run dev    # http://localhost:5173/

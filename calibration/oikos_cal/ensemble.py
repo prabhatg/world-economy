@@ -31,12 +31,22 @@ FIELDS = [
 ]
 
 
-def choose(best, k):
+def _is_defaults(params, defaults):
+    """Whether every parameter is its default, to the four significant figures defaults
+    are adopted with."""
+    return bool(params) and all(n in defaults and np.isclose(v, defaults[n], rtol=1e-3, atol=0)
+                                for n, v in params.items())
+
+
+def choose(best, k, defaults=None):
     """The calibrated defaults, then up to `k` consistent candidates of a `best` record,
-    best first as it ranks them (`rank`; before ADR-0066 by the item log-likelihoods)."""
+    best first as it ranks them (`rank`; before ADR-0066 by the item log-likelihoods).
+    A candidate whose parameters are the registry `defaults` (the world they were
+    adopted from) is the first world already and is left out."""
     worlds = [{"id": "w0", "label": "Calibrated defaults", "params": {}}]
     key = "rerun_summary_log_likelihood" if best.get("rank") == "summaries" else "rerun_log_likelihood"
-    ok = sorted((c for c in best["candidates"] if c["consistent"]), key=lambda c: -c[key])
+    ok = sorted((c for c in best["candidates"] if c["consistent"] and not _is_defaults(c["params"], defaults or {})),
+                key=lambda c: -c[key])
     for i, c in enumerate(ok[:k], start=1):
         worlds.append({"id": f"w{i}", "label": f"Wave {c['wave'] + 1} run {c['run']}", "params": c["params"]})
     return worlds
@@ -100,7 +110,9 @@ def build(best_path, out, k=8, seed=1, years=9_000, every=100, oikos="../engine/
 
     out = Path(out)
     best = json.loads(Path(best_path).read_text())
-    worlds, packs = choose(best, k), _packs()
+    registry = json.loads(subprocess.run([oikos, "params"], capture_output=True, text=True, check=True).stdout)
+    defaults = {n: p["default"] for n, p in registry["params"].items()}
+    worlds, packs = choose(best, k, defaults), _packs()
     out.mkdir(parents=True, exist_ok=True)
 
     def run(w):
@@ -121,8 +133,8 @@ def build(best_path, out, k=8, seed=1, years=9_000, every=100, oikos="../engine/
     catalog = {
         "format": 1,
         "title": "Neolithic Southwest Asia",
-        "summary": "Plausible worlds from 12,000 to 3,000 BCE: each fits the radiocarbon, barley, survey and "
-                   "obsidian records the calibration judged",
+        "summary": "Plausible worlds from 12,000 to 3,000 BCE: each fits the radiocarbon, barley, survey, "
+                   "obsidian and charred-crop records the calibration judged",
         "h3_resolution": int(first.attrs["h3_resolution"]),
         "years": _years(str(out / worlds[0]["id"] / "fields.zarr")),
         "fields": [{"name": n, "label": label, "unit": unit, "description": d} for n, label, unit, d in present],

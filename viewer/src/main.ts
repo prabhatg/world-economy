@@ -89,9 +89,8 @@ async function start() {
   document.title = `${catalog.title} · ManyWorlds viewer`;
   ui.title.textContent = "ManyWorlds viewer";
   ui.headline.textContent = `How people spread and took up farming in Southwest Asia: ${n} possible histories`;
-  ui.summary.textContent = `${n} simulated worlds that match the evidence checked so far: how many dated sites \
-and villages there are, where obsidian came from, and when barley changed into a crop. Known gap: in every world \
-people live mostly on planted crops thousands of years too early, because nothing checked yet dates when planting began.`;
+  ui.summary.textContent = `${n} simulated worlds that fit the evidence checked so far: dated sites and villages, \
+where obsidian came from, and the crops found burnt at old sites.`;
   ui.firstYear.textContent = first;
   ui.lastYear.textContent = last;
   const end = catalog.worlds.map((w) => w.series.people.at(-1)!);
@@ -283,9 +282,9 @@ function renderCharts() {
   );
   ui.peopleCaption.textContent = `People in every world, on a log scale. The bold line is the world on the map; \
 the first century is the model settling from its start.`;
-  ui.note.textContent = `The evidence checked so far does not tell these worlds apart, so read any one of them \
-as one possibility, not what happened. In all of them farming spreads far too early: none of the records checked \
-yet dates when people began to plant.`;
+  ui.note.textContent = `The evidence checked so far does not tell these worlds apart, so read each one as one \
+possibility, not what happened. Before 10,000 BCE, burnt seeds at sites suggest people got about a tenth of their \
+food from crops. Some worlds farm far more than that, though still within the margin the check allows.`;
 }
 
 function renderProvenance() {
@@ -295,8 +294,9 @@ function renderProvenance() {
     .map((w, i) => row(`World ${i + 1}`, `${w.label}, state ${w.state_hash.slice(0, 12)}`))
     .join("");
   ui.provenance.innerHTML = `<p>Each world is a run of the Oikos engine from the same start, with parameters that \
-the calibration found consistent with four records: radiocarbon dates (p3k14c), barley rachis remains (Allaby et \
-al. 2017), survey sites (Palmisano et al. 2021) and sourced obsidian (DObsiSS), each with one random seed. Forcing \
+the calibration found consistent with five records: radiocarbon dates (p3k14c), barley rachis remains (Allaby et \
+al. 2017), charred plant remains (Wallace et al. 2018), survey sites (Palmisano et al. 2021) and sourced obsidian \
+(DObsiSS), each with one random seed. Forcing \
 packs are the climate, coastlines, rivers and obsidian sources every world shares, built from published datasets.</p>
     <dl>${row("Engine", p.engine)}${row("Calibration", p.best)}${row("Seed", String(p.seed))}${row(
       "Forcing packs",
