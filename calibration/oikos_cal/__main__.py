@@ -82,17 +82,21 @@ def _left_out_of(doc):
 
 
 def left_out(given, docs):
-    """The records a command leaves out: `given`, else those of the files `docs` it
-    continues, which must agree with each other and with `given` (emulators and scores of
-    different records do not mix)."""
+    """The records a command leaves out: `given`, else those of the last of the files
+    `docs` it continues, in order. A file may judge records the files before it left out
+    (a later wave adding a record), never leave out one they judged: their emulators
+    still judge it, so the waves would not describe one history match."""
     from . import m1
 
-    theirs = {tuple(_left_out_of(d)) for d in docs}
-    if len(theirs) > 1:
-        raise SystemExit(f"the files continued left out different records: {sorted(theirs)}")
-    chosen = sorted(given) if given is not None else list(theirs.pop()) if theirs else []
-    if theirs and tuple(chosen) not in theirs:
-        raise SystemExit(f"--leave-out {chosen}: the files continued left out {list(theirs.pop())}")
+    theirs = [set(_left_out_of(d)) for d in docs]
+    for k in range(1, len(theirs)):
+        if not theirs[k] <= theirs[k - 1]:
+            raise SystemExit(f"file {k + 1} left out {sorted(theirs[k] - theirs[k - 1])}, which the file before "
+                             "it judged")
+    chosen = sorted(given) if given is not None else sorted(theirs[-1]) if theirs else []
+    if theirs and not set(chosen) <= theirs[-1]:
+        raise SystemExit(f"--leave-out {chosen}: the files continued judged {sorted(set(chosen) - theirs[-1])}, "
+                         "so it may not be left out")
     unknown = [r for r in chosen if r not in m1.OPTIONAL]
     if unknown:
         raise SystemExit(f"--leave-out: {unknown} cannot be left out; only {list(m1.OPTIONAL)} can be")
@@ -233,7 +237,7 @@ def wave(args):
     chosen_by = json.loads(Path(args.screening).read_text()) if args.screening else None
     if chosen_by:
         require_sites([chosen_by], "choose factors by")
-    leave = left_out(args.leave_out, previous + ([chosen_by] if chosen_by else []))
+    leave = left_out(args.leave_out, previous)
     seed = sampling_seed(args.seed, previous)
     rng = np.random.default_rng(seed)
     if previous:

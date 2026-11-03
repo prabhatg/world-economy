@@ -46,6 +46,13 @@ def test_the_record_summaries(problem):
     assert len(on) == 4 and problem.groups[4].indices == list(range(36, 40)) and problem.groups[4].dof == 4
     assert 0.3 < problem.onset.farming_share < 0.7, "Pottery Neolithic phases anchor a farming world"
     assert on[0].observed < 0.2 < 0.5 < on[3].observed, "little planting before 10,000 BCE, much by the late PPNB"
+    vs = [t for t in problem.targets if t.name.startswith("village size")]
+    assert len(vs) == 14 and vs[0].name == "village size anatolia 6500-6000 BCE"
+    assert problem.groups[5].indices == list(range(40, 54)) and problem.groups[5].dof == 14
+    assert all(np.log(50) < t.observed < np.log(1000) for t in vs), "villages of a few hundred people"
+    assert all(0.2 <= t.variance < 0.4 for t in vs), "one density converts them all; sites add a little"
+    up = [t.observed for t in vs if "upper_mesopotamia" in t.name]
+    assert up[-1] > up[0] + 0.2, "Upper Mesopotamian sites grow into the Late Chalcolithic"
     assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
                                   "log-likelihood obsidian", "people 3000 BCE"]
 

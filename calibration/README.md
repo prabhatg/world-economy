@@ -14,6 +14,7 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settlements (ADR-0072; settled people-years before) dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
 | `oikos_cal/juvenile.py` | Juvenile-index operator (ADR-0068): a cemetery's share of 5-19 year olds among its dead over 5, from the world's fertility and local growth there, through a stable population with hunter-gatherer Siler mortality; the Levant record is to come (#33) |
+| `oikos_cal/villages.py` | Village-size operator (ADR-0078, #34): the mean log area of each era's sized survey site phases, in people at a shared density, against the mean log size of a world's settlements dated through the surveys' periods |
 | `oikos_cal/inequality.py` | House-size inequality operator (ADR-0074): the small-sample Gini of house floor areas a site's excavated houses would show, from the settled people's variance of log wealth around it, against Kohler et al. 2017 |
 | `oikos_cal/onset.py` | Cultivation-onset operator (ADR-0064): people-weighted cultivation effort at dated site phases, against the effort their crops among charred plant remains imply (anchored on Pottery Neolithic phases) |
 | `oikos_cal/screening.py` | Morris elementary-effects screening of the registry's free parameters (ADR-0052) |
@@ -81,8 +82,10 @@ sees them yet (`fertility` and `sedentary_fertility` until the juvenile-index re
 joins, ADR-0068).
 `--leave-out inequality` (on `screen`, `wave` and `profile`) leaves the house-size record
 out: its targets are neither judged nor written to the file, and the waves and `best`
-continuing that file leave it out too (ADR-0077). Kohler et al. 2017 publish their house
-sizes with no licence, so committed rounds leave them out until that is settled.
+continuing that file leave it out too unless a later wave adds it back (`--leave-out`
+with no record); a wave never leaves out a record the waves it continues judged
+(ADR-0077). Round 10's first three waves left the house-size Ginis out; since the
+maintainer's decision of 2026-11-03 (#43) committed run files may carry them.
 `profile` varies one parameter with every other at its default and chooses the
 consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
 log-likelihoods): for a parameter a new record

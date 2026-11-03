@@ -53,6 +53,19 @@ where radiocarbon falls, so they rule out the region-wide bust of the round-2 de
 Since villages form (ADR-0070, ADR-0071), sites are compared with settlements, not
 settled people: each group counted as far as it is settled (ADR-0072).
 
+**Implemented (village-size operator, ADR-0078, #34):** `villages.Operator` takes the
+areas the same surveys record (Upper Mesopotamia per phase, Central Anatolia mostly once
+per site) and summarizes each era by the mean log area of its sized site phases, each
+counting aoristically. A world's settlements go through the surveys' dating: their
+settlement-years times the log of their people, over their settlement-years. Areas
+become people at 121 per hectare, with a log-scale error of 0.45 that every era of both
+surveys shares (50 to 294 as a 95% range, a judgment between mounds not lived in all at
+once, as at Çatalhöyük, Kuijt and Marciniak 2024, and a North Yemeni tell village,
+van Beek 1982), so the record constrains the absolute size of villages loosely and
+their change through time and between the surveys more tightly. Settlements are dated
+as the sized phases are. The fourteen eras are judged together (discrepancy 0.25 on
+each, which also covers density differing between eras).
+
 **Implemented (obsidian sourcing operator, ADR-0061):** `obsidian.Operator` scores the
 share of Cappadocian obsidian in use around each sourced assemblage of DObsiSS
 (`data/oikos_data/obsidian.py`) over its period, against the obsidian the world's

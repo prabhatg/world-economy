@@ -9,7 +9,9 @@ times the availability of its obsidian (obsidian in use, what sourced assemblage
 sample; empty without an obsidian pack); and settlement-years, each group counted as
 far as it is settled (its cultivation effort), which is what surveys find (ADR-0072);
 and settled people-years times the variance of log household wealth among the settled
-(ADR-0074), so dividing by settled people-years gives their mean inequality anywhere.
+(ADR-0074), so dividing by settled people-years gives their mean inequality anywhere;
+and settlement-years times the log of each settlement's people, so dividing by
+settlement-years gives the mean log size of the settlements anywhere (#34).
 Recording only reads the world through the bindings; it never changes its history.
 """
 
@@ -29,6 +31,7 @@ class Activity:
     obsidian: dict = field(default_factory=dict)  # source group -> people-years times availability [cell, century]
     settlements: np.ndarray = None  # groups times their cultivation effort, times years [cell, century]
     inequality: np.ndarray = None  # settled people-years times their variance of log wealth [cell, century]
+    village_size: np.ndarray = None  # settlement-years times the log of their people [cell, century]
 
     def visible(self, cultivator_visibility):
         """People-years with each cultivator counting 1 + `cultivator_visibility` times."""
@@ -42,8 +45,8 @@ def activity(world, end, every=10, parts=4) -> Activity:
     if first % 100 or end % 100 or end <= first:
         raise ValueError(f"record from {first} to {end}: both must be century boundaries, end after start")
     window = Window(first, end)
-    people, cultivators, domestic, settlements, inequality = (np.zeros((world.cells, window.centuries))
-                                                              for _ in range(5))
+    people, cultivators, domestic, settlements, inequality, village_size = (
+        np.zeros((world.cells, window.centuries)) for _ in range(6))
     obsidian = {name: np.zeros((world.cells, window.centuries)) for name in world.obsidian()}
     while world.year < end:
         c = (world.year - first) // 100
@@ -57,5 +60,17 @@ def activity(world, end, every=10, parts=4) -> Activity:
         for name, held in world.obsidian().items():
             obsidian[name][:, c] += n * pop * held
         settlements[:, c] += n * world.settlements()
+        village_size[:, c] += n * _log_size(world)
         world.run_years(n, parts=parts)
-    return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality)
+    return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality, village_size)
+
+
+def _log_size(world):
+    """Per cell, its groups' cultivation effort times the log of their people: what
+    `settlements` counts, each weighted by its log size. Agents come in canonical order,
+    so the sums are the same for any partition count."""
+    a = world.agents()
+    effort = np.asarray(a["cultivation"], dtype=float)
+    settled = (effort > 0) & (np.asarray(a["weight"]) > 0)
+    logs = np.log(np.asarray(a["weight"], dtype=float)[settled])
+    return np.bincount(np.asarray(a["cell"])[settled], weights=effort[settled] * logs, minlength=world.cells)

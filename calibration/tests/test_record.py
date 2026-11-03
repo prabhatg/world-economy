@@ -65,6 +65,10 @@ class _ObsidianWorld:
     def inequality(self):
         return np.zeros(2)
 
+    def agents(self):
+        return {"cell": np.zeros(0, dtype=np.uint32), "weight": np.zeros(0, dtype=np.uint64),
+                "cultivation": np.zeros(0)}
+
     def run_years(self, n, parts):
         self.year += n
 
@@ -83,11 +87,24 @@ class _VillageWorld(_ObsidianWorld):
     def settlements(self):
         return np.array([1.5, 0.0])
 
+    def agents(self):
+        return {"cell": np.array([0, 0, 1], dtype=np.uint32), "weight": np.array([120, 20, 30], dtype=np.uint64),
+                "cultivation": np.array([1.0, 0.5, 0.0])}
+
 
 def test_settlements_are_groups_counted_by_how_settled_they_are():
     # Surveys find settlements, not people: a group leaves a site as far as it is settled.
     a = record.activity(_VillageWorld(), end=-11_900, every=50, parts=1)
     np.testing.assert_allclose(a.settlements[:, 0], [100 * 1.5, 0])
+
+
+def test_village_size_is_settlement_years_times_the_log_of_their_people():
+    # Divided by settlement-years of the same cells and centuries, the mean log size of
+    # the settlements a survey would find there (#34).
+    a = record.activity(_VillageWorld(), end=-11_900, every=50, parts=1)
+    np.testing.assert_allclose(a.village_size[:, 0], [100 * (np.log(120) + 0.5 * np.log(20)), 0])
+    toy = record.activity(oikos.World(seed=4), end=-11_900)
+    assert toy.village_size.shape == toy.people.shape and not toy.village_size.any(), "toy worlds never settle"
 
 
 class _UnequalWorld(_ObsidianWorld):

@@ -21,8 +21,11 @@ its bytes vary; the spreadsheet inside is checked by its SHA-256. The Nature cor
 [license]
 # Europe PMC (searched through its REST API, 2026-11-02) lists the article as an author
 # manuscript deposited under European Research Council funding, with no licence: it may
-# be read and text-mined for research, not redistributed. So nothing derived from it is
-# committed or packed: each user downloads it and builds the site table locally.
+# be read and text-mined for research, not redistributed. So the spreadsheet and the site
+# table built from it are never committed or packed: each user downloads it and builds
+# the table locally. The maintainer decided (2026-11-03, #43, kept open until the
+# authors reply) that calibration run files may carry the five site Ginis, the summary
+# statistics the house-size targets compare with, as they carry every target's value.
 id = "Europe-PMC-author-manuscript"
 url = "https://europepmc.org/Copyright"
 derived_redistribution = false

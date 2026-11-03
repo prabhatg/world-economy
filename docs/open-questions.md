@@ -147,6 +147,11 @@
     used) or excavated house counts per phase could; an operator would compare them
     with the distribution of group sizes the model's settlements reach. The same holds
     for fertility and sedentary growth until the juvenile-index record (#33) joins.
+    The survey site areas now join (ADR-0078): at the calibrated defaults settlements
+    hold about 50 people (geometric mean), against 126-218 at the middle density, so
+    the defaults fit only if Neolithic sites were as thinly lived in as Kuijt and
+    Marciniak (2024) find at Çatalhöyük. Through time the record's villages grow in
+    Upper Mesopotamia (126 to 179 people) while the model's stay level.
 34. How strongly do houses track wealth, and when did inequality rise (ADR-0074; #43)? The
     house-size operator takes floor area to grow as wealth to the power 0.7, a judgment
     from comparing house-size and wealth Ginis across two compilations; within-site data

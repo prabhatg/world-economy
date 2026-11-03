@@ -20,8 +20,8 @@ records leave many parameters unconstrained:
   capacity, and the records measure stocks, not births and deaths.
 - **Disease** (`disease_threshold`, `disease_mortality`): seen only through its effect
   on the number of villages.
-- **Wealth** (four parameters): the house-size record is left out of round 10, and
-  nothing else sees inequality.
+- **Wealth** (four parameters): the house-size record was left out of round 10's first
+  waves, and nothing else sees inequality.
 
 Fidelity therefore means two things: **records fine-grained enough to tell competing
 explanations apart**, and **mechanisms fine-grained enough to produce what those
@@ -53,7 +53,7 @@ parallel.
 | 1 | F10 Village sizes from survey site areas | [#34](https://github.com/prabhatg/world-economy/issues/34) | village size, aggregation, disease's critical size | – |
 | 1 | F2 Regional radiocarbon by subregion | [#35](https://github.com/prabhatg/world-economy/issues/35) | dispersal, neighbor learning, regional timing | – |
 | 1 | F3 Spatial onset of cultivation | [#36](https://github.com/prabhatg/world-economy/issues/36) | success bias against adoption rate | – |
-| 1 | F1 House-size Ginis: licensing decision | [#43](https://github.com/prabhatg/world-economy/issues/43) | wealth transmission and shocks | maintainer |
+| 1 | F1 House-size Ginis: judged in run files (decided 2026-11-03; open until the authors reply) | [#43](https://github.com/prabhatg/world-economy/issues/43) | wealth transmission and shocks | – |
 | 2 | F11 Juvenile index (age structure) | [#33](https://github.com/prabhatg/world-economy/issues/33) | fertility, the demographic transition | Guerrero et al. 2008 chapter |
 | 2 | F4 Disease lesions before and after farming | [#42](https://github.com/prabhatg/world-economy/issues/42) | disease mortality | – |
 | 2 | F7 Settlements of several groups (towns) | [#39](https://github.com/prabhatg/world-economy/issues/39) | the largest sites | F10 |

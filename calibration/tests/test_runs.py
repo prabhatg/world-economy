@@ -246,10 +246,14 @@ def test_a_record_left_out_is_recorded_and_kept_by_the_files_that_continue_it():
     assert cli.left_out(None, [{"wave": 1, "targets": [other]}]) == ["inequality"], \
         "a file before the option without house Ginis judged without them (round 9)"
     assert cli.left_out(None, [{"wave": 1, "targets": [other, gini]}]) == []
+    # A later wave may judge a record the earlier ones left out (as rounds 4-6 added
+    # records), never leave out one they judged: their emulators would still judge it.
+    assert cli.left_out([], [{"wave": 1, "left_out": ["inequality"]}]) == []
+    assert cli.left_out(None, [{"wave": 1, "left_out": ["inequality"]}, {"wave": 2, "left_out": []}]) == []
     with pytest.raises(SystemExit, match="left out"):
-        cli.left_out([], [{"wave": 1, "left_out": ["inequality"]}])
+        cli.left_out(["inequality"], [{"wave": 1, "left_out": []}])
     with pytest.raises(SystemExit, match="left out"):
-        cli.left_out(None, [{"wave": 1}, {"wave": 2, "left_out": ["inequality"]}])
+        cli.left_out(None, [{"wave": 1, "left_out": []}, {"wave": 2, "left_out": ["inequality"]}])
     with pytest.raises(SystemExit, match="radiocarbon.*inequality"):
         cli.left_out(["radiocarbon"], [])
 

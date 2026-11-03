@@ -25,7 +25,12 @@ likelihoods use:
 - obsidian zones: the mean Cappadocian share of sourced assemblages (each context
   counting once) in zones of relative distance to the two source groups, before and
   after an era boundary (`obsidian.Operator`). Observation variance and covariance are a
-  bootstrap over contexts; all zones are one group.
+  bootstrap over contexts; all zones are one group;
+- village sizes: in each survey's landscape and era, the mean log area of the sized
+  site phases converted to people by one density, against the mean log size of the
+  world's settlements dated the same way (`villages.Operator`). Observation variance is
+  a bootstrap over sites plus the density's uncertainty, which every era of every
+  survey shares; all are one group.
 
 Discrepancy standard deviations are judgments, stated where the problem is set up and
 recorded with each wave: how far a good world may honestly sit from these summaries.
@@ -36,7 +41,8 @@ import numpy as np
 from .history import Group, Target
 from .radiocarbon import SUROVELL_2009
 
-__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras", "ObsidianZones", "OnsetEras", "HouseGinis"]
+__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras", "VillageSizes", "ObsidianZones", "OnsetEras",
+           "HouseGinis"]
 
 
 def _era(first, end):
@@ -149,6 +155,51 @@ class SiteEras:
         e = self.op.expected(a)
         return np.concatenate([_clr(e[n]) if (e[n] > 0).all() else np.full(len(e[n]), np.nan)
                                for n in self.op.windows])
+
+
+class VillageSizes:
+    def __init__(self, op, density, density_sd, discrepancy_sd=0.25, replicates=2000, rng=None, min_defined=0.9):
+        """Eras of `op` (`villages.Operator`) in each survey window, in log people: log area
+        plus the log of `density` (people per hectare), whose error `density_sd` (on the
+        log scale) all targets share; how density differs between eras and surveys is
+        left to the discrepancy, which is each target's own. Each era needs sized sites,
+        enough that at least `min_defined` of the bootstrap replicates define every era."""
+        self.op = op
+        rng = rng or np.random.default_rng(0)
+        edges, blocks, z, names = op.edges, [], [], []
+        for name in op.windows:
+            obs = op.observed[name]
+            if np.isnan(obs).any():
+                e = int(np.isnan(obs).argmax())
+                raise ValueError(f"no sized sites in {name} {_era(edges[e], edges[e + 1])}")
+            a, w = op.log_area[name], op.weight[name]
+            pick = rng.integers(0, len(a), size=(replicates, len(a)))
+            boot = np.array([op.mean(a[p], w[p]) for p in pick])
+            defined = np.isfinite(boot).all(axis=1)
+            if defined.mean() < min_defined:
+                raise ValueError(f"too few sized sites in {name}: only {defined.mean():.0%} of bootstrap samples "
+                                 f"hold sites in every era; choose wider eras")
+            blocks.append(np.atleast_2d(np.cov(boot[defined], rowvar=False)))
+            z.append(obs + np.log(density))
+            names += [f"village size {name} {_era(edges[e], edges[e + 1])}" for e in range(len(obs))]
+        n = sum(len(b) for b in blocks)
+        self.covariance = np.full((n, n), density_sd**2)
+        k = 0
+        for b in blocks:
+            self.covariance[k : k + len(b), k : k + len(b)] += b
+            k += len(b)
+        z = np.concatenate(z)
+        self.targets = [_target(nm, z[j], self.covariance[j, j], discrepancy_sd**2) for j, nm in enumerate(names)]
+
+    def group(self, first):
+        """All eras of all surveys as one `history.Group`, their targets from index `first`."""
+        return Group(list(range(first, first + len(self.targets))), self.covariance)
+
+    def model(self, activity):
+        """Mean log people of a world's settlements per survey and era (NaN in an era whose
+        landscape it leaves without settlements: ruled out by its own outputs)."""
+        e = self.op.expected(activity)
+        return np.concatenate([e[n] for n in self.op.windows])
 
 
 def _target(name, observed, variance, discrepancy):

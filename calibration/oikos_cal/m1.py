@@ -2,8 +2,9 @@
 12,000 to 3,000 BCE, against the radiocarbon record (p3k14c, IntCal20), the barley
 rachis record (Allaby et al. 2017), survey site counts in Central Anatolia and Upper
 Mesopotamia (Palmisano et al. 2021; ADR-0059), sourced obsidian (DObsiSS; ADR-0061),
-crops among charred plant remains (Wallace et al. 2018; ADR-0064) and the house-size
-inequality of dated sites (Kohler et al. 2017; ADR-0074).
+crops among charred plant remains (Wallace et al. 2018; ADR-0064), the house-size
+inequality of dated sites (Kohler et al. 2017; ADR-0074) and the areas of the survey
+sites (Palmisano et al. 2021; #34).
 
 A run is a point u of the unit cube of the registry's free parameters (those with a
 prior to sample; `oikos.sample_params` maps u onto the priors), a world built from the
@@ -25,11 +26,21 @@ eras split at 10,000, 8,800 and 7,600 BCE, judged together; discrepancy 0.1 on e
 on the domestic share (the anchor's uncertainty is in the bootstrap variance). House
 Ginis are each site's, judged one by one with the sampling variance of its few houses;
 discrepancy 0.05 on each (house size as a proxy of wealth, and its elasticity).
+Village sizes are each survey era's mean log site area in people, at 121 people per
+hectare with a log-scale error of 0.45 that all of them share: 50 to 294 as a 95% range,
+a judgment. The top is the higher of the densities Kuijt (2000) took from ethnographic
+villages (90 in Iran, Kramer 1982; 294 in North Yemen, van Beek 1982); the bottom allows
+for mounds not lived in all at once, as Kuijt and Marciniak (2024) find at Çatalhöyük
+(600-800 people in an average year of its Middle phase, tens of people per hectare of
+the mound, the figure depending on the area taken). Judged together, discrepancy 0.25
+on each, which also covers density differing between eras and surveys.
+
+The house-size Ginis are judged since the maintainer's decision of 2026-11-03 (#43);
+round 10's first waves left them out (ADR-0077).
 
 A round may leave out a record in `OPTIONAL` (`Problem(leave_out=...)`): its targets are
-then neither judged nor written to the round's files. The house sizes of Kohler et al.
-2017 come with no licence to republish them, so a round whose files are committed
-leaves them out until that is settled.
+then neither judged nor written to the round's files, for a record whose values may not
+be published with them.
 """
 
 import io
@@ -45,14 +56,16 @@ from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
 
-from . import domestication, inequality, obsidian, onset, radiocarbon, record, sites, targets
+from . import domestication, inequality, obsidian, onset, radiocarbon, record, sites, targets, villages
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
-               "inequality": 0.05}
+               "villages": 0.25, "inequality": 0.05}
+VILLAGE_DENSITY = 121.0  # people per hectare: geometric mean of 50 and 294
+VILLAGE_DENSITY_SD = 0.45  # log scale: 50-294 as a 95% range
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources
@@ -102,6 +115,7 @@ class Problem:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
         self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true)
         self.sites = sites.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
+        self.villages = villages.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach,
                                           min_artefacts=OBSIDIAN_MIN_ARTEFACTS,
                                           joined=obsidian.joined(habitable(self.cells), reach))
@@ -119,13 +133,15 @@ class Problem:
                      targets.ObsidianZones(self.obsidian, edges=OBSIDIAN_EDGES, era=OBSIDIAN_ERA,
                                            discrepancy_sd=DISCREPANCY["obsidian"], rng=np.random.default_rng(0)),
                      targets.OnsetEras(self.onset, edges=ONSET_EDGES, discrepancy_sd=DISCREPANCY["onset"],
-                                       rng=np.random.default_rng(0))]
+                                       rng=np.random.default_rng(0)),
+                     targets.VillageSizes(self.villages, density=VILLAGE_DENSITY, density_sd=VILLAGE_DENSITY_SD,
+                                          discrepancy_sd=DISCREPANCY["villages"], rng=np.random.default_rng(0))]
         if self.inequality is not None:
             self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]
         first = np.cumsum([0] + [len(e.targets) for e in self.eras])
         self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3]),
-                       self.eras[4].group(first[4])]
+                       self.eras[4].group(first[4]), self.eras[5].group(first[5])]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def outputs(self, activity):
