@@ -40,6 +40,7 @@ pub enum Stream {
     Migration = 5,
     Dispersal = 6,
     Aggregation = 7,
+    Disease = 8,
 }
 
 /// A keyed generator for one run and stream.

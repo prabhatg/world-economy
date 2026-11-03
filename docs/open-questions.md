@@ -157,6 +157,16 @@
     apart. More sites with measured houses (Kohler and Smith 2018 list others outside the
     supplement) would. The generation length (28 years, Fenner 2005) is to be checked
     against the paper.
+35. How heavy was disease in Neolithic villages, and at what size did it persist
+    (ADR-0075)? The critical size (50 sedentary people), foragers' relative contact (0.4)
+    and the mortality of the infected (0.005 a year) are judgments. The records bound the
+    mortality from above only indirectly: at four times the default, domestication lags
+    (a domestic barley share after 7000 BCE of 0.24, against the observed 0.80). The skeletal record would test it directly:
+    Eshed et al. (2010) compare lesions of infection in 200 Natufian and 205 Neolithic
+    skeletons of the southern Levant, and an operator could compare prevalence before and
+    after farming with the model's people-weighted prevalence. Behavioral responses
+    (villages splitting or dispersing under disease, hygiene norms) are left out until a
+    record calls for them.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

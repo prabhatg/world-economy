@@ -94,6 +94,9 @@ which no candidate beats; no record yet sees village size or aggregation.
 Wealth inequality within groups (ADR-0074): households pass on wealth more where farmland
 is owned, so inequality rises as farming closes the land in; the house-size Ginis of five
 dated sites (Kohler et al. 2017) join the record, and the calibrated defaults fit them.
+An endemic infection within groups (ADR-0075) burdens large, settled villages and spares
+foragers' camps; the calibrated defaults fit as well, and heavy disease (four times the
+default mortality) is ruled out by the domestic-barley record.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

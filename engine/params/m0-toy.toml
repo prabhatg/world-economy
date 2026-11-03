@@ -80,6 +80,53 @@ sources = [
   { citation = "Bocquet-Appel, J.-P. (2002). Paleoanthropological traces of a Neolithic demographic transition. Current Anthropology 43, 637-650.", doi = "10.1086/342429" },
 ]
 
+[params.disease_threshold]
+group = "health"
+unit = "people"
+description = "Critical size of a fully sedentary group for endemic infection (ADR-0075): with density-dependent transmission, R0 is the group's size over this, and in larger groups the infection persists at prevalence 1 - 1/R0 (Anderson and May 1991). Mobile groups' critical size is this over their contact (mobile_contact)."
+kind = { type = "real", min = 1.0, max = 1000.0 }
+default = 50.0
+prior = { dist = "uniform", lo = 20.0, hi = 150.0 }
+status = "placeholder"
+note = "Judgment. Acute crowd infections (measles) need communities of hundreds of thousands (Bartlett 1957) and could not persist in the Neolithic; what small, settled communities sustain are infections spread through shared water, waste and close contact, and tuberculosis, found at Atlit-Yam about 7000 BCE (Hershkovitz et al. 2008). This is the burden settlement adds: isolated bands keep their own persistent infections (Black 1975), which foragers' baseline mortality already counts, so a camp's zero burden here is a modelling assumption. Below the sizes of farming villages (Fission's village_fission_size, 127) and above foragers' camps once mobility is counted. The skeletal record of infection in the Levant (Eshed et al. 2010) is to constrain it."
+sources = [
+  { citation = "Anderson, R. M., May, R. M. (1991). Infectious Diseases of Humans: Dynamics and Control. Oxford University Press.", doi = "10.1093/oso/9780198545996.001.0001" },
+  { citation = "Bartlett, M. S. (1957). Measles periodicity and community size. Journal of the Royal Statistical Society A 120, 48-70.", doi = "10.2307/2342553" },
+  { citation = "Black, F. L. (1975). Infectious diseases in primitive societies. Science 187, 515-518.", doi = "10.1126/science.163483" },
+  { citation = "Hershkovitz, I., Donoghue, H. D., Minnikin, D. E., et al. (2008). Detection and molecular characterization of 9000-year-old Mycobacterium tuberculosis from a Neolithic settlement in the Eastern Mediterranean. PLoS ONE 3, e3426.", doi = "10.1371/journal.pone.0003426" },
+  { citation = "Eshed, V., Gopher, A., Pinhasi, R., Hershkovitz, I. (2010). Paleopathology and the origin of agriculture in the Levant. American Journal of Physical Anthropology 143, 121-133.", doi = "10.1002/ajpa.21301" },
+]
+
+[params.mobile_contact]
+group = "health"
+unit = "share"
+description = "Transmission among fully mobile foragers relative to sedentary villagers (ADR-0075): moving camp leaves waste, vermin and fouled water behind, and lets people act on disgust and avoid the sick. A group's contact moves linearly from this to 1 with its cultivation effort; its critical size for endemic infection is disease_threshold over its contact."
+kind = { type = "probability" }
+default = 0.4
+prior = { dist = "uniform", lo = 0.1, hi = 1.0 }
+status = "placeholder"
+note = "Judgment, set so that foragers' camps at their size limit (fission_threshold, 60) stay below their critical size (125). Foragers move camp as refuse and pests build up (Kelly 2013), and sedentism ties people to their waste and water (Armelagos et al. 1991). Disgust is the behavioral immune system that drives avoidance (Schaller and Park 2011; Curtis et al. 2011); mobility is what lets foragers act on it. 1: mobility does not protect."
+sources = [
+  { citation = "Kelly, R. L. (2013). The Lifeways of Hunter-Gatherers: The Foraging Spectrum. Cambridge University Press.", doi = "10.1017/CBO9781139176132" },
+  { citation = "Armelagos, G. J., Goodman, A. H., Jacobs, K. H. (1991). The origins of agriculture: population growth during a period of declining health. Population and Environment 13, 9-22.", doi = "10.1007/BF01256568" },
+  { citation = "Schaller, M., Park, J. H. (2011). The behavioral immune system (and why it matters). Current Directions in Psychological Science 20, 99-103.", doi = "10.1177/0963721411402596" },
+  { citation = "Curtis, V., de Barra, M., Aunger, R. (2011). Disgust as an adaptive system for disease avoidance behaviour. Philosophical Transactions of the Royal Society B 366, 389-401.", doi = "10.1098/rstb.2010.0117" },
+]
+
+[params.disease_mortality]
+group = "health"
+unit = "1/period"
+description = "Deaths per infected person and period from endemic infection (ADR-0075), on top of the deaths of logistic growth. A group above its critical size loses this times the people above it (its infected, at the endemic equilibrium). 0: no disease (before ADR-0075)."
+kind = { type = "real", min = 0.0, max = 0.1 }
+default = 0.005
+prior = { dist = "uniform", lo = 0.0, hi = 0.02 }
+status = "placeholder"
+note = "Judgment: in the largest villages (127 people, prevalence 0.61 at the default critical size) about 0.3% of people a year, a tenth of the crude death rate (fertility, 0.0325), for chronic infection that burdens more than it kills. Neolithic skeletons in the southern Levant show more lesions of infection than Natufian ones, which Eshed et al. (2010) relate to larger, denser settlements; health declined as population grew (Armelagos et al. 1991). The prior starts at 0, no disease."
+sources = [
+  { citation = "Eshed, V., Gopher, A., Pinhasi, R., Hershkovitz, I. (2010). Paleopathology and the origin of agriculture in the Levant. American Journal of Physical Anthropology 143, 121-133.", doi = "10.1002/ajpa.21301" },
+  { citation = "Armelagos, G. J., Goodman, A. H., Jacobs, K. H. (1991). The origins of agriculture: population growth during a period of declining health. Population and Environment 13, 9-22.", doi = "10.1007/BF01256568" },
+]
+
 [params.capacity_min]
 group = "environment"
 unit = "people per cell"

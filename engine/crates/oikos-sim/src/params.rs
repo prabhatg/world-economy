@@ -37,6 +37,9 @@ pub struct Params {
     pub landed_wealth_transmission: f64,
     pub landed_wealth_shock: f64,
     pub generation_years: f64,
+    pub disease_threshold: f64,
+    pub mobile_contact: f64,
+    pub disease_mortality: f64,
     pub fission_probability: f64,
     pub exploration_probability: f64,
     pub merge_threshold: u64,
@@ -119,6 +122,9 @@ impl Params {
             landed_wealth_transmission: real("landed_wealth_transmission")?,
             landed_wealth_shock: real("landed_wealth_shock")?,
             generation_years: real("generation_years")?,
+            disease_threshold: real("disease_threshold")?,
+            mobile_contact: real("mobile_contact")?,
+            disease_mortality: real("disease_mortality")?,
             fission_probability: real("fission_probability")?,
             exploration_probability: real("exploration_probability")?,
             merge_threshold: int("merge_threshold")?,
@@ -303,6 +309,10 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("landed_wealth_transmission", Restore::Inert),
     ("landed_wealth_shock", Restore::Inert),
     ("generation_years", Restore::Inert),
+    // ADR-0075: no disease.
+    ("disease_mortality", Restore::Value(0.0)),
+    ("disease_threshold", Restore::Inert),
+    ("mobile_contact", Restore::Inert),
 ];
 
 impl Params {

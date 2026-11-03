@@ -98,6 +98,7 @@ impl PartitionView<'_> {
 pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
     vec![
         Box::new(Growth::from_params(params)),
+        Box::new(Disease::from_params(params)),
         Box::new(Fission::from_params(params)),
         Box::new(Dispersal::from_params(params)),
         Box::new(Inundation::from_params(params)),
@@ -224,6 +225,104 @@ impl Mechanism for Growth {
     }
 }
 
+/// Endemic infection within groups (ADR-0075), a density-dependent disease burden.
+/// Transmission rises with a group's size, so an infection persists only in groups above a
+/// critical size, and in those at prevalence 1 - 1/R0, R0 being the size over the critical
+/// size (Anderson and May 1991; critical community size, Bartlett 1957): the people above
+/// the critical size are infected, and die at `mortality` per period. It is the burden
+/// settlement adds, infection spread by crowding, waste and fouled water; foragers' own
+/// persistent infections, endemic even in isolated bands (Black 1975), are in their
+/// baseline mortality, so a camp below its critical size carrying none is an assumption.
+///
+/// The drivers are behavioral and social. Mobile foragers move camp as waste, vermin and
+/// fouled water build up, acting on disgust, the behavioral immune system (Kelly 2013;
+/// Schaller and Park 2011; Curtis et al. 2011); settled farmers stay with their fields,
+/// stores and houses, among their waste and each other (Armelagos et al. 1991). So a
+/// group's contact moves linearly with its cultivation effort from `mobile_contact` to 1,
+/// and its critical size is `threshold` over its contact: foragers' camps add none, and
+/// the large villages that defence, exchange and marriage draw people into (ADR-0071) pay
+/// for their size in infection (Eshed et al. 2010). `mortality` 0 switches it off.
+#[derive(Clone, Debug)]
+pub struct Disease {
+    pub period_ticks: u64,
+    pub threshold: f64,
+    pub mobile_contact: f64,
+    pub mortality: f64,
+    pub after: Vec<&'static str>,
+}
+
+impl Disease {
+    pub fn from_params(p: &Params) -> Disease {
+        Disease {
+            period_ticks: p.period_ticks,
+            threshold: p.disease_threshold,
+            mobile_contact: p.mobile_contact,
+            mortality: p.disease_mortality,
+            after: vec!["growth"],
+        }
+    }
+
+    /// Transmission in a group at cultivation `effort`, relative to sedentary villagers'.
+    pub fn contact(&self, effort: f64) -> f64 {
+        self.mobile_contact + (1.0 - self.mobile_contact) * effort
+    }
+
+    /// The smallest group at `effort` in which the infection persists (infinite for
+    /// foragers without contact).
+    pub fn critical_size(&self, effort: f64) -> f64 {
+        self.threshold / self.contact(effort)
+    }
+
+    /// Endemic prevalence in a group of `people` at `effort`.
+    pub fn prevalence(&self, people: f64, effort: f64) -> f64 {
+        (1.0 - self.critical_size(effort) / people).max(0.0)
+    }
+
+    /// Expected deaths per period from infection in a group of `people` at `effort`.
+    pub fn deaths(&self, people: f64, effort: f64) -> f64 {
+        self.mortality * (people - self.critical_size(effort)).max(0.0)
+    }
+}
+
+impl Mechanism for Disease {
+    fn spec(&self) -> MechanismSpec {
+        MechanismSpec {
+            name: "disease",
+            period_ticks: self.period_ticks,
+            reads: vec![Component::AgentWeight, Component::AgentTraits],
+            writes: vec![Component::AgentWeight],
+            after: self.after.clone(),
+        }
+    }
+
+    fn decide(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, tile: Range<usize>) {
+        if self.mortality == 0.0 {
+            return;
+        }
+        let rng = Philox4x32::new(sense.seed, Stream::Disease);
+        let t = sense.tick.0;
+        let agents = &mut *part.agents;
+        // No group this small carries the infection, whatever its practice: most are skipped.
+        let carriers = self.critical_size(1.0) as u64;
+        let mut deaths = 0;
+        for i in tile {
+            let w = agents.weight[i];
+            if w <= carriers {
+                continue;
+            }
+            let expected = self.deaths(w as f64, Traits::share(agents.cultivation[i]));
+            if expected == 0.0 {
+                continue;
+            }
+            let died =
+                stochastic_round(oikos_math::finite(expected), rng.u32(agents.id[i].0, t, 0, 0)).min(w);
+            agents.weight[i] = w - died;
+            deaths += died;
+        }
+        part.stats.deaths += deaths;
+    }
+}
+
 /// Fission by scalar stress: a group above its size limit splits in half with some
 /// probability per period (Johnson 1982: decisions among too many units overload a group,
 /// which splits unless it builds hierarchy). The limit rises with the group's cultivation
@@ -254,7 +353,7 @@ impl Fission {
             village: p.village_fission_size,
             probability: p.fission_probability,
             exploration: p.exploration_probability,
-            after: vec!["growth"],
+            after: vec!["disease"],
         }
     }
 

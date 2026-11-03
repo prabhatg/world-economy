@@ -107,6 +107,7 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         adoption_rate: 0.02,
         innovation_share: 1.0,
         aggregation_rate: 0.0,
+        disease_mortality: 0.0,
         ..Params::default()
     }
 }
@@ -395,7 +396,16 @@ fn cultivation_runs_after_bands_move() {
     let names: Vec<&str> = order.order().iter().map(|&i| specs[i].name).collect();
     assert_eq!(
         names,
-        ["growth", "fission", "dispersal", "inundation", "aggregation", "cultivation", "inequality"]
+        [
+            "growth",
+            "disease",
+            "fission",
+            "dispersal",
+            "inundation",
+            "aggregation",
+            "cultivation",
+            "inequality"
+        ]
     );
 }
 

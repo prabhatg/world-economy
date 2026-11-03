@@ -73,6 +73,7 @@ fn farming_world(seed: u64) -> (World, Vec<u8>, Vec<u8>) {
         selection_coefficient: 0.02,
         adoption_rate: 0.02,
         innovation_share: 1.0,
+        disease_mortality: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();

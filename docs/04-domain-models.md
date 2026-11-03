@@ -160,6 +160,18 @@ Not brain simulation. Agents implement validated regularities:
 - Compartmental/agent epidemiology at settlement and network level; zoonotic spillover
   linked to domestication and density; endemic vs epidemic regimes; trade-route
   pandemics (Antonine, Justinian, Black Death, Columbian exchange).
+  *Implemented (M1):* an endemic infection within groups (`mechanisms::Disease`,
+  ADR-0075), the burden settlement adds. Transmission rises with group size, so the infection persists only above a
+  critical size and then at prevalence 1 − 1/R0 (Anderson and May 1991; Bartlett 1957),
+  killing `disease_mortality` of the infected each year. Mobility cuts transmission:
+  foragers move camp away from waste, vermin and the sick, acting on disgust (the
+  behavioral immune system, Schaller and Park 2011), while villagers stay with their
+  fields and stores. So a group's critical size falls with its cultivation effort from
+  125 to 50 people: foragers' camps add none (their own persistent infections, endemic
+  even in isolated bands, Black 1975, are in their baseline mortality), and the large
+  villages that aggregation draws people into pay for their size (Eshed et al. 2010). Avoidance
+  changing where people live, hygiene norms, zoonoses from herds, epidemics between
+  villages and age-specific mortality are left out.
 - Nutrition, sanitation, medicine (germ theory, vaccines, antibiotics) as technologies.
 - Modern health systems and disease burden calibrated to GBD data.
 

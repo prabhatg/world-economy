@@ -25,6 +25,7 @@ fn slower_mechanism_runs_on_its_own_period() {
     let mut w = World::filled(DENSE, 4, p.clone(), 3).unwrap();
     let mut fission = Fission::from_params(&p);
     fission.period_ticks = 2 * p.period_ticks;
+    fission.after = vec!["growth"];
     w.set_mechanisms(vec![Box::new(Growth::from_params(&p)), Box::new(fission)]).unwrap();
     for step in 0..8 {
         let ran_fission = w.tick.0 % (2 * p.period_ticks) == 0;
