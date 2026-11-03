@@ -14,12 +14,22 @@ testing ideas across thousands of simulated worlds. Ensemble runs are computed b
 volunteers' devices (SETI@home-style). The engine is **Oikos** (Rust). Start with
 [README.md](README.md) and [docs/01-vision.md](docs/01-vision.md).
 
+## Documentation map
+
+Documents are layered: this file (rules) → [docs/README.md](docs/README.md) (the map
+of every document, from purpose to detail) → the design documents → each area's
+README and the parameter registry → [ADRs](docs/adr/README.md) and
+[open questions](docs/open-questions.md). Plans live in the
+[roadmap](docs/10-roadmap.md) (milestones) and the
+[model fidelity plan](docs/15-model-fidelity.md) (what the model needs next); every
+work item in them is a GitHub issue.
+
 ## Repository map
 
 | Path | What it is |
 |---|---|
 | [README.md](README.md) | Overview, decision summary, index of design docs |
-| [docs/](docs/) | Design documents 01–14, [ADR log](docs/adr/README.md), [open questions](docs/open-questions.md) |
+| [docs/](docs/README.md) | Design documents 01–15 ([map](docs/README.md)), [ADR log](docs/adr/README.md), [open questions](docs/open-questions.md) |
 | [docs/index.html](docs/index.html) | Public website (GitHub Pages from `/docs` on `main`) |
 | [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli`, `oikos-py` (Python bindings) |
 | [engine/python/](engine/python/tests/test_bindings.py) | Python binding tests (pytest) and examples |
@@ -44,6 +54,7 @@ Key design documents by topic:
 - Native clients: [docs/13-native-clients.md](docs/13-native-clients.md)
 - **Engineering practices (TDD, gate, performance): [docs/14-engineering-practices.md](docs/14-engineering-practices.md)**
 - Roadmap and current milestone: [docs/10-roadmap.md](docs/10-roadmap.md)
+- What the model needs next, ordered: [docs/15-model-fidelity.md](docs/15-model-fidelity.md)
 
 ## Commands
 
@@ -236,7 +247,10 @@ as they grow). See [docs/03-engine.md](docs/03-engine.md) §3.4.
 - **GitHub issues** track remaining project work: one issue per roadmap item, under
   the milestone it belongs to (`M0 — Foundations`, `M1 — Neolithic Southwest Asia`)
   and labeled by area (`engine`, `data`, `mechanisms`, `calibration`, `viewer`,
-  `volunteer`, `performance`; `blocked` when waiting on something outside the repo).
+  `volunteer`, `performance`; `fidelity` for items of the
+  [fidelity plan](docs/15-model-fidelity.md); `blocked` when waiting on something
+  outside the repo). A plan document lists its items with their issue numbers, and an
+  issue names the plan item it implements; keep both in step when either changes.
   Reference the issue in commits (`Refs #3`, `Closes #3`) and close it when done.
 - **Beads** (`bd`) is for local, step-level task management on a maintainer's machine.
   Its database (`.beads/`) is kept out of git (`.git/info/exclude`), so cloud sessions

@@ -1,0 +1,81 @@
+# 15. Model fidelity plan
+
+What the model needs next to describe the past more faithfully, in what order, and how
+we will know each step helped. Every item is a GitHub issue labeled `fidelity` under its
+milestone; this document says why each matters and how the items depend on each other.
+The [roadmap](10-roadmap.md) tracks milestones, [ADRs](adr/README.md) the decisions
+taken, and [open questions](open-questions.md) what is still unresolved.
+
+## 15.1 What the calibration rounds taught us
+
+Calibration rounds 9 and 10 (ADR-0073, ADR-0077) history matched the M1 model against
+five records. The fit is good: the calibrated defaults pass every target. But the
+records leave many parameters unconstrained:
+
+- **Village size and aggregation** (`village_fission_size`, `aggregation_rate`): no
+  record sees settlement size.
+- **Pace of learning** (`success_bias`, `adoption_rate`, `innovation_share`): the
+  records see when cultivation took hold, which these trade off against each other.
+- **Vital rates** (`fertility`, `sedentary_growth_rate`): populations follow carrying
+  capacity, and the records measure stocks, not births and deaths.
+- **Disease** (`disease_threshold`, `disease_mortality`): seen only through its effect
+  on the number of villages.
+- **Wealth** (four parameters): the house-size record is left out of round 10, and
+  nothing else sees inequality.
+
+Fidelity therefore means two things: **records fine-grained enough to tell competing
+explanations apart**, and **mechanisms fine-grained enough to produce what those
+records measure**. A mechanism no record can test adds parameters, not knowledge, so
+each mechanism item below names the record that will judge it.
+
+## 15.2 Principles
+
+1. **Record before mechanism.** Add a record that separates hypotheses before adding
+   detail it cannot judge.
+2. **One identifiable step at a time.** Each item ends with a calibration round or a
+   profile showing what it constrains. An item that constrains nothing is reported as
+   such, not tuned until it does.
+3. **Psychological and social drivers are explicit** (the standing rule), and each
+   mechanism's ADR records what it leaves out.
+4. **Licences first.** Store manifests and ingestion code, not restricted data. A record
+   whose values cannot be published is left out of committed run files (`--leave-out`,
+   ADR-0077).
+5. **Measured cost.** Finer resolution is benchmarked before it is adopted, because the
+   calibration budget is runs × cost per run.
+
+## 15.3 The plan
+
+Ordered by value for identification against cost. Items in the same tier can run in
+parallel.
+
+| Tier | Item | Issue | What it identifies | Depends on |
+|---|---|---|---|---|
+| 1 | F10 Village sizes from survey site areas | [#34](https://github.com/prabhatg/world-economy/issues/34) | village size, aggregation, disease's critical size | – |
+| 1 | F2 Regional radiocarbon by subregion | [#35](https://github.com/prabhatg/world-economy/issues/35) | dispersal, neighbor learning, regional timing | – |
+| 1 | F3 Spatial onset of cultivation | [#36](https://github.com/prabhatg/world-economy/issues/36) | success bias against adoption rate | – |
+| 1 | F1 House-size Ginis: licensing decision | [#43](https://github.com/prabhatg/world-economy/issues/43) | wealth transmission and shocks | maintainer |
+| 2 | F11 Juvenile index (age structure) | [#33](https://github.com/prabhatg/world-economy/issues/33) | fertility, the demographic transition | Guerrero et al. 2008 chapter |
+| 2 | F4 Disease lesions before and after farming | [#42](https://github.com/prabhatg/world-economy/issues/42) | disease mortality | – |
+| 2 | F7 Settlements of several groups (towns) | [#39](https://github.com/prabhatg/world-economy/issues/39) | the largest sites | F10 |
+| 3 | F5 Herding: sheep and goats | [#37](https://github.com/prabhatg/world-economy/issues/37) | management, mobility, wealth in herds | faunal record |
+| 3 | F6 Crops beyond barley | [#38](https://github.com/prabhatg/world-economy/issues/38) | per-crop domestication | per-crop records |
+| 3 | F12 Soil depth | [#24](https://github.com/prabhatg/world-economy/issues/24) | soil degradation | – |
+| 4 | F8 Finer grid (H3 resolution 6) | [#40](https://github.com/prabhatg/world-economy/issues/40) | local ecology, site catchments | benchmark, [#23](https://github.com/prabhatg/world-economy/issues/23) |
+| 4 | F9 Sub-century climate | [#41](https://github.com/prabhatg/world-economy/issues/41) | climate-stress hypotheses | climate records |
+
+**Tier 1** adds records, reuses data the project already ingests, and attacks the
+largest unconstrained groups. **Tier 2** needs data still to be obtained or a mechanism
+that tier 1 shows is missing. **Tier 3** widens the economy (animals, crops) and
+**tier 4** the resolution; both multiply parameters or cost, so they wait until the
+records can judge them.
+
+## 15.4 How an item is done
+
+1. Its issue states the record, the operator, the parameters it should constrain, and
+   the licence check.
+2. TDD as everywhere ([14](14-engineering-practices.md)): operator unit tests on
+   synthetic data, a test on the real record, and a stylized-fact test for a mechanism.
+3. An ADR row, an update to [04](04-domain-models.md) or [05](05-calibration-assimilation.md),
+   the roadmap paragraph, and the open question it answers or raises.
+4. A calibration round or profile, its files in `calibration/runs/`, and the result
+   (constrained or not) in the ADR and in this plan's table.

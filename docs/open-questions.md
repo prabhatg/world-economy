@@ -137,7 +137,7 @@
     the radiocarbon eras. What preferred early planting was the per-date radiocarbon
     likelihood, which allows for no discrepancy. Defaults are now ranked by the
     summaries, and the late planter is the registry default.
-33. What record sees village size and aggregation (ADR-0073)? Farmers' villages split
+33. What record sees village size and aggregation (ADR-0073; #34)? Farmers' villages split
     by scalar stress (`village_fission_size`, ADR-0070) and settled groups join the
     largest village of their cell (`aggregation_rate`, ADR-0071), but none of the five
     M1 records responds to either: across round 9's consistent worlds both spread over
@@ -147,7 +147,7 @@
     used) or excavated house counts per phase could; an operator would compare them
     with the distribution of group sizes the model's settlements reach. The same holds
     for fertility and sedentary growth until the juvenile-index record (#33) joins.
-34. How strongly do houses track wealth, and when did inequality rise (ADR-0074)? The
+34. How strongly do houses track wealth, and when did inequality rise (ADR-0074; #43)? The
     house-size operator takes floor area to grow as wealth to the power 0.7, a judgment
     from comparing house-size and wealth Ginis across two compilations; within-site data
     on house size and household wealth would set it. The five M1 sites' Ginis rise from
@@ -158,7 +158,7 @@
     supplement) would. The generation length (28 years, Fenner 2005) is to be checked
     against the paper.
 35. How heavy was disease in Neolithic villages, and at what size did it persist
-    (ADR-0075)? The critical size (50 sedentary people), foragers' relative contact (0.4)
+    (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
     and the mortality of the infected (0.005 a year) are judgments. The records bound the
     mortality from above only indirectly: at four times the default, domestication lags
     (a domestic barley share after 7000 BCE of 0.24, against the observed 0.80). The skeletal record would test it directly:
@@ -168,7 +168,7 @@
     (villages splitting or dispersing under disease, hygiene norms) are left out until a
     record calls for them.
 36. How strongly did people copy farming for its payoff, and how far did they look
-    (ADR-0076)? Success bias at 1 brings domestication and cultivation forward of the
+    (ADR-0076; #36)? Success bias at 1 brings domestication and cultivation forward of the
     record in the calibrated world, which was fitted without it, to the edge of the
     record (implausibility 2.86-2.98), so it is 0 by default for now; the bias trades off
     against `adoption_rate` and `innovation_share`, so the three are to be calibrated

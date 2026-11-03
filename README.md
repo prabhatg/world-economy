@@ -32,6 +32,7 @@ Contributors and AI coding agents: start with [AGENTS.md](AGENTS.md) (TDD, deter
 | 12 | [Identity & credit](docs/12-identity-and-credit.md) | Proposed project name; credit for every kind of contributor |
 | 13 | [Native clients](docs/13-native-clients.md) | Rust daemon + sandboxed engine workers + thin Flutter shell; mobile, signing, risks |
 | 14 | [Engineering practices](docs/14-engineering-practices.md) | Mandatory TDD, local verification gate, performance method, targets |
+| 15 | [Model fidelity plan](docs/15-model-fidelity.md) | What the model needs next to describe the past faithfully, ordered, one issue per item |
 | — | [Design system](design/DESIGN-SYSTEM.md) | Research-grounded principles, tokens, diagrams, Material 3 / Apple mapping |
 | — | [Project website](docs/index.html) | Public explainer (GitHub Pages from `/docs`) |
 | — | [Decision log](docs/adr/README.md) | Architecture decision records |

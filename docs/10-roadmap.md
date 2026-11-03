@@ -104,6 +104,8 @@ inequality, disease and social learning (#16). Calibration round 10 (ADR-0077) s
 the 43 free parameters of that model and history matches them in three waves, the
 house-size record left out until its licensing is settled: 0.70% of the prior is left,
 the calibrated defaults stay, and the records do not identify success bias, which stays 0.
+What comes next for the model's fidelity, records first, is ordered in the
+[model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers
