@@ -64,7 +64,11 @@ once, as at Çatalhöyük, Kuijt and Marciniak 2024, and a North Yemeni tell vil
 van Beek 1982), so the record constrains the absolute size of villages loosely and
 their change through time and between the surveys more tightly. Settlements are dated
 as the sized phases are. The fourteen eras are judged together (discrepancy 0.25 on
-each, which also covers density differing between eras).
+each, which also covers density differing between eras). At the calibrated defaults
+settlements hold about 50 people, against the record's 126-218 at the middle density;
+round 10's wave 4 finds consistent worlds with villages of up to 180 people, where
+groups seldom disperse and often join, but none of them sits nearer the whole record
+than the defaults, and few grow their villages through time as Upper Mesopotamia's do.
 
 **Implemented (obsidian sourcing operator, ADR-0061):** `obsidian.Operator` scores the
 share of Cappadocian obsidian in use around each sourced assemblage of DObsiSS
@@ -211,7 +215,9 @@ come with no licence to publish them in the round's files). The waves leave 0.70
 the prior; no candidate sits nearer the record than the calibrated defaults, which stay.
 Success bias, disease's critical group size, the adoption rate and the innovation share
 spread over their priors among the consistent worlds: the records see their joint
-effect, the pace and timing of cultivation, not each one.
+effect, the pace and timing of cultivation, not each one. A fourth wave judges the
+village sizes (ADR-0078) and the house-size Ginis too, once the maintainer decided the
+round's files may carry them (#43): 0.44% of the prior is left and the defaults stay.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

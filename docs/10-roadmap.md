@@ -104,6 +104,9 @@ inequality, disease and social learning (#16). Calibration round 10 (ADR-0077) s
 the 43 free parameters of that model and history matches them in three waves, the
 house-size record left out until its licensing is settled: 0.70% of the prior is left,
 the calibrated defaults stay, and the records do not identify success bias, which stays 0.
+Survey site areas join as a seventh record (ADR-0078, #34), and a fourth wave judges them
+with the house-size Ginis: the defaults stay, their villages (about 50 people) smaller
+than the record's (126-218), which only worlds whose groups seldom disperse approach.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

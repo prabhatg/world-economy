@@ -13,7 +13,8 @@ five records. The fit is good: the calibrated defaults pass every target. But th
 records leave many parameters unconstrained:
 
 - **Village size and aggregation** (`village_fission_size`, `aggregation_rate`): no
-  record sees settlement size.
+  record saw settlement size until F10 (below); it now does, loosely, and finds the
+  model's villages smaller and less growing than the record's.
 - **Pace of learning** (`success_bias`, `adoption_rate`, `innovation_share`): the
   records see when cultivation took hold, which these trade off against each other.
 - **Vital rates** (`fertility`, `sedentary_growth_rate`): populations follow carrying
@@ -21,7 +22,7 @@ records leave many parameters unconstrained:
 - **Disease** (`disease_threshold`, `disease_mortality`): seen only through its effect
   on the number of villages.
 - **Wealth** (four parameters): the house-size record was left out of round 10's first
-  waves, and nothing else sees inequality.
+  waves; judged in its fourth, it leaves all four spread over their priors.
 
 Fidelity therefore means two things: **records fine-grained enough to tell competing
 explanations apart**, and **mechanisms fine-grained enough to produce what those
@@ -50,7 +51,7 @@ parallel.
 
 | Tier | Item | Issue | What it identifies | Depends on |
 |---|---|---|---|---|
-| 1 | F10 Village sizes from survey site areas | [#34](https://github.com/prabhatg/world-economy/issues/34) | village size, aggregation, disease's critical size | – |
+| 1 | F10 Village sizes from survey site areas (done, ADR-0078: constrains no parameter alone; the model's villages are too small and too level, which motivates F7) | [#34](https://github.com/prabhatg/world-economy/issues/34) | village size, aggregation, disease's critical size | – |
 | 1 | F2 Regional radiocarbon by subregion | [#35](https://github.com/prabhatg/world-economy/issues/35) | dispersal, neighbor learning, regional timing | – |
 | 1 | F3 Spatial onset of cultivation | [#36](https://github.com/prabhatg/world-economy/issues/36) | success bias against adoption rate | – |
 | 1 | F1 House-size Ginis: judged in run files (decided 2026-11-03; open until the authors reply) | [#43](https://github.com/prabhatg/world-economy/issues/43) | wealth transmission and shocks | – |

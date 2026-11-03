@@ -151,7 +151,13 @@
     hold about 50 people (geometric mean), against 126-218 at the middle density, so
     the defaults fit only if Neolithic sites were as thinly lived in as Kuijt and
     Marciniak (2024) find at Çatalhöyük. Through time the record's villages grow in
-    Upper Mesopotamia (126 to 179 people) while the model's stay level.
+    Upper Mesopotamia (126 to 179 people) while the model's stay level. Round 10's wave 4
+    judges it: the record narrows no parameter on its own, and size follows how densely
+    farming settles more than `village_fission_size`, which few settlements reach. The
+    consistent world nearest the record's sizes (179 people) has groups that seldom
+    disperse and often join, and fits the radiocarbon and onset records worse than the
+    defaults. Still open: why villages do not grow through time, which towns of several
+    groups (#39) or a density that changed with house forms could explain.
 34. How strongly do houses track wealth, and when did inequality rise (ADR-0074; #43)? The
     house-size operator takes floor area to grow as wealth to the power 0.7, a judgment
     from comparing house-size and wealth Ginis across two compilations; within-site data
@@ -159,7 +165,9 @@
     the PPNA to the Late Chalcolithic, while the calibrated defaults' stay near 0.25-0.27
     throughout: people around every site plant from early on, so land is partly closed
     everywhere. With two to nineteen houses a site the record cannot yet tell these
-    apart. More sites with measured houses (Kohler and Smith 2018 list others outside the
+    apart; round 10's wave 4, the first judged on the Ginis, keeps that picture (its
+    consistent worlds' Ginis 0.25-0.26 at every site, the wealth parameters spread over
+    their priors). More sites with measured houses (Kohler and Smith 2018 list others outside the
     supplement) would. The generation length (28 years, Fenner 2005) is to be checked
     against the paper.
 35. How heavy was disease in Neolithic villages, and at what size did it persist

@@ -125,7 +125,10 @@ Round 10 (ADR-0077), another new history after inequality, disease and social le
 is in `runs/m1/round10/`: `screening.json` (all 43 free parameters), `wave1.json` to
 `wave3.json` (24 factors emulated, as round 9) and `best.json` over them, all with the
 house-size record left out (`--leave-out inequality`); its best world does not beat the
-calibrated defaults either, so they stay. The onset record's tables are downloaded by hand (`data/README.md`); without
+calibrated defaults either, so they stay. `wave4.json` adds the village-size record and
+the house-size Ginis (`--leave-out` with no record) and activates `aggregation_rate` and
+the four wealth parameters; `best-wave4.json` ranks wave 4 alone, as its records differ
+from the first three waves', and keeps the defaults too. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
