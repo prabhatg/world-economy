@@ -1141,3 +1141,30 @@ fn settlements_count_groups_by_how_settled_they_are() {
         assert_eq!(*x, *e as f64 / SHARE_ONE as f64);
     }
 }
+
+#[test]
+fn village_sizes_weigh_each_settlement_by_the_log_of_its_people() {
+    // The village-size record (ADR-0078): summed over a cell's groups, each as far as it
+    // is settled, the log of its people; divided by `settlements`, their mean log size.
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let mut w = world(&[&g, &c], 7, only(0.0, 0.0, 0.6));
+    w.run_years(600, 2, 600);
+    let mut expected = vec![0.0f64; w.grid.len()];
+    for a in w.agent_slices() {
+        for i in 0..a.len() {
+            if a.cultivation[i] > 0 && a.weight[i] > 0 {
+                expected[a.cell[i] as usize] +=
+                    a.cultivation[i] as f64 / SHARE_ONE as f64 * oikos_math::ln(a.weight[i] as f64);
+            }
+        }
+    }
+    let got = w.village_sizes();
+    assert!(got.iter().any(|&x| x > 0.0), "some cells hold settled groups");
+    for (x, e) in got.iter().zip(&expected) {
+        assert!((x - e).abs() <= 1e-9 * e.abs().max(1.0), "{x} against {e}");
+    }
+    let mut four = world(&[&g, &c], 7, only(0.0, 0.0, 0.6));
+    four.run_years(600, 4, 600);
+    assert_eq!(four.village_sizes(), got, "the same at any partition count");
+}

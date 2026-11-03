@@ -525,6 +525,23 @@ impl World {
         sum.into_iter().map(|x| x as f64 / SHARE_ONE as f64).collect()
     }
 
+    /// Village size per cell (ADR-0078): its groups' log people, each counted as far as it
+    /// is settled, as `settlements` counts them; divided by it, the mean log size of the
+    /// cell's settlements. Summed in canonical agent order, so the same whatever the
+    /// partitions.
+    pub fn village_sizes(&self) -> Vec<f64> {
+        let mut sum = vec![0.0f64; self.grid.len()];
+        for a in self.agent_slices() {
+            for i in 0..a.len() {
+                if a.cultivation[i] > 0 && a.weight[i] > 0 {
+                    sum[a.cell[i] as usize] +=
+                        a.cultivation[i] as f64 / SHARE_ONE as f64 * oikos_math::ln(a.weight[i] as f64);
+                }
+            }
+        }
+        sum
+    }
+
     /// Wealth inequality of each cell's settled people (ADR-0074): the variance of log
     /// household wealth of its groups, weighted by their settled people (people times
     /// cultivation effort), as excavated houses of a village would show it; 0 where nobody

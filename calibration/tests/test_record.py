@@ -65,9 +65,8 @@ class _ObsidianWorld:
     def inequality(self):
         return np.zeros(2)
 
-    def agents(self):
-        return {"cell": np.zeros(0, dtype=np.uint32), "weight": np.zeros(0, dtype=np.uint64),
-                "cultivation": np.zeros(0)}
+    def village_sizes(self):
+        return np.zeros(2)
 
     def run_years(self, n, parts):
         self.year += n
@@ -87,9 +86,8 @@ class _VillageWorld(_ObsidianWorld):
     def settlements(self):
         return np.array([1.5, 0.0])
 
-    def agents(self):
-        return {"cell": np.array([0, 0, 1], dtype=np.uint32), "weight": np.array([120, 20, 30], dtype=np.uint64),
-                "cultivation": np.array([1.0, 0.5, 0.0])}
+    def village_sizes(self):
+        return np.array([np.log(120) + 0.5 * np.log(20), 0.0])  # 120 people settled, 20 half settled
 
 
 def test_settlements_are_groups_counted_by_how_settled_they_are():

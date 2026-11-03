@@ -60,17 +60,7 @@ def activity(world, end, every=10, parts=4) -> Activity:
         for name, held in world.obsidian().items():
             obsidian[name][:, c] += n * pop * held
         settlements[:, c] += n * world.settlements()
-        village_size[:, c] += n * _log_size(world)
+        village_size[:, c] += n * world.village_sizes()
         world.run_years(n, parts=parts)
     return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality, village_size)
 
-
-def _log_size(world):
-    """Per cell, its groups' cultivation effort times the log of their people: what
-    `settlements` counts, each weighted by its log size. Agents come in canonical order,
-    so the sums are the same for any partition count."""
-    a = world.agents()
-    effort = np.asarray(a["cultivation"], dtype=float)
-    settled = (effort > 0) & (np.asarray(a["weight"]) > 0)
-    logs = np.log(np.asarray(a["weight"], dtype=float)[settled])
-    return np.bincount(np.asarray(a["cell"])[settled], weights=effort[settled] * logs, minlength=world.cells)

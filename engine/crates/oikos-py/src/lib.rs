@@ -204,6 +204,12 @@ impl PyWorld {
         f64_array(py, self.0.settlements().into_iter())
     }
 
+    /// Village size per cell (float64): its groups' log people, each counted as far as it
+    /// is settled; over `settlements`, their mean log size (ADR-0078).
+    fn village_sizes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.village_sizes().into_iter())
+    }
+
     /// Domestic share of each cell's cultivated crop (float64; effort-weighted mean over
     /// its bands, 0 where nobody cultivates).
     fn domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
