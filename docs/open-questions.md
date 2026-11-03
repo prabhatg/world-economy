@@ -172,7 +172,9 @@
     record in the calibrated world, which was fitted without it, to the edge of the
     record (implausibility 2.86-2.98), so it is 0 by default for now; the bias trades off
     against `adoption_rate` and `innovation_share`, so the three are to be calibrated
-    together (round 10). The onset and rachis records may not separate a faster spread
+    together (round 10). Round 10 (ADR-0077) did, and they do not: among its 54
+    consistent worlds success bias spreads over its whole prior (u 0.11-0.92), traded
+    against the adoption rate and innovation share, so it stays 0. The onset and rachis records may not separate a faster spread
     where farming pays from a faster spread everywhere; the spatial pattern of the onset
     (does cultivation start in the richest stands and spread outward?) could. Neighbor
     learning (0.1) changes the fit little (2.26-2.28 against 2.32-2.34): the M1 records

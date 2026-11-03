@@ -100,7 +100,10 @@ default mortality) is ruled out by the domestic-barley record.
 Bands learn cultivation from neighboring cells too, and can copy what visibly pays
 (ADR-0076); with neighbors the defaults fit slightly better, and success bias waits for
 calibration round 10, fitted with the adoption rates it trades off against. This completes the first versions of
-inequality, disease and social learning (#16).
+inequality, disease and social learning (#16). Calibration round 10 (ADR-0077) screens
+the 43 free parameters of that model and history matches them in three waves, the
+house-size record left out until its licensing is settled: 0.70% of the prior is left,
+the calibrated defaults stay, and the records do not identify success bias, which stays 0.
 Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers

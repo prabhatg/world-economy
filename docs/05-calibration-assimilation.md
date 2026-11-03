@@ -191,6 +191,14 @@ by their own outputs and left out of the emulators. The waves leave 1.35% of the
 and keep the calibrated defaults, and none of their best worlds sits nearer the record,
 so the defaults stay. Village size, aggregation, fertility and sedentary growth are not
 constrained by any of the five records (open question 33).
+Round 10 (ADR-0077) starts another after inequality, disease and social learning
+(ADR-0074 to ADR-0076): a screening of all 43 free parameters and three waves of 300
+over the prior, 24 factors emulated, with the house-size record left out (its values
+come with no licence to publish them in the round's files). The waves leave 0.70% of
+the prior; no candidate sits nearer the record than the calibrated defaults, which stay.
+Success bias, disease's critical group size, the adoption rate and the innovation share
+spread over their priors among the consistent worlds: the records see their joint
+effect, the pace and timing of cultivation, not each one.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.
