@@ -48,6 +48,14 @@ enters the model, and the starting mechanisms.
   mostly from the people around them (innovation share below 1): it then spreads as an
   innovation does, slowly while few plant and then fast (Bass 1969, Henrich 2001;
   ADR-0065; innovation share 0.0061 and adoption rate 0.010 in the calibrated defaults).
+  Bands learn from the people around their own country too and copy what visibly pays
+  (ADR-0076): each neighboring cell's people count `neighbor_learning` (0.1) as much as
+  the band's own cell's, and each farmer counts farming's payoff, what a unit of effort
+  feeds against foraging, to the power `success_bias` (1: linear payoff weighting; 0 by
+  default until calibrated). A band copies the practice it moves toward, foragers' when
+  it gives cultivation up. Wider learning evens practice out across a landscape;
+  success bias speeds cultivation where it pays and holds it back where wild-cereal
+  cultivation feeds fewer than foraging. Both 0 nest the learning before.
   Fields wear the soil down and yields fall once it thins below a critical share (land
   degradation, ADR-0055; 2.1e-4 per year at full effort in the calibrated defaults,
   against soil formation 2.2e-4).
@@ -83,6 +91,10 @@ Not brain simulation. Agents implement validated regularities:
   present bias; loss aversion.
 - **Social learning** (conformity, prestige and success bias) — dual-inheritance
   theory (Boyd & Richerson).
+  *Implemented (M1):* cultivation is learned from the people of a band's cell and its
+  neighbors, frequency-weighted (ADR-0065) and payoff-biased (ADR-0076; McElreath et al.
+  2008). Conformist and prestige bias toward individuals, teaching, and
+  in-group bias across cultural boundaries are left out.
 - Cognitive limits on group size and coordination (Dunbar-type constraints).
 - Norms, reciprocity, fairness, punishment; in-group/out-group bias; trust.
 - Emotion-like state modulators (fear, grievance, hope) driving migration, revolt.

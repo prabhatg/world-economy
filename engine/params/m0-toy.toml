@@ -594,7 +594,7 @@ sources = [
 [params.innovation_share]
 group = "cultivation"
 unit = "1"
-description = "Share of a band's learning of cultivation that is its own (innovation), the rest learned from the people around it: the gap to the target closes at adoption_rate * (i + (1 - i) * seen), seen being the mean cultivation effort of the people in its cell."
+description = "Share of a band's learning of cultivation that is its own (innovation), the rest learned from the people around it: the gap to the target closes at adoption_rate * (i + (1 - i) * seen), seen being the share of cultivation in what it sees: the people of its cell and, by neighbor_learning, of the cells around it, farmers weighted by how well farming pays (success_bias)."
 kind = { type = "probability" }
 default = 0.006066
 prior = { dist = "log_uniform", lo = 0.00001, hi = 1.0 }
@@ -605,6 +605,35 @@ sources = [
   { citation = "Henrich, J. (2001). Cultural transmission and the diffusion of innovations: adoption dynamics indicate that biased cultural transmission is the predominate force in behavioral change. American Anthropologist 103, 992-1013.", doi = "10.1525/aa.2001.103.4.992" },
   { citation = "Ackland, G.J., Signitzer, M., Stratford, K., Cohen, M.H. (2007). Cultural hitchhiking on the wave of advance of beneficial technologies. PNAS 104, 8714-8719.", doi = "10.1073/pnas.0702469104" },
   { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+]
+
+[params.neighbor_learning]
+group = "cultivation"
+unit = "1"
+description = "Weight of each neighboring cell's people, relative to a band's own cell's, in what it learns cultivation from (ADR-0076). 0: bands learn from their own cell only (before ADR-0076)."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.1
+prior = { dist = "uniform", lo = 0.0, hi = 0.5 }
+status = "placeholder"
+note = "Judgment: six neighbors at 0.1 make the people around a band's country count about half as much as its own. Forager bands are linked to others across a region by kinship, marriage and visiting, the mating networks of several hundred people that span many bands (Wobst 1974), so practice is seen beyond a band's own country; most interaction stays near home. To be calibrated."
+sources = [
+  { citation = "Wobst, H. M. (1974). Boundary conditions for Paleolithic social systems: a simulation approach. American Antiquity 39, 147-178.", doi = "10.2307/279579" },
+]
+
+[params.success_bias]
+group = "cultivation"
+unit = "1"
+description = "Success (payoff) bias in learning cultivation (ADR-0076): each farmer a band sees counts as the payoff of farming, the people a unit of effort feeds against foraging's, to this power, and each forager as 1. 0: copying in proportion to how many do it (before ADR-0076); 1: in proportion to payoff (linear payoff weighting)."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 3.0 }
+status = "placeholder"
+note = "Off by default until calibrated (round 10): the calibrated adoption_rate and innovation_share were fitted without it, and at 1 the calibrated world brings domestication too far forward (domestic barley 9000-8000 BCE 0.51 against 0.14; largest implausibility 2.86-2.98, at the edge of the record), so the three are to be fitted together. People copy the practices of those who visibly do well: payoff bias is among the best supported learning strategies in experiments (McElreath et al. 2008; Laland 2004) and success and prestige bias are central to dual-inheritance theory (Boyd and Richerson 1985; Henrich and Gil-White 2001). Judgment: 1 weights models linearly by payoff, a plain normalized weighting rather than any one estimated rule (learners here do not compare their own payoff with their models'). Early cultivation of wild cereals can feed fewer people per unit of effort than foraging and is then copied less; domestic crops make it pay."
+sources = [
+  { citation = "Boyd, R., Richerson, P. J. (1985). Culture and the Evolutionary Process. University of Chicago Press." },
+  { citation = "Henrich, J., Gil-White, F. J. (2001). The evolution of prestige: freely conferred deference as a mechanism for enhancing the benefits of cultural transmission. Evolution and Human Behavior 22, 165-196.", doi = "10.1016/S1090-5138(00)00071-4" },
+  { citation = "McElreath, R., Bell, A. V., Efferson, C., et al. (2008). Beyond existence and aiming outside the laboratory: estimating frequency-dependent and pay-off-biased social learning strategies. Philosophical Transactions of the Royal Society B 363, 3515-3528.", doi = "10.1098/rstb.2008.0131" },
+  { citation = "Laland, K. N. (2004). Social learning strategies. Learning and Behavior 32, 4-14.", doi = "10.3758/BF03196002" },
 ]
 
 [params.selection_coefficient]

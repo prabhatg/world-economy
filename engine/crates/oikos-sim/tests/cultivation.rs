@@ -108,6 +108,8 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         innovation_share: 1.0,
         aggregation_rate: 0.0,
         disease_mortality: 0.0,
+        neighbor_learning: 0.0,
+        success_bias: 0.0,
         ..Params::default()
     }
 }
@@ -719,6 +721,207 @@ fn practice_learned_from_others_takes_off_late_and_then_fast() {
     let steps: Vec<f64> = social.windows(2).map(|w| w[1] - w[0]).collect();
     let fastest = steps.iter().cloned().fold(0.0, f64::max);
     assert!(fastest > 3.0 * social[0], "an S-curve: the rise is fastest after the start: {social:?}");
+}
+
+#[test]
+fn without_neighbors_or_success_a_band_sees_its_cells_mean_effort() {
+    // The learning of ADR-0065, nested: the people-weighted mean effort of its own cell.
+    let c = Cultivation::from_params(&only(0.0, 0.0, 0.5));
+    let seen = c.example([(1.0, 100, 0.3, 2.0), (0.0, 50, 0.9, 1.0)].into_iter()).unwrap();
+    assert!((seen - 0.3).abs() < 1e-12, "{seen}");
+    assert_eq!(c.example(std::iter::empty()), None, "nobody to learn from");
+}
+
+#[test]
+fn success_biased_learners_copy_farming_more_where_it_pays() {
+    // Payoff-biased learning (Boyd and Richerson 1985; McElreath et al. 2008): each model
+    // counts in proportion to its payoff to the power success_bias (1: linear payoff
+    // weighting); a forager's payoff is 1.
+    let c = Cultivation::from_params(&Params { success_bias: 1.0, ..only(0.0, 0.0, 0.5) });
+    let seen = |payoff| c.example([(1.0, 100, 0.5, payoff)].into_iter()).unwrap();
+    assert!((seen(2.0) - 2.0 / 3.0).abs() < 1e-12, "farming that feeds twice as many is copied more");
+    assert!((seen(0.5) - 1.0 / 3.0).abs() < 1e-12, "farming that pays less than foraging is copied less");
+    assert!((seen(1.0) - 0.5).abs() < 1e-12);
+}
+
+#[test]
+fn bands_learn_from_farmers_in_neighboring_cells() {
+    // Kin and marriage ties reach beyond a band's own country (Wobst 1974): it sees its
+    // neighbors' practice, each neighboring cell's people counting neighbor_learning as
+    // much as its own cell's.
+    let c = Cultivation::from_params(&Params { neighbor_learning: 0.1, ..only(0.0, 0.0, 0.5) });
+    let models = [(1.0, 100, 0.0, 1.0), (0.1, 100, 1.0, 1.0)];
+    let seen = c.example(models.into_iter()).unwrap();
+    assert!((seen - 10.0 / 110.0).abs() < 1e-12, "{seen}");
+}
+
+#[test]
+fn farmings_payoff_is_what_a_unit_of_effort_yields_against_foraging() {
+    // farmed_capacity: effort e yields fields of farm * (w e + (1 - w) crop) against the
+    // forage * e it gives up, w the wild yield ratio and crop / e the domestic share.
+    let c = Cultivation::from_params(&Params { wild_yield_ratio: 0.5, ..only(0.0, 0.0, 0.5) });
+    let effort = 100 * SHARE_ONE as u64;
+    assert!((c.payoff(600.0, 200, effort, effort / 2) - 2.25).abs() < 1e-9);
+    assert!((c.payoff(600.0, 200, 0, 0) - 1.5).abs() < 1e-9, "wild crops where nobody farms yet");
+}
+
+/// Mean effort after each of `years` in a full land where abundance alone drives
+/// cultivation, few innovate and the rest learn from what they see; `climate` per cell.
+fn learned_path(p: Params, climate: impl Fn(i64, usize) -> (f64, f64), years: &[u64]) -> Vec<f64> {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], climate));
+    let p = Params { initial_occupancy: 0.9, innovation_share: 1e-3, ..p };
+    let mut w = world(&[&g, &c], 3, p);
+    let mut done = 0;
+    years
+        .iter()
+        .map(|&y| {
+            w.run_years(y - done, 2, y - done);
+            done = y;
+            mean_effort(&w)
+        })
+        .collect()
+}
+
+/// Rich wild stands in one cell of seven, thin ones (a third as suitable) elsewhere.
+fn patchy_country(_: i64, cell: usize) -> (f64, f64) {
+    (15.0, if cell % 7 == 0 { 500.0 } else { 250.0 })
+}
+
+/// Mean effort of the rich and of the thin cells of patchy country after `years`.
+fn patchy_efforts(p: Params, years: u64) -> (f64, f64) {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], patchy_country));
+    let mut w = world(&[&g, &c], 3, Params { initial_occupancy: 0.9, innovation_share: 1e-3, ..p });
+    w.run_years(years, 2, years);
+    let mean = |rich: bool| {
+        let cells: Vec<usize> =
+            (0..h3.len()).filter(|&c| (c % 7 == 0) == rich && w.population[c] > 0).collect();
+        cells.iter().map(|&c| w.cultivation()[c]).sum::<f64>() / cells.len() as f64
+    };
+    (mean(true), mean(false))
+}
+
+#[test]
+fn learning_from_neighbors_carries_cultivation_from_rich_patches_into_thin_country() {
+    // Cultivation takes off first in the rich patches. Bands around them that see it there
+    // take it up sooner, and the leaders, seeing their slower neighbors too, less fast:
+    // wider learning evens practice out across a landscape.
+    let years = 900;
+    let (rich, thin) = patchy_efforts(only(0.0, 0.0, 0.5), years);
+    let (rich_n, thin_n) = patchy_efforts(Params { neighbor_learning: 0.3, ..only(0.0, 0.0, 0.5) }, years);
+    assert!(rich > 0.0 && thin > 0.0, "the test needs planting: {rich} {thin}");
+    assert!(
+        thin_n / rich_n > 1.2 * (thin / rich),
+        "thin/rich {} with neighbors, {} without",
+        thin_n / rich_n,
+        thin / rich
+    );
+}
+
+#[test]
+fn success_bias_speeds_farming_where_it_pays_and_slows_it_where_it_does_not() {
+    let years = [600, 900, 1200];
+    let pays = only(0.0, 0.0, 0.5);
+    let poor = Params { farm_density: 0.05, ..only(0.0, 0.0, 0.5) };
+    for (p, faster) in [(pays, true), (poor, false)] {
+        let plain = learned_path(p.clone(), cereal_country, &years);
+        let biased = learned_path(Params { success_bias: 1.0, ..p }, cereal_country, &years);
+        assert_eq!(biased[1] > plain[1], faster, "biased {biased:?}, plain {plain:?}");
+    }
+}
+
+#[test]
+fn bands_give_cultivation_up_by_copying_foragers() {
+    // A band copies the practice it moves toward (ADR-0076): farmers' when taking
+    // cultivation up, foragers' when giving it up, so a band that carried farming into
+    // country where it pays nothing drops it at the pace of the foragers around it.
+    let p = Params { innovation_share: 0.01, adoption_rate: 0.1, success_bias: 1.0, ..only(0.0, 0.0, 0.5) };
+    let c = Cultivation::from_params(&p);
+    let rate = 0.1 * (0.01 + 0.99 * 1.0);
+    assert!((c.adopt(0.4, 0.0, 0.0) - (0.4 - rate * 0.4)).abs() < 1e-12, "among foragers: the full rate");
+    assert!(
+        (c.adopt(0.0, 0.5, 1.0) - rate * 0.5).abs() < 1e-12,
+        "among farmers, taking it up: the full rate"
+    );
+    let before = Cultivation::from_params(&Params {
+        innovation_share: 0.01,
+        adoption_rate: 0.1,
+        ..only(0.0, 0.0, 0.5)
+    });
+    let slow = 0.1 * 0.01;
+    assert!(
+        (before.adopt(0.4, 0.0, 0.0) - (0.4 - slow * 0.4)).abs() < 1e-12,
+        "ADR-0065: paced by farmers seen"
+    );
+}
+
+#[test]
+fn full_effort_is_all_farming_whatever_its_payoff() {
+    // Everyone farms: the share is 1 even when farming's weight is far below rounding.
+    let c = Cultivation::from_params(&Params { success_bias: 5.0, ..only(0.0, 0.0, 0.5) });
+    let seen = c.example([(1.0, 100, 1.0, 0.0008)].into_iter()).unwrap();
+    assert!((seen - 1.0).abs() < 1e-12, "{seen}");
+}
+
+/// Patchy country where few innovate, so what bands see from neighbors matters.
+fn patchy_world(p: Params) -> World {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], patchy_country));
+    world(&[&g, &c], 4, Params { initial_occupancy: 0.9, innovation_share: 1e-3, ..p })
+}
+
+#[test]
+fn learning_from_neighbors_is_partition_independent() {
+    // Neighbors across partition boundaries are read from the previous step's snapshot.
+    let p = Params { neighbor_learning: 0.3, success_bias: 1.5, ..only(0.0, 0.0, 0.5) };
+    let run = |p: &Params, parts| {
+        let mut w = patchy_world(p.clone());
+        w.run_years(900, parts, 900);
+        (w.cultivation(), checkpoint::state_hash(&w))
+    };
+    let (own, _) = run(&only(0.0, 0.0, 0.5), 1);
+    let (seen, hash) = run(&p, 1);
+    assert_ne!(own, seen, "the test needs neighbors to matter");
+    assert_eq!(hash, run(&p, 5).1);
+}
+
+#[test]
+fn a_registered_cultivation_learns_by_its_own_settings() {
+    // The world tabulates its cells as models for its own parameters; a cultivation
+    // mechanism set up with others computes them itself, with the same result.
+    let p = Params { neighbor_learning: 0.3, success_bias: 1.5, ..only(0.0, 0.0, 0.5) };
+    let alone = |w: &mut World, c: &Params| {
+        w.set_mechanisms(vec![Box::new(Cultivation { after: vec![], ..Cultivation::from_params(c) })])
+            .unwrap();
+        w.run_years(300, 3, 300);
+        w.cultivation()
+    };
+    let tabulated = alone(&mut patchy_world(p.clone()), &p);
+    let computed = alone(&mut patchy_world(only(0.0, 0.0, 0.5)), &p);
+    assert!(tabulated.iter().any(|&e| e > 0.0), "the test needs planting");
+    assert_eq!(tabulated, computed);
+}
+
+#[test]
+fn checkpoints_from_before_neighbors_and_success_restore_without_them() {
+    let (mut w, g, c) = farming_world(9, |p| p);
+    w.run_years(100, 2, 100);
+    let now = checkpoint::encode(&w);
+    let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
+    let len = u32::from_le_bytes(now[at..at + 4].try_into().unwrap()) as usize;
+    let mut params: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&now[at + 4..at + 4 + len]).unwrap();
+    for k in ["neighbor_learning", "success_bias"] {
+        assert!(params.remove(k).is_some(), "{k}");
+    }
+    let old = serde_json::to_vec(&params).unwrap();
+    let mut before = now[..at].to_vec();
+    before.extend_from_slice(&(old.len() as u32).to_le_bytes());
+    before.extend_from_slice(&old);
+    before.extend_from_slice(&now[at + 4 + len..]);
+    let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();
+    assert_eq!((restored.params.neighbor_learning, restored.params.success_bias), (0.0, 0.0));
 }
 
 #[test]

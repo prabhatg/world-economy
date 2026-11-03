@@ -40,6 +40,8 @@ pub struct Params {
     pub disease_threshold: f64,
     pub mobile_contact: f64,
     pub disease_mortality: f64,
+    pub neighbor_learning: f64,
+    pub success_bias: f64,
     pub fission_probability: f64,
     pub exploration_probability: f64,
     pub merge_threshold: u64,
@@ -125,6 +127,8 @@ impl Params {
             disease_threshold: real("disease_threshold")?,
             mobile_contact: real("mobile_contact")?,
             disease_mortality: real("disease_mortality")?,
+            neighbor_learning: real("neighbor_learning")?,
+            success_bias: real("success_bias")?,
             fission_probability: real("fission_probability")?,
             exploration_probability: real("exploration_probability")?,
             merge_threshold: int("merge_threshold")?,
@@ -313,6 +317,9 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("disease_mortality", Restore::Value(0.0)),
     ("disease_threshold", Restore::Inert),
     ("mobile_contact", Restore::Inert),
+    // ADR-0076: learning from the own cell only, by how many do it.
+    ("neighbor_learning", Restore::Value(0.0)),
+    ("success_bias", Restore::Value(0.0)),
 ];
 
 impl Params {

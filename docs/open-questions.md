@@ -167,6 +167,16 @@
     after farming with the model's people-weighted prevalence. Behavioral responses
     (villages splitting or dispersing under disease, hygiene norms) are left out until a
     record calls for them.
+36. How strongly did people copy farming for its payoff, and how far did they look
+    (ADR-0076)? Success bias at 1 brings domestication and cultivation forward of the
+    record in the calibrated world, which was fitted without it, to the edge of the
+    record (implausibility 2.86-2.98), so it is 0 by default for now; the bias trades off
+    against `adoption_rate` and `innovation_share`, so the three are to be calibrated
+    together (round 10). The onset and rachis records may not separate a faster spread
+    where farming pays from a faster spread everywhere; the spatial pattern of the onset
+    (does cultivation start in the richest stands and spread outward?) could. Neighbor
+    learning (0.1) changes the fit little (2.26-2.28 against 2.32-2.34): the M1 records
+    do not yet see how far practice is learned.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

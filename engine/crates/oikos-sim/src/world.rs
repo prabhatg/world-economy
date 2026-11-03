@@ -149,6 +149,10 @@ pub struct World {
     /// times domestic share (fixed point, see [`SHARE_ONE`]); derived from the agents.
     effort_sum: Vec<u64>,
     crop_sum: Vec<u64>,
+    /// Per cell, its people as models of cultivation for learners (ADR-0076), recomputed
+    /// before each step's decide phase; empty where learning reads the own cell's effort only.
+    models: Vec<(f64, f64)>,
+    models_for: (f64, f64),
     /// Soil share per cell (fixed point, see [`SHARE_ONE`]; full at the start): worn down
     /// by fields, re-forming slowly ([`environment::erode`]). Checkpointed.
     pub(crate) soil: Vec<u32>,
@@ -381,6 +385,8 @@ impl World {
             farmland,
             effort_sum,
             crop_sum,
+            models: Vec::new(),
+            models_for: (0.0, 0.0),
             soil: vec![SHARE_ONE; n],
             obsidian,
             birth_counter,
@@ -397,6 +403,26 @@ impl World {
         };
         w.farm_all();
         w
+    }
+
+    /// Each cell's people as models of cultivation, once per step rather than once for
+    /// every learner that sees them ([`mechanisms::Cultivation::cell_models`]).
+    fn update_models(&mut self) {
+        let learning = mechanisms::Cultivation::from_params(&self.params);
+        if !self.farmland.active() || learning.own_cell_only() {
+            self.models.clear();
+            return;
+        }
+        self.models.resize(self.grid.len(), (0.0, 0.0));
+        self.models_for = (learning.success_bias, learning.wild_yield_ratio);
+        let sums = self.effort_sum.iter().zip(&self.crop_sum).zip(&self.population);
+        for (c, ((&effort, &crop), &people)) in sums.enumerate() {
+            self.models[c] = if effort == 0 {
+                (0.0, people as f64) // foragers only: no payoff to compute
+            } else {
+                learning.cell_models(self.farmland.farm[c], self.forage_capacity[c], people, effort, crop)
+            };
+        }
     }
 
     /// Recomputes every cell's capacity from forager capacity, farmland and the agents'
@@ -701,6 +727,7 @@ impl World {
         if self.obsidian.active() {
             self.obsidian.exchange(&self.grid, &self.population, self.params.obsidian_loss);
         }
+        self.update_models();
 
         // Sense + decide (parallel over partitions), running due mechanisms in order.
         {
@@ -717,6 +744,10 @@ impl World {
                 climate_variability: &self.farmland.variability,
                 population: &self.population,
                 effort_sum: &self.effort_sum,
+                farm: &self.farmland.farm,
+                crop_sum: &self.crop_sum,
+                models: &self.models,
+                models_for: self.models_for,
                 tick: self.tick,
                 seed: self.seed,
             };

@@ -59,6 +59,18 @@ pub struct Sense<'a> {
     /// People-weighted sum of the agents' cultivation effort per cell (in
     /// [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
     pub effort_sum: &'a [u64],
+    /// People fed per cell if all effort went into cultivating fully domestic crops, on
+    /// its soil (declare [`Component::Forcing`]).
+    pub farm: &'a [f64],
+    /// People-weighted sum of effort times domestic share per cell (in
+    /// [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
+    pub crop_sum: &'a [u64],
+    /// Per cell, its people as models of cultivation, (farming, all) as
+    /// [`Cultivation::cell_models`] weighs them at `models_for` (success bias, wild yield
+    /// ratio), computed once a step for the world's parameters; empty where they learn
+    /// from the own cell's effort only ([`Cultivation::own_cell_only`]).
+    pub models: &'a [(f64, f64)],
+    pub models_for: (f64, f64),
     pub tick: Tick,
     pub seed: u64,
 }
@@ -710,7 +722,14 @@ impl Mechanism for Inundation {
 ///   `innovation_share` hypothesis, mostly from the people around it: then the gap
 ///   closes at the rate times the effort it sees, and cultivation spreads as an
 ///   innovation does, slowly while few plant and then fast (Bass 1969; Henrich 2001;
-///   ADR-0065). The target is zero where wild cereals
+///   ADR-0065). What it sees is the share of cultivation among the people of its cell
+///   and, by `neighbor_learning`, of the cells around it, which kinship, marriage and
+///   visiting link it to (Wobst 1974); and people copy those who visibly do well, so by
+///   `success_bias` each farmer counts as farming's payoff, what a unit of effort feeds
+///   against foraging, to that power (payoff bias: Boyd and Richerson 1985; McElreath
+///   et al. 2008; ADR-0076). Farming that pays less than foraging, as early
+///   cultivation of wild cereals can, is then copied less; and a band copies the
+///   practice it moves toward, foragers' when it gives cultivation up. The target is zero where wild cereals
 ///   do not grow; elsewhere it adds three drivers the literature disagrees on, each with
 ///   its own weight, so calibration can weigh them against the record: *population
 ///   pressure* (people beyond `crowding` times forager capacity, full at one capacity
@@ -743,6 +762,9 @@ pub struct Cultivation {
     pub variability_weight: f64,
     pub adoption_rate: f64,
     pub innovation_share: f64,
+    pub neighbor_learning: f64,
+    pub success_bias: f64,
+    pub wild_yield_ratio: f64,
     pub selection: f64,
     pub wild_frequency: f64,
     pub introgression: f64,
@@ -760,6 +782,9 @@ impl Cultivation {
             variability_weight: p.cultivation_variability_weight,
             adoption_rate: p.adoption_rate,
             innovation_share: p.innovation_share,
+            neighbor_learning: p.neighbor_learning,
+            success_bias: p.success_bias,
+            wild_yield_ratio: p.wild_yield_ratio,
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
@@ -791,10 +816,98 @@ impl Cultivation {
     }
 
     /// Effort after one period of moving from `effort` toward `target`, for a band that
-    /// sees a mean effort of `seen` around it.
+    /// sees a share `seen` of cultivation around it. It copies the practice it moves
+    /// toward (ADR-0076): farmers' when taking cultivation up, foragers' when giving it
+    /// up. Learning from the own cell by how many plant (ADR-0065) paces both by farmers.
     pub fn adopt(&self, effort: f64, target: f64, seen: f64) -> f64 {
-        let rate = self.adoption_rate * (self.innovation_share + (1.0 - self.innovation_share) * seen);
+        let models = if target < effort && !self.own_cell_only() { 1.0 - seen } else { seen };
+        let rate = self.adoption_rate * (self.innovation_share + (1.0 - self.innovation_share) * models);
         effort + rate * (target - effort)
+    }
+
+    /// Farming's payoff in a cell: the people a unit of effort feeds cultivating against
+    /// those it feeds foraging ([`crate::environment::farmed_capacity`]), from the cell's
+    /// full-farming capacity `farm`, its forager capacity and its people's sums of effort
+    /// and of effort times domestic share.
+    pub fn payoff(&self, farm: f64, forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
+        let domestic = if effort_sum == 0 { 0.0 } else { crop_sum as f64 / effort_sum as f64 };
+        let w = self.wild_yield_ratio;
+        oikos_math::finite(farm * (w + (1.0 - w) * domestic) / forage.max(1) as f64)
+    }
+
+    /// Whether bands learn from their own cell only, by how many plant (ADR-0065).
+    pub fn own_cell_only(&self) -> bool {
+        self.neighbor_learning == 0.0 && self.success_bias == 0.0
+    }
+
+    /// `people` at mean effort `effort` as models of cultivation, (farming, all): each
+    /// person's farming effort counts farming's `payoff` to the power `success_bias`, and
+    /// the rest of their effort, foraging, counts 1.
+    pub fn models(&self, people: u64, effort: f64, payoff: f64) -> (f64, f64) {
+        let n = people as f64;
+        let farming = match self.success_bias {
+            _ if effort == 0.0 => 0.0,
+            0.0 => effort,
+            1.0 => effort * payoff, // linear payoff weighting: no pow per cell and step
+            bias => effort * oikos_math::pow(payoff, bias),
+        };
+        // The foraging share first: farming + 1 - effort cancels when farming is tiny.
+        (n * farming, n * (farming + (1.0 - effort)))
+    }
+
+    /// [`Cultivation::models`] for a cell's people, from its full-farming capacity, forager
+    /// capacity and its people's sums of effort and of effort times domestic share.
+    pub fn cell_models(
+        &self,
+        farm: f64,
+        forage: u64,
+        people: u64,
+        effort_sum: u64,
+        crop_sum: u64,
+    ) -> (f64, f64) {
+        let effort = if people == 0 { 0.0 } else { effort_sum as f64 / (people as f64 * SHARE_ONE as f64) };
+        let payoff = if effort_sum > 0 && self.success_bias != 0.0 {
+            self.payoff(farm, forage, effort_sum, crop_sum)
+        } else {
+            1.0
+        };
+        self.models(people, effort, payoff)
+    }
+
+    /// The share of cultivation in what a band learns from, given its models as (contact,
+    /// people, their mean effort, farming's payoff there): each person counts `contact`
+    /// times [`Cultivation::models`]. None if it sees nobody.
+    pub fn example(&self, models: impl Iterator<Item = (f64, u64, f64, f64)>) -> Option<f64> {
+        Self::example_of(models.map(|(contact, n, effort, payoff)| (contact, self.models(n, effort, payoff))))
+    }
+
+    fn example_of(models: impl Iterator<Item = (f64, (f64, f64))>) -> Option<f64> {
+        let (mut farming, mut all) = (0.0, 0.0);
+        for (contact, (f, a)) in models {
+            if contact != 0.0 {
+                farming += contact * f;
+                all += contact * a;
+            }
+        }
+        (all > 0.0).then(|| oikos_math::finite(farming / all))
+    }
+
+    /// [`Cultivation::example`] for a band in `cell`: its cell and its neighbors.
+    fn example_at(&self, sense: &Sense<'_>, cell: u32) -> Option<f64> {
+        let cached = sense.models.len() == sense.population.len()
+            && sense.models_for == (self.success_bias, self.wild_yield_ratio);
+        let at = |c: u32, contact: f64| {
+            let c = c as usize;
+            let models = if cached {
+                sense.models[c]
+            } else {
+                let (farm, forage) = (sense.farm[c], sense.forage_capacity[c]);
+                self.cell_models(farm, forage, sense.population[c], sense.effort_sum[c], sense.crop_sum[c])
+            };
+            (contact, models)
+        };
+        let neighbors = sense.grid.neighbors(cell).iter().map(|&c| at(c, self.neighbor_learning));
+        Self::example_of(std::iter::once(at(cell, 1.0)).chain(neighbors))
     }
 
     /// Domestic share of the crop after one period at `effort`, from `d`.
@@ -826,6 +939,9 @@ impl Mechanism for Cultivation {
             return;
         }
         let agents = &mut *part.agents;
+        // Learning from the own cell by how many plant (ADR-0065) is computed as it was.
+        let own_cell_only = self.own_cell_only();
+        let mut example: Option<(usize, Option<f64>)> = None; // per cell, only where needed
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
@@ -840,9 +956,18 @@ impl Mechanism for Cultivation {
                 continue;
             }
             let (e, d) = (Traits::share(traits.cultivation), Traits::share(traits.domestication));
-            let seen = match sense.population[cell] {
-                0 => e,
-                n => sense.effort_sum[cell] as f64 / (n as f64 * SHARE_ONE as f64),
+            let seen = if own_cell_only {
+                match sense.population[cell] {
+                    0 => e,
+                    n => sense.effort_sum[cell] as f64 / (n as f64 * SHARE_ONE as f64),
+                }
+            } else {
+                let seen = match example {
+                    Some((at, seen)) if at == cell => seen,
+                    _ => self.example_at(sense, cell as u32),
+                };
+                example = Some((cell, seen));
+                seen.unwrap_or(e)
             };
             agents.set_traits(
                 i,
