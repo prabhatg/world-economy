@@ -26,6 +26,7 @@ import numpy as np
 from . import emulator, history, screening
 
 CUTOFF = history.CUTOFF
+LEAVE_OUT = "records not to judge or record (m1.OPTIONAL; default: those of the files continued, else none)"
 SITES = "settlements"  # what the site targets compare with the surveys (ADR-0072)
 
 
@@ -54,20 +55,48 @@ def _groups(js):
     return [history.Group(g["indices"], g["covariance"], g["dof"]) for g in js or []]
 
 
-def _run(jobs, workers):
+def _run(jobs, workers, leave_out=()):
     from . import m1
 
     start = time.time()
-    out = m1.evaluate(jobs, workers)
+    out = m1.evaluate(jobs, workers, leave_out)
     print(f"{len(jobs)} runs in {time.time() - start:.0f} s ({workers} workers)", file=sys.stderr)
     return out
 
 
-def _problem_targets():
+def _problem_targets(leave_out=()):
     from . import m1
 
-    p = m1.Problem()
+    p = m1.Problem(leave_out)
     return p.targets, p.names, p.groups
+
+
+def _left_out_of(doc):
+    """The records a file left out. Files before the option record none; those with targets
+    and no house Ginis judged without them (round 9 came before the record)."""
+    if "left_out" in doc:
+        return sorted(doc["left_out"])
+    if "targets" in doc and not any(t["name"].startswith("house Gini") for t in doc["targets"]):
+        return ["inequality"]
+    return []
+
+
+def left_out(given, docs):
+    """The records a command leaves out: `given`, else those of the files `docs` it
+    continues, which must agree with each other and with `given` (emulators and scores of
+    different records do not mix)."""
+    from . import m1
+
+    theirs = {tuple(_left_out_of(d)) for d in docs}
+    if len(theirs) > 1:
+        raise SystemExit(f"the files continued left out different records: {sorted(theirs)}")
+    chosen = sorted(given) if given is not None else list(theirs.pop()) if theirs else []
+    if theirs and tuple(chosen) not in theirs:
+        raise SystemExit(f"--leave-out {chosen}: the files continued left out {list(theirs.pop())}")
+    unknown = [r for r in chosen if r not in m1.OPTIONAL]
+    if unknown:
+        raise SystemExit(f"--leave-out: {unknown} cannot be left out; only {list(m1.OPTIONAL)} can be")
+    return chosen
 
 
 def _write(path, doc):
@@ -85,11 +114,12 @@ def screen(args):
     points = design.reshape(-1, len(factors))
     params = [oikos.sample_params(dict(zip(factors, u))) for u in points]
     noise = list(range(args.seed, args.seed + args.noise_seeds))
-    ts, names, _ = _problem_targets()
-    out = _run([(p, args.seed) for p in params] + [({}, s) for s in noise], args.workers)
+    leave = left_out(args.leave_out, [])
+    ts, names, _ = _problem_targets(leave)
+    out = _run([(p, args.seed) for p in params] + [({}, s) for s in noise], args.workers, leave)
     runs, noisy = out[: len(params)], out[len(params) :]
     _write(args.out, {"command": "screen", "revision": _revision(), "seed": args.seed, "sites": SITES,
-                      "levels": args.levels,
+                      "left_out": leave, "levels": args.levels,
                       "factors": factors, "design": design.tolist(), "params": params, "names": names,
                       "outputs": runs.tolist(), "noise_seeds": noise, "noise_outputs": noisy.tolist(),
                       "targets": _targets_json(ts)})
@@ -203,6 +233,7 @@ def wave(args):
     chosen_by = json.loads(Path(args.screening).read_text()) if args.screening else None
     if chosen_by:
         require_sites([chosen_by], "choose factors by")
+    leave = left_out(args.leave_out, previous + ([chosen_by] if chosen_by else []))
     seed = sampling_seed(args.seed, previous)
     rng = np.random.default_rng(seed)
     if previous:
@@ -230,10 +261,10 @@ def wave(args):
     number = len(previous) + 1
     params = [oikos.sample_params(dict(zip(factors, x))) for x in u]
     seeds = [1000 * number + i for i in range(len(u))]
-    ts, names, groups = _problem_targets()
-    out = _run(list(zip(params, seeds)), args.workers)
+    ts, names, groups = _problem_targets(leave)
+    out = _run(list(zip(params, seeds)), args.workers, leave)
     doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": seed, "sites": SITES,
-           "factors": factors,
+           "left_out": leave, "factors": factors,
            "active": active, "u": u.tolist(), "params": params, "seeds": seeds, "names": names,
            "outputs": out.tolist(), "targets": _targets_json(ts), "groups": _groups_json(groups),
            "previous": [str(p) for p in args.previous]}
@@ -313,10 +344,11 @@ def ranges(every):
 def best(args):
     docs = [json.loads(Path(p).read_text()) for p in args.waves]
     require_sites(docs, "rerun the best runs of")
+    leave = left_out(None, docs)
     cs = candidates(docs, args.top)
     seeds = list(range(1, args.seeds + 1))
-    ts, names, groups = _problem_targets()
-    out = _run([(c["params"], s) for c in cs for s in seeds], args.workers).reshape(len(cs), len(seeds), -1)
+    ts, names, groups = _problem_targets(leave)
+    out = _run([(c["params"], s) for c in cs for s in seeds], args.workers, leave).reshape(len(cs), len(seeds), -1)
     check = {"targets": _targets_json(ts), "groups": _groups_json(groups)}
     ll = [j for j, n in enumerate(names) if n.startswith("log-likelihood")]
     for c, o in zip(cs, out):
@@ -327,7 +359,7 @@ def best(args):
     ok = [i for i, c in enumerate(cs) if c["consistent"]]
     chosen = max(ok, key=lambda i: cs[i]["rerun_summary_log_likelihood"]) if ok else None
     every = candidates(docs, top=None)
-    _write(args.out, {"command": "best", "revision": _revision(), "rank": "summaries", "sites": SITES,
+    _write(args.out, {"command": "best", "revision": _revision(), "rank": "summaries", "sites": SITES, "left_out": leave,
                       "waves": [str(p) for p in args.waves], "seeds": seeds, "names": names, "consistent_runs": len(every), "ranges": ranges(every),
                       "candidates": cs, "chosen": chosen})
     report_best(json.loads(Path(args.out).read_text()))
@@ -348,10 +380,11 @@ def profile(args):
     """One parameter over `values`, every other at its registry default: for a parameter a
     new record constrains but which leaves the rest of the world alone (a tracer, as
     obsidian; ADR-0061), so the calibrated world stays the same world."""
-    ts, names, groups = _problem_targets()
+    leave = left_out(args.leave_out, [])
+    ts, names, groups = _problem_targets(leave)
     seeds = list(range(1, args.seeds + 1))
-    out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers)
-    doc = {"command": "profile", "revision": _revision(), "sites": SITES, "parameter": args.parameter,
+    out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers, leave)
+    doc = {"command": "profile", "revision": _revision(), "sites": SITES, "left_out": leave, "parameter": args.parameter,
            "values": args.values,
            "seeds": seeds, "names": names, "outputs": out.reshape(len(args.values), len(seeds), -1).tolist(),
            "targets": _targets_json(ts), "groups": _groups_json(groups)}
@@ -457,6 +490,7 @@ def main(argv=None):
     s.add_argument("--noise-seeds", type=int, default=8, help="runs of the defaults with different seeds")
     s.add_argument("--seed", type=int, default=1)
     s.add_argument("--workers", type=int, default=workers)
+    s.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
     s.add_argument("--out", required=True)
     w = sub.add_parser("wave", help="one history-matching wave")
     w.add_argument("--runs", type=int, default=200)
@@ -469,6 +503,7 @@ def main(argv=None):
                    help="parameters new to the registry to sample as noise, not emulate (no record sees them yet)")
     w.add_argument("--seed", type=int, help="seed of the wave's points (default: its number)")
     w.add_argument("--workers", type=int, default=workers)
+    w.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
     w.add_argument("--out", required=True)
     b = sub.add_parser("best", help="rerun the best consistent runs with the other parameters at their defaults")
     b.add_argument("waves", nargs="+", help="wave files, in order")
@@ -481,6 +516,7 @@ def main(argv=None):
     pr.add_argument("values", nargs="+", type=float)
     pr.add_argument("--seeds", type=int, default=3)
     pr.add_argument("--workers", type=int, default=workers)
+    pr.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
     pr.add_argument("--out", required=True)
     e = sub.add_parser("ensemble", help="run plausible worlds with outputs for the viewer")
     e.add_argument("best", help="a best file: its consistent candidates join the calibrated defaults")
@@ -512,6 +548,7 @@ def main(argv=None):
         docs = [json.loads(Path(f).read_text()) for f in args.files]
         report = {"screen": lambda: report_screening(docs[0]), "best": lambda: report_best(docs[0]),
                   "profile": lambda: report_profile(docs[0])}
+        left_out(None, docs)
         report.get(docs[0]["command"], lambda: report_wave(docs, args.files, args.workers))()
 
 

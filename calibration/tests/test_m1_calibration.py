@@ -70,3 +70,16 @@ def test_the_default_world_is_consistent_with_the_record(problem):
     doc = {"targets": cli._targets_json(problem.targets), "groups": cli._groups_json(problem.groups), "outputs": out}
     i = history.implausibility(out[:, : len(problem.targets)], 0.0, problem.targets)
     assert cli.consistent(doc).all(), f"max implausibility per seed {i.max(axis=1)}"
+
+
+def test_a_round_can_leave_out_the_house_size_record(problem):
+    from oikos_cal import m1
+
+    without = m1.Problem(leave_out=("inequality",))
+    kept = [t.name for t in problem.targets if not t.name.startswith("house Gini")]
+    assert len(kept) < len(problem.targets), "the full problem judges house Ginis"
+    assert [t.name for t in without.targets] == kept and without.inequality is None
+    assert [g.indices for g in without.groups] == [g.indices for g in problem.groups]
+    assert without.names == kept + m1.DIAGNOSTICS
+    with pytest.raises(ValueError, match="radiocarbon"):
+        m1.Problem(leave_out=("radiocarbon",))

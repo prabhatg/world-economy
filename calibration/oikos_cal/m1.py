@@ -25,6 +25,11 @@ eras split at 10,000, 8,800 and 7,600 BCE, judged together; discrepancy 0.1 on e
 on the domestic share (the anchor's uncertainty is in the bootstrap variance). House
 Ginis are each site's, judged one by one with the sampling variance of its few houses;
 discrepancy 0.05 on each (house size as a proxy of wealth, and its elasticity).
+
+A round may leave out a record in `OPTIONAL` (`Problem(leave_out=...)`): its targets are
+then neither judged nor written to the round's files. The house sizes of Kohler et al.
+2017 come with no licence to republish them, so a round whose files are committed
+leaves them out until that is settled.
 """
 
 import io
@@ -42,7 +47,7 @@ from oikos_data import sites as sites_pipeline
 
 from . import domestication, inequality, obsidian, onset, radiocarbon, record, sites, targets
 
-__all__ = ["PACKS", "END", "DISCREPANCY", "packs", "Problem", "evaluate"]
+__all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian")
 END = -3_000
@@ -55,6 +60,7 @@ OBSIDIAN_ERA = -6_900
 OBSIDIAN_MIN_ARTEFACTS = 3
 ONSET_EDGES = (-10_000, -8_800, -7_600)  # Late Epipalaeolithic, PPNA, Early-Middle PPNB, Late PPNB
 ONSET_MIN_ITEMS = 50
+OPTIONAL = ("inequality",)  # records a round may leave out; the diagnostics need the others
 DIAGNOSTICS = ["log-likelihood radiocarbon", "log-likelihood domestication", "log-likelihood obsidian",
                "people 3000 BCE"]
 
@@ -78,7 +84,10 @@ def habitable(cells):
 class Problem:
     """Operators, targets and the simulator of M1; build once per process."""
 
-    def __init__(self):
+    def __init__(self, leave_out=()):
+        unknown = sorted(set(leave_out) - set(OPTIONAL))
+        if unknown:
+            raise ValueError(f"cannot leave out {unknown}: only {list(OPTIONAL)} can be")
         r = region.load("m1-swasia")
         self.cells = r.cells()
         sources = dates_pipeline.inputs(offline=True)
@@ -98,8 +107,10 @@ class Problem:
                                           joined=obsidian.joined(habitable(self.cells), reach))
         phases = pq.read_table(io.BytesIO(archaeobotany.build_crop_table(r))).to_pydict()
         self.onset = onset.Operator(phases, self.cells, self.radiocarbon.settings.true, min_items=ONSET_MIN_ITEMS)
-        houses = pq.read_table(io.BytesIO(inequality_pipeline.build_table(r, offline=True))).to_pydict()
-        self.inequality = inequality.Operator(houses, self.cells, self.radiocarbon.settings.true)
+        self.inequality = None
+        if "inequality" not in leave_out:
+            houses = pq.read_table(io.BytesIO(inequality_pipeline.build_table(r, offline=True))).to_pydict()
+            self.inequality = inequality.Operator(houses, self.cells, self.radiocarbon.settings.true)
         self.eras = [targets.RadiocarbonEras(self.radiocarbon, eras=RADIOCARBON_ERAS,
                                              discrepancy_sd=DISCREPANCY["radiocarbon"], rng=np.random.default_rng(0)),
                      targets.DomesticationEras(self.domestication, barley,
@@ -108,8 +119,9 @@ class Problem:
                      targets.ObsidianZones(self.obsidian, edges=OBSIDIAN_EDGES, era=OBSIDIAN_ERA,
                                            discrepancy_sd=DISCREPANCY["obsidian"], rng=np.random.default_rng(0)),
                      targets.OnsetEras(self.onset, edges=ONSET_EDGES, discrepancy_sd=DISCREPANCY["onset"],
-                                       rng=np.random.default_rng(0)),
-                     targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"])]
+                                       rng=np.random.default_rng(0))]
+        if self.inequality is not None:
+            self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]
         first = np.cumsum([0] + [len(e.targets) for e in self.eras])
         self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3]),
@@ -135,9 +147,9 @@ class Problem:
 _problem = None
 
 
-def _start():
+def _start(leave_out):
     global _problem
-    _problem = Problem()
+    _problem = Problem(leave_out)
 
 
 def _run(job):
@@ -145,8 +157,9 @@ def _run(job):
     return _problem.simulate(params, seed)
 
 
-def evaluate(jobs, workers):
-    """Outputs [job, name] of (params, seed) jobs, run in `workers` processes."""
+def evaluate(jobs, workers, leave_out=()):
+    """Outputs [job, name] of (params, seed) jobs, run in `workers` processes, judged
+    without the records `leave_out`."""
     ctx = multiprocessing.get_context("spawn")  # never fork a process whose rayon pool is running
-    with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_start) as ex:
+    with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_start, initargs=(tuple(leave_out),)) as ex:
         return np.array(list(ex.map(_run, jobs)))

@@ -232,3 +232,31 @@ def test_emulators_are_checked_on_held_out_runs_whose_outputs_are_defined():
     y[-1, 1] = np.nan  # and one held out
     coverage = cli.holdout_coverage(u, y, ts, active=[0, 1])
     assert coverage == pytest.approx([1.0, 1.0]), "undefined runs neither train nor count as misses"
+
+
+def test_a_record_left_out_is_recorded_and_kept_by_the_files_that_continue_it():
+    # A record whose observed values may not be published (Kohler et al. 2017 has no
+    # licence) can be left out of a round: its files then neither judge nor carry it.
+    assert cli.left_out(None, []) == []
+    assert cli.left_out(["inequality"], []) == ["inequality"]
+    assert cli.left_out(None, [{"left_out": ["inequality"]}, {"left_out": ["inequality"]}]) == ["inequality"]
+    assert cli.left_out(None, [{"wave": 1}]) == [], "files before the option judged every record"
+    gini = {"name": "house Gini a 7000 BCE", "observed": 0.3, "variance": 0.01, "discrepancy": 0.0}
+    other = {**gini, "name": "radiocarbon 1"}
+    assert cli.left_out(None, [{"wave": 1, "targets": [other]}]) == ["inequality"], \
+        "a file before the option without house Ginis judged without them (round 9)"
+    assert cli.left_out(None, [{"wave": 1, "targets": [other, gini]}]) == []
+    with pytest.raises(SystemExit, match="left out"):
+        cli.left_out([], [{"wave": 1, "left_out": ["inequality"]}])
+    with pytest.raises(SystemExit, match="left out"):
+        cli.left_out(None, [{"wave": 1}, {"wave": 2, "left_out": ["inequality"]}])
+    with pytest.raises(SystemExit, match="radiocarbon.*inequality"):
+        cli.left_out(["radiocarbon"], [])
+
+
+def test_reports_refuse_waves_of_different_records(tmp_path):
+    a, b = tmp_path / "a.json", tmp_path / "b.json"
+    a.write_text(json.dumps({"command": "wave", "wave": 1, "left_out": []}))
+    b.write_text(json.dumps({"command": "wave", "wave": 2, "left_out": ["inequality"]}))
+    with pytest.raises(SystemExit, match="left out"):
+        cli.main(["report", str(a), str(b)])

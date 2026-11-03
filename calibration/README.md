@@ -79,6 +79,10 @@ it matter (ADR-0065). NROY points take such factors uniformly, as the earlier wa
 `--inactive` keeps parameters new to the registry as noise when no record of the wave
 sees them yet (`fertility` and `sedentary_fertility` until the juvenile-index record
 joins, ADR-0068).
+`--leave-out inequality` (on `screen`, `wave` and `profile`) leaves the house-size record
+out: its targets are neither judged nor written to the file, and the waves and `best`
+continuing that file leave it out too (ADR-0077). Kohler et al. 2017 publish their house
+sizes with no licence, so committed rounds leave them out until that is settled.
 `profile` varies one parameter with every other at its default and chooses the
 consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
 log-likelihoods): for a parameter a new record
