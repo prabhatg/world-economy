@@ -134,7 +134,10 @@ radiocarbon subregions (ADR-0079) and `wave6.json` the onset contrasts too (ADR-
 defaults (ADR-0081). `wave7.json` activates the two settlement parameters (ADR-0082) and
 `best-wave7.json` ranks waves 6 and 7, keeping run 216; `profile-integration.json` takes
 `settlement_integration` over 1 to 6 at those defaults and gives its calibrated value, 4
-(ADR-0083). The onset record's tables are downloaded by hand (`data/README.md`); without
+(ADR-0083).
+Round 11 judges the lesions of infection too (ADR-0086) and is in `runs/m1/round11/`; its
+first file, `profile-mobile-contact.json`, takes `mobile_contact` over 0.2 to 0.9 at the
+calibrated defaults (every value consistent; the lesions lean toward 0.2). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
