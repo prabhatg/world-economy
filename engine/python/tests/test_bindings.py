@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "60340b07ac1c7bd6762b1ddac7db4e9124420fa5002546933b9ad0f1ab706eda"
+GOLDEN_HASH = "130a331ddf5d898cda8415c7470505dc587094b42413f6db0021f14c654c8dc8"
 
 
 def run(world, years=300, parts=1):

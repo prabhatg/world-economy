@@ -1,0 +1,55 @@
+# Pollen- and plant-macrofossil-based reconstructions of mid-Holocene (6 ka) climate on a
+# 2x2 degree grid: here, the anomaly of mean annual precipitation.
+dataset = "bartlein2011-map"
+title = "LGM and Mid-Holocene Pollen-Based Continental Climate Reconstructions: mean annual precipitation at 6 ka"
+version = "2010-11"
+homepage = "https://www.ncei.noaa.gov/pub/data/paleo/pollen/recons/bartlein2010/readme-bartlein2010.txt"
+citation = "Bartlein, P.J., Harrison, S.P., Brewer, S., et al. (2011). Pollen-based continental climate reconstructions at 6 and 21 ka: a global synthesis. Climate Dynamics 37, 775-802. https://doi.org/10.1007/s00382-010-0904-1. Data: IGBP PAGES/World Data Center for Paleoclimatology Data Contribution Series 2010-127, NOAA/NCDC Paleoclimatology Program."
+doi = "10.1007/s00382-010-0904-1"
+notes = """
+One CSV per variable and period, one row per 2x2 degree grid cell holding
+reconstructions: the cell's center, the mean anomaly (6 ka minus present) of the
+reconstructions in it, their mean standard error, a t statistic, whether it is
+significant, and the number of reconstructions (sites). Mean annual precipitation is in
+mm/year. The Sahara has few cells: in the Eastern Sahara only two, in NW Sudan (19 N,
+27 E: the West Nubian Palaeolake, +605 mm, whose water balance Hoelzmann et al. 2000
+put at 500-900 mm a year) and on the Sudan-Egypt border (21 N, 29 E: +177 mm), and
+none north of 22 N. NOAA lists no checksum; `md5` is the file's at retrieval.
+"""
+
+[license]
+# The data.gov record for the NOAA study lists CC0 1.0 (public domain dedication);
+# NOAA asks that the study be cited.
+id = "CC0-1.0"
+url = "https://creativecommons.org/publicdomain/zero/1.0/"
+derived_redistribution = true
+attribution = "Contains mid-Holocene precipitation reconstructions from Bartlein et al. (2011, https://doi.org/10.1007/s00382-010-0904-1), NOAA/WDS Paleoclimatology, dedicated to the public domain (CC0 1.0); extrapolated to H3 cells by ManyWorlds."
+verified = "2026-11-04"
+
+[access]
+kind = "file"
+url = "https://www.ncei.noaa.gov/pub/data/paleo/pollen/recons/bartlein2010/map_delta_06ka_ALL_grid_2x2.csv"
+file = "bartlein2010_map_delta_06ka_ALL_grid_2x2.csv"
+md5 = "075cb4f699b8a80d8f92697b5f49d187"
+# Grid cells whose reconstructions anchor the Eastern Saharan anomaly (south, north,
+# west, east of their centers).
+eastern_sahara = [18.0, 23.0, 24.0, 34.0]
+
+[coverage]
+spatial = "global land with pollen or macrofossil records, 2x2 degree cells"
+temporal = "6,000 years before present (mid-Holocene) against present"
+
+[[variables]]
+name = "map_anm_mean"
+unit = "mm/year"
+description = "Mean anomaly of mean annual precipitation at 6 ka (minus present) over the reconstructions in the grid cell"
+
+[[variables]]
+name = "map_se_mean"
+unit = "mm/year"
+description = "Mean standard error of those reconstructions"
+
+[[variables]]
+name = "map_npts"
+unit = "1"
+description = "Number of reconstructions (sites) in the grid cell"

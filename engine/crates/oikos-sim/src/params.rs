@@ -60,6 +60,10 @@ pub struct Params {
     pub npp_elasticity: f64,
     pub aquatic_bonus: f64,
     pub perennial_discharge: f64,
+    pub humid_period_scale: f64,
+    pub humid_period_onset_bp: u64,
+    pub humid_period_end_bp: u64,
+    pub humid_period_transition_years: u64,
     pub dispersal_crowding: f64,
     pub dispersal_probability: f64,
     pub dispersal_fraction: f64,
@@ -149,6 +153,10 @@ impl Params {
             npp_elasticity: real("npp_elasticity")?,
             aquatic_bonus: real("aquatic_bonus")?,
             perennial_discharge: real("perennial_discharge")?,
+            humid_period_scale: real("humid_period_scale")?,
+            humid_period_onset_bp: int("humid_period_onset_bp")?,
+            humid_period_end_bp: int("humid_period_end_bp")?,
+            humid_period_transition_years: int("humid_period_transition_years")?,
             dispersal_crowding: real("dispersal_crowding")?,
             dispersal_probability: real("dispersal_probability")?,
             dispersal_fraction: real("dispersal_fraction")?,
@@ -216,6 +224,15 @@ impl Params {
                      inequality, inequality grows without bound (ADR-0074)"
                 ));
             }
+        }
+        let (onset, end, t) =
+            (self.humid_period_onset_bp, self.humid_period_end_bp, self.humid_period_transition_years);
+        if onset < end + t {
+            return Err(format!(
+                "humid_period_onset_bp ({onset}) must be at least humid_period_end_bp ({end}) plus \
+                 humid_period_transition_years ({t}) earlier: the Humid Period begins before it ends, \
+                 and is fully humid between its transitions (ADR-0084)"
+            ));
         }
         if self.capacity_min > self.capacity_max {
             return Err(format!(
@@ -327,6 +344,11 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     // ADR-0082: every settlement is one group.
     ("settlement_integration", Restore::Value(1.0)),
     ("settlement_hierarchy", Restore::Value(0.0)),
+    // ADR-0084: the forcing's climate alone (no humid_period pack was read before it).
+    ("humid_period_scale", Restore::Value(0.0)),
+    ("humid_period_onset_bp", Restore::Inert),
+    ("humid_period_end_bp", Restore::Inert),
+    ("humid_period_transition_years", Restore::Inert),
 ];
 
 impl Params {

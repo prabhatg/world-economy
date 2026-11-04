@@ -6,7 +6,9 @@
 //! scales with net primary productivity (the Miami model: the lower of a temperature and
 //! a precipitation limit, Lieth 1975), plus an aquatic part where a perennial river, a
 //! lake shore or a sea coast is at hand. The aquatic part does not depend on local
-//! rain, so river valleys in deserts (the Nile) can feed people (ADR-0047).
+//! rain, so river valleys in deserts (the Nile) can feed people (ADR-0047). A
+//! `humid_period` pack adds the rain of the African Humid Period that the climate pack's
+//! model misses, along a time course its parameters set ([`humid_share`], ADR-0084).
 //!
 //! For cultivation (ADR-0049), each cell also has a wild-cereal suitability from its
 //! climate, the people its dry land would feed under full cultivation of domestic crops,
@@ -29,6 +31,9 @@ pub const CLIMATE: (&str, &str, &str) = ("climate", "temp_mean", "precip");
 pub const RIVERS: (&str, &str) = ("hydrology", "river_discharge");
 /// Geometry field giving each cell's area (km2).
 pub const AREA: (&str, &str) = ("geometry", "area_km2");
+/// Pack kind and field holding the rain the African Humid Period adds at its height
+/// (mm/year; ADR-0084).
+pub const HUMID: (&str, &str) = ("humid_period", "precip_anomaly");
 
 /// Net primary productivity (g dry matter m-2 yr-1) from annual mean temperature (degC)
 /// and annual precipitation (mm), by the Miami model.
@@ -44,6 +49,15 @@ pub fn forager_density(npp: f64, p: &Params) -> f64 {
         return 0.0;
     }
     p.forager_density_ref * pow(npp / p.npp_reference, p.npp_elasticity)
+}
+
+/// Share in [0, 1] of the African Humid Period's rain in `calendar_year` (ADR-0084): it
+/// rises over `humid_period_transition_years` centered on `humid_period_onset_bp` and
+/// falls over as many centered on `humid_period_end_bp` (years before 1950), linearly.
+pub fn humid_share(calendar_year: i64, p: &Params) -> f64 {
+    let bp = (1950 - calendar_year) as f64;
+    let ramp = |x: f64| (x / p.humid_period_transition_years as f64 + 0.5).clamp(0.0, 1.0);
+    ramp(p.humid_period_onset_bp as f64 - bp) * ramp(bp - p.humid_period_end_bp as f64)
 }
 
 /// Wild-cereal suitability in [0, 1] (the founder crops' wild progenitors: einkorn,
@@ -127,6 +141,8 @@ impl Surface<'_> {
 struct Year<'a> {
     temp: FieldView<'a>,
     precip: FieldView<'a>,
+    /// The Humid Period's anomaly and the multiple of it this year, if it adds rain.
+    humid: Option<(FieldView<'a>, f64)>,
     slice: Slice,
     area: FieldView<'a>,
     rivers: Option<FieldView<'a>>,
@@ -135,11 +151,13 @@ struct Year<'a> {
 
 impl Year<'_> {
     /// None without a climate pack.
-    fn new(inputs: &Inputs, calendar_year: i64) -> Option<Year<'_>> {
+    fn new<'a>(inputs: &'a Inputs, calendar_year: i64, p: &Params) -> Option<Year<'a>> {
         let climate = inputs.pack(CLIMATE.0).ok()?;
+        let wet = p.humid_period_scale * humid_share(calendar_year, p);
         Some(Year {
             temp: climate.field(CLIMATE.1).expect("validated in from_packs"),
             precip: climate.field(CLIMATE.2).expect("validated in from_packs"),
+            humid: inputs.field(HUMID.0, HUMID.1).ok().filter(|_| wet > 0.0).map(|f| (f, wet)),
             slice: climate.slice_at(calendar_year),
             area: inputs.field(AREA.0, AREA.1).expect("validated in from_packs"),
             rivers: inputs.field(RIVERS.0, RIVERS.1).ok(),
@@ -147,9 +165,12 @@ impl Year<'_> {
         })
     }
 
-    /// Temperature (degC) and precipitation (mm), if the cell has climate data.
+    /// Temperature (degC) and precipitation (mm, the Humid Period's included), if the
+    /// cell has climate data.
     fn climate(&self, c: usize) -> Option<(f64, f64)> {
-        Some((self.temp.at(self.slice, c)?, self.precip.at(self.slice, c)?))
+        let precip = self.precip.at(self.slice, c)?;
+        let humid = self.humid.as_ref().and_then(|(f, wet)| Some(wet * f.get(0, c)?)).unwrap_or(0.0);
+        Some((self.temp.at(self.slice, c)?, precip + humid))
     }
 
     /// Dry-land area (km2).
@@ -172,7 +193,7 @@ impl Year<'_> {
 /// one person, so growth stays defined). Returns false, leaving `out` alone, without a
 /// climate pack.
 pub fn capacity_into(inputs: &Inputs, calendar_year: i64, p: &Params, out: &mut [u64]) -> bool {
-    let Some(year) = Year::new(inputs, calendar_year) else {
+    let Some(year) = Year::new(inputs, calendar_year, p) else {
         return false;
     };
     for (c, k) in out.iter_mut().enumerate() {
@@ -205,6 +226,7 @@ struct VariabilityKey {
     anchor: i64,
     centuries: i64,
     suitability: [u64; 6],
+    humid: [u64; 4],
 }
 
 impl Farmland {
@@ -219,8 +241,8 @@ impl Farmland {
     /// [`Farmland::new`] into existing buffers.
     pub fn update(&mut self, inputs: &Inputs, calendar_year: i64, p: &Params, cells: usize) {
         let (Some(now), Some(before)) = (
-            Year::new(inputs, calendar_year),
-            Year::new(inputs, calendar_year - p.stress_window_years as i64),
+            Year::new(inputs, calendar_year, p),
+            Year::new(inputs, calendar_year - p.stress_window_years as i64, p),
         ) else {
             *self = Farmland::default();
             return;
@@ -240,7 +262,8 @@ impl Farmland {
 
     /// Variability is measured between century boundaries (the climate packs' native
     /// step): between them the climate is interpolated, which would hide swings. So it
-    /// is recomputed only when the century, the window or the suitability parameters change.
+    /// is recomputed only when the century, the window, the suitability or the Humid Period's
+    /// parameters change.
     fn update_variability(&mut self, inputs: &Inputs, calendar_year: i64, p: &Params, cells: usize) {
         let key = VariabilityKey {
             anchor: calendar_year.div_euclid(100) * 100,
@@ -254,11 +277,17 @@ impl Farmland {
                 p.cereal_temp_full,
             ]
             .map(f64::to_bits),
+            humid: [
+                p.humid_period_scale.to_bits(),
+                p.humid_period_onset_bp,
+                p.humid_period_end_bp,
+                p.humid_period_transition_years,
+            ],
         };
         if self.variability_key.as_ref() == Some(&key) && self.variability.len() == cells {
             return;
         }
-        let at = |i: i64| Year::new(inputs, key.anchor - 100 * i).expect("the climate pack is present");
+        let at = |i: i64| Year::new(inputs, key.anchor - 100 * i, p).expect("the climate pack is present");
         let years: Vec<Year<'_>> = (0..=key.centuries).map(at).collect();
         self.variability.resize(cells, 0.0);
         for c in 0..cells {

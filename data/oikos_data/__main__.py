@@ -16,8 +16,8 @@ from pathlib import Path
 
 import blake3
 
-from . import (DATA, climate, coastline, geometry, hydrology, obsidian, rachis, radiocarbon, raster, region, sites, soils,
-               terrain)
+from . import (DATA, climate, coastline, geometry, humid, hydrology, obsidian, rachis, radiocarbon, raster, region, sites,
+               soils, terrain)
 
 LOCK = DATA / "packs.lock.json"
 BUILDERS = {
@@ -33,6 +33,7 @@ BUILDERS = {
     "sites": sites.build_table,
     "obsidian": obsidian.build_obsidian_pack,
     "obsidian_assemblages": obsidian.build_obsidian_table,
+    "humid_period": humid.build_humid_pack,
 }
 # Outputs that are tables rather than forcing packs; ids are the BLAKE3 of the bytes either way.
 EXTENSIONS = {"radiocarbon_dates": "parquet", "radiocarbon_density": "parquet", "rachis": "parquet", "sites": "parquet",

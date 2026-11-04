@@ -121,6 +121,9 @@ still level through time. A seventh wave and a profile calibrate it (ADR-0083): 
 groups' worth fits best, though any value above one fits as well within the spread
 between seeds, and villages are about 100 people, as a cell's land holds one town and
 the small groups it sheds; hierarchy is not identified.
+The forcing has the African Humid Period (ADR-0084, #44): rain from Eastern Saharan
+reconstructions, timed and scaled by parameters. It hardly moves northeast Africa's
+dates, which also need a farmed Nile, so the subregion is still recorded, not judged.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

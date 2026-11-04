@@ -32,6 +32,9 @@ enters the model, and the starting mechanisms.
   *Implemented (M1):* forager carrying capacity per cell from the climate pack (Miami
   model productivity), dry-land area and aquatic resources (rivers, lake shores,
   coasts), recomputed as the climate changes (`oikos-sim::environment`, ADR-0047).
+  The forcing's climate model has no African Humid Period, so a `humid_period` pack adds
+  the rain reconstructions give the Eastern Sahara at its height, scaled and timed by
+  parameters the records constrain (ADR-0084).
 - **Domesticable species pool** by region (wheat, barley, lentils, goats, sheep,
   cattle, pigs, rice, maize…), with suitability from agro-climatic models.
 - Domestication as a co-evolutionary process (selection intensity × cultivation

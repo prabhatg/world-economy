@@ -216,7 +216,9 @@
     in Anatolia more than Epipalaeolithic camps (intensity that changes with the period
     does not cancel within a block, unlike constant intensity); or core villages that
     grow too slowly (the village sizes of ADR-0078 point the same way, #39). Northeast
-    Africa is recorded, not judged, until the forcing has an African Humid Period (#44).
+    Africa is recorded, not judged (#44): the forcing has had an African Humid Period
+    since ADR-0084, but its dates also need a Nile that is farmed from about 5,000 BCE
+    and, before 9,000 BCE, almost empty.
 38. What made Upper Mesopotamian villages grow from the Halaf to the Late Chalcolithic
     (126 to 179 people at the middle density) while Central Anatolia's stayed level
     (ADR-0078, ADR-0082)? Settlements of several groups can reach the record's level
@@ -234,6 +236,16 @@
     one cell; conflict that drew people together for defence (Kuijt 2000; Birch 2013);
     or house forms whose density changed with the period, so that areas overstate the
     growth.
+39. Did Arabia's early Holocene humid phase matter for the region (ADR-0084)? Lakes in the
+    Nafud and speleothems in southern Arabia record one, and CHELSA-TraCE21k's climate model
+    probably misses it as it misses the Sahara's, but the humid-period pack covers Africa
+    only, as the reconstructions it extrapolates are African. Northern Arabia is in the
+    region, judged only region-wide.
+40. Why is the Nile valley almost undated before 9,000 BCE, when the model keeps some
+    4,300 foragers there from 12,000 BCE (ADR-0084)? Candidates: Early Holocene floods
+    that made the valley less habitable during the Humid Period (Zaki et al. 2021,
+    doi:10.1016/j.quascirev.2021.107200), sites buried under the aggrading floodplain and
+    delta, which no survey sees, or both.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

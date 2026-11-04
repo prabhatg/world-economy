@@ -84,6 +84,10 @@ impl Inputs {
             inputs.field(climate, precip)?;
             inputs.field(crate::environment::AREA.0, crate::environment::AREA.1)?;
         }
+        let (humid, anomaly) = crate::environment::HUMID;
+        if inputs.pack(humid).is_ok() {
+            inputs.field(humid, anomaly)?;
+        }
         Ok(inputs)
     }
 

@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -30,6 +30,7 @@ python -m oikos_data build rachis m1-swasia                # Allaby et al. 2017 
 python -m oikos_data build sites m1-swasia                 # Palmisano et al. 2021 survey settlements
 python -m oikos_data build obsidian m1-swasia              # DObsiSS volcano locations -> pack
 python -m oikos_data build obsidian_assemblages m1-swasia  # DObsiSS sourced artefacts -> table
+python -m oikos_data build humid_period m1-swasia          # Bartlein et al. 2011 6 ka rain -> pack
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -61,6 +62,7 @@ builds the site table in memory (`inequality.build_table`), never written or com
 | `coastline` | `land_fraction` per (time, cell), same slices as `climate`, linear in time; cells at 0 are uninhabitable in the engine | CHELSA-TraCE21k paleo-DEM ocean mask (one global sea level per slice on modern topography and bathymetry, no regional isostasy); the Caspian, lakes and the Sea of Marmara count as land (the hydrology pack's lakes are subtracted in the engine) |
 | `hydrology` | `river_length` (km of reaches with ≥ 1 m³/s), `river_discharge` (m³/s, largest reach), `river_order` (Strahler), `floodplain_fraction`, `lake_fraction` | RiverATLAS / LakeATLAS v1.0 (HydroATLAS, CC BY 4.0): modern hydrography as a proxy; floodplain from GIEMS-D15 maximum inundation per reach catchment; reservoirs excluded from lakes |
 | `obsidian` | one field per traced source group (`cappadocia`, `eastern_anatolia`): 1 in cells within one step (a day's walk) of one of its volcanoes | DObsiSS 2.0 source table (CC BY-SA 4.0; shared under the same license) |
+| `humid_period` | `precip_anomaly` (mm/year): the rain the African Humid Period adds at its height, per cell (0 outside Africa); the engine adds `humid_period_scale` times it along the time course of the `humid_period_*` parameters (ADR-0084) | Bartlein et al. 2011 6 ka mean annual precipitation anomalies (NOAA WDS-Paleo, CC0): an exponential in latitude through the two Eastern Saharan grid cells (19 N, 21 N), extrapolated north over Egypt; Africa west of the Suez isthmus and the Red Sea |
 | `soils` | `clay`, `sand`, `silt` (%), `organic_carbon` (g/kg), `ph`, `coarse_fragments` (vol %), 0–30 cm depth-weighted | SoilGrids 2.0 1 km aggregates (CC BY 4.0), Homolosine samples located per cell; built-up, water and glaciers unmapped (nodata); modern soils as a proxy |
 
 Observation tables (Parquet, locked like packs; docs/05 §5.1):

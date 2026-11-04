@@ -35,6 +35,12 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   coastline from its paleo-orography, whose ice comes from ICE-6G_C, Peltier, Argus &
   Drummond 2015, JGR Solid Earth 120, 450–487) and shared under the same
   license.
+- **Mid-Holocene precipitation reconstructions** (humid-period pack): Bartlein, P.J.,
+  Harrison, S.P., Brewer, S., et al. (2011), Pollen-based continental climate
+  reconstructions at 6 and 21 ka: a global synthesis, Climate Dynamics 37, 775–802,
+  doi:10.1007/s00382-010-0904-1; data from NOAA WDS-Paleo (contribution 2010-127),
+  dedicated to the public domain (CC0), and the pollen and plant-macrofossil records it
+  synthesizes.
 - **RiverATLAS and LakeATLAS v1.0 / HydroATLAS** (hydrology pack): Linke, S. et al.
   (2019), Scientific Data 6: 283; Lehner, B., Messager, M.L., Korver, M.C., Linke, S.
   (2022), Scientific Data 9: 351; river reaches from HydroRIVERS (Lehner & Grill 2013,

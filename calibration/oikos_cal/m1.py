@@ -70,7 +70,7 @@ from . import domestication, inequality, obsidian, onset, radiocarbon, record, s
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "Problem", "evaluate"]
 
-PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian")
+PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
                "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05}
@@ -84,9 +84,11 @@ SUBREGIONS = {"southern Levant": (29.0, 34.5, 34.0, 39.0),
               "Anatolia": (36.5, 42.5, 26.0, 36.0),
               "northern Levant, Cyprus and Upper Mesopotamia": (34.5, 39.0, 34.0, 45.0),
               "Zagros and Iran": (30.0, 38.5, 45.0, 54.0)}
-# Recorded, not judged: the climate forcing has no African Humid Period (under 15 mm a
-# year in the Western Desert throughout), so no world can occupy the desert when its
-# dates say people did (Kuper and Kropelin 2006); #44.
+# Recorded, not judged: the subregion's dates come from the Western Desert while the
+# African Humid Period watered it and from the Nile valley once it was farmed, from about
+# 5,000 BCE, with almost none before 9,000 BCE (Kuper and Kropelin 2006). The forcing now
+# has the Humid Period (ADR-0084), but the model's Nile is not farmed and holds as many
+# foragers from 12,000 BCE as later, so no world can match the dates yet; #44.
 UNJUDGED_SUBREGIONS = {"northeast Africa": (22.0, 32.0, 24.0, 34.0)}
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources

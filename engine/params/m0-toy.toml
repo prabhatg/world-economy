@@ -531,6 +531,61 @@ note = "Matches the hydrology pack's threshold for river_length (wadis excluded)
 # selection_coefficient); domestic crops raise carrying capacity. Used by worlds with a
 # climate pack; toy worlds never cultivate.
 
+[params.humid_period_scale]
+group = "environment"
+unit = "1"
+description = "Multiple of the African Humid Period's reconstructed rain (the humid_period pack's precip_anomaly, ADR-0084) added to the forcing's precipitation while the period lasts. 0: the forcing's climate alone."
+kind = { type = "real", min = 0.0, max = 10.0 }
+default = 1.0
+prior = { dist = "uniform", lo = 0.0, hi = 4.0 }
+status = "placeholder"
+note = "The reconstruction itself until calibrated. CHELSA-TraCE21k's CCSM3 climate has no Green Sahara (under 5 mm a year in the Western Desert throughout). The anomaly is an exponential in latitude through Bartlein et al.'s two Eastern Saharan 6 ka cells (+605 mm at 19 N, where the West Nubian Palaeolake needed 500-900 mm, Hoelzmann et al. 2000; +177 mm at 21 N), extrapolated north over Egypt where no reconstruction exists: +28 mm at 24 N, +4 mm at 27 N. The prior allows four times that, as the Gilf Kebir's estimated 100 mm at 23 N (twice the fit) suggests the fall-off may be gentler; the radiocarbon record of northeast Africa constrains it."
+sources = [
+  { citation = "Bartlein, P.J., Harrison, S.P., Brewer, S., et al. (2011). Pollen-based continental climate reconstructions at 6 and 21 ka: a global synthesis. Climate Dynamics 37, 775-802.", doi = "10.1007/s00382-010-0904-1" },
+  { citation = "Hoelzmann, P., Kruse, H.-J., Rottinger, F. (2000). Precipitation estimates for the eastern Saharan palaeomonsoon based on a water balance model of the West Nubian Palaeolake Basin. Global and Planetary Change 26, 105-120.", doi = "10.1016/S0921-8181(00)00038-2" },
+]
+
+[params.humid_period_onset_bp]
+group = "environment"
+unit = "years before 1950"
+description = "Midpoint of the African Humid Period's onset (ADR-0084): its rain rises over humid_period_transition_years centered here."
+kind = { type = "integer", min = 3000, max = 15000 }
+default = 11000
+prior = { dist = "fixed" }
+status = "literature"
+note = "Leaf-wax precipitation off the Sahara rises between 12,000 and 10,000 years ago at 19-23 N (Tierney et al. 2017), as the Younger Dryas ends; the onset was broadly synchronous across North Africa, unlike the end (Shanahan et al. 2015). The radiocarbon record leaves northeast Africa almost empty before 9,100 BCE, so it barely sees the onset."
+sources = [
+  { citation = "Tierney, J.E., Pausata, F.S.R., deMenocal, P.B. (2017). Rainfall regimes of the Green Sahara. Science Advances 3, e1601503.", doi = "10.1126/sciadv.1601503" },
+  { citation = "Shanahan, T.M., McKay, N.P., Hughen, K.A., et al. (2015). The time-transgressive termination of the African Humid Period. Nature Geoscience 8, 140-144.", doi = "10.1038/ngeo2329" },
+]
+
+[params.humid_period_end_bp]
+group = "environment"
+unit = "years before 1950"
+description = "Midpoint of the African Humid Period's end in northeast Africa (ADR-0084): its rain falls over humid_period_transition_years centered here."
+kind = { type = "integer", min = 3000, max = 12000 }
+default = 6500
+prior = { dist = "uniform", lo = 5000.0, hi = 8500.0 }
+status = "literature"
+note = "The end came earlier the farther north (Shanahan et al. 2015): about 5,000 years ago at 20-23 N on the West African margin (Tierney et al. 2017), so earlier over Egypt, at 24-30 N. The default is an estimate between them; the prior spans 8,500 to 5,000 years ago, and the radiocarbon record of northeast Africa, the only record here that sees it, constrains it."
+sources = [
+  { citation = "Shanahan, T.M., McKay, N.P., Hughen, K.A., et al. (2015). The time-transgressive termination of the African Humid Period. Nature Geoscience 8, 140-144.", doi = "10.1038/ngeo2329" },
+  { citation = "Tierney, J.E., Pausata, F.S.R., deMenocal, P.B. (2017). Rainfall regimes of the Green Sahara. Science Advances 3, e1601503.", doi = "10.1126/sciadv.1601503" },
+]
+
+[params.humid_period_transition_years]
+group = "environment"
+unit = "years"
+description = "Duration of the African Humid Period's onset and of its end (ADR-0084), each linear in time."
+kind = { type = "integer", min = 100, max = 3000 }
+default = 500
+prior = { dist = "fixed" }
+status = "literature"
+note = "The end was abrupt at each site, a few centuries, though later southward (Shanahan et al. 2015; Tierney et al. 2017); the forcing's slices are a century apart."
+sources = [
+  { citation = "Shanahan, T.M., McKay, N.P., Hughen, K.A., et al. (2015). The time-transgressive termination of the African Humid Period. Nature Geoscience 8, 140-144.", doi = "10.1038/ngeo2329" },
+]
+
 [params.cultivation_crowding]
 group = "cultivation"
 unit = "N/K"
