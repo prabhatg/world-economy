@@ -24,6 +24,8 @@ pub enum Component {
     /// Agent practice ([`crate::agents::Traits`]): written by cultivation, copied by
     /// mechanisms that split bands off.
     AgentTraits,
+    /// The settlement each group lives in (ADR-0082).
+    AgentSettlement,
 }
 
 /// What a mechanism declares about itself.

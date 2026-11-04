@@ -193,6 +193,36 @@ sources = [
   { citation = "Dunbar, R. I. M. (1993). Coevolution of neocortical size, group size and language in humans. Behavioral and Brain Sciences 16, 681-694.", doi = "10.1017/S0140525X00032325" },
 ]
 
+[params.settlement_integration]
+group = "social"
+unit = "groups"
+description = "How many groups at their size limit a settlement holds together by institutions that bind households across groups without command (ADR-0082): a settlement of several groups splits off a group above settlement_integration times the village limit of its pooled practice (plus settlement_hierarchy). 1: every settlement is one group, as before ADR-0082."
+kind = { type = "real", min = 1.0, max = 20.0 }
+default = 1.0
+prior = { dist = "uniform", lo = 1.0, hi = 6.0 }
+status = "placeholder"
+note = "Off until calibrated. A group splits when decisions among its units overload it, unless it builds hierarchy over them (Johnson 1982): consensus among about six units works, so a council of groups' heads is the next level up, and the prior reaches six groups. Villages split at a size limit unless integrative institutions, such as communal ritual, hold them together (Bandy 2004); Çatalhöyük grew to a town of many households without marked hierarchy, its houses bound by ritual and descent (Hodder 2014), and the late PPNB villages of the Levant grew with communal buildings and burial practice shared across households (Kuijt 2000). Kosse (1990) puts a second threshold of community size near 500 people."
+sources = [
+  { citation = "Johnson, G. A. (1982). Organizational structure and scalar stress. In C. Renfrew, M. Rowlands and B. A. Segraves (eds.), Theory and Explanation in Archaeology, 389-421. Academic Press." },
+  { citation = "Bandy, M. S. (2004). Fissioning, scalar stress, and social evolution in early village societies. American Anthropologist 106, 322-333.", doi = "10.1525/aa.2004.106.2.322" },
+  { citation = "Hodder, I. (2014). Çatalhöyük: the leopard changes its spots. A summary of recent work. Anatolian Studies 64, 1-22.", doi = "10.1017/S0066154614000027" },
+  { citation = "Kuijt, I. (2000). People and space in early agricultural villages: exploring daily lives, community size, and architecture in the late Pre-Pottery Neolithic. Journal of Anthropological Archaeology 19, 75-102.", doi = "10.1006/jaar.1999.0352" },
+  { citation = "Kosse, K. (1990). Group size and societal complexity: thresholds in the long-term memory. Journal of Anthropological Archaeology 9, 275-303.", doi = "10.1016/0278-4165(90)90009-3" },
+]
+
+[params.settlement_hierarchy]
+group = "social"
+unit = "groups per unit of log-wealth variance"
+description = "How many more groups a settlement holds together per unit of its households' variance of log wealth (the pooled inequality of its groups, ADR-0074), by leaders whose decisions others accept (ADR-0082). 0: no hierarchy."
+kind = { type = "real", min = 0.0, max = 20.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 5.0 }
+status = "placeholder"
+note = "Off until calibrated. The other answer to scalar stress is vertical hierarchy, leaders whose decisions the units accept (Johnson 1982); where wealth is unequal, some households can command or reward others. Households' variance of log wealth runs from about 0.2 (where land is open) to 0.8 (where farmland is owned outright), so the prior's top adds up to about four groups; in M1, where farmers cultivate about 0.38 of their effort, settled groups hold about 0.28, so it adds up to about one and a half. Whether inequality allows hierarchy, or hierarchy builds inequality, the model does not decide: it reads the one it tracks."
+sources = [
+  { citation = "Johnson, G. A. (1982). Organizational structure and scalar stress. In C. Renfrew, M. Rowlands and B. A. Segraves (eds.), Theory and Explanation in Archaeology, 389-421. Academic Press." },
+]
+
 [params.wealth_transmission]
 group = "social"
 unit = "per generation"

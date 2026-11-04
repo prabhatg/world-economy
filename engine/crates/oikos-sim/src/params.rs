@@ -32,6 +32,8 @@ pub struct Params {
     pub fission_threshold: u64,
     pub village_fission_size: u64,
     pub aggregation_rate: f64,
+    pub settlement_integration: f64,
+    pub settlement_hierarchy: f64,
     pub wealth_transmission: f64,
     pub wealth_shock: f64,
     pub landed_wealth_transmission: f64,
@@ -119,6 +121,8 @@ impl Params {
             fission_threshold: int("fission_threshold")?,
             village_fission_size: int("village_fission_size")?,
             aggregation_rate: real("aggregation_rate")?,
+            settlement_integration: real("settlement_integration")?,
+            settlement_hierarchy: real("settlement_hierarchy")?,
             wealth_transmission: real("wealth_transmission")?,
             wealth_shock: real("wealth_shock")?,
             landed_wealth_transmission: real("landed_wealth_transmission")?,
@@ -320,6 +324,9 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     // ADR-0076: learning from the own cell only, by how many do it.
     ("neighbor_learning", Restore::Value(0.0)),
     ("success_bias", Restore::Value(0.0)),
+    // ADR-0082: every settlement is one group.
+    ("settlement_integration", Restore::Value(1.0)),
+    ("settlement_hierarchy", Restore::Value(0.0)),
 ];
 
 impl Params {

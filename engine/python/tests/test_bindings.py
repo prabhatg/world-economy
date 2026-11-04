@@ -20,7 +20,7 @@ import oikos
 ENGINE = Path(__file__).resolve().parents[2]
 GOLDEN_WU = ENGINE / "golden" / "m0-toy.workunit.json"
 GOLDEN = json.loads((ENGINE / "golden" / "m0-toy.json").read_text())
-GOLDEN_HASH = "2f07e8aadafd7b7182dc55affa3e5d128ed9d23e5fc7436a241f5d916d317201"
+GOLDEN_HASH = "9da779c47feaa5a41ed755b587bc194c9700c0b48efe6c18ecf43a74d5a5e408"
 
 
 def run(world, years=300, parts=1):
@@ -123,6 +123,8 @@ def test_population_and_agents_agree_with_the_summary():
     np.testing.assert_array_equal(np.bincount(agents["cell"], weights=agents["weight"], minlength=w.cells), pop)
     order = np.lexsort((agents["id"], agents["cell"]))
     np.testing.assert_array_equal(order, np.arange(len(order)))
+    # Toy bands live by themselves (ADR-0082).
+    assert agents["settlement"].dtype == np.uint32 and not agents["settlement"].any()
 
 
 def test_arrays_are_copies_the_caller_may_modify():

@@ -78,6 +78,9 @@ fn farming_world(seed: u64, mortality: f64) -> (World, Vec<u8>, Vec<u8>) {
         village_fission_size: 127,
         aggregation_rate: 0.05,
         success_bias: 0.0,
+        // settlements of one group, as when the test was written (ADR-0082)
+        settlement_integration: 1.0,
+        settlement_hierarchy: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();

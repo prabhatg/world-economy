@@ -113,6 +113,11 @@ that fills too early and a core that rises too late (open question 37), and rule
 the defaults; the contrasts constrain nothing new, so success bias stays unidentified.
 A sixth wave judged on every record gives new calibrated defaults (ADR-0081): wave 6
 run 216, with fertility and the wealth parameters at their literature values.
+Settlements of several groups (ADR-0082, #39): groups keep their scalar-stress limit,
+and integrative institutions and hierarchy hold several of them together in one
+settlement, which pays for its size in infection; at the calibrated defaults, two or
+more groups' worth gives villages of 110-160 people, inside the record's range, though
+still level through time.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

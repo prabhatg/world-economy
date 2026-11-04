@@ -128,6 +128,10 @@ pub(crate) struct Partition {
     /// Migrants leaving this partition, indexed by destination partition.
     outbox: Vec<Agents>,
     stats: StepStats,
+    /// Whether a settlement label was made here this step.
+    towns: bool,
+    /// Daughters that stayed in their settlement this step ([`PartitionView`]).
+    stayed: Vec<(u32, u32, u64, Traits)>,
 }
 
 pub struct World {
@@ -174,6 +178,9 @@ pub struct World {
     mechanisms: Arc<Vec<Box<dyn Mechanism>>>,
     schedule: Schedule,
     steps_since_balance: u64,
+    /// Whether any group may live with others (ADR-0082): set once a settlement label is
+    /// made; without, every group lives alone and mechanisms skip looking for settlements.
+    towns: bool,
     /// Reused buffers for re-partitioning (per-cell cost, all agents in order).
     cell_costs: Vec<u64>,
     gathered: Agents,
@@ -398,9 +405,12 @@ impl World {
             mechanisms: Arc::new(mechanisms),
             schedule,
             steps_since_balance: 0,
+            towns: false,
             cell_costs: Vec::new(),
             gathered: Agents::default(),
         };
+        let towns = w.agent_slices().any(|a| !a.alone(0..a.len()));
+        w.towns = towns;
         w.farm_all();
         w
     }
@@ -512,34 +522,41 @@ impl World {
             .collect()
     }
 
-    /// Settlements per cell: its groups, each counted as far as it is settled (its
-    /// cultivation effort), which is what surveys find (ADR-0072). Summed in fixed point,
-    /// so exact whatever the partitions.
+    /// Settlements per cell: each counted as far as it is settled (its groups'
+    /// people-weighted cultivation effort, a lone group's own), which is what surveys find
+    /// (ADR-0072, ADR-0082). Summed in fixed point, so exact whatever the partitions.
     pub fn settlements(&self) -> Vec<f64> {
         let mut sum = vec![0u64; self.grid.len()];
-        for a in self.agent_slices() {
-            for (&cell, &effort) in a.cell.iter().zip(&a.cultivation) {
-                sum[cell as usize] += effort as u64;
-            }
-        }
+        self.for_each_settlement(|cell, s| sum[cell as usize] += s.cultivation() as u64);
         sum.into_iter().map(|x| x as f64 / SHARE_ONE as f64).collect()
     }
 
-    /// Village size per cell (ADR-0078): its groups' log people, each counted as far as it
-    /// is settled, as `settlements` counts them; divided by it, the mean log size of the
-    /// cell's settlements. Summed in canonical agent order, so the same whatever the
+    /// Village size per cell (ADR-0078): its settlements' log people, each counted as far
+    /// as it is settled, as `settlements` counts them; divided by it, the mean log size of
+    /// the cell's settlements. Summed in canonical agent order, so the same whatever the
     /// partitions.
     pub fn village_sizes(&self) -> Vec<f64> {
         let mut sum = vec![0.0f64; self.grid.len()];
+        self.for_each_settlement(|cell, s| {
+            if s.cultivation() > 0 {
+                sum[cell as usize] +=
+                    s.cultivation() as f64 / SHARE_ONE as f64 * oikos_math::ln(s.people as f64);
+            }
+        });
+        sum
+    }
+
+    /// Calls `f` with each settlement holding people and its cell, in canonical order.
+    fn for_each_settlement(&self, mut f: impl FnMut(u32, &crate::agents::Settlement)) {
         for a in self.agent_slices() {
-            for i in 0..a.len() {
-                if a.cultivation[i] > 0 && a.weight[i] > 0 {
-                    sum[a.cell[i] as usize] +=
-                        a.cultivation[i] as f64 / SHARE_ONE as f64 * oikos_math::ln(a.weight[i] as f64);
-                }
+            let mut i = 0;
+            while i < a.len() {
+                let cell = a.cell[i];
+                let end = i + a.cell[i..].iter().take_while(|&&c| c == cell).count();
+                a.for_each_settlement(i..end, |s| f(cell, s));
+                i = end;
             }
         }
-        sum
     }
 
     /// Wealth inequality of each cell's settled people (ADR-0074): the variance of log
@@ -765,6 +782,7 @@ impl World {
                 crop_sum: &self.crop_sum,
                 models: &self.models,
                 models_for: self.models_for,
+                towns: self.towns,
                 tick: self.tick,
                 seed: self.seed,
             };
@@ -776,6 +794,7 @@ impl World {
                 part.outbox.resize_with(ranges.len(), Agents::default);
                 part.outbox.iter_mut().for_each(Agents::clear);
                 part.stats = StepStats::default();
+                part.stayed.clear();
                 let mut view = PartitionView {
                     cells: part.cells.clone(),
                     agents: &mut part.agents,
@@ -783,6 +802,8 @@ impl World {
                     counters,
                     outbox: &mut part.outbox,
                     ranges: &ranges,
+                    towns: &mut part.towns,
+                    stayed: &mut part.stayed,
                 };
                 // Tiles end on cell boundaries; agents spawned during the step lie past `n`.
                 let n = view.agents.len();
@@ -844,6 +865,7 @@ impl World {
         let mut stats = StepStats::default();
         for p in &self.parts {
             stats.add(p.stats);
+            self.towns |= p.towns;
         }
         self.tick = self.tick.advance(self.schedule.base_period());
         stats

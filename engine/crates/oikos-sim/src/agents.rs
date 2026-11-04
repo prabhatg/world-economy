@@ -5,6 +5,9 @@
 //! ([`Traits`]): split-off groups inherit it and merged bands take the people-weighted
 //! mean, so practice travels with people (demic diffusion). The wealth inequality among
 //! a group's households (ADR-0074) travels and pools the same way.
+//!
+//! Each group also lives in a settlement (ADR-0082), the site a survey finds: by itself
+//! ([`ALONE`]), or with the groups of its cell that share its settlement label.
 
 use oikos_core::EntityId;
 use std::ops::Range;
@@ -12,6 +15,9 @@ use std::ops::Range;
 /// Fixed-point one for shares in [0, 1] (parts per billion): exact integers, so merging
 /// and checkpoints are the same on every host.
 pub const SHARE_ONE: u32 = 1_000_000_000;
+
+/// The settlement label of a group that lives by itself, a settlement of one group.
+pub const ALONE: u32 = 0;
 
 /// A band's practice (ADR-0049), as shares of [`SHARE_ONE`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -58,6 +64,66 @@ pub struct Agents {
     pub domestication: Vec<u32>,
     /// [`Traits::inequality`] per agent.
     pub inequality: Vec<u32>,
+    /// The settlement each group lives in: [`ALONE`], or a label it shares with the other
+    /// groups of its settlement, unique within its cell (drawn from the cell's birth
+    /// counter). Labels never span cells.
+    pub settlement: Vec<u32>,
+}
+
+/// One settlement of a cell: its groups with people, and their people-weighted practice.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Settlement {
+    /// [`ALONE`] for a lone group.
+    pub label: u32,
+    /// Index of its first group (canonical order).
+    pub first: usize,
+    pub groups: u32,
+    pub people: u64,
+    cultivation: u128,
+    inequality: u128,
+}
+
+impl Settlement {
+    fn of(label: u32, first: usize) -> Settlement {
+        Settlement { label, first, groups: 0, people: 0, cultivation: 0, inequality: 0 }
+    }
+
+    /// Counts a group of `w` people with practice `t` in (one spawned this step, say).
+    pub fn add_group(&mut self, w: u64, t: Traits) {
+        self.add(w, t.cultivation, t.inequality);
+    }
+
+    fn add(&mut self, w: u64, cultivation: u32, inequality: u32) {
+        if w > 0 {
+            self.groups += 1;
+            self.people += w;
+            self.cultivation += w as u128 * cultivation as u128;
+            self.inequality += w as u128 * inequality as u128;
+        }
+    }
+
+    fn mean(sum: u128, people: u64) -> u32 {
+        sum.checked_div(people as u128).unwrap_or(0) as u32
+    }
+
+    /// People-weighted mean cultivation effort of its groups (rounded down; a lone
+    /// group's own).
+    pub fn cultivation(&self) -> u32 {
+        Settlement::mean(self.cultivation, self.people)
+    }
+
+    /// People-weighted mean of its groups' inequality (within groups: the model keeps no
+    /// wealth differences between them).
+    pub fn inequality(&self) -> u32 {
+        Settlement::mean(self.inequality, self.people)
+    }
+
+    /// Mean cultivation and inequality if a group of `w` people with `t` joined it.
+    pub fn joined(&self, w: u64, t: Traits) -> (u32, u32) {
+        let mut s = *self;
+        s.add(w, t.cultivation, t.inequality);
+        (s.cultivation(), s.inequality())
+    }
 }
 
 /// People-weighted trait sums of the small bands merging into one absorber. In u64:
@@ -112,13 +178,20 @@ impl Agents {
         self.push_with(id, cell, weight, Traits::FORAGER);
     }
 
+    /// Adds a group that lives by itself.
     pub fn push_with(&mut self, id: EntityId, cell: u32, weight: u64, traits: Traits) {
+        self.push_in(id, cell, weight, traits, ALONE);
+    }
+
+    /// Adds a group living in the settlement labeled `settlement` of its cell.
+    pub fn push_in(&mut self, id: EntityId, cell: u32, weight: u64, traits: Traits, settlement: u32) {
         self.id.push(id);
         self.cell.push(cell);
         self.weight.push(weight);
         self.cultivation.push(traits.cultivation);
         self.domestication.push(traits.domestication);
         self.inequality.push(traits.inequality);
+        self.settlement.push(settlement);
     }
 
     pub fn traits(&self, i: usize) -> Traits {
@@ -142,6 +215,7 @@ impl Agents {
         self.cultivation.append(&mut other.cultivation);
         self.domestication.append(&mut other.domestication);
         self.inequality.append(&mut other.inequality);
+        self.settlement.append(&mut other.settlement);
     }
 
     /// Appends copies of `other`'s agents at indices `span`.
@@ -151,7 +225,8 @@ impl Agents {
         self.weight.extend_from_slice(&other.weight[span.clone()]);
         self.cultivation.extend_from_slice(&other.cultivation[span.clone()]);
         self.domestication.extend_from_slice(&other.domestication[span.clone()]);
-        self.inequality.extend_from_slice(&other.inequality[span]);
+        self.inequality.extend_from_slice(&other.inequality[span.clone()]);
+        self.settlement.extend_from_slice(&other.settlement[span]);
     }
 
     pub fn total_weight(&self) -> u64 {
@@ -168,6 +243,7 @@ impl Agents {
         self.cultivation = order.iter().map(|&i| self.cultivation[i]).collect();
         self.domestication = order.iter().map(|&i| self.domestication[i]).collect();
         self.inequality = order.iter().map(|&i| self.inequality[i]).collect();
+        self.settlement = order.iter().map(|&i| self.settlement[i]).collect();
     }
 
     /// Range of agents in `cells` (requires canonical order).
@@ -192,7 +268,7 @@ impl Agents {
             for j in i..end {
                 let w = self.weight[j];
                 if w >= threshold.max(1) {
-                    out.push_with(self.id[j], cell, w, self.traits(j));
+                    out.push_in(self.id[j], cell, w, self.traits(j), self.settlement[j]);
                 } else if small.first() == Some(&j) {
                     let people: u64 = small.iter().map(|&k| self.weight[k]).sum();
                     let mean = |x: &[u32]| {
@@ -204,7 +280,7 @@ impl Agents {
                         domestication: mean(&self.domestication),
                         inequality: mean(&self.inequality),
                     };
-                    out.push_with(self.id[j], cell, people, t);
+                    out.push_in(self.id[j], cell, people, t, self.settlement[j]);
                 }
             }
             i = end;
@@ -219,6 +295,50 @@ impl Agents {
         self.cultivation.clear();
         self.domestication.clear();
         self.inequality.clear();
+        self.settlement.clear();
+    }
+
+    /// Whether every group of `groups` lives by itself, as before ADR-0082.
+    pub fn alone(&self, groups: Range<usize>) -> bool {
+        self.settlement[groups].iter().all(|&s| s == ALONE)
+    }
+
+    /// The settlement group `g` lives in, among the groups of `cell` (one cell's range).
+    pub fn settlement_of(&self, cell: Range<usize>, g: usize) -> Settlement {
+        let label = self.settlement[g];
+        if label == ALONE {
+            let mut s = Settlement::of(ALONE, g);
+            s.add(self.weight[g], self.cultivation[g], self.inequality[g]);
+            return s;
+        }
+        let first = cell.start + self.settlement[cell.clone()].iter().position(|&l| l == label).unwrap();
+        let mut s = Settlement::of(label, first);
+        for i in first..cell.end {
+            if self.settlement[i] == label {
+                s.add(self.weight[i], self.cultivation[i], self.inequality[i]);
+            }
+        }
+        s
+    }
+
+    /// Whether group `g` lives in settlement `s`.
+    pub fn lives_in(&self, g: usize, s: &Settlement) -> bool {
+        if s.label == ALONE { g == s.first } else { self.settlement[g] == s.label }
+    }
+
+    /// Calls `f` with each settlement of `cell` (one cell's range) holding people, in order
+    /// of their first group. Quadratic in the groups of a cell's settlements, which are few.
+    pub fn for_each_settlement(&self, cell: Range<usize>, mut f: impl FnMut(&Settlement)) {
+        for i in cell.clone() {
+            let label = self.settlement[i];
+            if label != ALONE && self.settlement[cell.start..i].contains(&label) {
+                continue;
+            }
+            let s = self.settlement_of(i..cell.end, i);
+            if s.people > 0 {
+                f(&s);
+            }
+        }
     }
 
     /// Sorts into canonical (cell, id) order. All cells must lie in `cells`.
@@ -250,6 +370,8 @@ impl Agents {
         scratch.domestication.resize(n, 0);
         scratch.inequality.clear();
         scratch.inequality.resize(n, 0);
+        scratch.settlement.clear();
+        scratch.settlement.resize(n, ALONE);
         // Scatter; afterwards counts[k] is the end of cell k's group.
         for i in 0..n {
             let k = (self.cell[i] - cells.start) as usize;
@@ -261,6 +383,7 @@ impl Agents {
             scratch.cultivation[dst] = self.cultivation[i];
             scratch.domestication[dst] = self.domestication[i];
             scratch.inequality[dst] = self.inequality[i];
+            scratch.settlement[dst] = self.settlement[i];
         }
 
         let mut start = 0;
@@ -272,7 +395,7 @@ impl Agents {
                 if scratch.id[j - 1] <= id {
                     continue;
                 }
-                let (w, t) = (scratch.weight[j], scratch.traits(j));
+                let (w, t, s) = (scratch.weight[j], scratch.traits(j), scratch.settlement[j]);
                 let mut i = j;
                 while i > start && scratch.id[i - 1] > id {
                     scratch.id[i] = scratch.id[i - 1];
@@ -280,11 +403,13 @@ impl Agents {
                     scratch.cultivation[i] = scratch.cultivation[i - 1];
                     scratch.domestication[i] = scratch.domestication[i - 1];
                     scratch.inequality[i] = scratch.inequality[i - 1];
+                    scratch.settlement[i] = scratch.settlement[i - 1];
                     i -= 1;
                 }
                 scratch.id[i] = id;
                 scratch.weight[i] = w;
                 scratch.set_traits(i, t);
+                scratch.settlement[i] = s;
             }
             start = end;
         }
@@ -317,7 +442,7 @@ impl Agents {
                 if w > 0 {
                     if absorber.is_none() {
                         absorber = Some(out.len());
-                        out.push_with(self.id[i], cell, 0, Traits::FORAGER);
+                        out.push_in(self.id[i], cell, 0, Traits::FORAGER, self.settlement[i]);
                     }
                     pool.add(w, self.traits(i));
                 }
@@ -423,17 +548,81 @@ mod tests {
         assert_eq!(out.traits(0), t, "foragers are not reset to no inequality when they merge");
     }
 
+    #[test]
+    fn a_group_founds_its_own_settlement() {
+        let mut a = Agents::default();
+        a.push(EntityId::new(0, 1), 0, 50);
+        assert_eq!(a.settlement, [ALONE]);
+    }
+
+    #[test]
+    fn a_settlement_pools_its_groups() {
+        // Four groups of cell 0: two live together (with one merged away), one alone.
+        let t = |e: f64, v: f64| Traits {
+            cultivation: Traits::from_share(e),
+            inequality: Traits::from_share(v),
+            ..Traits::FORAGER
+        };
+        let mut a = Agents::default();
+        a.push_in(EntityId::new(0, 1), 0, 30, t(1.0, 0.4), 7);
+        a.push_with(EntityId::new(0, 2), 0, 500, t(0.0, 0.0));
+        a.push_in(EntityId::new(0, 3), 0, 10, t(0.6, 0.8), 7);
+        a.push_in(EntityId::new(0, 4), 0, 0, t(0.0, 0.0), 7);
+        a.push(EntityId::new(0, 5), 0, 20);
+        let town = a.settlement_of(0..5, 2);
+        assert_eq!(town, a.settlement_of(0..5, 0), "any of its groups names it");
+        assert_eq!((town.label, town.first), (7, 0));
+        assert_eq!((town.people, town.groups), (40, 2), "groups merged away (no people) are not members");
+        assert_eq!(town.cultivation(), Traits::from_share(0.9), "(30 x 1 + 10 x 0.6) / 40");
+        assert_eq!(town.inequality(), Traits::from_share(0.5), "(30 x 0.4 + 10 x 0.8) / 40");
+        let alone = a.settlement_of(0..5, 1);
+        assert_eq!(
+            (alone.people, alone.groups, alone.cultivation()),
+            (500, 1, 0),
+            "not the other lone group's"
+        );
+        assert!(!a.alone(0..5) && a.alone(1..2));
+        let mut seen = vec![];
+        a.for_each_settlement(0..5, |s| seen.push((s.first, s.people)));
+        assert_eq!(seen, [(0, 40), (1, 500), (4, 20)], "in order of their first group");
+    }
+
+    #[test]
+    fn a_lone_group_keeps_its_practice_exactly() {
+        let mut a = Agents::default();
+        let t = Traits { cultivation: 123_456_789, domestication: 0, inequality: 987_654_321 };
+        a.push_with(EntityId::new(0, 1), 0, 77, t);
+        let s = a.settlement_of(0..1, 0);
+        assert_eq!((s.cultivation(), s.inequality()), (t.cultivation, t.inequality));
+    }
+
+    #[test]
+    fn merged_small_bands_stay_in_the_absorbers_settlement() {
+        let mut a = Agents::default();
+        a.push_in(EntityId::new(0, 1), 0, 3, Traits::FORAGER, 9);
+        a.push(EntityId::new(0, 2), 0, 1);
+        a.push_in(EntityId::new(0, 3), 0, 50, Traits::FORAGER, 9);
+        let mut out = Agents::default();
+        a.merge_small_into(10, &mut out, 0, &mut [0]);
+        assert_eq!(out.settlement, [9, 9]);
+        let mut reference = a.clone();
+        reference.merge_small(10);
+        assert_eq!(reference, out);
+    }
+
     use proptest::prelude::*;
 
     /// Random agents in `cells` cells with unique ids.
     fn arb_agents(cells: u32) -> impl Strategy<Value = Agents> {
-        let row = (0..cells, 0u64..1_000, 0u64..40, 0..=SHARE_ONE, 0..=SHARE_ONE, 0..=u32::MAX);
+        let row = (0..cells, 0u64..1_000, 0u64..40, 0..=SHARE_ONE, 0..=SHARE_ONE, 0..=u32::MAX, 0u64..4);
         prop::collection::vec(row, 0..300).prop_map(|rows| {
             let mut a = Agents::default();
-            for (i, (cell, counter, w, e, d, v)) in rows.into_iter().enumerate() {
+            for (i, (cell, counter, w, e, d, v, s)) in rows.into_iter().enumerate() {
                 // Unique ids: counter space partitioned by row index.
                 let t = Traits { cultivation: e, domestication: d, inequality: v };
-                a.push_with(EntityId::new(cell, counter * 1_000 + i as u64), cell, w, t);
+                let id = EntityId::new(cell, counter * 1_000 + i as u64);
+                // Most groups live alone; the rest in one of a few settlements of their cell.
+                a.push_in(id, cell, w, t, s as u32);
             }
             a
         })

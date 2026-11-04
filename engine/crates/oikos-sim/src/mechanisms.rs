@@ -12,7 +12,7 @@
 //! it before the next tile starts. Mechanisms must therefore be local to the cells of
 //! the tile they are given (reading anything else only through [`Sense`]).
 
-use crate::agents::{Agents, SHARE_ONE, Traits};
+use crate::agents::{ALONE, Agents, SHARE_ONE, Settlement, Traits};
 use crate::params::Params;
 use crate::schedule::{Component, MechanismSpec};
 use crate::world::StepStats;
@@ -71,6 +71,9 @@ pub struct Sense<'a> {
     /// from the own cell's effort only ([`Cultivation::own_cell_only`]).
     pub models: &'a [(f64, f64)],
     pub models_for: (f64, f64),
+    /// Whether any group lived with others when the step began (ADR-0082); if not, every
+    /// group of every tile lives alone until one makes a settlement label in its own tile.
+    pub towns: bool,
     pub tick: Tick,
     pub seed: u64,
 }
@@ -83,6 +86,11 @@ pub struct PartitionView<'a> {
     pub(crate) counters: &'a mut [u64],
     pub(crate) outbox: &'a mut [Agents],
     pub(crate) ranges: &'a [Range<u32>],
+    /// Set when a settlement label is made.
+    pub(crate) towns: &'a mut bool,
+    /// Daughters that stayed in their settlement this step, past every tile: cell, label,
+    /// people and practice.
+    pub(crate) stayed: &'a mut Vec<(u32, u32, u64, Traits)>,
 }
 
 impl PartitionView<'_> {
@@ -104,6 +112,50 @@ impl PartitionView<'_> {
         }
         id
     }
+
+    /// Creates a group born in `cell` (which this partition owns) that stays there, in its
+    /// settlement labeled `settlement`.
+    pub fn spawn_in(&mut self, cell: u32, weight: u64, traits: Traits, settlement: u32) -> EntityId {
+        let id = self.spawn(cell, cell, weight, traits);
+        *self.agents.settlement.last_mut().expect("spawned in this partition") = settlement;
+        id
+    }
+
+    /// A settlement label no group of `cell` (which this partition owns) holds: one more
+    /// than a count drawn from its birth counter, as if a group were born there.
+    pub fn new_label(&mut self, cell: u32) -> u32 {
+        let counter = &mut self.counters[(cell - self.cells.start) as usize];
+        let label = u32::try_from(*counter + 1).expect("fewer than 4 billion groups born in a cell");
+        *counter += 1;
+        *self.towns = true;
+        label
+    }
+
+    /// Settlement `s` of `cell` with the daughters that stayed in it this step.
+    pub fn with_stayed(&self, cell: u32, mut s: Settlement) -> Settlement {
+        if s.label != ALONE {
+            let label = s.label;
+            for &(_, _, n, t) in self.stayed.iter().filter(|x| x.0 == cell && x.1 == label) {
+                s.add_group(n, t);
+            }
+        }
+        s
+    }
+
+    /// The label of the settlement group `g` lives in, giving it a new one if it lives alone
+    /// (as another group comes to live with it).
+    fn label_of(&mut self, g: usize) -> u32 {
+        if self.agents.settlement[g] == ALONE {
+            self.agents.settlement[g] = self.new_label(self.agents.cell[g]);
+        }
+        self.agents.settlement[g]
+    }
+}
+
+/// The run of agents from `i` (to at most `end`) in `i`'s cell.
+fn cell_at(agents: &Agents, i: usize, end: usize) -> Range<usize> {
+    let cell = agents.cell[i];
+    i..i + agents.cell[i..end].iter().take_while(|&&c| c == cell).count()
 }
 
 /// The model's mechanisms, configured from `params`, in registration order.
@@ -254,6 +306,10 @@ impl Mechanism for Growth {
 /// and its critical size is `threshold` over its contact: foragers' camps add none, and
 /// the large villages that defence, exchange and marriage draw people into (ADR-0071) pay
 /// for their size in infection (Eshed et al. 2010). `mortality` 0 switches it off.
+///
+/// A settlement of several groups (ADR-0082) shares its water, waste and paths: the
+/// infection persists in it as in one group of all its people, at its pooled practice,
+/// and each of its groups loses its share of the infected.
 #[derive(Clone, Debug)]
 pub struct Disease {
     pub period_ticks: u64,
@@ -294,6 +350,22 @@ impl Disease {
     pub fn deaths(&self, people: f64, effort: f64) -> f64 {
         self.mortality * (people - self.critical_size(effort)).max(0.0)
     }
+
+    /// Expected deaths per period among `w` people of a group in settlement `s` (the
+    /// group's own at `effort` if it lives alone).
+    fn deaths_in(&self, w: u64, effort: u32, s: &Settlement) -> f64 {
+        if s.groups <= 1 {
+            return self.deaths(w as f64, Traits::share(effort));
+        }
+        self.mortality * w as f64 * self.prevalence(s.people as f64, Traits::share(s.cultivation()))
+    }
+
+    fn die(rng: &Philox4x32, t: u64, agents: &mut Agents, i: usize, expected: f64) -> u64 {
+        let w = agents.weight[i];
+        let died = stochastic_round(oikos_math::finite(expected), rng.u32(agents.id[i].0, t, 0, 0)).min(w);
+        agents.weight[i] = w - died;
+        died
+    }
 }
 
 impl Mechanism for Disease {
@@ -301,7 +373,7 @@ impl Mechanism for Disease {
         MechanismSpec {
             name: "disease",
             period_ticks: self.period_ticks,
-            reads: vec![Component::AgentWeight, Component::AgentTraits],
+            reads: vec![Component::AgentWeight, Component::AgentTraits, Component::AgentSettlement],
             writes: vec![Component::AgentWeight],
             after: self.after.clone(),
         }
@@ -314,22 +386,47 @@ impl Mechanism for Disease {
         let rng = Philox4x32::new(sense.seed, Stream::Disease);
         let t = sense.tick.0;
         let agents = &mut *part.agents;
-        // No group this small carries the infection, whatever its practice: most are skipped.
+        // No group this small carries the infection by itself, whatever its practice: most
+        // groups that live alone are skipped.
         let carriers = self.critical_size(1.0) as u64;
         let mut deaths = 0;
-        for i in tile {
-            let w = agents.weight[i];
-            if w <= carriers {
+        let lone = |agents: &mut Agents, groups: Range<usize>, deaths: &mut u64| {
+            for g in groups {
+                let w = agents.weight[g];
+                if w > carriers {
+                    let e = self.deaths(w as f64, Traits::share(agents.cultivation[g]));
+                    if e > 0.0 {
+                        *deaths += Disease::die(&rng, t, agents, g, e);
+                    }
+                }
+            }
+        };
+        // Most tiles: every group lives alone.
+        if !sense.towns || agents.alone(tile.clone()) {
+            lone(agents, tile, &mut deaths);
+            part.stats.deaths += deaths;
+            return;
+        }
+        // Settlements of several groups: every group's deaths from the settlement before any.
+        let mut expected = Vec::new();
+        let mut i = tile.start;
+        while i < tile.end {
+            let cell = cell_at(agents, i, tile.end);
+            i = cell.end;
+            if agents.alone(cell.clone()) {
+                lone(agents, cell, &mut deaths);
                 continue;
             }
-            let expected = self.deaths(w as f64, Traits::share(agents.cultivation[i]));
-            if expected == 0.0 {
-                continue;
+            expected.clear();
+            for g in cell.clone() {
+                let s = agents.settlement_of(cell.clone(), g);
+                expected.push(self.deaths_in(agents.weight[g], agents.cultivation[g], &s));
             }
-            let died =
-                stochastic_round(oikos_math::finite(expected), rng.u32(agents.id[i].0, t, 0, 0)).min(w);
-            agents.weight[i] = w - died;
-            deaths += died;
+            for (g, &e) in cell.zip(&expected) {
+                if e > 0.0 {
+                    deaths += Disease::die(&rng, t, agents, g, e);
+                }
+            }
         }
         part.stats.deaths += deaths;
     }
@@ -347,6 +444,16 @@ impl Mechanism for Disease {
 ///
 /// `village` 0 is the fission before villages: one limit, `threshold`, and the daughter
 /// always placed by crowding or exploration, room or not.
+///
+/// A settlement may hold several groups (ADR-0082) up to its own limit
+/// ([`Fission::settlement_limit`]): `integration` groups' worth, by institutions that bind
+/// households across groups without command (ritual, shared buildings, descent; Bandy
+/// 2004; Hodder 2014), and `hierarchy` more per unit of its households' variance of log
+/// wealth, by leaders whose decisions others accept (Johnson 1982). A daughter that stays
+/// in her cell stays in her settlement while it holds fewer people than that, and a
+/// settlement at or above it sheds its smallest group, with the same probability, which
+/// founds a settlement of its own in the cell: scalar stress between groups, as between
+/// households. Integration 1 and no hierarchy are settlements of one group, as before.
 #[derive(Clone, Debug)]
 pub struct Fission {
     pub period_ticks: u64,
@@ -354,6 +461,8 @@ pub struct Fission {
     pub village: u64,
     pub probability: f64,
     pub exploration: f64,
+    pub integration: f64,
+    pub hierarchy: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -365,8 +474,18 @@ impl Fission {
             village: p.village_fission_size,
             probability: p.fission_probability,
             exploration: p.exploration_probability,
+            integration: p.settlement_integration,
+            hierarchy: p.settlement_hierarchy,
             after: vec!["disease"],
         }
+    }
+
+    /// Size limit of a settlement whose groups' pooled practice is `effort` and pooled
+    /// inequality `inequality` (fixed point): `integration` groups' worth, plus `hierarchy`
+    /// more per unit of variance of log wealth. A lone group's limit at integration 1 and
+    /// no hierarchy.
+    pub fn settlement_limit(&self, effort: f64, inequality: u32) -> f64 {
+        self.limit(effort) * (self.integration + self.hierarchy * Traits::share(inequality))
     }
 
     /// The smallest group any limit lets split (at least two people).
@@ -410,6 +529,35 @@ impl Fission {
         }
         least_crowded(sense, std::iter::once(cell).chain(ns)).unwrap()
     }
+
+    /// Whether settlement `s` is at or above its limit.
+    fn crowded(&self, s: &Settlement) -> bool {
+        s.people as f64 >= self.settlement_limit(Traits::share(s.cultivation()), s.inequality())
+    }
+
+    /// Scalar stress between groups: each settlement of several groups in `cell` (one
+    /// cell's range) at or above its limit sheds its smallest group (the first on ties),
+    /// with probability `split`, which then lives by itself.
+    fn shed(&self, sense: &Sense<'_>, part: &mut PartitionView<'_>, cell: Range<usize>, split: Probability) {
+        let rng = Philox4x32::new(sense.seed, Stream::Settlement);
+        let mut leaving = Vec::new();
+        let agents = &*part.agents;
+        let here = agents.cell[cell.start];
+        agents.for_each_settlement(cell.clone(), |s| {
+            if s.groups < 2 || !self.crowded(s) {
+                return;
+            }
+            if !split.hit(rng.u32(EntityId::new(here, s.label as u64).0, sense.tick.0, 0, 0)) {
+                return;
+            }
+            let members =
+                (s.first..cell.end).filter(|&g| agents.settlement[g] == s.label && agents.weight[g] > 0);
+            leaving.push(members.min_by_key(|&g| agents.weight[g]).expect("a settlement of several groups"));
+        });
+        for g in leaving {
+            part.agents.settlement[g] = ALONE;
+        }
+    }
 }
 
 impl Mechanism for Fission {
@@ -423,7 +571,7 @@ impl Mechanism for Fission {
                 Component::Forcing,
                 Component::AgentTraits,
             ],
-            writes: vec![Component::AgentWeight, Component::AgentSpawn],
+            writes: vec![Component::AgentWeight, Component::AgentSpawn, Component::AgentSettlement],
             after: self.after.clone(),
         }
     }
@@ -435,30 +583,57 @@ impl Mechanism for Fission {
         let migration_rng = Philox4x32::new(sense.seed, Stream::Migration);
         let t = sense.tick.0;
         let smallest = self.smallest();
-        for i in tile {
-            // Weight first: most agents are below every limit, so skip them after one load.
-            let mut w = part.agents.weight[i];
-            if w < smallest || !self.splits(w, Traits::share(part.agents.cultivation[i])) {
+        // Where every group lives alone (most tiles), each is a settlement of its own: they
+        // are taken one by one.
+        let alone = !sense.towns || part.agents.alone(tile.clone());
+        let mut i = tile.start;
+        while i < tile.end {
+            if alone && part.agents.weight[i] < smallest {
+                i += 1;
                 continue;
             }
-            let cell = part.agents.cell[i];
+            let cell_range = if alone { i..i + 1 } else { cell_at(part.agents, i, tile.end) };
+            i = cell_range.end;
+            let cell = part.agents.cell[cell_range.start];
             // Bands the sea has flooded do not split; inundation moves them this step.
             if !sense.habitable[cell as usize] {
                 continue;
             }
-            let id = part.agents.id[i];
-            if !split.hit(fission_rng.u32(id.0, t, 0, 0)) {
-                continue;
+            if !alone && !part.agents.alone(cell_range.clone()) {
+                self.shed(sense, part, cell_range.clone(), split);
             }
-            let take = w / 2;
-            let half = Agents::split_weight(&mut w, take);
-            part.agents.weight[i] = w;
-            part.stats.fissions += 1;
-            let c = cell as usize;
-            let room = self.village != 0 && sense.population[c] < sense.capacity[c];
-            let dest = if room { cell } else { self.destination(sense, &migration_rng, explore, id, cell) };
-            let traits = part.agents.traits(i);
-            part.spawn(cell, dest, half, traits);
+            for g in cell_range.clone() {
+                // Weight first: most agents are below every limit, so skip them after one load.
+                let mut w = part.agents.weight[g];
+                if w < smallest || !self.splits(w, Traits::share(part.agents.cultivation[g])) {
+                    continue;
+                }
+                let id = part.agents.id[g];
+                if !split.hit(fission_rng.u32(id.0, t, 0, 0)) {
+                    continue;
+                }
+                let c = cell as usize;
+                let room = self.village != 0 && sense.population[c] < sense.capacity[c];
+                let dest =
+                    if room { cell } else { self.destination(sense, &migration_rng, explore, id, cell) };
+                // A daughter who stays in her cell stays in her settlement while it has room.
+                let stays = self.village != 0
+                    && dest == cell
+                    && !self
+                        .crowded(&part.with_stayed(cell, part.agents.settlement_of(cell_range.clone(), g)));
+                let take = w / 2;
+                let half = Agents::split_weight(&mut w, take);
+                part.agents.weight[g] = w;
+                part.stats.fissions += 1;
+                let traits = part.agents.traits(g);
+                if stays {
+                    let label = part.label_of(g);
+                    part.spawn_in(cell, half, traits, label);
+                    part.stayed.push((cell, label, half, traits));
+                } else {
+                    part.spawn(cell, dest, half, traits);
+                }
+            }
         }
     }
 }
@@ -565,6 +740,12 @@ impl Mechanism for Dispersal {
 /// (scalar stress, Johnson 1982; the social-brain group size, Dunbar 1993), where fission
 /// splits it again (ADR-0070). Joined groups pool their practice, people-weighted.
 /// `rate` 0 switches it off.
+///
+/// Settlements may hold several groups (ADR-0082): a group joins the largest other
+/// settlement of its cell at least as large as its own that has room for it, merging into
+/// the largest of its groups at least its own size that it fits (as above), and otherwise
+/// living beside them as a group of its own, if the settlement stays below its limit
+/// ([`Fission::settlement_limit`]) with it. Settlements of one group are groups, as before.
 #[derive(Clone, Debug)]
 pub struct Aggregation {
     pub period_ticks: u64,
@@ -585,6 +766,13 @@ impl Aggregation {
         ((wb + w) as f64) < self.fission.limit(Traits::share(pooled(wb, cb, w, ca)))
     }
 
+    /// Whether a group of `w` people with practice `t` can join settlement `s` as a group
+    /// of its own: the settlement stays below the limit of its pooled practice.
+    pub fn settles(&self, s: &Settlement, w: u64, t: Traits) -> bool {
+        let (cultivation, inequality) = s.joined(w, t);
+        ((s.people + w) as f64) < self.fission.settlement_limit(Traits::share(cultivation), inequality)
+    }
+
     pub fn from_params(p: &Params) -> Aggregation {
         Aggregation {
             period_ticks: p.period_ticks,
@@ -601,7 +789,7 @@ impl Mechanism for Aggregation {
             name: "aggregation",
             period_ticks: self.period_ticks,
             reads: vec![Component::AgentTraits],
-            writes: vec![Component::AgentWeight, Component::AgentTraits],
+            writes: vec![Component::AgentWeight, Component::AgentTraits, Component::AgentSettlement],
             after: self.after.clone(),
         }
     }
@@ -612,13 +800,13 @@ impl Mechanism for Aggregation {
         }
         let rng = Philox4x32::new(sense.seed, Stream::Aggregation);
         let t = sense.tick.0;
-        let agents = &mut *part.agents;
-        if agents.cultivation[tile.clone()].iter().all(|&c| c == 0) {
+        if part.agents.cultivation[tile.clone()].iter().all(|&c| c == 0) {
             return; // foragers' tiles: nobody joins
         }
         // Tiles hold whole cells (agents spawned this step lie past the tile), and groups
         // are taken in canonical order; a cell's range is found only for groups that join.
         for a in tile.clone() {
+            let agents = &*part.agents;
             let w = agents.weight[a];
             if w == 0 || agents.cultivation[a] == 0 {
                 continue;
@@ -630,19 +818,40 @@ impl Mechanism for Aggregation {
             let cell = agents.cell[a];
             let first = a - agents.cell[tile.start..a].iter().rev().take_while(|&&c| c == cell).count();
             let end = a + agents.cell[a..tile.end].iter().take_while(|&&c| c == cell).count();
-            // The largest other group at least this one's size that has room for it (first
-            // in canonical order on ties).
-            let mut target: Option<usize> = None;
-            for b in first..end {
-                let wb = agents.weight[b];
-                if b == a || wb < w || target.is_some_and(|t| agents.weight[t] >= wb) {
-                    continue;
+            let ta = agents.traits(a);
+            let own = part.with_stayed(cell, agents.settlement_of(first..end, a));
+            // The largest other settlement at least as large as this group's own that has room
+            // for it (first in canonical order on ties), and the group of it to merge into: the
+            // largest at least this one's size that it fits (first on ties), if any.
+            let mut target: Option<(Settlement, Option<usize>)> = None;
+            agents.for_each_settlement(first..end, |s| {
+                let s = &part.with_stayed(cell, *s);
+                if agents.lives_in(a, s)
+                    || s.people < own.people
+                    || target.is_some_and(|(t, _)| t.people >= s.people)
+                {
+                    return;
                 }
-                if self.fits(wb, agents.cultivation[b], w, agents.cultivation[a]) {
-                    target = Some(b);
+                let mut group: Option<usize> = None;
+                for b in s.first..end {
+                    let wb = agents.weight[b];
+                    if !agents.lives_in(b, s) || wb < w || group.is_some_and(|g| agents.weight[g] >= wb) {
+                        continue;
+                    }
+                    if self.fits(wb, agents.cultivation[b], w, ta.cultivation) {
+                        group = Some(b);
+                    }
                 }
-            }
-            let Some(b) = target else { continue };
+                if group.is_some() || self.settles(s, w, ta) {
+                    target = Some((*s, group));
+                }
+            });
+            let Some((s, group)) = target else { continue };
+            let Some(b) = group else {
+                part.agents.settlement[a] = part.label_of(s.first);
+                continue;
+            };
+            let agents = &mut *part.agents;
             let wb = agents.weight[b];
             let (tb, ta) = (agents.traits(b), agents.traits(a));
             agents.set_traits(
@@ -1145,5 +1354,209 @@ impl Mechanism for Inequality {
             };
             *v = self.next_stored(*v, owned);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inputs::Inputs;
+
+    const ONE: u32 = SHARE_ONE;
+
+    fn id(counter: u64) -> EntityId {
+        EntityId::new(0, counter)
+    }
+
+    /// Settlement scenes: the village limit is 127 for full farmers, and they always join.
+    fn params(integration: f64) -> Params {
+        Params {
+            fission_threshold: 60,
+            village_fission_size: 127,
+            settlement_integration: integration,
+            settlement_hierarchy: 0.0,
+            aggregation_rate: 1.0,
+            fission_probability: 1.0,
+            exploration_probability: 0.0,
+            ..Params::default()
+        }
+    }
+
+    /// Full farmers of cell 0: (counter, people, settlement label).
+    fn farmers(groups: &[(u64, u64, u32)]) -> Agents {
+        let mut a = Agents::default();
+        let t = Traits { cultivation: ONE, ..Traits::FORAGER };
+        for &(c, w, s) in groups {
+            a.push_in(id(c), 0, w, t, s);
+        }
+        a
+    }
+
+    /// Whether groups `g` all live in one settlement of several groups.
+    fn together(a: &Agents, g: &[usize]) -> bool {
+        a.settlement[g[0]] != ALONE && g.iter().all(|&i| a.settlement[i] == a.settlement[g[0]])
+    }
+
+    /// Runs `m` once over one partition of a small grid whose cells hold `capacity`
+    /// people; returns the agents, with any spawned this step at the end. Cell 0's birth
+    /// counter starts at 100.
+    fn run(m: &dyn Mechanism, agents: Agents, capacity: u64) -> Agents {
+        run_all(&[m], agents, capacity)
+    }
+
+    /// [`run`] for several mechanisms in turn, as one step runs them.
+    fn run_all(ms: &[&dyn Mechanism], mut agents: Agents, capacity: u64) -> Agents {
+        let grid = Grid::from_base_cell(22, 1).unwrap();
+        let n = grid.len();
+        let inputs = Inputs::none();
+        let mut population = vec![0; n];
+        for (&c, &w) in agents.cell.iter().zip(&agents.weight) {
+            population[c as usize] += w;
+        }
+        let (habitable, capacity, zeros) = (vec![true; n], vec![capacity; n], vec![0; n]);
+        let sense = Sense {
+            grid: &grid,
+            inputs: &inputs,
+            habitable: &habitable,
+            restricted: false,
+            capacity: &capacity,
+            forage_capacity: &capacity,
+            farming: false,
+            suitability: &[],
+            climate_stress: &[],
+            climate_variability: &[],
+            population: &population,
+            effort_sum: &zeros,
+            farm: &[],
+            crop_sum: &zeros,
+            models: &[],
+            models_for: (0.0, 0.0),
+            towns: true,
+            tick: Tick(1),
+            seed: 7,
+        };
+        let (mut stats, mut counters) = (StepStats::default(), vec![100; n]);
+        let mut outbox = vec![Agents::default()];
+        let ranges = std::slice::from_ref(&(0..n as u32)).to_vec();
+        let (len, mut towns, mut stayed) = (agents.len(), false, Vec::new());
+        let mut part = PartitionView {
+            cells: 0..n as u32,
+            agents: &mut agents,
+            stats: &mut stats,
+            counters: &mut counters,
+            outbox: &mut outbox,
+            ranges: &ranges,
+            towns: &mut towns,
+            stayed: &mut stayed,
+        };
+        for m in ms {
+            m.decide(&sense, &mut part, 0..len);
+        }
+        agents
+    }
+
+    #[test]
+    fn a_group_too_large_to_merge_joins_a_settlement_as_a_group_of_its_own() {
+        // 90 people cannot merge into a group of 100 (127 is the limit of a group), but a
+        // settlement holding three groups' worth takes them as a neighbourhood of their own.
+        let a = run(&Aggregation::from_params(&params(3.0)), farmers(&[(1, 100, 0), (2, 90, 0)]), 1000);
+        assert_eq!(a.weight, [100, 90], "both groups keep their people");
+        assert!(together(&a, &[0, 1]), "{:?}", a.settlement);
+        assert_eq!(a.settlement[0], 101, "a label new to the cell, from its birth counter");
+    }
+
+    #[test]
+    fn a_group_that_fits_still_merges_into_the_largest_group_it_fits() {
+        for integration in [1.0, 3.0] {
+            let scene = farmers(&[(1, 100, 0), (2, 90, 0), (3, 20, 0)]);
+            let a = run(&Aggregation::from_params(&params(integration)), scene, 1000);
+            assert_eq!(a.weight, [120, 90, 0], "integration {integration}");
+            let towns = integration > 1.0;
+            assert_eq!(together(&a, &[0, 1]), towns, "integration {integration}: {:?}", a.settlement);
+            assert!(towns || a.alone(0..3), "a settlement of one group is a group");
+        }
+    }
+
+    #[test]
+    fn a_full_settlement_takes_no_more_groups() {
+        // Two groups' worth, 254 people: 190 and 80 more is too many.
+        let a = run(
+            &Aggregation::from_params(&params(2.0)),
+            farmers(&[(1, 100, 5), (2, 90, 5), (4, 80, 0)]),
+            1000,
+        );
+        assert_eq!(a.weight, [100, 90, 80]);
+        assert_eq!(a.settlement, [5, 5, ALONE]);
+    }
+
+    #[test]
+    fn hierarchy_lets_unequal_settlements_hold_more_groups() {
+        let p = Params { settlement_hierarchy: 1.5, ..params(2.0) };
+        let f = Fission::from_params(&p);
+        assert_eq!(f.settlement_limit(1.0, 0), 254.0, "two groups' worth where wealth is equal");
+        assert!((f.settlement_limit(1.0, Traits::from_share(0.4)) - 127.0 * 2.6).abs() < 1e-9);
+        assert_eq!(Fission::from_params(&params(1.0)).settlement_limit(0.5, 0), f.limit(0.5));
+    }
+
+    #[test]
+    fn a_daughter_stays_in_her_settlement_while_it_has_room() {
+        // A group of 130 is above its limit and splits; its land has room, so the daughter
+        // stays in the cell, and in the settlement if it holds fewer than its limit.
+        for (integration, stays) in [(3.0, true), (1.0, false)] {
+            let a = run(&Fission::from_params(&params(integration)), farmers(&[(1, 130, 0)]), 1000);
+            assert_eq!(a.weight, [65, 65]);
+            assert_eq!(a.cell, [0, 0]);
+            assert_eq!(together(&a, &[0, 1]), stays, "integration {integration}: {:?}", a.settlement);
+            assert!(stays || a.alone(0..2));
+        }
+    }
+
+    #[test]
+    fn a_settlement_counts_the_daughters_that_stayed_this_step() {
+        // 130 + 100 people in a settlement of two groups' worth (254): the 130 split, and
+        // the daughter stays (230 < 254). Joining 80 more would make 310, so they may not,
+        // though the daughter is not one of the step's tile.
+        let (fission, aggregation) =
+            (Fission::from_params(&params(2.0)), Aggregation::from_params(&params(2.0)));
+        let a = run_all(&[&fission, &aggregation], farmers(&[(1, 130, 5), (2, 100, 5), (3, 80, 0)]), 1000);
+        assert_eq!(a.weight, [65, 100, 80, 65]);
+        assert_eq!(a.settlement, [5, 5, ALONE, 5]);
+    }
+
+    #[test]
+    fn a_daughter_put_back_in_her_full_cell_stays_in_her_settlement() {
+        // The cell is full, so the daughter is placed by crowding, and its neighbors are
+        // fuller still: she stays in the cell, and the settlement (limit 381) has room.
+        let mut scene = farmers(&[(1, 130, 0)]);
+        for c in 1..7 {
+            for k in 1..4 {
+                scene.push(EntityId::new(c, k), c, 50); // foragers' camps below their limit
+            }
+        }
+        let a = run(&Fission::from_params(&params(3.0)), scene, 100);
+        let home: Vec<usize> = (0..a.len()).filter(|&i| a.cell[i] == 0).collect();
+        assert_eq!(home.iter().map(|&i| a.weight[i]).collect::<Vec<_>>(), [65, 65]);
+        assert!(together(&a, &home), "{:?}", a.settlement);
+    }
+
+    #[test]
+    fn a_settlement_above_its_limit_sheds_its_smallest_group() {
+        // 270 people where two groups' worth (254) is the limit: the smallest group leaves
+        // to live by itself (scalar stress between groups).
+        let a =
+            run(&Fission::from_params(&params(2.0)), farmers(&[(1, 120, 5), (2, 100, 5), (3, 50, 5)]), 1000);
+        assert_eq!(a.weight, [120, 100, 50], "no group is above its own limit");
+        assert_eq!(a.settlement, [5, 5, ALONE]);
+    }
+
+    #[test]
+    fn a_group_shares_the_infection_of_its_settlement() {
+        // Two villages of 100, critical size 50: alone, each keeps 50 infected; as one
+        // settlement of 200, three quarters of each are (prevalence 1 - 50/200).
+        let p = Params { disease_threshold: 50.0, disease_mortality: 1.0, ..params(2.0) };
+        let alone = run(&Disease::from_params(&p), farmers(&[(1, 100, 0), (2, 100, 0)]), 1000);
+        assert_eq!(alone.weight, [50, 50]);
+        let together = run(&Disease::from_params(&p), farmers(&[(1, 100, 3), (2, 100, 3)]), 1000);
+        assert_eq!(together.weight, [25, 25]);
     }
 }

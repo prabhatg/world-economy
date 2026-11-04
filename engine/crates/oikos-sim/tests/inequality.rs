@@ -79,6 +79,9 @@ fn farming_world(seed: u64) -> (World, Vec<u8>, Vec<u8>) {
         aggregation_rate: 0.05,
         success_bias: 0.0,
         wild_yield_ratio: 0.3877,
+        // settlements of one group, as when the test was written (ADR-0082)
+        settlement_integration: 1.0,
+        settlement_hierarchy: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();
@@ -251,15 +254,16 @@ fn inequality_is_partition_independent_and_restores() {
 
 #[test]
 fn checkpoints_from_before_inequality_restore_with_foragers_inequality() {
-    // The layout before ADR-0074: magic OIKOSCK4 and agents without their inequality.
+    // The layout before ADR-0074: magic OIKOSCK4 and agents without their inequality (nor
+    // their settlement, ADR-0082).
     let (mut w, g, c) = farming_world(9);
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let agents = w.agent_count();
-    let at = now.len() - 32 * agents;
+    let at = now.len() - 36 * agents;
     let mut before = now[..at].to_vec();
     before[..8].copy_from_slice(b"OIKOSCK4");
-    for r in now[at..].chunks(32) {
+    for r in now[at..].chunks(36) {
         before.extend_from_slice(&r[..28]);
     }
     let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();

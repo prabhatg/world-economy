@@ -159,6 +159,11 @@
     defaults. Still open: why villages do not grow through time, which towns of several
     groups (#39) or a density that changed with house forms could explain. The defaults
     of ADR-0081 (wave 6 run 216, `village_fission_size` 186) hold about 67 people.
+    Why they are small (ADR-0082): farmers settle at about 0.38 of their effort
+    cultivating, where a group's limit is about 92 people, and they reach it; a cell
+    holds five or six such groups. Settlements of several groups (ADR-0082) bring the
+    level into the record's range at the defaults (110-160 people from two groups'
+    worth); they leave it level through time (open question 38).
 34. How strongly do houses track wealth, and when did inequality rise (ADR-0074; #43)? The
     house-size operator takes floor area to grow as wealth to the power 0.7, a judgment
     from comparing house-size and wealth Ginis across two compilations; within-site data
@@ -212,6 +217,20 @@
     does not cancel within a block, unlike constant intensity); or core villages that
     grow too slowly (the village sizes of ADR-0078 point the same way, #39). Northeast
     Africa is recorded, not judged, until the forcing has an African Humid Period (#44).
+38. What made Upper Mesopotamian villages grow from the Halaf to the Late Chalcolithic
+    (126 to 179 people at the middle density) while Central Anatolia's stayed level
+    (ADR-0078, ADR-0082)? Settlements of several groups reach the record's level, but
+    the model's stay level in both surveys: integration is a constant, and the
+    inequality that hierarchy reads hardly changes once the land has filled (the
+    settled people's variance of log wealth is 0.28 from 9000 to 3000 BCE at the
+    defaults with towns, as they farm about 0.38 of their effort). A settlement is also capped by its own cell's land (about 400
+    people at the defaults), so the largest sites, which drew on more land (Late
+    Chalcolithic Tell Brak, over 100 ha), cannot form. Candidates: towns whose catchment
+    reaches into neighboring cells, as central places with craft and exchange; rising
+    yields (irrigation, the plough, secondary products) that let more people live off
+    one cell; conflict that drew people together for defence (Kuijt 2000; Birch 2013);
+    or house forms whose density changed with the period, so that areas overstate the
+    growth.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

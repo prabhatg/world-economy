@@ -1,14 +1,15 @@
 //! Canonical binary checkpoints.
 //!
 //! Layout (all integers little-endian):
-//! `magic "OIKOSCK5" | version u32 | region | seed u64 | tick u64 |
+//! `magic "OIKOSCK6" | version u32 | region | seed u64 | tick u64 |
 //!  params_len u32 | params JSON | cells u32 | forage_capacity u64×cells |
 //!  birth_counter u64×cells | soil u32×cells | sources u32 |
 //!  (obsidian availability u32×cells)×sources | agents u64 |
 //!  (id u64, cell u32, weight u64, cultivation u32, domestication u32,
-//!  inequality u32)×agents`
+//!  inequality u32, settlement u32)×agents`
 //!
-//! Magic `OIKOSCK4` was the layout before agents carried wealth inequality (ADR-0074);
+//! Magic `OIKOSCK5` was the layout before groups lived in settlements of several groups
+//! (ADR-0082); it restores with every group living by itself, which is what it meant. Magic `OIKOSCK4` was the layout before agents carried wealth inequality (ADR-0074);
 //! it restores with every group at the inequality foragers settle at, from which farmers'
 //! moves to their own level within a few decades; nothing else reads it. Magic `OIKOSCK3` was the layout before cells held obsidian (ADR-0060); it restores
 //! with none held yet. `OIKOSCK2` was the layout before cells kept soil (ADR-0055); it
@@ -33,7 +34,8 @@ use crate::world::{World, WorldConfig};
 use oikos_core::{EntityId, Tick};
 use std::sync::Arc;
 
-const MAGIC: &[u8; 8] = b"OIKOSCK5";
+const MAGIC: &[u8; 8] = b"OIKOSCK6";
+const MAGIC_BEFORE_SETTLEMENTS: &[u8; 8] = b"OIKOSCK5";
 const MAGIC_BEFORE_INEQUALITY: &[u8; 8] = b"OIKOSCK4";
 const MAGIC_BEFORE_OBSIDIAN: &[u8; 8] = b"OIKOSCK3";
 const MAGIC_BEFORE_SOIL: &[u8; 8] = b"OIKOSCK2";
@@ -55,7 +57,7 @@ fn id_hex(b: &[u8]) -> String {
 }
 
 pub fn encode(world: &World) -> Vec<u8> {
-    let mut b = Vec::with_capacity(64 + world.capacity.len() * 16 + world.agent_count() * 32);
+    let mut b = Vec::with_capacity(64 + world.capacity.len() * 16 + world.agent_count() * 36);
     b.extend_from_slice(MAGIC);
     match &world.config {
         WorldConfig::BaseCell(r) => {
@@ -103,6 +105,7 @@ pub fn encode(world: &World) -> Vec<u8> {
             b.extend_from_slice(&a.cultivation[i].to_le_bytes());
             b.extend_from_slice(&a.domestication[i].to_le_bytes());
             b.extend_from_slice(&a.inequality[i].to_le_bytes());
+            b.extend_from_slice(&a.settlement[i].to_le_bytes());
         }
     }
     b
@@ -146,11 +149,12 @@ pub fn decode(bytes: &[u8]) -> Result<World, String> {
 pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World, String> {
     let inputs = inputs.into();
     let mut r = Reader { b: bytes };
-    let (soil_kept, obsidian_kept, inequality_kept) = match r.take(8)? {
-        m if m == MAGIC => (true, true, true),
-        m if m == MAGIC_BEFORE_INEQUALITY => (true, true, false),
-        m if m == MAGIC_BEFORE_OBSIDIAN => (true, false, false),
-        m if m == MAGIC_BEFORE_SOIL => (false, false, false),
+    let (soil_kept, obsidian_kept, inequality_kept, settlement_kept) = match r.take(8)? {
+        m if m == MAGIC => (true, true, true, true),
+        m if m == MAGIC_BEFORE_SETTLEMENTS => (true, true, true, false),
+        m if m == MAGIC_BEFORE_INEQUALITY => (true, true, false, false),
+        m if m == MAGIC_BEFORE_OBSIDIAN => (true, false, false, false),
+        m if m == MAGIC_BEFORE_SOIL => (false, false, false, false),
         m if m == MAGIC_BEFORE_TRAITS => {
             return Err(
                 "checkpoint predates agent traits (format OIKOSCK1); rerun it with this engine".into()
@@ -220,6 +224,7 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
         let weight = r.u64()?;
         let (cultivation, domestication) = (r.u32()?, r.u32()?);
         let inequality = if inequality_kept { r.u32()? } else { foragers.inequality };
+        let settlement = if settlement_kept { r.u32()? } else { crate::agents::ALONE };
         let traits = Traits { cultivation, domestication, inequality };
         if cell as usize >= cells {
             return Err("agent cell out of range".into());
@@ -227,7 +232,7 @@ pub fn decode_with(bytes: &[u8], inputs: impl Into<Arc<Inputs>>) -> Result<World
         if traits.cultivation > crate::agents::SHARE_ONE || traits.domestication > crate::agents::SHARE_ONE {
             return Err("agent trait share above one".into());
         }
-        agents.push_with(id, cell, weight, traits);
+        agents.push_in(id, cell, weight, traits, settlement);
     }
     if !r.b.is_empty() {
         return Err("trailing bytes in checkpoint".into());

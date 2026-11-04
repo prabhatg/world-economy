@@ -110,6 +110,8 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         disease_mortality: 0.0,
         neighbor_learning: 0.0,
         success_bias: 0.0,
+        settlement_integration: 1.0,
+        settlement_hierarchy: 0.0,
         ..Params::default()
     }
 }
@@ -638,16 +640,18 @@ fn soil_is_partition_independent_and_restores() {
     assert_eq!(checkpoint::state_hash(&restored), run(1));
 }
 
-/// A checkpoint's agents as layouts before ADR-0074 wrote them (no inequality), and the
-/// checkpoint its restored world encodes to (every group at foragers' inequality).
+/// A checkpoint's agents as layouts before ADR-0074 wrote them (no inequality, nor
+/// settlements), and the checkpoint its restored world encodes to (every group at
+/// foragers' inequality, in a settlement of its own).
 fn before_inequality(now: &[u8], agents: usize, params: &Params) -> (Vec<u8>, Vec<u8>) {
     let forager = oikos_sim::mechanisms::Inequality::foragers(params).inequality.to_le_bytes();
-    let at = now.len() - 32 * agents;
+    let at = now.len() - 36 * agents;
     let (mut before, mut restored) = (now[..at].to_vec(), now[..at].to_vec());
-    for r in now[at..].chunks(32) {
+    for r in now[at..].chunks(36) {
         before.extend_from_slice(&r[..28]);
         restored.extend_from_slice(&r[..28]);
         restored.extend_from_slice(&forager);
+        restored.extend_from_slice(&0u32.to_le_bytes());
     }
     (before, restored)
 }

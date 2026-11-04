@@ -14,7 +14,8 @@ records leave many parameters unconstrained:
 
 - **Village size and aggregation** (`village_fission_size`, `aggregation_rate`): no
   record saw settlement size until F10 (below); it now does, loosely, and finds the
-  model's villages smaller and less growing than the record's.
+  model's villages smaller and less growing than the record's. Settlements of several
+  groups (F7, ADR-0082) reach the record's size, not its growth.
 - **Pace of learning** (`success_bias`, `adoption_rate`, `innovation_share`): the
   records see when cultivation took hold, which these trade off against each other;
   where it took hold first (F3, ADR-0080) does not separate them either.
@@ -58,7 +59,7 @@ parallel.
 | 1 | F1 House-size Ginis: judged in run files (decided 2026-11-03; open until the authors reply) | [#43](https://github.com/prabhatg/world-economy/issues/43) | wealth transmission and shocks | – |
 | 2 | F11 Juvenile index (age structure) | [#33](https://github.com/prabhatg/world-economy/issues/33) | fertility, the demographic transition | Guerrero et al. 2008 chapter |
 | 2 | F4 Disease lesions before and after farming | [#42](https://github.com/prabhatg/world-economy/issues/42) | disease mortality | – |
-| 2 | F7 Settlements of several groups (towns) | [#39](https://github.com/prabhatg/world-economy/issues/39) | the largest sites | F10 |
+| 2 | F7 Settlements of several groups (towns; mechanism in, ADR-0082: villages reach the record's size, not its growth, open question 38) | [#39](https://github.com/prabhatg/world-economy/issues/39) | the largest sites | F10 |
 | 2 | F13 Northeast Africa: the African Humid Period in the forcing and Nile-valley farming, so the subregion's radiocarbon can be judged | [#44](https://github.com/prabhatg/world-economy/issues/44) | dispersal into the Green Sahara and its retreat | F2; F5, F6 for the Nile |
 | 3 | F5 Herding: sheep and goats | [#37](https://github.com/prabhatg/world-economy/issues/37) | management, mobility, wealth in herds | faunal record |
 | 3 | F6 Crops beyond barley | [#38](https://github.com/prabhatg/world-economy/issues/38) | per-crop domestication | per-crop records |

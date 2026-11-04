@@ -134,7 +134,15 @@ Not brain simulation. Agents implement validated regularities:
   settlement in its own cell while the land has room. Farming groups gather into the
   largest village of their cell that has room (`mechanisms::Aggregation`, ADR-0071):
   sedentism, defence, exchange, marriage and ritual draw them together, up to the limit
-  of face-to-face coordination.
+  of face-to-face coordination. A settlement may hold several groups (ADR-0082): each
+  group keeps its own limit, and institutions that bind households across groups
+  (ritual, shared buildings, descent; `settlement_integration`) and leaders whose
+  decisions others accept, which wealth inequality allows (`settlement_hierarchy`),
+  hold a settlement of several groups together up to its own limit. A group too large
+  to merge into a village lives beside it as a neighbourhood of its own, a daughter
+  stays in her settlement while it has room, a settlement over its limit sheds its
+  smallest group, and the endemic infection (ADR-0075) persists in a settlement as in
+  one group of all its people. Surveys count settlements, not groups.
 - Wealth inequality. *Implemented (M1):* each group carries the spread of its households'
   wealth (the variance of log wealth; `mechanisms::Inequality`, ADR-0074), after the
   intergenerational model of Borgerhoff Mulder et al. (2009): a share of wealth passes
