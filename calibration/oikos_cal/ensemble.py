@@ -8,7 +8,7 @@ ordinary work unit by the `oikos` CLI with run outputs (`fields.zarr`), and a
 it reads from each world's own `fields.zarr`, so it shows exactly what the engine
 recorded.
 
-    python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1
+    python -m oikos_cal ensemble runs/m1/round10/best-wave6.json --out ../viewer/data/m1
 """
 
 import json

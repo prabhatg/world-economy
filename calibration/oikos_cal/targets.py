@@ -14,6 +14,14 @@ likelihoods use:
   blocks: it covers the counting noise and how differently regions were occupied and
   studied. The bootstrap also gives the eras' covariance, so history matching can judge
   their shape together (`group`);
+- radiocarbon subregions: in each subregion (a group of research-intensity blocks), the
+  calendar years by which a tenth, a quarter and half of its binned calibrated date mass
+  had accrued: where activity rose first, which the region-wide eras cannot see. Years,
+  not log shares, because a subregion may have no dates at all in its early eras. The
+  model side is the operator's expected mass summed over the subregion's blocks, so
+  research intensity still cancels per block. Observation variance and covariance are a
+  bootstrap over each subregion's sites (all its dates resampled together), apart in
+  each subregion; all subregions are one group;
 - domestication eras: the mean domestic share of barley assemblages in each era,
   weighted by n / (n + φ), the share of an assemblage's information that beta-binomial
   overdispersion φ leaves (ADR-0051). Observation variance is that of the weighted mean
@@ -26,6 +34,11 @@ likelihoods use:
   counting once) in zones of relative distance to the two source groups, before and
   after an era boundary (`obsidian.Operator`). Observation variance and covariance are a
   bootstrap over contexts; all zones are one group;
+- onset contrasts: before and after an era boundary, the cultivation effort the plant
+  remains imply at phases in rich wild-cereal stands minus that at phases in poor ones
+  (`onset.suitability`), against the same contrast of a world's efforts. Observation
+  variance and covariance are a bootstrap over the phases and the anchors; both eras
+  are one group;
 - village sizes: in each survey's landscape and era, the mean log area of the sized
   site phases converted to people by one density, against the mean log size of the
   world's settlements dated the same way (`villages.Operator`). Observation variance is
@@ -41,8 +54,8 @@ import numpy as np
 from .history import Group, Target
 from .radiocarbon import SUROVELL_2009
 
-__all__ = ["RadiocarbonEras", "DomesticationEras", "SiteEras", "VillageSizes", "ObsidianZones", "OnsetEras",
-           "HouseGinis"]
+__all__ = ["RadiocarbonEras", "RadiocarbonSubregions", "accrued", "DomesticationEras", "SiteEras", "VillageSizes", "ObsidianZones", "OnsetEras",
+           "OnsetContrasts", "HouseGinis"]
 
 
 def _era(first, end):
@@ -86,6 +99,61 @@ class RadiocarbonEras:
         """Summaries of a world: `activity` is an `Activity` or people-years [cell, century]."""
         a = activity.visible(self.visibility) if hasattr(activity, "visible") else activity
         return self._summary(self.op.expected(a, self.taphonomy).sum(axis=(0, 1)))
+
+
+def accrued(mass, first, shares):
+    """Calendar years by which each of `shares` of `mass` [..., century] (centuries from
+    year `first`) had accrued, linear within a century: [..., share]."""
+    mass = np.asarray(mass, dtype=float)
+    flat = mass.reshape(-1, mass.shape[-1])
+    out = np.empty((len(flat), len(shares)))
+    for r, m in enumerate(flat):
+        cum = np.cumsum(m)
+        target = np.asarray(shares) * cum[-1]
+        c = np.searchsorted(cum, target, side="left").clip(max=len(m) - 1)
+        before = np.where(c > 0, cum[c - 1], 0.0)
+        out[r] = first + 100 * (c + (target - before) / m[c])
+    return out.reshape(mass.shape[:-1] + (len(shares),))
+
+
+class RadiocarbonSubregions:
+    def __init__(self, op, subregions, shares=(0.1, 0.25, 0.5), discrepancy_sd=300.0, taphonomy=SUROVELL_2009,
+                 visibility=0.0, replicates=2000, rng=None, min_sites=20):
+        """`subregions`: name -> indices of `op`'s blocks (`radiocarbon.subregions`);
+        blocks of none are left out. `discrepancy_sd` in years."""
+        seen = np.concatenate([np.asarray(v, dtype=int) for v in subregions.values()] or [np.array([], int)])
+        if len(np.unique(seen)) < len(seen):
+            raise ValueError("a block is in two subregions")
+        self.op, self.shares, self.taphonomy, self.visibility = op, tuple(shares), taphonomy, visibility
+        self.names, self.members = list(subregions), [np.asarray(v, dtype=int) for v in subregions.values()]
+        first = op.settings.observed.first
+        site_mass = op.obs.site_mass.sum(axis=1)  # [site, century]
+        rng = rng or np.random.default_rng(0)
+        z, boot = [], []
+        for name, blocks in zip(self.names, self.members):
+            sites = np.nonzero(np.isin(op.obs.site_block, blocks) & (site_mass.sum(axis=1) > 0))[0]
+            if len(sites) < min_sites:
+                raise ValueError(f"{name} has {len(sites)} sites with usable dates; a bootstrap needs {min_sites}")
+            m = site_mass[sites]
+            z.append(accrued(m.sum(axis=0), first, self.shares))
+            draws = rng.multinomial(len(sites), np.full(len(sites), 1.0 / len(sites)), size=replicates)
+            boot.append(accrued(draws @ m, first, self.shares))
+        z, boot = np.concatenate(z), np.concatenate(boot, axis=1)
+        self.covariance = np.atleast_2d(np.cov(boot, rowvar=False))
+        var = np.diag(self.covariance)
+        labels = [f"radiocarbon {n} {round(100 * q)}% by" for n in self.names for q in self.shares]
+        self.targets = [_target(lab, z[i], var[i], discrepancy_sd**2) for i, lab in enumerate(labels)]
+
+    def group(self, first):
+        """All subregions as one `history.Group`, their targets starting at index `first`."""
+        n = len(self.targets)
+        return Group(list(range(first, first + n)), self.covariance, dof=n)
+
+    def model(self, activity):
+        a = activity.visible(self.visibility) if hasattr(activity, "visible") else activity
+        per_block = self.op.expected(a, self.taphonomy).sum(axis=1)  # [block, century]
+        mass = np.stack([per_block[b].sum(axis=0) for b in self.members])
+        return accrued(mass, self.op.settings.observed.first, self.shares).ravel()
 
 
 class DomesticationEras:
@@ -295,6 +363,50 @@ class OnsetEras:
 
     def model(self, activity):
         """Summaries of a world: its effort at each phase, averaged per era."""
+        return self._summary(self.op.efforts(activity)[0])
+
+
+class OnsetContrasts:
+    def __init__(self, op, rich, edges=(-7_600,), discrepancy_sd=0.1, replicates=2000, rng=None, min_phases=3):
+        """`rich`: whether each of `op`'s phases is in a rich wild-cereal stand; eras split
+        at calendar-year `edges` by a phase's midpoint, each needing `min_phases` rich
+        and poor phases."""
+        self.op, self.rich = op, np.asarray(rich, dtype=bool)
+        self.era = np.searchsorted(np.asarray(edges, dtype=float), op.mid, side="right")
+        self.n = len(edges) + 1
+        bounds = [f"before {-edges[0]:g} BCE", *(f"{-a:g}-{-b:g} BCE" for a, b in zip(edges, edges[1:])),
+                  f"after {-edges[-1]:g} BCE"]
+        for e, b in enumerate(bounds):
+            for stand, m in (("rich", self.rich), ("poor", ~self.rich)):
+                if (k := int(np.sum(m & (self.era == e)))) < min_phases:
+                    raise ValueError(f"{stand} stands {b} has {k} phases; a contrast needs {min_phases}")
+        rng = rng or np.random.default_rng(0)
+        share = op.k / op.n
+        pick = rng.integers(0, len(share), size=(replicates, len(share)))
+        anchor = rng.integers(0, len(op.anchors), size=(replicates, len(op.anchors)))
+        boot = np.array([self._summary(share[p], self.era[p], self.rich[p]) / op.anchors[a].mean()
+                         for p, a in zip(pick, anchor)])
+        self.covariance = np.atleast_2d(np.cov(boot[np.isfinite(boot).all(axis=1)], rowvar=False))
+        z = self._summary(share) / op.farming_share
+        self.targets = [_target(f"cultivation effort rich minus poor stands {b}", z[e], self.covariance[e, e],
+                                discrepancy_sd**2) for e, b in enumerate(bounds)]
+
+    def _summary(self, values, era=None, rich=None):
+        """Per era, the mean of `values` at rich phases minus that at poor ones (NaN when
+        a resample has none of either)."""
+        era = self.era if era is None else era
+        rich = self.rich if rich is None else rich
+        out = np.empty(self.n)
+        for e in range(self.n):
+            r, p = values[(era == e) & rich], values[(era == e) & ~rich]
+            out[e] = r.mean() - p.mean() if len(r) and len(p) else np.nan
+        return out
+
+    def group(self, first):
+        """Both eras as one `history.Group`, their targets starting at index `first`."""
+        return Group(list(range(first, first + len(self.targets))), self.covariance, dof=len(self.targets))
+
+    def model(self, activity):
         return self._summary(self.op.efforts(activity)[0])
 
 

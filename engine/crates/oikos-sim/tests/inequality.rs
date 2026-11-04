@@ -74,6 +74,11 @@ fn farming_world(seed: u64) -> (World, Vec<u8>, Vec<u8>) {
         adoption_rate: 0.02,
         innovation_share: 1.0,
         disease_mortality: 0.0,
+        // the village world the test was written for (the round-8 defaults, ADR-0066)
+        village_fission_size: 127,
+        aggregation_rate: 0.05,
+        success_bias: 0.0,
+        wild_yield_ratio: 0.3877,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();

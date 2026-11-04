@@ -9,18 +9,18 @@ through the Python bindings (`oikos`) and never change them.
 | Module | What it is |
 |---|---|
 | `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years, domestic-crop people-years, obsidian in use per source group, settlement-years (ADR-0072) and settled people-years times their inequality (ADR-0074), per cell and century while a world runs |
-| `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; `synthetic_dates` for validation |
+| `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; each site's date mass for bootstraps that resample sites, and `subregions` (boxes of blocks, ADR-0079); `synthetic_dates` for validation |
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
 | `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settlements (ADR-0072; settled people-years before) dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
 | `oikos_cal/juvenile.py` | Juvenile-index operator (ADR-0068): a cemetery's share of 5-19 year olds among its dead over 5, from the world's fertility and local growth there, through a stable population with hunter-gatherer Siler mortality; the Levant record is to come (#33) |
 | `oikos_cal/villages.py` | Village-size operator (ADR-0078, #34): the mean log area of each era's sized survey site phases, in people at a shared density, against the mean log size of a world's settlements dated through the surveys' periods |
 | `oikos_cal/inequality.py` | House-size inequality operator (ADR-0074): the small-sample Gini of house floor areas a site's excavated houses would show, from the settled people's variance of log wealth around it, against Kohler et al. 2017 |
-| `oikos_cal/onset.py` | Cultivation-onset operator (ADR-0064): people-weighted cultivation effort at dated site phases, against the effort their crops among charred plant remains imply (anchored on Pottery Neolithic phases) |
+| `oikos_cal/onset.py` | Cultivation-onset operator (ADR-0064): people-weighted cultivation effort at dated site phases, against the effort their crops among charred plant remains imply (anchored on Pottery Neolithic phases); the engine's wild-cereal suitability at each phase (ADR-0080) |
 | `oikos_cal/screening.py` | Morris elementary-effects screening of the registry's free parameters (ADR-0052) |
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
 | `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
-| `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones, onset eras, house Ginis |
+| `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones, onset eras, village sizes, radiocarbon subregions (ADR-0079), onset contrasts by wild-cereal stands (ADR-0080), house Ginis |
 | `oikos_cal/ensemble.py` | Ensembles for the viewer (ADR-0063): the calibrated defaults and the best consistent worlds of a `best` record, run as work units by the `oikos` CLI with outputs, and a `catalog.json` |
 | `oikos_cal/m1.py` | The M1 problem: operators, targets, worlds run in worker processes |
 | `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / best / profile / ensemble / report` |
@@ -59,7 +59,7 @@ python -m oikos_cal wave --runs 300 --previous ... --activate adoption_rate --ou
 python -m oikos_cal report runs/m1/wave1.json runs/m1/wave2.json
 python -m oikos_cal best runs/m1/wave1.json runs/m1/wave2.json --out runs/m1/best.json
 python -m oikos_cal profile obsidian_loss 0.002 0.003 0.004 --out runs/m1/obsidian_loss.json
-python -m oikos_cal ensemble runs/m1/round8/best.json --out ../viewer/data/m1   # needs the release CLI
+python -m oikos_cal ensemble runs/m1/round10/best-wave6.json --out ../viewer/data/m1   # needs the release CLI
 ```
 
 `best` reruns the best consistent runs with only their emulated parameters set and the
@@ -128,7 +128,10 @@ house-size record left out (`--leave-out inequality`); its best world does not b
 calibrated defaults either, so they stay. `wave4.json` adds the village-size record and
 the house-size Ginis (`--leave-out` with no record) and activates `aggregation_rate` and
 the four wealth parameters; `best-wave4.json` ranks wave 4 alone, as its records differ
-from the first three waves', and keeps the defaults too. The onset record's tables are downloaded by hand (`data/README.md`); without
+from the first three waves', and keeps the defaults too. `wave5.json` adds the
+radiocarbon subregions (ADR-0079) and `wave6.json` the onset contrasts too (ADR-0080);
+`best-wave6.json` ranks wave 6 alone, and its chosen world (run 216) gives the calibrated
+defaults (ADR-0081). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

@@ -90,10 +90,18 @@ fn golden_result() {
 fn the_hypotheses_switched_off_are_the_engine_before_them() {
     // Fertility 0 keeps the net change rounded once (ADR-0068 off) and village size 0 the
     // fission before villages (ADR-0070 off), so checkpoints from before them continue as
-    // they ran (ADR-0069): the golden summaries of that engine.
+    // they ran (ADR-0069): the golden summaries of that engine, at the forager growth and
+    // dispersal it ran with (the round-8 defaults, ADR-0066).
     let mut wu = golden_unit();
     let p = wu.params.clone().unwrap_or_default();
-    wu.params = Some(Params { fertility: 0.0, sedentary_fertility: 0.0, village_fission_size: 0, ..p });
+    wu.params = Some(Params {
+        fertility: 0.0,
+        sedentary_fertility: 0.0,
+        village_fission_size: 0,
+        growth_rate: 0.02316,
+        dispersal_probability: 0.3026,
+        ..p
+    });
     let result = run_work_unit(&wu, |p| Err(p.to_string()), |_, _| Ok(())).unwrap();
     let before: Vec<(i64, u64, u64)> = vec![
         (-12000, 360, 12),

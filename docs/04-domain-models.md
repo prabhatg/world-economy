@@ -43,22 +43,22 @@ enters the model, and the starting mechanisms.
   hypothesis; capacity blends foraging and farming by effort, so domestic crops feed
   more people and the transition can ratchet (`mechanisms::Cultivation`,
   `environment::cereal_suitability`, ADR-0049). A fourth, nested hypothesis scales the
-  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 15 in the
-  calibrated defaults, ADR-0066). A fifth, nested hypothesis has bands learn cultivation
+  target by climate reliability (stable-climate hypothesis, ADR-0054; weight 7.2 in the
+  calibrated defaults, ADR-0081). A fifth, nested hypothesis has bands learn cultivation
   mostly from the people around them (innovation share below 1): it then spreads as an
   innovation does, slowly while few plant and then fast (Bass 1969, Henrich 2001;
-  ADR-0065; innovation share 0.0061 and adoption rate 0.010 in the calibrated defaults).
+  ADR-0065; innovation share 1.6e-5 and adoption rate 0.028 in the calibrated defaults).
   Bands learn from the people around their own country too and copy what visibly pays
   (ADR-0076): each neighboring cell's people count `neighbor_learning` (0.1) as much as
   the band's own cell's, and each farmer counts farming's payoff, what a unit of effort
-  feeds against foraging, to the power `success_bias` (1: linear payoff weighting; 0 by
-  default until calibrated). A band copies the practice it moves toward, foragers' when
+  feeds against foraging, to the power `success_bias` (1: linear payoff weighting; 0.23 in
+  the calibrated defaults, which no record yet identifies, ADR-0080). A band copies the practice it moves toward, foragers' when
   it gives cultivation up. Wider learning evens practice out across a landscape;
   success bias speeds cultivation where it pays and holds it back where wild-cereal
   cultivation feeds fewer than foraging. Both 0 nest the learning before.
   Fields wear the soil down and yields fall once it thins below a critical share (land
-  degradation, ADR-0055; 2.1e-4 per year at full effort in the calibrated defaults,
-  against soil formation 2.2e-4).
+  degradation, ADR-0055; 3.4e-4 per year at full effort in the calibrated defaults,
+  against soil formation 7.1e-4).
   Wild-cereal suitability comes from temperature and precipitation; soils, irrigation
   and animals are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
@@ -117,7 +117,7 @@ Not brain simulation. Agents implement validated regularities:
   (`obsidian_loss`), so availability falls off about exponentially along settled land
   and never crosses empty land. It changes nothing else yet; goods with value, and
   exchange that responds to them, come later. Sourced assemblages constrain the loss:
-  0.0040 in the calibrated defaults, an e-fold about every 110 km (ADR-0061, ADR-0066).
+  0.0095 in the calibrated defaults, an e-fold about every 75 km (ADR-0061, ADR-0081).
 - Markets: local price formation via decentralized bargaining/matching; routes with
   transport costs by terrain, technology (pack animals, ships, rail, containers).
 - Specialization and division of labor tied to market size (Smith) and urbanization.
@@ -129,7 +129,8 @@ Not brain simulation. Agents implement validated regularities:
 - Groups form, merge and split by cooperative benefit vs. coordination cost.
   *Implemented (M1):* fission by scalar stress (`mechanisms::Fission`, ADR-0070): a
   group's size limit rises with its cultivation effort from foragers' camps (60) to
-  farming villages (127; Alberti 2014), and a group above it splits, founding a new
+  farming villages (186 in the calibrated defaults, ADR-0081; Hutterite colonies split
+  at 127, Alberti 2014), and a group above it splits, founding a new
   settlement in its own cell while the land has room. Farming groups gather into the
   largest village of their cell that has room (`mechanisms::Aggregation`, ADR-0071):
   sedentism, defence, exchange, marriage and ritual draw them together, up to the limit

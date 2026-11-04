@@ -6,7 +6,8 @@
 # sources. Status "placeholder" means an engine-test value with no empirical claim;
 # M1 replaces these with literature-based or calibrated values.
 # Status "calibrated" means the value of one world consistent with the M1 record
-# (calibration/runs/m1/round8/best.json, ADR-0066); its note gives the consistent range.
+# (calibration/runs/m1/round10/best-wave6.json, ADR-0081, or for the parameters
+# round 10 did not emulate, round8/best.json, ADR-0066); its note gives the consistent range.
 #
 # Changing a default changes the golden hash (engine/golden/m0-toy.json).
 
@@ -28,12 +29,12 @@ group = "demography"
 unit = "1/period"
 description = "Intrinsic growth rate r in logistic growth dw = r w (1 - N/K) of mobile foragers (see sedentary_growth_rate)."
 kind = { type = "real", min = 0.0, max = 0.1 }
-default = 0.02316
+default = 0.02784
 prior = { dist = "uniform", lo = 0.001, hi = 0.03 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0038 to 0.027 (10-90%). Local growth of foragers between filling empty land and holding at capacity; the Neolithic demographic transition is sedentary_growth_rate. Not identified by the records (ADR-0067): populations follow carrying capacity, which grows far slower."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.01 to 0.026 (10-90%). Local growth of foragers between filling empty land and holding at capacity; the Neolithic demographic transition is sedentary_growth_rate. Not identified by the records (ADR-0067): populations follow carrying capacity, which grows far slower."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Bocquet-Appel, J.-P. (2011). When the world's population took off: the springboard of the Neolithic Demographic Transition. Science 333, 560-561.", doi = "10.1126/science.1208880" },
 ]
 
@@ -85,11 +86,12 @@ group = "health"
 unit = "people"
 description = "Critical size of a fully sedentary group for endemic infection (ADR-0075): with density-dependent transmission, R0 is the group's size over this, and in larger groups the infection persists at prevalence 1 - 1/R0 (Anderson and May 1991). Mobile groups' critical size is this over their contact (mobile_contact)."
 kind = { type = "real", min = 1.0, max = 1000.0 }
-default = 50.0
+default = 146.9
 prior = { dist = "uniform", lo = 20.0, hi = 150.0 }
-status = "placeholder"
-note = "Judgment. Acute crowd infections (measles) need communities of hundreds of thousands (Bartlett 1957) and could not persist in the Neolithic; what small, settled communities sustain are infections spread through shared water, waste and close contact, and tuberculosis, found at Atlit-Yam about 7000 BCE (Hershkovitz et al. 2008). This is the burden settlement adds: isolated bands keep their own persistent infections (Black 1975), which foragers' baseline mortality already counts, so a camp's zero burden here is a modelling assumption. Below the sizes of farming villages (Fission's village_fission_size, 127) and above foragers' camps once mobility is counted. The skeletal record of infection in the Levant (Eshed et al. 2010) is to constrain it."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 28 to 1.4e+02 (10-90%). Judgment. Acute crowd infections (measles) need communities of hundreds of thousands (Bartlett 1957) and could not persist in the Neolithic; what small, settled communities sustain are infections spread through shared water, waste and close contact, and tuberculosis, found at Atlit-Yam about 7000 BCE (Hershkovitz et al. 2008). This is the burden settlement adds: isolated bands keep their own persistent infections (Black 1975), which foragers' baseline mortality already counts, so a camp's zero burden here is a modelling assumption. Below the sizes of farming villages (Fission's village_fission_size, 186) and above foragers' camps once mobility is counted. The skeletal record of infection in the Levant (Eshed et al. 2010) is to constrain it."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Anderson, R. M., May, R. M. (1991). Infectious Diseases of Humans: Dynamics and Control. Oxford University Press.", doi = "10.1093/oso/9780198545996.001.0001" },
   { citation = "Bartlett, M. S. (1957). Measles periodicity and community size. Journal of the Royal Statistical Society A 120, 48-70.", doi = "10.2307/2342553" },
   { citation = "Black, F. L. (1975). Infectious diseases in primitive societies. Science 187, 515-518.", doi = "10.1126/science.163483" },
@@ -165,11 +167,12 @@ group = "social"
 unit = "people"
 description = "Size limit of a fully sedentary farming village: a group's limit rises from fission_threshold (mobile foragers) to this with its cultivation effort, in proportion (log-linear), and a group above its limit may split (scalar stress). 0: no villages, the fission before ADR-0070 (one limit, daughters placed by crowding whether or not their cell has room)."
 kind = { type = "integer", min = 0, max = 10000 }
-default = 127
+default = 186
 prior = { dist = "uniform", lo = 100.0, hi = 300.0 }
-status = "literature"
-note = "Scalar stress: decisions among more than about six units overload a group, which then splits or builds hierarchy (Johnson 1982). Fissioning of Hutterite colonies, farming communities without such hierarchy, reaches probability 0.5 at 127 people (95% CI 122-132) and 0.99 at 158 (Alberti 2014), a fit that holds for early villages of the Titicaca basin and elsewhere; Kosse (1990) puts the first threshold of face-to-face communities between 100 and 200. The prior spans that range and the larger early villages Alberti tested (to 277)."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 147 to 257 (10-90%). Scalar stress: decisions among more than about six units overload a group, which then splits or builds hierarchy (Johnson 1982). Fissioning of Hutterite colonies, farming communities without such hierarchy, reaches probability 0.5 at 127 people (95% CI 122-132) and 0.99 at 158 (Alberti 2014), a fit that holds for early villages of the Titicaca basin and elsewhere; Kosse (1990) puts the first threshold of face-to-face communities between 100 and 200. The prior spans that range and the larger early villages Alberti tested (to 277)."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Alberti, G. (2014). Modeling group size and scalar stress by logistic regression from an archaeological perspective. PLoS ONE 9, e91510.", doi = "10.1371/journal.pone.0091510" },
   { citation = "Kosse, K. (1990). Group size and societal complexity: thresholds in the long-term memory. Journal of Anthropological Archaeology 9, 275-303.", doi = "10.1016/0278-4165(90)90009-3" },
   { citation = "Johnson, G. A. (1982). Organizational structure and scalar stress. In C. Renfrew, M. Rowlands and B. A. Segraves (eds.), Theory and Explanation in Archaeology, 389-421. Academic Press." },
@@ -180,11 +183,12 @@ group = "social"
 unit = "probability per period"
 description = "Probability per period that a fully sedentary group joins the largest village of its cell, if the joined village stays within its scalar-stress size limit; it scales with the group's cultivation effort, so mobile foragers never join. 0: no aggregation (before ADR-0071)."
 kind = { type = "probability" }
-default = 0.05
+default = 0.1287
 prior = { dist = "uniform", lo = 0.0, hi = 0.2 }
-status = "placeholder"
-note = "Settled farmers drew together into villages for defence, exchange, marriage partners and shared ritual (Kuijt 2000), and are drawn to the larger community; what stops them is the scalar-stress limit of face-to-face coordination (Johnson 1982), the social-brain group size of about 150 (Dunbar 1993). A join within about twenty years of settling; the rate is to be calibrated."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.045 to 0.15 (10-90%). Settled farmers drew together into villages for defence, exchange, marriage partners and shared ritual (Kuijt 2000), and are drawn to the larger community; what stops them is the scalar-stress limit of face-to-face coordination (Johnson 1982), the social-brain group size of about 150 (Dunbar 1993). The village-size record (ADR-0078) judges it with village_fission_size."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Kuijt, I. (2000). People and space in early agricultural villages: exploring daily lives, community size, and architecture in the late Pre-Pottery Neolithic. Journal of Anthropological Archaeology 19, 75-102.", doi = "10.1006/jaar.1999.0352" },
   { citation = "Dunbar, R. I. M. (1993). Coevolution of neocortical size, group size and language in humans. Behavioral and Brain Sciences 16, 681-694.", doi = "10.1017/S0140525X00032325" },
 ]
@@ -316,11 +320,12 @@ group = "initial"
 unit = "N/K"
 description = "Worlds with a climate pack start with one forager band in every habitable cell at this share of its forager capacity (0: start from initial_bands instead)."
 kind = { type = "probability" }
-default = 0.5
+default = 0.3081
 prior = { dist = "uniform", lo = 0.2, hi = 1.0 }
-status = "placeholder"
-note = "Epipaleolithic foragers (Kebaran, Natufian, Zarzian) lived across Southwest Asia by 12,000 BCE; how close to capacity is uncertain and calibrated."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.29 to 0.96 (10-90%). Epipaleolithic foragers (Kebaran, Natufian, Zarzian) lived across Southwest Asia by 12,000 BCE; how close to capacity is uncertain and calibrated."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Bar-Yosef, O. (1998). The Natufian culture in the Levant, threshold to the origins of agriculture. Evolutionary Anthropology 6, 159-177.", doi = "10.1002/(SICI)1520-6505(1998)6:5<159::AID-EVAN4>3.0.CO;2-7" },
 ]
 
@@ -346,12 +351,12 @@ group = "migration"
 unit = "probability per period"
 description = "Probability that a band in a crowded cell sends a group to a less crowded neighbor in one period."
 kind = { type = "probability" }
-default = 0.3026
+default = 0.02443
 prior = { dist = "log_uniform", lo = 0.01, hi = 0.5 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.015 to 0.32 (10-90%). Sets the diffusion rate of the wave of advance (speed ~ 2 sqrt(r D)); calibrated against dated expansion fronts."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.02 to 0.44 (10-90%). Sets the diffusion rate of the wave of advance (speed ~ 2 sqrt(r D)); calibrated against dated expansion fronts."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Ammerman, A.J., Cavalli-Sforza, L.L. (1984). The Neolithic Transition and the Genetics of Populations in Europe. Princeton University Press.", doi = "10.1515/9781400853113" },
 ]
 
@@ -441,12 +446,12 @@ group = "foraging"
 unit = "people/km2"
 description = "Forager population density at the reference productivity, without aquatic resources."
 kind = { type = "real", min = 0.001, max = 5.0 }
-default = 0.2598
+default = 0.183
 prior = { dist = "log_uniform", lo = 0.02, hi = 0.5 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.029 to 0.39 (10-90%). Ethnographic terrestrial forager densities mostly fall between ~0.01 and ~1 person/km2; calibrated against radiocarbon density."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.051 to 0.33 (10-90%). Ethnographic terrestrial forager densities mostly fall between ~0.01 and ~1 person/km2; calibrated against radiocarbon density."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Binford, L.R. (2001). Constructing Frames of Reference: An Analytical Method for Archaeological Theory Building Using Ethnographic and Environmental Data Sets. University of California Press." },
   { citation = "Kelly, R.L. (2013). The Lifeways of Hunter-Gatherers: The Foraging Spectrum. Cambridge University Press.", doi = "10.1017/CBO9781139176132" },
 ]
@@ -456,12 +461,12 @@ group = "foraging"
 unit = "1"
 description = "Elasticity of forager density with respect to net primary productivity: density = ref (NPP / NPP_ref)^elasticity."
 kind = { type = "real", min = 0.0, max = 3.0 }
-default = 1.371
+default = 1.219
 prior = { dist = "uniform", lo = 0.5, hi = 1.5 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.59 to 1.4 (10-90%). Forager density rises with productivity across ethnographic groups; the exponent is uncertain and calibrated."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.61 to 1.4 (10-90%). Forager density rises with productivity across ethnographic groups; the exponent is uncertain and calibrated."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Tallavaara, M., Eronen, J.T., Luoto, M. (2018). Productivity, biodiversity, and pathogens influence the global hunter-gatherer population density. PNAS 115, 1232-1237.", doi = "10.1073/pnas.1715638115" },
 ]
 
@@ -500,11 +505,12 @@ group = "cultivation"
 unit = "N/K"
 description = "Population pressure is the crowding (people over forager capacity) beyond this value, capped at 1."
 kind = { type = "real", min = 0.0, max = 3.0 }
-default = 1.2
+default = 1.111
 prior = { dist = "uniform", lo = 0.9, hi = 1.5 }
-status = "placeholder"
-note = "Above 1, foragers at equilibrium feel no pressure, and moving away absorbs small local overshoots; pressure comes when the climate cuts forager capacity or cultivation lets people outgrow it. Since any cultivation raises capacity, pressure then ratchets effort up (Rindos 1984)."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 1 to 1.4 (10-90%). Above 1, foragers at equilibrium feel no pressure, and moving away absorbs small local overshoots; pressure comes when the climate cuts forager capacity or cultivation lets people outgrow it. Since any cultivation raises capacity, pressure then ratchets effort up (Rindos 1984)."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Cohen, M.N. (1977). The Food Crisis in Prehistory: Overpopulation and the Origins of Agriculture. Yale University Press." },
 ]
 
@@ -513,12 +519,12 @@ group = "cultivation"
 unit = "1"
 description = "Population-pressure hypothesis: target cultivation effort per unit of pressure (crowding beyond cultivation_crowding, capped at 1)."
 kind = { type = "real", min = 0.0, max = 5.0 }
-default = 0.4522
+default = 0.2592
 prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.04 to 0.57 (10-90%). Zero switches the hypothesis off; calibration weighs it against stress and abundance."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.028 to 0.55 (10-90%). Zero switches the hypothesis off; calibration weighs it against stress and abundance."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Binford, L.R. (1968). Post-Pleistocene adaptations. In Binford, S.R., Binford, L.R. (eds), New Perspectives in Archeology, 313-341. Aldine." },
   { citation = "Cohen, M.N. (1977). The Food Crisis in Prehistory: Overpopulation and the Origins of Agriculture. Yale University Press." },
 ]
@@ -528,11 +534,12 @@ group = "cultivation"
 unit = "1"
 description = "Climate-stress hypothesis: target cultivation effort per unit of climate stress (the relative decline of forager capacity over stress_window_years)."
 kind = { type = "real", min = 0.0, max = 10.0 }
-default = 1.0
+default = 0.2
 prior = { dist = "uniform", lo = 0.0, hi = 3.0 }
-status = "placeholder"
-note = "The Younger Dryas cut forager capacity by tens of percent; zero switches the hypothesis off."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.24 to 2.4 (10-90%). The Younger Dryas cut forager capacity by tens of percent; zero switches the hypothesis off."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Moore, A.M.T., Hillman, G.C. (1992). The Pleistocene to Holocene transition and human economy in Southwest Asia: the impact of the Younger Dryas. American Antiquity 57, 482-494.", doi = "10.2307/280936" },
   { citation = "Bar-Yosef, O. (1998). The Natufian culture in the Levant, threshold to the origins of agriculture. Evolutionary Anthropology 6, 159-177.", doi = "10.1002/(SICI)1520-6505(1998)6:5<159::AID-EVAN4>3.0.CO;2-7" },
 ]
@@ -542,12 +549,12 @@ group = "cultivation"
 unit = "1"
 description = "Abundance (niche-construction) hypothesis: target cultivation effort per unit of wild-cereal suitability, at any population density."
 kind = { type = "real", min = 0.0, max = 5.0 }
-default = 0.2787
+default = 0.122
 prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.11 to 0.75 (10-90%). Rich wild stands invite tending and sowing without stress."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.097 to 0.77 (10-90%). Rich wild stands invite tending and sowing without stress."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Smith, B.D. (2007). Niche construction and the behavioral context of plant and animal domestication. Evolutionary Anthropology 16, 188-199.", doi = "10.1002/evan.20135" },
   { citation = "Zeder, M.A. (2016). Domestication as a model system for niche construction theory. Evolutionary Ecology 30, 325-348.", doi = "10.1007/s10682-015-9801-8" },
 ]
@@ -557,12 +564,12 @@ group = "cultivation"
 unit = "1/suitability per century"
 description = "Stable-climate hypothesis: cultivation targets are multiplied by 1 - weight x climate variability (the mean change of wild-cereal suitability per century over the stress window), at least 0."
 kind = { type = "real", min = 0.0, max = 50.0 }
-default = 15.18
+default = 7.202
 prior = { dist = "uniform", lo = 0.0, hi = 20.0 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 4.3 to 19 (10-90%). Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 6.6 to 19 (10-90%). Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Richerson, P.J., Boyd, R., Bettinger, R.L. (2001). Was agriculture impossible during the Pleistocene but mandatory during the Holocene? A climate change hypothesis. American Antiquity 66, 387-411.", doi = "10.2307/2694241" },
   { citation = "Bettinger, R., Richerson, P., Boyd, R. (2009). Constraints on the development of agriculture. Current Anthropology 50, 627-631.", doi = "10.1086/605359" },
 ]
@@ -572,23 +579,26 @@ group = "cultivation"
 unit = "years"
 description = "Climate stress compares forager capacity now with this many years earlier."
 kind = { type = "integer", min = 10, max = 2000 }
-default = 300
+default = 158
 prior = { dist = "uniform", lo = 100.0, hi = 1000.0 }
-status = "placeholder"
-note = "Memory of better times over about ten generations; climate slices are a century apart."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 212 to 786 (10-90%). Memory of better times over a few generations; climate slices are a century apart."
+sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
+]
 
 [params.adoption_rate]
 group = "cultivation"
 unit = "1/period"
 description = "Share of the gap between a band's cultivation effort and its target closed each period (social learning)."
 kind = { type = "probability" }
-default = 0.0104
+default = 0.0284
 prior = { dist = "log_uniform", lo = 0.005, hi = 0.2 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0083 to 0.15 (10-90%). The rate at which a band learns when everyone around it plants; with innovation_share small it learns slowly while few do, so practices spread over generations."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.0064 to 0.14 (10-90%). The rate at which a band learns when everyone around it plants; with innovation_share small it learns slowly while few do, so practices spread over generations."
 sources = [
   { citation = "Henrich, J. (2001). Cultural transmission and the diffusion of innovations: adoption dynamics indicate that biased cultural transmission is the predominate force in behavioral change. American Anthropologist 103, 992-1013.", doi = "10.1525/aa.2001.103.4.992" },
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
 ]
 
 [params.innovation_share]
@@ -596,15 +606,15 @@ group = "cultivation"
 unit = "1"
 description = "Share of a band's learning of cultivation that is its own (innovation), the rest learned from the people around it: the gap to the target closes at adoption_rate * (i + (1 - i) * seen), seen being the share of cultivation in what it sees: the people of its cell and, by neighbor_learning, of the cells around it, farmers weighted by how well farming pays (success_bias)."
 kind = { type = "probability" }
-default = 0.006066
+default = 1.606e-05
 prior = { dist = "log_uniform", lo = 0.00001, hi = 1.0 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 5.2e-05 to 0.48 (10-90%). 1 switches the hypothesis off (individual learning, the model before ADR-0065). Small shares make cultivation an innovation few have seen, which spreads slowly at first and then fast, an S-shaped adoption curve: Henrich (2001) reads such curves as the mark of biased cultural transmission, and Bass (1969) fits them as innovation plus imitation."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 2.4e-05 to 0.19 (10-90%). 1 switches the hypothesis off (individual learning, the model before ADR-0065). Small shares make cultivation an innovation few have seen, which spreads slowly at first and then fast, an S-shaped adoption curve: Henrich (2001) reads such curves as the mark of biased cultural transmission, and Bass (1969) fits them as innovation plus imitation."
 sources = [
   { citation = "Bass, F.M. (1969). A new product growth for model consumer durables. Management Science 15, 215-227.", doi = "10.1287/mnsc.15.5.215" },
   { citation = "Henrich, J. (2001). Cultural transmission and the diffusion of innovations: adoption dynamics indicate that biased cultural transmission is the predominate force in behavioral change. American Anthropologist 103, 992-1013.", doi = "10.1525/aa.2001.103.4.992" },
   { citation = "Ackland, G.J., Signitzer, M., Stratford, K., Cohen, M.H. (2007). Cultural hitchhiking on the wave of advance of beneficial technologies. PNAS 104, 8714-8719.", doi = "10.1073/pnas.0702469104" },
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
 ]
 
 [params.neighbor_learning]
@@ -625,11 +635,12 @@ group = "cultivation"
 unit = "1"
 description = "Success (payoff) bias in learning cultivation (ADR-0076): each farmer a band sees counts as the payoff of farming, the people a unit of effort feeds against foraging's, to this power, and each forager as 1. 0: copying in proportion to how many do it (before ADR-0076); 1: in proportion to payoff (linear payoff weighting)."
 kind = { type = "real", min = 0.0, max = 5.0 }
-default = 0.0
+default = 0.2273
 prior = { dist = "uniform", lo = 0.0, hi = 3.0 }
-status = "placeholder"
-note = "Off by default until calibrated (round 10): the calibrated adoption_rate and innovation_share were fitted without it, and at 1 the calibrated world brings domestication too far forward (domestic barley 9000-8000 BCE 0.51 against 0.14; largest implausibility 2.86-2.98, at the edge of the record), so the three are to be fitted together. People copy the practices of those who visibly do well: payoff bias is among the best supported learning strategies in experiments (McElreath et al. 2008; Laland 2004) and success and prestige bias are central to dual-inheritance theory (Boyd and Richerson 1985; Henrich and Gil-White 2001). Judgment: 1 weights models linearly by payoff, a plain normalized weighting rather than any one estimated rule (learners here do not compare their own payoff with their models'). Early cultivation of wild cereals can feed fewer people per unit of effort than foraging and is then copied less; domestic crops make it pay."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.27 to 2.6 (10-90%). Not identified (open question 36): the records, the onset contrasts by wild-cereal stands included (ADR-0080), see its joint effect with adoption_rate and innovation_share on the pace of cultivation, not each one, so this is the chosen world's value, not a measurement. People copy the practices of those who visibly do well: payoff bias is among the best supported learning strategies in experiments (McElreath et al. 2008; Laland 2004) and success and prestige bias are central to dual-inheritance theory (Boyd and Richerson 1985; Henrich and Gil-White 2001). Judgment: 1 weights models linearly by payoff, a plain normalized weighting rather than any one estimated rule (learners here do not compare their own payoff with their models'). Early cultivation of wild cereals can feed fewer people per unit of effort than foraging and is then copied less; domestic crops make it pay."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Boyd, R., Richerson, P. J. (1985). Culture and the Evolutionary Process. University of Chicago Press." },
   { citation = "Henrich, J., Gil-White, F. J. (2001). The evolution of prestige: freely conferred deference as a mechanism for enhancing the benefits of cultural transmission. Evolution and Human Behavior 22, 165-196.", doi = "10.1016/S1090-5138(00)00071-4" },
   { citation = "McElreath, R., Bell, A. V., Efferson, C., et al. (2008). Beyond existence and aiming outside the laboratory: estimating frequency-dependent and pay-off-biased social learning strategies. Philosophical Transactions of the Royal Society B 363, 3515-3528.", doi = "10.1098/rstb.2008.0131" },
@@ -641,12 +652,12 @@ group = "cultivation"
 unit = "1/period"
 description = "Selection for domestic traits (e.g. non-shattering ears) under full cultivation effort, per crop generation (one per year)."
 kind = { type = "real", min = 0.0, max = 1.0 }
-default = 0.00646
+default = 0.009112
 prior = { dist = "log_uniform", lo = 0.001, hi = 0.5 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0028 to 0.0086 (10-90%). The prior spans the competing hypotheses: protracted domestication (s ~ 0.001-0.01 from the archaeobotanical record) and rapid domestication (s ~ 0.05-0.5 under sickle harvest and resowing in experiments)."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.0035 to 0.0075 (10-90%). The prior spans the competing hypotheses: protracted domestication (s ~ 0.001-0.01 from the archaeobotanical record) and rapid domestication (s ~ 0.05-0.5 under sickle harvest and resowing in experiments)."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Purugganan, M.D., Fuller, D.Q. (2011). Archaeological data reveal slow rates of evolution during plant domestication. Evolution 65, 171-183.", doi = "10.1111/j.1558-5646.2010.01093.x" },
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
@@ -656,12 +667,12 @@ group = "cultivation"
 unit = "1"
 description = "Share of domestic-type plants in wild stands (the floor selection acts on)."
 kind = { type = "probability" }
-default = 0.00001548
+default = 0.006639
 prior = { dist = "log_uniform", lo = 0.00001, hi = 0.01 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 1.7e-05 to 0.005 (10-90%). Tough-rachis mutants are rare in wild stands; the order of magnitude is uncertain."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 3.2e-05 to 0.0061 (10-90%). Tough-rachis mutants are rare in wild stands; the order of magnitude is uncertain."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
 
@@ -670,12 +681,12 @@ group = "cultivation"
 unit = "1/period"
 description = "Pull of a band's crop back toward the wild type, per unit of effort not spent cultivating (gene flow from wild stands, abandoned fields)."
 kind = { type = "probability" }
-default = 0.0003676
+default = 0.0001626
 prior = { dist = "log_uniform", lo = 0.0001, hi = 0.01 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 1.3e-04 to 0.0016 (10-90%). Gene flow from wild populations is why the protracted model predicts slow domestication; with it, light cultivation never domesticates."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.00014 to 0.002 (10-90%). Gene flow from wild populations is why the protracted model predicts slow domestication; with it, light cultivation never domesticates."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Allaby, R.G., Fuller, D.Q., Brown, T.A. (2008). The genetic expectations of a protracted model for the origins of domesticated crops. PNAS 105, 13982-13986.", doi = "10.1073/pnas.0803780105" },
 ]
 
@@ -698,12 +709,12 @@ group = "cultivation"
 unit = "1"
 description = "Yield of cultivated wild cereals relative to domestic ones (shattering loses grain before harvest)."
 kind = { type = "probability" }
-default = 0.3877
+default = 0.6013
 prior = { dist = "uniform", lo = 0.2, hi = 1.0 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.27 to 0.91 (10-90%). Wild stands yield well when harvested at the right time; early cultivation was not more productive than foraging per hour of work."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.23 to 0.68 (10-90%). Wild stands yield well when harvested at the right time; early cultivation was not more productive than foraging per hour of work."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Bowles, S. (2011). Cultivation of cereals by the first farmers was not more productive than foraging. PNAS 108, 4760-4765.", doi = "10.1073/pnas.1010733108" },
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
@@ -713,12 +724,12 @@ group = "cultivation"
 unit = "soil share per year at full effort"
 description = "Land-degradation hypothesis: share of a cell's erodible soil lost per year under full cultivation effort (in proportion to effort)."
 kind = { type = "real", min = 0.0, max = 0.01 }
-default = 0.0002059
+default = 0.0003396
 prior = { dist = "uniform", lo = 0.0, hi = 0.001 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 2.9e-05 to 7.2e-04 (10-90%). Zero switches the hypothesis off. Tilled land erodes one to two orders of magnitude faster than soil forms (about 1 mm/yr against 0.01-0.1 mm/yr); hoe and sickle farming of thin Mediterranean soils loses tens of centimetres over millennia: 1e-4 to 1e-3 of the erodible depth per year."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 1.6e-05 to 0.00035 (10-90%). Zero switches the hypothesis off. Tilled land erodes one to two orders of magnitude faster than soil forms (about 1 mm/yr against 0.01-0.1 mm/yr); hoe and sickle farming of thin Mediterranean soils loses tens of centimetres over millennia: 1e-4 to 1e-3 of the erodible depth per year."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Montgomery, D.R. (2007). Soil erosion and agricultural sustainability. PNAS 104, 13268-13272.", doi = "10.1073/pnas.0611508104" },
   { citation = "Rollefson, G.O., Kohler-Rollefson, I. (1989). The collapse of early Neolithic settlements in the southern Levant. In Hershkovitz, I. (ed.), People and Culture in Change, BAR International Series 508, 73-89." },
 ]
@@ -728,12 +739,12 @@ group = "cultivation"
 unit = "1/year"
 description = "Soil formation: each year the eroded share of a cell's soil re-forms at this rate (toward full, whatever the land use)."
 kind = { type = "real", min = 0.0, max = 0.01 }
-default = 0.0002225
+default = 0.000705
 prior = { dist = "log_uniform", lo = 0.00001, hi = 0.001 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 3.1e-05 to 8.8e-04 (10-90%). Soil production of 0.01-0.1 mm/yr refills a metre of soil over 10,000-100,000 years; faster rates stand for colluvium and fallow recovery."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 5.3e-05 to 0.00082 (10-90%). Soil production of 0.01-0.1 mm/yr refills a metre of soil over 10,000-100,000 years; faster rates stand for colluvium and fallow recovery."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Montgomery, D.R. (2007). Soil erosion and agricultural sustainability. PNAS 104, 13268-13272.", doi = "10.1073/pnas.0611508104" },
 ]
 
@@ -756,12 +767,12 @@ group = "exchange"
 unit = "share per period"
 description = "Share of obsidian used up or kept, not passed on, at each step of down-the-line exchange: away from its sources a cell's availability becomes (1 - loss) times the mean over itself and its occupied neighbors."
 kind = { type = "real", min = 0.0, max = 1.0 }
-default = 0.004005
+default = 0.009513
 prior = { dist = "log_uniform", lo = 0.0003, hi = 0.1 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0066): one world consistent with the radiocarbon, rachis, site-count, obsidian and cultivation-onset records; consistent worlds span 0.0024 to 0.078 (10-90%). Sets how fast obsidian falls off with distance along settled land: one e-fold every 1.5 res-5 cells (25 km) at 0.1, 4.3 (74 km) at 0.01, 7.1 (121 km) at 0.003 and 10.6 (180 km) at 0.001; at small losses the network takes about 1/loss years to settle. Renfrew's contact zone falls off over a few hundred kilometres (ADR-0060)."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 0.0023 to 0.079 (10-90%). Sets how fast obsidian falls off with distance along settled land: one e-fold every 1.5 res-5 cells (25 km) at 0.1, 4.3 (74 km) at 0.01, 7.1 (121 km) at 0.003 and 10.6 (180 km) at 0.001; at small losses the network takes about 1/loss years to settle. Renfrew's contact zone falls off over a few hundred kilometres (ADR-0060)."
 sources = [
-  { citation = "ManyWorlds M1 calibration, round 8 (ADR-0066): the consistent world whose summaries of the radiocarbon, barley rachis, survey site-count, obsidian sourcing and cultivation-onset records sit nearest the record, calibration/runs/m1/round8/best.json (wave 9, run 180).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round8/best.json" },
+  { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Renfrew, C., Dixon, J.E., Cann, J.R. (1966). Obsidian and early cultural contact in the Near East. Proceedings of the Prehistoric Society 32, 30-72.", doi = "10.1017/S0079497X0001433X" },
   { citation = "Renfrew, C., Dixon, J.E., Cann, J.R. (1968). Further analysis of Near Eastern obsidians. Proceedings of the Prehistoric Society 34, 319-331.", doi = "10.1017/S0079497X0001392X" },
   { citation = "Renfrew, C. (1977). Alternative models for exchange and spatial distribution. In Earle, T.K., Ericson, J.E. (eds), Exchange Systems in Prehistory, 71-90. Academic Press.", doi = "10.1016/B978-0-12-227650-7.50010-9" },

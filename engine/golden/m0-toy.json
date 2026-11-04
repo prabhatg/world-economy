@@ -3,7 +3,7 @@
   "id": "golden-m0-toy",
   "engine": "oikos 0.1.0",
   "final_tick": 1095000,
-  "state_hash": "7e01509bd14b1df2d816515d3acfa4f843925c544138cc2ffccee8a76158ddf0",
+  "state_hash": "2f07e8aadafd7b7182dc55affa3e5d128ed9d23e5fc7436a241f5d916d317201",
   "summaries": [
     {
       "tick": 0,
@@ -15,86 +15,86 @@
     {
       "tick": 91250,
       "calendar_year": -11750,
-      "population": 8101,
-      "agents": 360,
-      "occupied_cells": 88
+      "population": 3689,
+      "agents": 108,
+      "occupied_cells": 33
     },
     {
       "tick": 182500,
       "calendar_year": -11500,
-      "population": 41211,
-      "agents": 1640,
-      "occupied_cells": 271
+      "population": 13911,
+      "agents": 430,
+      "occupied_cells": 95
     },
     {
       "tick": 273750,
       "calendar_year": -11250,
-      "population": 87247,
-      "agents": 3300,
-      "occupied_cells": 496
+      "population": 31458,
+      "agents": 1001,
+      "occupied_cells": 180
     },
     {
       "tick": 365000,
       "calendar_year": -11000,
-      "population": 141560,
-      "agents": 5282,
-      "occupied_cells": 787
+      "population": 51359,
+      "agents": 1652,
+      "occupied_cells": 281
     },
     {
       "tick": 456250,
       "calendar_year": -10750,
-      "population": 212645,
-      "agents": 7854,
-      "occupied_cells": 1136
+      "population": 74421,
+      "agents": 2399,
+      "occupied_cells": 396
     },
     {
       "tick": 547500,
       "calendar_year": -10500,
-      "population": 291451,
-      "agents": 10768,
-      "occupied_cells": 1492
+      "population": 102184,
+      "agents": 3323,
+      "occupied_cells": 538
     },
     {
       "tick": 638750,
       "calendar_year": -10250,
-      "population": 363852,
-      "agents": 13376,
-      "occupied_cells": 1829
+      "population": 128734,
+      "agents": 4202,
+      "occupied_cells": 665
     },
     {
       "tick": 730000,
       "calendar_year": -10000,
-      "population": 431140,
-      "agents": 15798,
-      "occupied_cells": 2152
+      "population": 160704,
+      "agents": 5305,
+      "occupied_cells": 831
     },
     {
       "tick": 821250,
       "calendar_year": -9750,
-      "population": 485394,
-      "agents": 17818,
-      "occupied_cells": 2355
+      "population": 194922,
+      "agents": 6439,
+      "occupied_cells": 988
     },
     {
       "tick": 912500,
       "calendar_year": -9500,
-      "population": 504803,
-      "agents": 18542,
-      "occupied_cells": 2401
+      "population": 230402,
+      "agents": 7623,
+      "occupied_cells": 1162
     },
     {
       "tick": 1003750,
       "calendar_year": -9250,
-      "population": 505891,
-      "agents": 18514,
-      "occupied_cells": 2401
+      "population": 267823,
+      "agents": 8933,
+      "occupied_cells": 1332
     },
     {
       "tick": 1095000,
       "calendar_year": -9000,
-      "population": 506203,
-      "agents": 18582,
-      "occupied_cells": 2401
+      "population": 304533,
+      "agents": 10108,
+      "occupied_cells": 1494
     }
   ],
   "checkpoint": null

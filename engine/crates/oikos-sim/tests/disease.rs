@@ -73,6 +73,11 @@ fn farming_world(seed: u64, mortality: f64) -> (World, Vec<u8>, Vec<u8>) {
         adoption_rate: 0.02,
         innovation_share: 1.0,
         disease_mortality: mortality,
+        // the village world the test was written for (the round-8 defaults, ADR-0066)
+        disease_threshold: 50.0,
+        village_fission_size: 127,
+        aggregation_rate: 0.05,
+        success_bias: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();
@@ -125,7 +130,7 @@ fn foragers_camps_add_no_disease_burden_by_default() {
 #[test]
 fn larger_villages_lose_a_larger_share_of_their_people() {
     // The cost of crowding that the social pull of large villages (ADR-0071) pays.
-    let p = Params::default();
+    let p = Params { disease_threshold: 50.0, ..Params::default() };
     let d = Disease::from_params(&p);
     let share = |n: f64| d.deaths(n, 1.0) / n;
     assert!(share(60.0) < share(90.0) && share(90.0) < share(127.0));

@@ -69,6 +69,27 @@ settlements hold about 50 people, against the record's 126-218 at the middle den
 round 10's wave 4 finds consistent worlds with villages of up to 180 people, where
 groups seldom disperse and often join, but none of them sits nearer the whole record
 than the defaults, and few grow their villages through time as Upper Mesopotamia's do.
+The defaults of ADR-0081 hold about 67 people, level through time too.
+
+**Implemented (radiocarbon subregions, ADR-0079, #35):** the radiocarbon operator's
+blocks are grouped into four subregions (the southern Levant; Anatolia; the northern
+Levant, Cyprus and Upper Mesopotamia; the Zagros and Iran), boxes of block centers, and
+each is summarized by the years by which 10, 25 and 50% of its dated activity had
+accrued from 12,000 BCE. Years rather than log shares, because early eras can be empty.
+The bootstrap resamples whole sites within each subregion, so a site's many dates move
+together; research intensity still cancels per block. Judged together, discrepancy 300
+years on each. The region-wide eras cannot see one subregion early and another late;
+these do. Northeast Africa is recorded, not judged: the climate forcing has no African
+Humid Period, so no world can occupy the Western Desert when its dates say people did
+(#44).
+
+**Implemented (onset contrasts, ADR-0080, #36):** the onset phases are split by the
+engine's own wild-cereal suitability at them (the same ramps of precipitation and
+temperature, climate and parameters; rich at 0.95 or more), and the record's contrast
+is the effort the rich phases imply minus the poor phases', before and after 7,600 BCE,
+bootstrapped over phases and anchors. Success bias makes people copy the cultivators
+who do best, who did best in the richest stands; adoption copies anyone. The record's
+contrast is 0.21 before and 0.62 after 7,600 BCE.
 
 **Implemented (obsidian sourcing operator, ADR-0061):** `obsidian.Operator` scores the
 share of Cappadocian obsidian in use around each sourced assemblage of DObsiSS
@@ -218,6 +239,12 @@ spread over their priors among the consistent worlds: the records see their join
 effect, the pace and timing of cultivation, not each one. A fourth wave judges the
 village sizes (ADR-0078) and the house-size Ginis too, once the maintainer decided the
 round's files may carry them (#43): 0.44% of the prior is left and the defaults stay.
+A fifth wave judges the radiocarbon subregions (ADR-0079; 0.22% left) and a sixth every
+record, the onset contrasts too (ADR-0080; 0.16% left, 18 of 300 consistent). The
+defaults fail the subregions, so `best` over wave 6 gives new ones (ADR-0081): wave 6
+run 216, with fertility and the wealth parameters kept at their literature values,
+consistent with every seed (largest implausibility 2.70). Success bias still spans its
+prior among the consistent worlds.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

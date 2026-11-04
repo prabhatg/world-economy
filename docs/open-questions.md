@@ -157,7 +157,8 @@
     consistent world nearest the record's sizes (179 people) has groups that seldom
     disperse and often join, and fits the radiocarbon and onset records worse than the
     defaults. Still open: why villages do not grow through time, which towns of several
-    groups (#39) or a density that changed with house forms could explain.
+    groups (#39) or a density that changed with house forms could explain. The defaults
+    of ADR-0081 (wave 6 run 216, `village_fission_size` 186) hold about 67 people.
 34. How strongly do houses track wealth, and when did inequality rise (ADR-0074; #43)? The
     house-size operator takes floor area to grow as wealth to the power 0.7, a judgment
     from comparing house-size and wealth Ginis across two compilations; within-site data
@@ -191,7 +192,26 @@
     where farming pays from a faster spread everywhere; the spatial pattern of the onset
     (does cultivation start in the richest stands and spread outward?) could. Neighbor
     learning (0.1) changes the fit little (2.26-2.28 against 2.32-2.34): the M1 records
-    do not yet see how far practice is learned.
+    do not yet see how far practice is learned. The onset contrasts (ADR-0080) test that
+    pattern, and it does not separate them either: every consistent world fits the
+    contrast, which follows how much people weigh the abundance of wild stands
+    (`cultivation_abundance_weight`, Spearman 0.77 over wave 6) rather than whom they
+    copy (success bias -0.18), and success bias still spans its prior (u 0.04-0.94).
+    What could: the order in which neighboring sites took up farming (a front moving
+    out from the richest stands under success bias, everywhere at once under
+    adoption), which needs phases dated finely enough to order neighbors, or a record
+    of who farmed within a site (house-level plant remains against house size). The
+    defaults of ADR-0081 carry 0.23, the chosen consistent world's value, not a measurement.
+37. Why does the model's periphery fill too early and its core too late (ADR-0079;
+    #35)? Judged by subregion, worlds consistent with the earlier records date the first
+    tenth of activity 900-2,200 years too early in Anatolia and 350-1,500 in the Zagros
+    (10-90% of the worlds; z about -2.5 and -1.9) and the Levant's half 250-1,000 years
+    too late. Candidates: a forager density that does not
+    fall with the Younger Dryas cold on the plateaus; research that sought Neolithic tells
+    in Anatolia more than Epipalaeolithic camps (intensity that changes with the period
+    does not cancel within a block, unlike constant intensity); or core villages that
+    grow too slowly (the village sizes of ADR-0078 point the same way, #39). Northeast
+    Africa is recorded, not judged, until the forcing has an African Humid Period (#44).
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

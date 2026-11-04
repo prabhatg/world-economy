@@ -26,7 +26,7 @@ export interface Catalog {
 
 export const BUILD_HINT =
   "Build one with: (cd calibration && PYTHONPATH=.:../data python -m oikos_cal ensemble " +
-  "runs/m1/round8/best.json --out ../viewer/data/m1)";
+  "runs/m1/round10/best-wave6.json --out ../viewer/data/m1)";
 
 export function parseCatalog(json: any): Catalog {
   if (json?.format !== 1) throw new Error(`catalog format ${json?.format}, this viewer reads format 1`);

@@ -107,6 +107,12 @@ the calibrated defaults stay, and the records do not identify success bias, whic
 Survey site areas join as a seventh record (ADR-0078, #34), and a fourth wave judges them
 with the house-size Ginis: the defaults stay, their villages (about 50 people) smaller
 than the record's (126-218), which only worlds whose groups seldom disperse approach.
+Radiocarbon by subregion (ADR-0079, #35) and onset contrasts by wild-cereal stands
+(ADR-0080, #36) follow. The subregions show what the region-wide eras hid, a periphery
+that fills too early and a core that rises too late (open question 37), and rule out
+the defaults; the contrasts constrain nothing new, so success bias stays unidentified.
+A sixth wave judged on every record gives new calibrated defaults (ADR-0081): wave 6
+run 216, with fertility and the wealth parameters at their literature values.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

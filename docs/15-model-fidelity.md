@@ -16,7 +16,8 @@ records leave many parameters unconstrained:
   record saw settlement size until F10 (below); it now does, loosely, and finds the
   model's villages smaller and less growing than the record's.
 - **Pace of learning** (`success_bias`, `adoption_rate`, `innovation_share`): the
-  records see when cultivation took hold, which these trade off against each other.
+  records see when cultivation took hold, which these trade off against each other;
+  where it took hold first (F3, ADR-0080) does not separate them either.
 - **Vital rates** (`fertility`, `sedentary_growth_rate`): populations follow carrying
   capacity, and the records measure stocks, not births and deaths.
 - **Disease** (`disease_threshold`, `disease_mortality`): seen only through its effect
@@ -52,12 +53,13 @@ parallel.
 | Tier | Item | Issue | What it identifies | Depends on |
 |---|---|---|---|---|
 | 1 | F10 Village sizes from survey site areas (done, ADR-0078: constrains no parameter alone; the model's villages are too small and too level, which motivates F7) | [#34](https://github.com/prabhatg/world-economy/issues/34) | village size, aggregation, disease's critical size | – |
-| 1 | F2 Regional radiocarbon by subregion | [#35](https://github.com/prabhatg/world-economy/issues/35) | dispersal, neighbor learning, regional timing | – |
-| 1 | F3 Spatial onset of cultivation | [#36](https://github.com/prabhatg/world-economy/issues/36) | success bias against adoption rate | – |
+| 1 | F2 Regional radiocarbon by subregion (done, ADR-0079: narrows no parameter alone; shows the periphery filling too early and the core too late, open question 37, and rules out the old defaults, ADR-0081) | [#35](https://github.com/prabhatg/world-economy/issues/35) | dispersal, neighbor learning, regional timing | – |
+| 1 | F3 Spatial onset of cultivation (done, ADR-0080: constrains nothing new; the contrast follows the abundance weight, not success bias) | [#36](https://github.com/prabhatg/world-economy/issues/36) | success bias against adoption rate | – |
 | 1 | F1 House-size Ginis: judged in run files (decided 2026-11-03; open until the authors reply) | [#43](https://github.com/prabhatg/world-economy/issues/43) | wealth transmission and shocks | – |
 | 2 | F11 Juvenile index (age structure) | [#33](https://github.com/prabhatg/world-economy/issues/33) | fertility, the demographic transition | Guerrero et al. 2008 chapter |
 | 2 | F4 Disease lesions before and after farming | [#42](https://github.com/prabhatg/world-economy/issues/42) | disease mortality | – |
 | 2 | F7 Settlements of several groups (towns) | [#39](https://github.com/prabhatg/world-economy/issues/39) | the largest sites | F10 |
+| 2 | F13 Northeast Africa: the African Humid Period in the forcing and Nile-valley farming, so the subregion's radiocarbon can be judged | [#44](https://github.com/prabhatg/world-economy/issues/44) | dispersal into the Green Sahara and its retreat | F2; F5, F6 for the Nile |
 | 3 | F5 Herding: sheep and goats | [#37](https://github.com/prabhatg/world-economy/issues/37) | management, mobility, wealth in herds | faunal record |
 | 3 | F6 Crops beyond barley | [#38](https://github.com/prabhatg/world-economy/issues/38) | per-crop domestication | per-crop records |
 | 3 | F12 Soil depth | [#24](https://github.com/prabhatg/world-economy/issues/24) | soil degradation | – |

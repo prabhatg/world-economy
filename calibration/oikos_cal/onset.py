@@ -26,6 +26,11 @@ centuries of the phase, each weighted by its overlap. Phases where a world has n
 take the mean effort of the phases it reached, so every world is judged on the same
 phases. Phases with fewer than `min_items` items (Wallace et al. analyse samples of 50
 or more) are dropped.
+
+Phases can be split by how well wild cereals grew around them (`suitability`, the
+engine's wild-cereal suitability of their cells and centuries; #36): learning that
+copies what visibly pays should start cultivation in the richest stands, and
+`targets.OnsetContrasts` compares the effort implied there with that in poor stands.
 """
 
 import h3
@@ -33,7 +38,10 @@ import numpy as np
 
 from .radiocarbon import Window
 
-__all__ = ["Operator", "ANCHOR_PERIOD"]
+__all__ = ["Operator", "ANCHOR_PERIOD", "CEREAL", "cereal_suitability", "suitability"]
+
+CEREAL = ("cereal_precip_min", "cereal_precip_full", "cereal_precip_wet", "cereal_precip_max", "cereal_temp_min",
+          "cereal_temp_full")
 
 ANCHOR_PERIOD = "PPNC/PN"
 
@@ -84,3 +92,26 @@ class Operator:
         e, reached = self.effort(activity)
         fill = e[reached].mean() if reached.any() else 0.0
         return np.where(reached, e, fill), reached
+
+
+def cereal_suitability(temp, precip, params):
+    """The engine's wild-cereal suitability (`environment::cereal_suitability`): ramps up
+    from too dry and too cold, down toward wet forest, with the `CEREAL` `params`; 0
+    without climate data."""
+    ramp = lambda x, lo, hi: np.clip((x - lo) / (hi - lo), 0.0, 1.0)
+    p = params
+    s = (ramp(precip, p["cereal_precip_min"], p["cereal_precip_full"])
+         * (1.0 - ramp(precip, p["cereal_precip_wet"], p["cereal_precip_max"]))
+         * ramp(temp, p["cereal_temp_min"], p["cereal_temp_full"]))
+    return np.nan_to_num(s)
+
+
+def suitability(op, temp, precip, years, params):
+    """Mean wild-cereal suitability at each of `op`'s phases, over its cells and centuries,
+    from climate slices [time, cell] at calendar `years` (each century of the window
+    takes the slice nearest its midpoint) and the `CEREAL` `params`."""
+    s = cereal_suitability(temp, precip, params)
+    years = np.asarray(years, dtype=float)
+    nearest = np.abs(years[None, :] - op.window.midpoints()[:, None]).argmin(axis=1)
+    by_century = s[nearest]  # [century, cell]
+    return np.array([(by_century[:, c].mean(axis=1) * w).sum() / w.sum() for c, w in zip(op.near, op.weight)])

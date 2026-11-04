@@ -32,7 +32,9 @@ background share (1% by default) stands for contamination, misattributed context
 model error, so dates where the model has nobody cost a lot but stay finite.
 
 What it does not constrain: relative date density between blocks (that needs a model of
-research intensity), and anything inside a block. Those are follow-ups (#17).
+research intensity), and anything inside a block. Those are follow-ups (#17). Blocks can
+be grouped into subregions (`subregions`) whose own timing is summarized by
+`targets.RadiocarbonSubregions` (#35); each site's mass is kept for its bootstrap.
 """
 
 from dataclasses import dataclass, field
@@ -43,7 +45,7 @@ import numpy as np
 from oikos_data.radiocarbon import Curve, calibrate
 
 __all__ = ["Window", "Taphonomy", "SUROVELL_2009", "NO_TAPHONOMY", "Settings", "Observations", "kernel",
-           "observe", "Operator", "synthetic_dates"]
+           "observe", "subregions", "Operator", "synthetic_dates"]
 
 
 @dataclass(frozen=True)
@@ -131,6 +133,8 @@ class Observations:
     mass: np.ndarray  # [block, class, century]
     weights: np.ndarray  # bin weight of each date used
     lab_ids: list = field(default_factory=list)  # the dates used, in `weights` order
+    site_mass: np.ndarray = None  # [site, class, century], sites in (cell, name) order
+    site_block: np.ndarray = None  # the block of each site
 
 
 def _block(cell, resolution):
@@ -175,9 +179,28 @@ def observe(dates, curve: Curve, settings: Settings) -> Observations:
     reps = np.array([np.median(err[cls == k]) if (cls == k).any() else 0.5 * (edges[k] + edges[k + 1])
                      for k in range(len(edges) - 1)])
     mass = np.zeros((len(blocks), len(reps), ow.centuries))
-    for j, b in enumerate(np.searchsorted(blocks, block)):
-        mass[b, cls[j]] += weights[j] * masses[j]
-    return Observations(blocks, reps, mass, weights, [dates["lab_id"][i] for i in keep])
+    keys = sorted(sites)
+    site_mass = np.zeros((len(keys), len(reps), ow.centuries))
+    site_block = np.zeros(len(keys), dtype=np.int64)
+    in_block = np.searchsorted(blocks, block)
+    for s, key in enumerate(keys):
+        for j in sites[key]:
+            site_mass[s, cls[j]] += weights[j] * masses[j]
+            site_block[s] = in_block[j]
+    np.add.at(mass, site_block, site_mass)
+    return Observations(blocks, reps, mass, weights, [dates["lab_id"][i] for i in keep], site_mass, site_block)
+
+
+def subregions(blocks, boxes):
+    """Indices of `blocks` (H3 ids) whose centers lie in each box (lat from, to, lng from,
+    to; degrees), a block going to the first box that holds it."""
+    centers = np.array([h3.cell_to_latlng(h3.int_to_str(int(b))) for b in blocks]).reshape(-1, 2)
+    free = np.ones(len(blocks), dtype=bool)
+    out = {}
+    for name, (lat0, lat1, lng0, lng1) in boxes.items():
+        inside = free & (centers[:, 0] >= lat0) & (centers[:, 0] < lat1) & (centers[:, 1] >= lng0) & (centers[:, 1] < lng1)
+        out[name], free = np.nonzero(inside)[0], free & ~inside
+    return out
 
 
 class Operator:

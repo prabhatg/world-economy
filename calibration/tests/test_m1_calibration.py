@@ -23,7 +23,7 @@ def problem():
 
 def test_the_record_summaries(problem):
     ts = {t.name: t for t in problem.targets}
-    rc = [t for t in problem.targets if t.name.startswith("radiocarbon")]
+    rc = [t for t in problem.targets if t.name.startswith("radiocarbon") and t.name.endswith("BCE")]
     assert len(rc) == 10 and rc[0].observed < rc[4].observed, "dates rise into the Neolithic"
     g = problem.groups[0]
     assert g.indices == list(range(10)) and g.dof == 9
@@ -53,8 +53,24 @@ def test_the_record_summaries(problem):
     assert all(0.2 <= t.variance < 0.4 for t in vs), "one density converts them all; sites add a little"
     up = [t.observed for t in vs if "upper_mesopotamia" in t.name]
     assert up[-1] > up[0] + 0.2, "Upper Mesopotamian sites grow into the Late Chalcolithic"
-    assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
-                                  "log-likelihood obsidian", "people 3000 BCE"]
+    sr = [t for t in problem.targets if t.name.endswith("% by")]
+    assert len(sr) == 12 and sr[0].name == "radiocarbon southern Levant 10% by"
+    assert problem.groups[6].indices == list(range(54, 66)) and problem.groups[6].dof == 12
+    by = {t.name: t.observed for t in sr + problem.unjudged.targets}
+    for late in ("Anatolia", "northeast Africa"):
+        for q in (10, 25, 50):
+            assert by[f"radiocarbon {late} {q}% by"] > by[f"radiocarbon southern Levant {q}% by"] + 300, \
+                "dated activity rose in the Levant before Anatolia and Africa"
+    assert all(50**2 < t.variance < 1000**2 for t in sr)
+    assert all(len(m) >= 3 for m in problem.subregions.members), "each subregion spans several blocks"
+    oc = [t for t in problem.targets if "rich minus poor" in t.name]
+    assert [t.name for t in oc] == ["cultivation effort rich minus poor stands before 7600 BCE",
+                                    "cultivation effort rich minus poor stands after 7600 BCE"]
+    assert problem.groups[7].indices == [66, 67] and problem.groups[7].dof == 2
+    assert oc[1].observed > 0.3, "by the late PPNB the richest stands were farmed far more"
+    assert problem.names[-7:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
+                                  "log-likelihood obsidian", "people 3000 BCE",
+                                  *(f"radiocarbon northeast Africa {q}% by, not judged" for q in (10, 25, 50))]
 
 
 def test_worlds_are_run_in_parallel_and_reproducibly(problem):
@@ -68,8 +84,8 @@ def test_worlds_are_run_in_parallel_and_reproducibly(problem):
 
 
 def test_the_default_world_is_consistent_with_the_record(problem):
-    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round8/best.json,
-    ADR-0066): with any seed, every target and every group pass history matching."""
+    """The registry defaults are a calibrated M1 world (calibration/runs/m1/round10/best-wave6.json,
+    ADR-0081): with any seed, every target and every group pass history matching."""
     from oikos_cal import __main__ as cli
     from oikos_cal import m1
 
@@ -90,3 +106,20 @@ def test_a_round_can_leave_out_the_house_size_record(problem):
     assert without.names == kept + m1.DIAGNOSTICS
     with pytest.raises(ValueError, match="radiocarbon"):
         m1.Problem(leave_out=("radiocarbon",))
+
+
+def test_the_record_is_split_by_the_engines_wild_cereal_suitability(problem):
+    """The stands the onset contrasts split phases by are the engine's: the same formula,
+    climate and parameters (#36)."""
+    import oikos
+
+    from oikos_cal import m1, onset
+    from oikos_data import DATA, pack
+
+    w = oikos.World.from_packs(m1.packs(), seed=1, params={})
+    climate = pack.read((DATA / "build" / "m1-swasia.climate.oikospack").read_bytes())
+    assert climate.header["time"]["calendar_year"][:2] == [-12050, -11950] and w.year == -12000
+    mid = {k: (climate.values(k)[0] + climate.values(k)[1]) / 2 for k in ("temp_mean", "precip")}
+    params = {k: oikos.registry()["params"][k]["default"] for k in onset.CEREAL}
+    assert np.allclose(onset.cereal_suitability(mid["temp_mean"], mid["precip"], params), w.suitability())
+    assert 0.0 <= problem.stands.min() and problem.stands.max() <= 1.0
