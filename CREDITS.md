@@ -68,6 +68,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Database of Obsidian Sourcing Studies, doi:10.5281/zenodo.55848, licensed under CC
   BY-SA 4.0, and the sourcing studies it compiles (biblio.bib in the archive); derived
   data are shared under the same license.
+- **Lesions of infection** (infection-lesions record): Eshed, V., Gopher, A., Pinhasi, R.
+  & Hershkovitz, I. (2010), Paleopathology and the origin of agriculture in the Levant,
+  American Journal of Physical Anthropology 143: 121-133, doi:10.1002/ajpa.21301, and the
+  excavators of the 13 sites whose skeletons it studies.
 - **Origins of agriculture archaeobotanical database** (cultivation-onset record):
   Wallace, M., Livarda, A., Charles, M. & Jones, G. (2018), York: Archaeology Data Service
   (distributor), doi:10.5284/1046750, used under the ADS Terms of Use and Access; funded

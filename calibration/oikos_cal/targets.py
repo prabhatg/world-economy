@@ -416,6 +416,19 @@ def obsidian_groups():
     return GROUPS
 
 
+class InfectionLesions:
+    def __init__(self, op, discrepancy_sd=0.1):
+        """One target from `op` (`lesions.Operator`): the Neolithic share of the skeletons
+        with lesions of infection, with its binomial variance over the lesioned; judged by
+        itself."""
+        self.op = op
+        self.targets = [_target("infection lesions Neolithic share of the lesioned", op.observed,
+                                op.sampling_variance, discrepancy_sd**2)]
+
+    def model(self, activity):
+        return np.array([self.op.expected(activity)])
+
+
 class HouseGinis:
     def __init__(self, op, discrepancy_sd=0.05):
         """One target per site of `op` (`inequality.Operator`): its house-size Gini, with

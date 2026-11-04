@@ -9,6 +9,7 @@ use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
 use oikos_sim::agents::{ALONE, SHARE_ONE};
 use oikos_sim::inputs::Inputs;
+use oikos_sim::mechanisms::Disease;
 use oikos_sim::{Params, World, WorldConfig, checkpoint};
 use std::collections::BTreeMap;
 
@@ -184,6 +185,29 @@ fn surveys_count_each_settlement_once() {
         (got_count, got_logs),
         "the same at any partition count"
     );
+}
+
+#[test]
+fn skeletons_count_the_infected_of_each_settlement() {
+    // A settlement's infection persists as in one group of all its people (ADR-0075,
+    // ADR-0082): its infected are its people times the prevalence at its size and pooled
+    // practice, what lesions on its dead would show (#42).
+    let (mut w, ..) = farming_world(6, 3.0, 0.0);
+    w.run_years(800, 2, 800);
+    let disease = Disease::from_params(&w.params);
+    let mut want = vec![0.0f64; w.grid.len()];
+    for t in towns(&w).values().filter(|t| t.people > 0) {
+        let effort = (t.effort / t.people as u128) as f64 / SHARE_ONE as f64;
+        want[t.cell as usize] += t.people as f64 * disease.prevalence(t.people as f64, effort);
+    }
+    let got = w.infected();
+    assert!(want.iter().sum::<f64>() > 100.0, "some settlements carry the infection");
+    for c in 0..want.len() {
+        assert!((got[c] - want[c]).abs() < 1e-6, "cell {c}: {} against {}", got[c], want[c]);
+    }
+    let (mut four, ..) = farming_world(6, 3.0, 0.0);
+    four.run_years(800, 4, 800);
+    assert_eq!(four.infected(), got, "the same at any partition count");
 }
 
 #[test]

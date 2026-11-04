@@ -210,6 +210,12 @@ impl PyWorld {
         f64_array(py, self.0.village_sizes().into_iter())
     }
 
+    /// Infected people per cell (float64): each settlement's people times the endemic
+    /// prevalence at its size and practice (ADR-0075); over its people, its prevalence.
+    fn infected<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.infected().into_iter())
+    }
+
     /// Domestic share of each cell's cultivated crop (float64; effort-weighted mean over
     /// its bands, 0 where nobody cultivates).
     fn domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {

@@ -3,8 +3,9 @@
 rachis record (Allaby et al. 2017), survey site counts in Central Anatolia and Upper
 Mesopotamia (Palmisano et al. 2021; ADR-0059), sourced obsidian (DObsiSS; ADR-0061),
 crops among charred plant remains (Wallace et al. 2018; ADR-0064), the house-size
-inequality of dated sites (Kohler et al. 2017; ADR-0074) and the areas of the survey
-sites (Palmisano et al. 2021; #34).
+inequality of dated sites (Kohler et al. 2017; ADR-0074), the areas of the survey
+sites (Palmisano et al. 2021; #34) and lesions of infection on Natufian and Neolithic
+skeletons of the southern Levant (Eshed et al. 2010; #42).
 
 A run is a point u of the unit cube of the registry's free parameters (those with a
 prior to sample; `oikos.sample_params` maps u onto the priors), a world built from the
@@ -45,6 +46,12 @@ imply before and after 7,600 BCE; judged together, discrepancy 0.1 on each, as o
 onset eras. Success bias makes people copy the cultivators who do best, and they did
 best where the wild stands were richest; adoption copies anyone, wherever they live.
 
+The infection lesions (#42) are the Neolithic share of the skeletons with lesions of
+infection, which the share of the infected who show one cancels from; judged by itself,
+discrepancy 0.1, a judgment that covers lesions sampling infection loosely (local
+infections as well as the crowd infection the model has) and a few sites sampling a
+region.
+
 The house-size Ginis are judged since the maintainer's decision of 2026-11-03 (#43);
 round 10's first waves left them out (ADR-0077).
 
@@ -60,20 +67,20 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, pack, rachis, region
+from oikos_data import DATA, archaeobotany, lesions as lesions_record, pack, rachis, region
 from oikos_data import inequality as inequality_pipeline
 from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
 
-from . import domestication, inequality, obsidian, onset, radiocarbon, record, sites, targets, villages
+from . import domestication, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets, villages
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
-               "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05}
+               "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1}
 VILLAGE_DENSITY = 121.0  # people per hectare: geometric mean of 50 and 294
 VILLAGE_DENSITY_SD = 0.45  # log scale: 50-294 as a 95% range
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
@@ -163,6 +170,8 @@ class Problem:
         phases = pq.read_table(io.BytesIO(archaeobotany.build_crop_table(r))).to_pydict()
         self.onset = onset.Operator(phases, self.cells, self.radiocarbon.settings.true, min_items=ONSET_MIN_ITEMS)
         self.stands = stands(self.onset)
+        periods, skeletons, _ = lesions_record.load()
+        self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true)
         self.inequality = None
         if "inequality" not in leave_out:
             houses = pq.read_table(io.BytesIO(inequality_pipeline.build_table(r, offline=True))).to_pydict()
@@ -189,6 +198,7 @@ class Problem:
         self.unjudged = targets.RadiocarbonSubregions(
             self.radiocarbon, radiocarbon.subregions(self.radiocarbon.obs.blocks, UNJUDGED_SUBREGIONS),
             discrepancy_sd=DISCREPANCY["subregions"], rng=np.random.default_rng(0))
+        self.eras.append(targets.InfectionLesions(self.lesions, discrepancy_sd=DISCREPANCY["lesions"]))
         if self.inequality is not None:
             self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]

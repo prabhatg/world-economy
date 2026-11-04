@@ -119,6 +119,15 @@ Gurven and Kaplan (2007), scaled to that birth rate. It sees the Neolithic demog
 transition, which the stock records cannot (ADR-0067). The Levant cemetery record is to
 come (#33).
 
+**Implemented (infection-lesions operator, ADR-0086, #42):** `lesions.Operator` compares
+the lesions of infection on 200 Natufian and 205 Neolithic skeletons of the southern
+Levant (2 and 9 affected; Eshed et al. 2010) with the prevalence of the endemic
+infection (ADR-0075) around the sampled sites in each period, weighted by their
+skeletons (`World::infected`). A skeleton shows a lesion for an unknown share of the
+infected (the osteological paradox), so the summary is the Neolithic share of the
+lesioned, in which that share cancels: it sees how much more common infection became
+with farming, not how common it was.
+
 Operators live in Python (and Rust for hot ones) and are shared by calibration and
 assimilation.
 

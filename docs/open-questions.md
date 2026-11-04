@@ -182,8 +182,10 @@
     mortality from above only indirectly: at four times the default, domestication lags
     (a domestic barley share after 7000 BCE of 0.24, against the observed 0.80). The skeletal record would test it directly:
     Eshed et al. (2010) compare lesions of infection in 200 Natufian and 205 Neolithic
-    skeletons of the southern Levant, and an operator could compare prevalence before and
-    after farming with the model's people-weighted prevalence. Behavioral responses
+    skeletons of the southern Levant, which an operator now compares, as the Neolithic
+    share of the lesioned, with the prevalence around the sampled sites (ADR-0086): it sees
+    the rise, which leans toward foragers spreading less infection (`mobile_contact`
+    below its 0.4), not the mortality. Behavioral responses
     (villages splitting or dispersing under disease, hygiene norms) are left out until a
     record calls for them.
 36. How strongly did people copy farming for its payoff, and how far did they look

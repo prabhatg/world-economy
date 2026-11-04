@@ -126,6 +126,9 @@ reconstructions, timed and scaled by parameters. It hardly moves northeast Afric
 dates, which also need a farmed Nile, so the subregion is still recorded, not judged.
 Floodplains can be farmed with domestic crops (ADR-0085), opening the Mesopotamian
 alluvium, but the model's farming does not cross Sinai to the Nile.
+Lesions of infection on Natufian and Neolithic skeletons are a record (ADR-0086, #42):
+the defaults are consistent with their rise, which leans toward foragers who spread
+less infection.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

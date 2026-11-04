@@ -1,0 +1,161 @@
+# Lesions of infection in Natufian and Neolithic skeletons of the southern Levant: how
+# common infection was before and after farming.
+dataset = "eshed2010-lesions"
+title = "Paleopathology and the origin of agriculture in the Levant: inflammatory (infectious) lesions of the postcranial skeleton"
+version = "American Journal of Physical Anthropology 143(1), 2010"
+homepage = "https://doi.org/10.1002/ajpa.21301"
+citation = "Eshed, V., Gopher, A., Pinhasi, R., Hershkovitz, I. (2010). Paleopathology and the origin of agriculture in the Levant. American Journal of Physical Anthropology 143: 121-133. https://doi.org/10.1002/ajpa.21301"
+doi = "10.1002/ajpa.21301"
+notes = """
+200 Natufian (10,500-8,300 BC) and 205 Neolithic (Pre-Pottery Neolithic B and C,
+8,300-5,500 BC) skeletons from 13 sites, examined by one observer (Table 1). An
+individual is affected by an infection/periosteal reaction if a discrete patch of
+periosteal reaction covers more than a quarter of its tibia or a long bone, or a systemic
+infection marks its skeleton (p. 126, "Infection/periosteal reactions"); active and healed
+lesions are not told apart. Affected: 2 of 200 Natufians (1%) and 9 of 205 Neolithic
+people (4.39%; one-tailed Fisher's exact P = 0.033; Results, p. 126, and Fig. 2); by
+sex, males 2.0% and 5.7%, females 0% and 9.7% (Fig. 3, 4). Sites are located from the
+paper's map (Fig. 1) and their published coordinates, to within a few km; Et Tin, 5
+Natufians, from the map alone (south-east of Jerusalem).
+"""
+
+[license]
+# The article is (c) 2010 Wiley-Liss and is not stored. The two counts, the sample sizes
+# and the sites are facts it reports, transcribed with this citation as every record's
+# observed values are; the maintainer decided (2026-11-04, #42) to commit them.
+id = "LicenseRef-cited-facts"
+url = "https://doi.org/10.1002/ajpa.21301"
+derived_redistribution = true
+attribution = "Uses counts of infectious lesions in Natufian and Neolithic skeletons from Eshed et al. (2010), American Journal of Physical Anthropology 143: 121-133, https://doi.org/10.1002/ajpa.21301."
+verified = "2026-11-04"
+
+[access]
+kind = "transcribed"
+source = "Table 1 (sample by site and period), Results p. 126 and Fig. 2 (individuals with inflammatory lesions)"
+
+[[access.periods]]
+name = "Natufian"
+start_year = -10500
+end_year = -8300
+examined = 200
+affected = 2
+
+[[access.periods]]
+name = "Neolithic"
+start_year = -8300
+end_year = -5500
+examined = 205
+affected = 9
+
+# Sites, their period and individuals (Table 1), and location (lat, lng).
+[[access.sites]]
+name = "Ain Mallaha"
+period = "Natufian"
+individuals = 102
+lat = 33.08
+lng = 35.58
+
+[[access.sites]]
+name = "Et Tin"
+period = "Natufian"
+individuals = 5
+lat = 31.74
+lng = 35.24
+
+[[access.sites]]
+name = "Hayonim Cave"
+period = "Natufian"
+individuals = 48
+lat = 32.93
+lng = 35.22
+
+[[access.sites]]
+name = "Nahal Oren"
+period = "Natufian"
+individuals = 41
+lat = 32.71
+lng = 34.98
+
+[[access.sites]]
+name = "Rakefet"
+period = "Natufian"
+individuals = 4
+lat = 32.67
+lng = 35.06
+
+[[access.sites]]
+name = "Abu Gosh"
+period = "Neolithic"
+individuals = 30
+lat = 31.81
+lng = 35.11
+
+[[access.sites]]
+name = "Atlit Yam"
+period = "Neolithic"
+individuals = 60
+lat = 32.71
+lng = 34.94
+
+[[access.sites]]
+name = "Gilgal"
+period = "Neolithic"
+individuals = 3
+lat = 31.99
+lng = 35.45
+
+[[access.sites]]
+name = "Hatoula"
+period = "Neolithic"
+individuals = 10
+lat = 31.82
+lng = 34.98
+
+[[access.sites]]
+name = "Horvat Galil"
+period = "Neolithic"
+individuals = 4
+lat = 33.04
+lng = 35.25
+
+[[access.sites]]
+name = "Kfar HaHoresh"
+period = "Neolithic"
+individuals = 52
+lat = 32.70
+lng = 35.28
+
+[[access.sites]]
+name = "Nahal Oren"
+period = "Neolithic"
+individuals = 11
+lat = 32.71
+lng = 34.98
+
+[[access.sites]]
+name = "Netiv Hagdud"
+period = "Neolithic"
+individuals = 27
+lat = 31.99
+lng = 35.42
+
+[[access.sites]]
+name = "Yiftahel"
+period = "Neolithic"
+individuals = 8
+lat = 32.75
+lng = 35.23
+
+[coverage]
+spatial = "southern Levant (13 sites, Galilee to the Judean Hills)"
+temporal = "10,500-5,500 BC: Natufian and Pre-Pottery Neolithic B and C"
+
+[[variables]]
+name = "examined"
+unit = "individuals"
+description = "Skeletons examined for postcranial lesions in the period"
+
+[[variables]]
+name = "affected"
+unit = "individuals"
+description = "Skeletons with lesions of infection (periosteal reaction over a quarter of a tibia or long bone, or systemic infection)"

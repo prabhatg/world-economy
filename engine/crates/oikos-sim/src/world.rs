@@ -547,6 +547,21 @@ impl World {
         sum
     }
 
+    /// Infected people per cell (ADR-0075, #42): each settlement's people times the endemic
+    /// prevalence at its size and pooled practice ([`crate::mechanisms::Disease::prevalence`]),
+    /// whether or not the infection kills (`disease_mortality`), as lesions on its dead
+    /// would show it. Summed in canonical agent order, so the same whatever the partitions.
+    pub fn infected(&self) -> Vec<f64> {
+        let disease = crate::mechanisms::Disease::from_params(&self.params);
+        let mut sum = vec![0.0f64; self.grid.len()];
+        self.for_each_settlement(|cell, s| {
+            let people = s.people as f64;
+            let effort = s.cultivation() as f64 / SHARE_ONE as f64;
+            sum[cell as usize] += people * disease.prevalence(people, effort);
+        });
+        sum
+    }
+
     /// Calls `f` with each settlement holding people and its cell, in canonical order.
     fn for_each_settlement(&self, mut f: impl FnMut(u32, &crate::agents::Settlement)) {
         for a in self.agent_slices() {

@@ -68,6 +68,9 @@ class _ObsidianWorld:
     def village_sizes(self):
         return np.zeros(2)
 
+    def infected(self):
+        return np.zeros(2)
+
     def run_years(self, n, parts):
         self.year += n
 
@@ -124,3 +127,20 @@ def test_inequality_is_recorded_per_settled_person_year():
     assert a.inequality[0, 0] / a.cultivators[0, 0] == pytest.approx(0.7)
     toy = record.activity(oikos.World(seed=4), end=-11_900)
     assert toy.inequality.shape == toy.people.shape and not toy.inequality.any(), "toy worlds never settle"
+
+
+class _InfectedWorld(_ObsidianWorld):
+    """Cell 0: ten people, two then four of them infected; cell 1: nobody."""
+
+    def infected(self):
+        return np.array([2.0 if self.year < -11_950 else 4.0, 0.0])
+
+
+def test_infection_is_recorded_as_infected_people_years():
+    # Divided by people-years of the same cells and centuries, the prevalence of the
+    # endemic infection there, which lesions on skeletons sample (#42).
+    a = record.activity(_InfectedWorld(), end=-11_900, every=50, parts=1)
+    np.testing.assert_allclose(a.infected[:, 0], [50 * 2 + 50 * 4, 0])
+    assert a.infected[0, 0] / a.people[0, 0] == pytest.approx(0.3)
+    toy = record.activity(oikos.World(seed=4), end=-11_900)
+    assert toy.infected.shape == toy.people.shape and not toy.infected.any(), "foragers' camps carry none"

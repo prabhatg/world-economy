@@ -57,6 +57,12 @@ in the M1 region. The author manuscript's supplement at Europe PMC (PMC5714260) 
 licence (checked 2026-11-02), so it is used for research only: it is fetched through the
 Europe PMC API, its spreadsheet checked by SHA-256, and the site table built in memory,
 never committed or packed. Sites are located by their radiocarbon samples in p3k14c.
+Lesions of infection come from Eshed et al. (2010, American Journal of Physical
+Anthropology 143: 121-133, doi:10.1002/ajpa.21301; ADR-0086): 2 of 200 Natufian and 9 of
+205 Neolithic skeletons from 13 sites of the southern Levant. The article is under
+Wiley's copyright and is not stored; its counts and sample by site are facts it reports,
+transcribed with its citation into the manifest by the maintainer's decision
+(2026-11-04, #42).
 
 ## Forcing (inputs)
 

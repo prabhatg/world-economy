@@ -53,6 +53,9 @@ The house-size Ginis (Kohler et al. 2017, `manifests/kohler2017-house-ginis.toml
 under no licence either: `python -c "from oikos_data import inequality; inequality.inputs()"`
 fetches the supplement through the Europe PMC API into the cache, and the calibration
 builds the site table in memory (`inequality.build_table`), never written or committed.
+The lesions of infection (Eshed et al. 2010, `manifests/eshed2010-lesions.toml`) are the
+paper's counts and sample by site, transcribed into the manifest by the maintainer's
+decision (2026-11-04, #42); the article itself is not stored (`oikos_data.lesions.load`).
 
 | Pack | Fields | Source |
 |---|---|---|
