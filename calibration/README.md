@@ -131,7 +131,10 @@ the four wealth parameters; `best-wave4.json` ranks wave 4 alone, as its records
 from the first three waves', and keeps the defaults too. `wave5.json` adds the
 radiocarbon subregions (ADR-0079) and `wave6.json` the onset contrasts too (ADR-0080);
 `best-wave6.json` ranks wave 6 alone, and its chosen world (run 216) gives the calibrated
-defaults (ADR-0081). The onset record's tables are downloaded by hand (`data/README.md`); without
+defaults (ADR-0081). `wave7.json` activates the two settlement parameters (ADR-0082) and
+`best-wave7.json` ranks waves 6 and 7, keeping run 216; `profile-integration.json` takes
+`settlement_integration` over 1 to 6 at those defaults and gives its calibrated value, 4
+(ADR-0083). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

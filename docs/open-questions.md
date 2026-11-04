@@ -219,11 +219,14 @@
     Africa is recorded, not judged, until the forcing has an African Humid Period (#44).
 38. What made Upper Mesopotamian villages grow from the Halaf to the Late Chalcolithic
     (126 to 179 people at the middle density) while Central Anatolia's stayed level
-    (ADR-0078, ADR-0082)? Settlements of several groups reach the record's level, but
-    the model's stay level in both surveys: integration is a constant, and the
+    (ADR-0078, ADR-0082)? Settlements of several groups can reach the record's level
+    (two to two and a half groups' worth gives 113-147 people), but the model's stay level in both surveys: integration is a constant, and the
     inequality that hierarchy reads hardly changes once the land has filled (the
     settled people's variance of log wealth is 0.28 from 9000 to 3000 BCE at the
-    defaults with towns, as they farm about 0.38 of their effort). A settlement is also capped by its own cell's land (about 400
+    defaults with towns, as they farm about 0.38 of their effort). At the calibrated
+    integration (four groups' worth, ADR-0083) villages are about 100 people in every
+    era of both surveys, since a cell's land holds one town and the small groups it
+    sheds. A settlement is also capped by its own cell's land (about 400
     people at the defaults), so the largest sites, which drew on more land (Late
     Chalcolithic Tell Brak, over 100 ha), cannot form. Candidates: towns whose catchment
     reaches into neighboring cells, as central places with craft and exchange; rising

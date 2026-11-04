@@ -117,7 +117,10 @@ Settlements of several groups (ADR-0082, #39): groups keep their scalar-stress l
 and integrative institutions and hierarchy hold several of them together in one
 settlement, which pays for its size in infection; at the calibrated defaults, two or
 more groups' worth gives villages of 110-160 people, inside the record's range, though
-still level through time.
+still level through time. A seventh wave and a profile calibrate it (ADR-0083): four
+groups' worth fits best, though any value above one fits as well within the spread
+between seeds, and villages are about 100 people, as a cell's land holds one town and
+the small groups it sheds; hierarchy is not identified.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
