@@ -59,6 +59,9 @@ enters the model, and the starting mechanisms.
   it gives cultivation up. Wider learning evens practice out across a landscape;
   success bias speeds cultivation where it pays and holds it back where wild-cereal
   cultivation feeds fewer than foraging. Both 0 nest the learning before.
+  Where rivers flood their plains, fields need no rain (ADR-0085): floodplains grow
+  domestic crops only, sown by bands that have them, and their silt does not wear down,
+  so the Nile and the Mesopotamian alluvium can be farmed where rain grows no cereals.
   Fields wear the soil down and yields fall once it thins below a critical share (land
   degradation, ADR-0055; 3.4e-4 per year at full effort in the calibrated defaults,
   against soil formation 7.1e-4).

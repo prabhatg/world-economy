@@ -430,7 +430,8 @@ impl World {
             self.models[c] = if effort == 0 {
                 (0.0, people as f64) // foragers only: no payoff to compute
             } else {
-                learning.cell_models(self.farmland.farm[c], self.forage_capacity[c], people, effort, crop)
+                let land = (self.farmland.farm[c], self.farmland.flood[c]);
+                learning.cell_models(land, self.forage_capacity[c], people, effort, crop)
             };
         }
     }
@@ -443,7 +444,7 @@ impl World {
             return;
         }
         let n = self.grid.len();
-        let land = (&self.forage_capacity[..], &self.farmland.farm[..]);
+        let land = (&self.forage_capacity[..], &self.farmland.farm[..], &self.farmland.flood[..]);
         let sums = (&self.effort_sum[..], &self.crop_sum[..]);
         farm_cells(land, 0..n as u32, &self.population, sums, &mut self.capacity, &self.params);
     }
@@ -779,6 +780,8 @@ impl World {
                 population: &self.population,
                 effort_sum: &self.effort_sum,
                 farm: &self.farmland.farm,
+                floodplain: &self.farmland.floodplain,
+                flood: &self.farmland.flood,
                 crop_sum: &self.crop_sum,
                 models: &self.models,
                 models_for: self.models_for,
@@ -837,7 +840,7 @@ impl World {
         // where the land supports cultivation, the capacity the bands farm.
         let threshold = self.params.merge_threshold;
         let farming = self.farmland.active();
-        let land = (&self.forage_capacity[..], &self.farmland.farm[..]);
+        let land = (&self.forage_capacity[..], &self.farmland.farm[..], &self.farmland.flood[..]);
         let params = &self.params;
         let pops = split_by_ranges(&mut self.population, &ranges);
         let efforts = split_by_ranges(&mut self.effort_sum, &ranges);
@@ -923,7 +926,7 @@ fn add_farming(agents: &Agents, base: u32, effort: &mut [u64], crop: &mut [u64])
 /// Capacity of `cells` (local slices indexed by `cell - cells.start`; `land` is the
 /// world's forager capacity and farm capacity) from their people's cultivation sums.
 fn farm_cells(
-    land: (&[u64], &[f64]),
+    land: (&[u64], &[f64], &[f64]),
     cells: Range<u32>,
     pop: &[u64],
     sums: (&[u64], &[u64]),
@@ -932,12 +935,19 @@ fn farm_cells(
 ) {
     let one = SHARE_ONE as f64;
     for (i, c) in cells.map(|c| c as usize).enumerate() {
-        let (forage, farm) = (land.0[c], land.1[c]);
+        let (forage, farm, flood) = (land.0[c], land.1[c], land.2[c]);
         cap[i] = match sums.0[i] {
             0 => forage,
             e => {
                 let people = pop[i] as f64 * one;
-                environment::farmed_capacity(forage, farm, e as f64 / people, sums.1[i] as f64 / people, p)
+                environment::farmed_capacity(
+                    forage,
+                    farm,
+                    flood,
+                    e as f64 / people,
+                    sums.1[i] as f64 / people,
+                    p,
+                )
             }
         };
     }

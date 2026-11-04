@@ -87,8 +87,9 @@ SUBREGIONS = {"southern Levant": (29.0, 34.5, 34.0, 39.0),
 # Recorded, not judged: the subregion's dates come from the Western Desert while the
 # African Humid Period watered it and from the Nile valley once it was farmed, from about
 # 5,000 BCE, with almost none before 9,000 BCE (Kuper and Kropelin 2006). The forcing now
-# has the Humid Period (ADR-0084), but the model's Nile is not farmed and holds as many
-# foragers from 12,000 BCE as later, so no world can match the dates yet; #44.
+# has the Humid Period (ADR-0084) and floodplains can be farmed (ADR-0085), but farming
+# does not reach the Nile and it holds as many foragers from 12,000 BCE as later, so no
+# world can match the dates yet; #44.
 UNJUDGED_SUBREGIONS = {"northeast Africa": (22.0, 32.0, 24.0, 34.0)}
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources

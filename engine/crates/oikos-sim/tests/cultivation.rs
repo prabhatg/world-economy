@@ -765,8 +765,11 @@ fn farmings_payoff_is_what_a_unit_of_effort_yields_against_foraging() {
     // forage * e it gives up, w the wild yield ratio and crop / e the domestic share.
     let c = Cultivation::from_params(&Params { wild_yield_ratio: 0.5, ..only(0.0, 0.0, 0.5) });
     let effort = 100 * SHARE_ONE as u64;
-    assert!((c.payoff(600.0, 200, effort, effort / 2) - 2.25).abs() < 1e-9);
-    assert!((c.payoff(600.0, 200, 0, 0) - 1.5).abs() < 1e-9, "wild crops where nobody farms yet");
+    assert!((c.payoff((600.0, 0.0), 200, effort, effort / 2) - 2.25).abs() < 1e-9);
+    assert!((c.payoff((600.0, 0.0), 200, 0, 0) - 1.5).abs() < 1e-9, "wild crops where nobody farms yet");
+    // A floodplain feeds only domestic crops (ADR-0085): 400 more at full domestication.
+    assert!((c.payoff((600.0, 400.0), 200, effort, effort / 2) - 3.25).abs() < 1e-9);
+    assert!((c.payoff((600.0, 400.0), 200, 0, 0) - 1.5).abs() < 1e-9, "no wild cereals on the floodplain");
 }
 
 /// Mean effort after each of `years` in a full land where abundance alone drives

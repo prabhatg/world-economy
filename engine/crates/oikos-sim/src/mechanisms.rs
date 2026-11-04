@@ -62,6 +62,11 @@ pub struct Sense<'a> {
     /// People fed per cell if all effort went into cultivating fully domestic crops, on
     /// its soil (declare [`Component::Forcing`]).
     pub farm: &'a [f64],
+    /// Floodplain fields per cell beyond what rain grows, as a share of its dry land at
+    /// full yield, sown only with domestic crops (ADR-0085).
+    pub floodplain: &'a [f64],
+    /// People fed per cell if all effort went into domestic crops on its floodplain.
+    pub flood: &'a [f64],
     /// People-weighted sum of effort times domestic share per cell (in
     /// [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
     pub crop_sum: &'a [u64],
@@ -1039,12 +1044,19 @@ impl Cultivation {
 
     /// Farming's payoff in a cell: the people a unit of effort feeds cultivating against
     /// those it feeds foraging ([`crate::environment::farmed_capacity`]), from the cell's
-    /// full-farming capacity `farm`, its forager capacity and its people's sums of effort
-    /// and of effort times domestic share.
-    pub fn payoff(&self, farm: f64, forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
+    /// full-farming capacities `(farm, flood)` of rain-fed land and floodplain, its forager
+    /// capacity and its people's sums of effort and of effort times domestic share.
+    pub fn payoff(&self, (farm, flood): (f64, f64), forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
         let domestic = if effort_sum == 0 { 0.0 } else { crop_sum as f64 / effort_sum as f64 };
         let w = self.wild_yield_ratio;
-        oikos_math::finite(farm * (w + (1.0 - w) * domestic) / forage.max(1) as f64)
+        oikos_math::finite((farm * (w + (1.0 - w) * domestic) + flood * domestic) / forage.max(1) as f64)
+    }
+
+    /// The suitability a band with domestic share `domestic` sees in its land: wild
+    /// cereals' `suitability`, and the `floodplain` it can sow only with the domestic crops
+    /// it has (ADR-0085), at most 1.
+    pub fn sowable(suitability: f64, floodplain: f64, domestic: f64) -> f64 {
+        (suitability + floodplain * domestic).min(1.0)
     }
 
     /// Whether bands learn from their own cell only, by how many plant (ADR-0065).
@@ -1071,7 +1083,7 @@ impl Cultivation {
     /// capacity and its people's sums of effort and of effort times domestic share.
     pub fn cell_models(
         &self,
-        farm: f64,
+        land: (f64, f64),
         forage: u64,
         people: u64,
         effort_sum: u64,
@@ -1079,7 +1091,7 @@ impl Cultivation {
     ) -> (f64, f64) {
         let effort = if people == 0 { 0.0 } else { effort_sum as f64 / (people as f64 * SHARE_ONE as f64) };
         let payoff = if effort_sum > 0 && self.success_bias != 0.0 {
-            self.payoff(farm, forage, effort_sum, crop_sum)
+            self.payoff(land, forage, effort_sum, crop_sum)
         } else {
             1.0
         };
@@ -1113,8 +1125,14 @@ impl Cultivation {
             let models = if cached {
                 sense.models[c]
             } else {
-                let (farm, forage) = (sense.farm[c], sense.forage_capacity[c]);
-                self.cell_models(farm, forage, sense.population[c], sense.effort_sum[c], sense.crop_sum[c])
+                let land = (sense.farm[c], sense.flood[c]);
+                self.cell_models(
+                    land,
+                    sense.forage_capacity[c],
+                    sense.population[c],
+                    sense.effort_sum[c],
+                    sense.crop_sum[c],
+                )
             };
             (contact, models)
         };
@@ -1160,7 +1178,11 @@ impl Mechanism for Cultivation {
             let target = self.target_effort(
                 sense.population[cell],
                 sense.forage_capacity[cell],
-                sense.suitability[cell],
+                Self::sowable(
+                    sense.suitability[cell],
+                    sense.floodplain[cell],
+                    Traits::share(traits.domestication),
+                ),
                 sense.climate_stress[cell],
                 sense.climate_variability[cell],
             );
@@ -1431,6 +1453,8 @@ mod tests {
             population: &population,
             effort_sum: &zeros,
             farm: &[],
+            floodplain: &[],
+            flood: &[],
             crop_sum: &zeros,
             models: &[],
             models_for: (0.0, 0.0),

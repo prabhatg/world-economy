@@ -124,6 +124,8 @@ the small groups it sheds; hierarchy is not identified.
 The forcing has the African Humid Period (ADR-0084, #44): rain from Eastern Saharan
 reconstructions, timed and scaled by parameters. It hardly moves northeast Africa's
 dates, which also need a farmed Nile, so the subregion is still recorded, not judged.
+Floodplains can be farmed with domestic crops (ADR-0085), opening the Mesopotamian
+alluvium, but the model's farming does not cross Sinai to the Nile.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

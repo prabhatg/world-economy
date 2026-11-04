@@ -61,6 +61,7 @@ pub struct Params {
     pub aquatic_bonus: f64,
     pub perennial_discharge: f64,
     pub humid_period_scale: f64,
+    pub floodplain_yield: f64,
     pub humid_period_onset_bp: u64,
     pub humid_period_end_bp: u64,
     pub humid_period_transition_years: u64,
@@ -154,6 +155,7 @@ impl Params {
             aquatic_bonus: real("aquatic_bonus")?,
             perennial_discharge: real("perennial_discharge")?,
             humid_period_scale: real("humid_period_scale")?,
+            floodplain_yield: real("floodplain_yield")?,
             humid_period_onset_bp: int("humid_period_onset_bp")?,
             humid_period_end_bp: int("humid_period_end_bp")?,
             humid_period_transition_years: int("humid_period_transition_years")?,
@@ -349,6 +351,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("humid_period_onset_bp", Restore::Inert),
     ("humid_period_end_bp", Restore::Inert),
     ("humid_period_transition_years", Restore::Inert),
+    // ADR-0085: no floodplain fields.
+    ("floodplain_yield", Restore::Value(0.0)),
 ];
 
 impl Params {

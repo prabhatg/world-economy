@@ -245,7 +245,12 @@
     4,300 foragers there from 12,000 BCE (ADR-0084)? Candidates: Early Holocene floods
     that made the valley less habitable during the Humid Period (Zaki et al. 2021,
     doi:10.1016/j.quascirev.2021.107200), sites buried under the aggrading floodplain and
-    delta, which no survey sees, or both.
+    delta, which no survey sees, or both. And how did farming reach the Nile? Its
+    floodplain can be farmed since ADR-0085, but the model's farmers stop at Sinai's
+    170 km of desert: their daughters move only to neighboring cells, the Nile's are full
+    of riverine foragers, and seed passed by learning stops where nobody farms. Herders
+    who crossed with their flocks (#37), or migrants who travelled farther, are the
+    candidates.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

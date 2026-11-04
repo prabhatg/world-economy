@@ -47,6 +47,9 @@ def test_africa_ends_at_the_suez_isthmus_and_the_red_sea():
     assert not humid.african(-10.0, -50.0), "Brazil: outside the reconstruction's domain"
     assert not humid.african(12.0, 25.0), "the Sahel, south of the southernmost anchor"
     assert not humid.african(40.0, 20.0), "Europe"
+    assert not humid.african(37.0, 27.5), "western Anatolia, north of the Mediterranean"
+    assert not humid.african(35.0, 25.0), "Crete"
+    assert humid.african(36.8, 10.2), "Tunis"
 
 
 def test_the_pack_holds_the_anomaly_over_africa_and_none_beyond():

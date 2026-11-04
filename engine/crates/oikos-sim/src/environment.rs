@@ -29,6 +29,8 @@ use oikos_math::{exp, pow};
 pub const CLIMATE: (&str, &str, &str) = ("climate", "temp_mean", "precip");
 /// Hydrology field giving each cell's largest river discharge (m3/s).
 pub const RIVERS: (&str, &str) = ("hydrology", "river_discharge");
+/// Hydrology field giving the share of each cell its rivers flood at their highest.
+pub const FLOODPLAIN: (&str, &str) = ("hydrology", "floodplain_fraction");
 /// Geometry field giving each cell's area (km2).
 pub const AREA: (&str, &str) = ("geometry", "area_km2");
 /// Pack kind and field holding the rain the African Humid Period adds at its height
@@ -70,13 +72,15 @@ pub fn cereal_suitability(temp_c: f64, precip_mm: f64, p: &Params) -> f64 {
         * ramp(temp_c, p.cereal_temp_min, p.cereal_temp_full)
 }
 
-/// Carrying capacity of a cell with forager capacity `forage` and `farm` people fed under
-/// full cultivation of domestic crops, whose people spend on average `effort` of their
-/// effort cultivating and `crop` (the people-weighted mean of effort times domestic share)
-/// on domestic-type crops. Effort moves land use from foraging to fields; cultivated wild
-/// crops yield `wild_yield_ratio` of domestic ones. At least one person.
-pub fn farmed_capacity(forage: u64, farm: f64, effort: f64, crop: f64, p: &Params) -> u64 {
-    let fields = farm * (p.wild_yield_ratio * effort + (1.0 - p.wild_yield_ratio) * crop);
+/// Carrying capacity of a cell with forager capacity `forage`, `farm` people fed under
+/// full cultivation of domestic crops on its rain-fed land and `flood` on its floodplain,
+/// whose people spend on average `effort` of their effort cultivating and `crop` (the
+/// people-weighted mean of effort times domestic share) on domestic-type crops. Effort
+/// moves land use from foraging to fields; cultivated wild crops yield `wild_yield_ratio`
+/// of domestic ones on rain-fed land and nothing on the floodplain, where no wild cereals
+/// grow (ADR-0085). At least one person.
+pub fn farmed_capacity(forage: u64, farm: f64, flood: f64, effort: f64, crop: f64, p: &Params) -> u64 {
+    let fields = farm * (p.wild_yield_ratio * effort + (1.0 - p.wild_yield_ratio) * crop) + flood * crop;
     (oikos_math::finite(forage as f64 * (1.0 - effort) + fields) as u64).max(1)
 }
 
@@ -146,6 +150,7 @@ struct Year<'a> {
     slice: Slice,
     area: FieldView<'a>,
     rivers: Option<FieldView<'a>>,
+    floodplain: Option<FieldView<'a>>,
     surface: Surface<'a>,
 }
 
@@ -161,6 +166,7 @@ impl Year<'_> {
             slice: climate.slice_at(calendar_year),
             area: inputs.field(AREA.0, AREA.1).expect("validated in from_packs"),
             rivers: inputs.field(RIVERS.0, RIVERS.1).ok(),
+            floodplain: inputs.field(FLOODPLAIN.0, FLOODPLAIN.1).ok(),
             surface: Surface::new(inputs, calendar_year),
         })
     }
@@ -176,6 +182,18 @@ impl Year<'_> {
     /// Dry-land area (km2).
     fn dry_area(&self, c: usize) -> f64 {
         self.area.get(0, c).unwrap_or(0.0) * self.surface.dry(c)
+    }
+
+    /// The cell's floodplain fields as a share of its dry land at full yield (ADR-0085):
+    /// the share its rivers flood, times what floods grow there beyond what rain already
+    /// does at wild-cereal suitability `suitability` (crops need warmth, not rain, there).
+    fn floodplain(&self, c: usize, temp_c: f64, suitability: f64, p: &Params) -> f64 {
+        let Some(share) = self.floodplain.as_ref().and_then(|f| f.get(0, c)) else {
+            return 0.0;
+        };
+        let warmth =
+            ((temp_c - p.cereal_temp_min) / (p.cereal_temp_full - p.cereal_temp_min)).clamp(0.0, 1.0);
+        oikos_math::finite(share.clamp(0.0, 1.0) * (warmth * p.floodplain_yield - suitability).max(0.0))
     }
 
     /// Foragers the cell feeds (before rounding).
@@ -211,6 +229,13 @@ pub struct Farmland {
     /// times dry-land area times `farm_density`, times the soil's yield ([`soil_yield`],
     /// applied by the world, which keeps the soil).
     pub farm: Vec<f64>,
+    /// Floodplain fields beyond what rain grows, as a share of dry land at full yield
+    /// (ADR-0085): sown only with domestic crops, so it invites only bands that have them.
+    pub floodplain: Vec<f64>,
+    /// People fed if all effort went into cultivating fully domestic crops on the
+    /// floodplain: `floodplain` times dry-land area times `farm_density`. Floods renew its
+    /// soil, so it does not wear down.
+    pub flood: Vec<f64>,
     /// Relative decline of forager capacity since `stress_window_years` earlier, in [0, 1].
     pub stress: Vec<f64>,
     /// Climate variability: the mean absolute change of suitability per century over the
@@ -247,14 +272,19 @@ impl Farmland {
             *self = Farmland::default();
             return;
         };
-        for v in [&mut self.suitability, &mut self.farm, &mut self.stress] {
+        for v in
+            [&mut self.suitability, &mut self.farm, &mut self.floodplain, &mut self.flood, &mut self.stress]
+        {
             v.resize(cells, 0.0);
         }
         self.update_variability(inputs, calendar_year, p, cells);
         for c in 0..cells {
-            let s = now.climate(c).map_or(0.0, |(t, w)| cereal_suitability(t, w, p));
+            let climate = now.climate(c);
+            let s = climate.map_or(0.0, |(t, w)| cereal_suitability(t, w, p));
             self.suitability[c] = s;
             self.farm[c] = oikos_math::finite(now.dry_area(c) * s * p.farm_density);
+            self.floodplain[c] = climate.map_or(0.0, |(t, _)| now.floodplain(c, t, s, p));
+            self.flood[c] = oikos_math::finite(now.dry_area(c) * self.floodplain[c] * p.farm_density);
             let (k, k0) = (now.foragers(c, p), before.foragers(c, p));
             self.stress[c] = if k0 > 0.0 { (1.0 - k / k0).clamp(0.0, 1.0) } else { 0.0 };
         }

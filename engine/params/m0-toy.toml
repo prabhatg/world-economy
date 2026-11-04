@@ -531,6 +531,20 @@ note = "Matches the hydrology pack's threshold for river_length (wadis excluded)
 # selection_coefficient); domestic crops raise carrying capacity. Used by worlds with a
 # climate pack; toy worlds never cultivate.
 
+[params.floodplain_yield]
+group = "cultivation"
+unit = "1"
+description = "Yield of domestic crops on a river's floodplain, sown in the soil its flood has watered, as a multiple of rain-fed crops at full wild-cereal suitability (ADR-0085). Floodplain fields add what this exceeds rain-fed suitability by, on the share of a cell its rivers flood (the hydrology pack's floodplain_fraction), and need warmth but no rain. 0: no floodplain farming."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 1.0
+prior = { dist = "uniform", lo = 0.0, hi = 2.0 }
+status = "placeholder"
+note = "Until calibrated, the same as rain-fed fields at full suitability. Flood-recession farming of emmer and barley on the Nile's basins needed no rain or canals and its soil was renewed by the silt each flood left (Butzer 1976); the Mesopotamian alluvium's rivers flood at the wrong season for it and were farmed by short canals from the Ubaid on (Adams 1981), which this treats alike. The floodplain is GIEMS-D15's maximum inundation along modern reaches, a proxy for the Holocene's."
+sources = [
+  { citation = "Butzer, K.W. (1976). Early Hydraulic Civilization in Egypt: A Study in Cultural Ecology. University of Chicago Press." },
+  { citation = "Adams, R.McC. (1981). Heartland of Cities: Surveys of Ancient Settlement and Land Use on the Central Floodplain of the Euphrates. University of Chicago Press." },
+]
+
 [params.humid_period_scale]
 group = "environment"
 unit = "1"

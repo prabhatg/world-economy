@@ -27,15 +27,20 @@ from . import DATA, manifest as manifests, pack, vector
 # from north to south: a cell is African if its center is west of it.
 AFRICA_EDGE = ((32.0, 32.3), (29.95, 32.55), (27.8, 33.6), (24.0, 35.5), (22.0, 36.9), (18.0, 38.6))
 # The fit's domain: North Africa from the southernmost anchor to the Mediterranean, east
-# of the Atlantic (south, north, west); outside it the exponential would only extrapolate.
-DOMAIN = (18.0, 37.5, -18.0)
+# of the Atlantic (south, west); outside it the exponential would only extrapolate.
+DOMAIN = (18.0, -18.0)
+# The Mediterranean shore's northern limit: 37.5 N west of 12 E (Tunisia, Algeria),
+# 33.5 N east of it, south of Crete and Anatolia.
+NORTH = ((12.0, 37.5), (33.5,))
 SCALE = 0.1  # mm/year per stored step
 
 
 def african(lat, lng):
     """Whether (lat, lng) lies in North Africa north of 18 N, the fit's domain: west of
     the Suez isthmus and the Red Sea."""
-    south, north, west = DOMAIN
+    south, west = DOMAIN
+    (split, north_west), (north_east,) = NORTH
+    north = north_west if lng < split else north_east
     lats, lngs = zip(*AFRICA_EDGE[::-1])
     return south <= lat <= north and west <= lng < float(np.interp(lat, lats, lngs))
 
