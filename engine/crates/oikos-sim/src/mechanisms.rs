@@ -449,8 +449,9 @@ impl Mechanism for Disease {
 /// ([`Fission::settlement_limit`]): `integration` groups' worth, by institutions that bind
 /// households across groups without command (ritual, shared buildings, descent; Bandy
 /// 2004; Hodder 2014), and `hierarchy` more per unit of its households' variance of log
-/// wealth, by leaders whose decisions others accept (Johnson 1982). A daughter that stays
-/// in her cell stays in her settlement while it holds fewer people than that, and a
+/// wealth, by leaders whose decisions others accept (Johnson 1982). A farmer's daughter
+/// that stays in her cell stays in her settlement while it holds fewer people than that
+/// (mobile foragers' daughters camp alone, as foragers never join a settlement), and a
 /// settlement at or above it sheds its smallest group, with the same probability, which
 /// founds a settlement of its own in the cell: scalar stress between groups, as between
 /// households. Integration 1 and no hierarchy are settlements of one group, as before.
@@ -616,8 +617,10 @@ impl Mechanism for Fission {
                 let room = self.village != 0 && sense.population[c] < sense.capacity[c];
                 let dest =
                     if room { cell } else { self.destination(sense, &migration_rng, explore, id, cell) };
-                // A daughter who stays in her cell stays in her settlement while it has room.
+                // A daughter who stays in her cell stays in her settlement while it has room;
+                // mobile foragers found none.
                 let stays = self.village != 0
+                    && part.agents.cultivation[g] != 0
                     && dest == cell
                     && !self
                         .crowded(&part.with_stayed(cell, part.agents.settlement_of(cell_range.clone(), g)));
@@ -1509,6 +1512,19 @@ mod tests {
             assert_eq!(together(&a, &[0, 1]), stays, "integration {integration}: {:?}", a.settlement);
             assert!(stays || a.alone(0..2));
         }
+    }
+
+    #[test]
+    fn a_foragers_daughter_camps_alone() {
+        // A band of 70 foragers is above its limit (60) and splits; its land has room, so
+        // the daughter camps in the cell, but mobile foragers found no settlement (they
+        // never join one either).
+        let mut scene = Agents::default();
+        scene.push(id(1), 0, 70);
+        let a = run(&Fission::from_params(&params(3.0)), scene, 1000);
+        assert_eq!(a.weight, [35, 35]);
+        assert_eq!(a.cell, [0, 0]);
+        assert!(a.alone(0..2), "{:?}", a.settlement);
     }
 
     #[test]

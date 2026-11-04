@@ -139,8 +139,8 @@ Not brain simulation. Agents implement validated regularities:
   (ritual, shared buildings, descent; `settlement_integration`) and leaders whose
   decisions others accept, which wealth inequality allows (`settlement_hierarchy`),
   hold a settlement of several groups together up to its own limit. A group too large
-  to merge into a village lives beside it as a neighbourhood of its own, a daughter
-  stays in her settlement while it has room, a settlement over its limit sheds its
+  to merge into a village lives beside it as a neighbourhood of its own, a farmer's
+  daughter stays in her settlement while it has room (foragers' daughters camp alone), a settlement over its limit sheds its
   smallest group, and the endemic infection (ADR-0075) persists in a settlement as in
   one group of all its people. Surveys count settlements, not groups.
 - Wealth inequality. *Implemented (M1):* each group carries the spread of its households'
