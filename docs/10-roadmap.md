@@ -129,6 +129,11 @@ alluvium, but the model's farming does not cross Sinai to the Nile.
 Lesions of infection on Natufian and Neolithic skeletons are a record (ADR-0086, #42):
 the defaults are consistent with their rise, which leans toward foragers who spread
 less infection.
+Bands herd sheep and goats (ADR-0087, #37), a second practice within one effort budget,
+and the size of sheep in dated faunal assemblages is a record (ADR-0088). Round 11
+(ADR-0090), judged on every record, keeps the calibrated defaults and calibrates the
+herding parameters: herds turn domestic at 0.035 per period at full effort, and the
+effort aimed at herds is 0.12 of the land's herding potential.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
