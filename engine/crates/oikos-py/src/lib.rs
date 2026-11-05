@@ -273,8 +273,10 @@ impl PyWorld {
     /// `weight` (uint64, people the agent stands for), and their practice as float64
     /// shares: `cultivation` (of effort) and `domestication` (of the sown crop), and
     /// `inequality`, the variance of log household wealth among the group's households;
-    /// and `settlement` (uint32), 0 for a group that lives by itself, else the label it
-    /// shares with the other groups of its settlement, unique within its cell (ADR-0082).
+    /// `settlement` (uint32), 0 for a group that lives by itself, else the label it
+    /// shares with the other groups of its settlement, unique within its cell (ADR-0082);
+    /// and `herding` (of effort) and `herd_domestication` (of the herd) as float64 shares
+    /// (#37).
     fn agents<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let slices = || self.0.agent_slices();
         let out = PyDict::new(py);
@@ -288,6 +290,11 @@ impl PyWorld {
         out.set_item("inequality", f64_array(py, slices().flat_map(|a| share(&a.inequality)))?)?;
         let settlements = slices().flat_map(|a| a.settlement.iter().flat_map(|s| s.to_le_bytes())).collect();
         out.set_item("settlement", array(py, "<u4", settlements)?)?;
+        out.set_item("herding", f64_array(py, slices().flat_map(|a| share(&a.herding)))?)?;
+        out.set_item(
+            "herd_domestication",
+            f64_array(py, slices().flat_map(|a| share(&a.herd_domestication)))?,
+        )?;
         Ok(out)
     }
 

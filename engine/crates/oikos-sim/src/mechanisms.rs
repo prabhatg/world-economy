@@ -868,6 +868,8 @@ impl Mechanism for Aggregation {
                     cultivation: pooled(wb, tb.cultivation, w, ta.cultivation),
                     domestication: pooled(wb, tb.domestication, w, ta.domestication),
                     inequality: pooled(wb, tb.inequality, w, ta.inequality),
+                    herding: pooled(wb, tb.herding, w, ta.herding),
+                    herd_domestication: pooled(wb, tb.herd_domestication, w, ta.herd_domestication),
                 },
             );
             agents.weight[b] = wb + w;

@@ -29,11 +29,17 @@ pub struct Traits {
     /// Variance of the logarithm of household wealth among the group's households
     /// (ADR-0074), in units of [`SHARE_ONE`] (so up to about 4.3, a Gini of 0.86).
     pub inequality: u32,
+    /// Share of subsistence effort spent managing sheep and goats (#37); with
+    /// `cultivation`, at most one.
+    pub herding: u32,
+    /// Share of domestic animals in the herd the band manages (#37).
+    pub herd_domestication: u32,
 }
 
 impl Traits {
     /// Foragers: no cultivation, wild crops.
-    pub const FORAGER: Traits = Traits { cultivation: 0, domestication: 0, inequality: 0 };
+    pub const FORAGER: Traits =
+        Traits { cultivation: 0, domestication: 0, inequality: 0, herding: 0, herd_domestication: 0 };
 
     pub fn share(x: u32) -> f64 {
         x as f64 / SHARE_ONE as f64
@@ -64,6 +70,10 @@ pub struct Agents {
     pub domestication: Vec<u32>,
     /// [`Traits::inequality`] per agent.
     pub inequality: Vec<u32>,
+    /// [`Traits::herding`] per agent.
+    pub herding: Vec<u32>,
+    /// [`Traits::herd_domestication`] per agent.
+    pub herd_domestication: Vec<u32>,
     /// The settlement each group lives in: [`ALONE`], or a label it shares with the other
     /// groups of its settlement, unique within its cell (drawn from the cell's birth
     /// counter). Labels never span cells.
@@ -136,6 +146,8 @@ struct Pool {
     domestication: u64,
     /// In u128: inequality reaches u32::MAX, four times the shares' one.
     inequality: u128,
+    herding: u64,
+    herd_domestication: u64,
 }
 
 impl Pool {
@@ -144,11 +156,18 @@ impl Pool {
         self.cultivation += w * t.cultivation as u64;
         self.domestication += w * t.domestication as u64;
         self.inequality += w as u128 * t.inequality as u128;
+        self.herding += w * t.herding as u64;
+        self.herd_domestication += w * t.herd_domestication as u64;
     }
 
     /// People-weighted mean traits (rounded down).
     fn mean(&self) -> Traits {
-        if self.cultivation == 0 && self.domestication == 0 && self.inequality == 0 {
+        if self.cultivation == 0
+            && self.domestication == 0
+            && self.inequality == 0
+            && self.herding == 0
+            && self.herd_domestication == 0
+        {
             return Traits::FORAGER;
         }
         let w = self.weight.max(1);
@@ -160,6 +179,8 @@ impl Pool {
                 Ok(sum) => (sum / w) as u32,
                 Err(_) => (self.inequality / w as u128) as u32,
             },
+            herding: (self.herding / w) as u32,
+            herd_domestication: (self.herd_domestication / w) as u32,
         }
     }
 }
@@ -191,6 +212,8 @@ impl Agents {
         self.cultivation.push(traits.cultivation);
         self.domestication.push(traits.domestication);
         self.inequality.push(traits.inequality);
+        self.herding.push(traits.herding);
+        self.herd_domestication.push(traits.herd_domestication);
         self.settlement.push(settlement);
     }
 
@@ -199,6 +222,8 @@ impl Agents {
             cultivation: self.cultivation[i],
             domestication: self.domestication[i],
             inequality: self.inequality[i],
+            herding: self.herding[i],
+            herd_domestication: self.herd_domestication[i],
         }
     }
 
@@ -206,6 +231,8 @@ impl Agents {
         self.cultivation[i] = t.cultivation;
         self.domestication[i] = t.domestication;
         self.inequality[i] = t.inequality;
+        self.herding[i] = t.herding;
+        self.herd_domestication[i] = t.herd_domestication;
     }
 
     pub fn append(&mut self, other: &mut Agents) {
@@ -215,6 +242,8 @@ impl Agents {
         self.cultivation.append(&mut other.cultivation);
         self.domestication.append(&mut other.domestication);
         self.inequality.append(&mut other.inequality);
+        self.herding.append(&mut other.herding);
+        self.herd_domestication.append(&mut other.herd_domestication);
         self.settlement.append(&mut other.settlement);
     }
 
@@ -226,6 +255,8 @@ impl Agents {
         self.cultivation.extend_from_slice(&other.cultivation[span.clone()]);
         self.domestication.extend_from_slice(&other.domestication[span.clone()]);
         self.inequality.extend_from_slice(&other.inequality[span.clone()]);
+        self.herding.extend_from_slice(&other.herding[span.clone()]);
+        self.herd_domestication.extend_from_slice(&other.herd_domestication[span.clone()]);
         self.settlement.extend_from_slice(&other.settlement[span]);
     }
 
@@ -243,6 +274,8 @@ impl Agents {
         self.cultivation = order.iter().map(|&i| self.cultivation[i]).collect();
         self.domestication = order.iter().map(|&i| self.domestication[i]).collect();
         self.inequality = order.iter().map(|&i| self.inequality[i]).collect();
+        self.herding = order.iter().map(|&i| self.herding[i]).collect();
+        self.herd_domestication = order.iter().map(|&i| self.herd_domestication[i]).collect();
         self.settlement = order.iter().map(|&i| self.settlement[i]).collect();
     }
 
@@ -279,6 +312,8 @@ impl Agents {
                         cultivation: mean(&self.cultivation),
                         domestication: mean(&self.domestication),
                         inequality: mean(&self.inequality),
+                        herding: mean(&self.herding),
+                        herd_domestication: mean(&self.herd_domestication),
                     };
                     out.push_in(self.id[j], cell, people, t, self.settlement[j]);
                 }
@@ -295,6 +330,8 @@ impl Agents {
         self.cultivation.clear();
         self.domestication.clear();
         self.inequality.clear();
+        self.herding.clear();
+        self.herd_domestication.clear();
         self.settlement.clear();
     }
 
@@ -370,6 +407,10 @@ impl Agents {
         scratch.domestication.resize(n, 0);
         scratch.inequality.clear();
         scratch.inequality.resize(n, 0);
+        scratch.herding.clear();
+        scratch.herding.resize(n, 0);
+        scratch.herd_domestication.clear();
+        scratch.herd_domestication.resize(n, 0);
         scratch.settlement.clear();
         scratch.settlement.resize(n, ALONE);
         // Scatter; afterwards counts[k] is the end of cell k's group.
@@ -383,6 +424,8 @@ impl Agents {
             scratch.cultivation[dst] = self.cultivation[i];
             scratch.domestication[dst] = self.domestication[i];
             scratch.inequality[dst] = self.inequality[i];
+            scratch.herding[dst] = self.herding[i];
+            scratch.herd_domestication[dst] = self.herd_domestication[i];
             scratch.settlement[dst] = self.settlement[i];
         }
 
@@ -403,6 +446,8 @@ impl Agents {
                     scratch.cultivation[i] = scratch.cultivation[i - 1];
                     scratch.domestication[i] = scratch.domestication[i - 1];
                     scratch.inequality[i] = scratch.inequality[i - 1];
+                    scratch.herding[i] = scratch.herding[i - 1];
+                    scratch.herd_domestication[i] = scratch.herd_domestication[i - 1];
                     scratch.settlement[i] = scratch.settlement[i - 1];
                     i -= 1;
                 }
@@ -515,6 +560,7 @@ mod tests {
             cultivation: Traits::from_share(e),
             domestication: Traits::from_share(d),
             inequality: Traits::from_share(v),
+            ..Traits::FORAGER
         };
         a.push_with(EntityId::new(0, 1), 0, 3, t(1.0, 0.5, 0.8));
         a.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.1, 0.2));
@@ -524,6 +570,31 @@ mod tests {
         assert_eq!(out.len(), 2);
         assert_eq!(out.traits(0), t(0.75, 0.4, 0.65), "(3 x 1 + 1 x 0) / 4, (3 x 0.5 + 1 x 0.1) / 4, ...");
         assert_eq!(out.traits(1), t(0.2, 0.2, 0.3), "large bands keep their own");
+    }
+
+    #[test]
+    fn merged_bands_pool_their_herds_too() {
+        // Herding effort and the herd's domestic share (#37) are people-weighted like the
+        // crop's: a proxy, as the model keeps no herd sizes.
+        let mut a = Agents::default();
+        let t = |h: f64, d: f64| Traits {
+            herding: Traits::from_share(h),
+            herd_domestication: Traits::from_share(d),
+            ..Traits::FORAGER
+        };
+        a.push_with(EntityId::new(0, 1), 0, 3, t(0.4, 1.0));
+        a.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.2));
+        let mut out = Agents::default();
+        a.merge_small_into(10, &mut out, 0, &mut [0]);
+        assert_eq!(out.traits(0), t(0.3, 0.8), "(3 x 0.4 + 1 x 0) / 4, (3 x 1 + 1 x 0.2) / 4");
+        let mut reference = a.clone();
+        reference.merge_small(10);
+        assert_eq!(reference, out);
+        let mut sorted = Agents::default();
+        sorted.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.2));
+        sorted.push_with(EntityId::new(0, 1), 0, 3, t(0.4, 1.0));
+        sorted.sort_canonical();
+        assert_eq!(sorted.traits(0), t(0.4, 1.0), "sorting moves them with their group");
     }
 
     #[test]
@@ -590,7 +661,7 @@ mod tests {
     #[test]
     fn a_lone_group_keeps_its_practice_exactly() {
         let mut a = Agents::default();
-        let t = Traits { cultivation: 123_456_789, domestication: 0, inequality: 987_654_321 };
+        let t = Traits { cultivation: 123_456_789, inequality: 987_654_321, ..Traits::FORAGER };
         a.push_with(EntityId::new(0, 1), 0, 77, t);
         let s = a.settlement_of(0..1, 0);
         assert_eq!((s.cultivation(), s.inequality()), (t.cultivation, t.inequality));
@@ -615,11 +686,19 @@ mod tests {
     /// Random agents in `cells` cells with unique ids.
     fn arb_agents(cells: u32) -> impl Strategy<Value = Agents> {
         let row = (0..cells, 0u64..1_000, 0u64..40, 0..=SHARE_ONE, 0..=SHARE_ONE, 0..=u32::MAX, 0u64..4);
-        prop::collection::vec(row, 0..300).prop_map(|rows| {
+        let herds = (0..=SHARE_ONE / 2, 0..=SHARE_ONE);
+        prop::collection::vec((row, herds), 0..300).prop_map(|rows| {
             let mut a = Agents::default();
-            for (i, (cell, counter, w, e, d, v, s)) in rows.into_iter().enumerate() {
+            for (i, ((cell, counter, w, e, d, v, s), (h, hd))) in rows.into_iter().enumerate() {
                 // Unique ids: counter space partitioned by row index.
-                let t = Traits { cultivation: e, domestication: d, inequality: v };
+                let e = e / 2; // effort shares that leave room for herding
+                let t = Traits {
+                    cultivation: e,
+                    domestication: d,
+                    inequality: v,
+                    herding: h,
+                    herd_domestication: hd,
+                };
                 let id = EntityId::new(cell, counter * 1_000 + i as u64);
                 // Most groups live alone; the rest in one of a few settlements of their cell.
                 a.push_in(id, cell, w, t, s as u32);

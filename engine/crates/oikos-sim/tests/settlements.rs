@@ -234,7 +234,7 @@ fn checkpoints_from_before_settlements_restore_every_group_alone() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let n = w.agent_count();
-    let agents_at = now.len() - 36 * n;
+    let agents_at = now.len() - 44 * n;
     let mut old = b"OIKOSCK5".to_vec();
     let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
     old.extend_from_slice(&now[8..at]);
@@ -249,8 +249,27 @@ fn checkpoints_from_before_settlements_restore_every_group_alone() {
     old.extend_from_slice(&json);
     old.extend_from_slice(&now[at + 4 + len..agents_at]);
     for k in 0..n {
-        old.extend_from_slice(&now[agents_at + 36 * k..agents_at + 36 * k + 32]);
+        old.extend_from_slice(&now[agents_at + 44 * k..agents_at + 44 * k + 32]);
     }
     let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
     assert_eq!(checkpoint::encode(&restored), now);
+}
+
+#[test]
+fn checkpoints_from_before_herding_restore_with_no_herds() {
+    // OIKOSCK6 had no herding (#37): no group herded and no herd was domestic, which is
+    // what it restores as.
+    let (mut w, g, c) = farming_world(9, 3.0, 0.0);
+    w.run_years(300, 2, 300);
+    let now = checkpoint::encode(&w);
+    let n = w.agent_count();
+    let agents_at = now.len() - 44 * n;
+    let mut old = b"OIKOSCK6".to_vec();
+    old.extend_from_slice(&now[8..agents_at]);
+    for k in 0..n {
+        old.extend_from_slice(&now[agents_at + 44 * k..agents_at + 44 * k + 36]);
+    }
+    let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
+    assert!(restored.agent_slices().all(|a| a.herding.iter().chain(&a.herd_domestication).all(|&x| x == 0)));
+    assert_eq!(checkpoint::encode(&restored), now, "no world herds yet, so nothing is lost");
 }
