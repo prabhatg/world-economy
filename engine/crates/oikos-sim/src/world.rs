@@ -828,6 +828,8 @@ impl World {
                 flood: &self.farmland.flood,
                 range: &self.farmland.range,
                 pasture: &self.farmland.pasture,
+                range_feeds: &self.farmland.herd_range,
+                pasture_feeds: &self.farmland.herd_pasture,
                 herd_sum: &self.herd_sum,
                 herd_crop_sum: &self.herd_crop_sum,
                 crop_sum: &self.crop_sum,
@@ -963,18 +965,17 @@ fn land_year(tick: Tick, p: &Params) -> i64 {
 /// of its cell (indexed by `cell - base`).
 fn add_farming(agents: &Agents, base: u32, sums: (&mut [u64], &mut [u64], &mut [u64], &mut [u64])) {
     let (effort, crop, herd, herd_crop) = sums;
-    let one = SHARE_ONE as u64;
     for i in 0..agents.len() {
-        let (e, h) = (agents.cultivation[i] as u64, agents.herding[i] as u64);
-        if e == 0 && h == 0 {
+        if agents.cultivation[i] == 0 && agents.herding[i] == 0 {
             continue;
         }
         let c = (agents.cell[i] - base) as usize;
         let w = agents.weight[i];
+        let [e, d, h, hd] = agents.traits(i).practice();
         effort[c] += w * e;
-        crop[c] += w * (e * agents.domestication[i] as u64 / one);
+        crop[c] += w * d;
         herd[c] += w * h;
-        herd_crop[c] += w * (h * agents.herd_domestication[i] as u64 / one);
+        herd_crop[c] += w * hd;
     }
 }
 

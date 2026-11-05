@@ -113,6 +113,11 @@ fn checkpoints_from_before_each_added_parameter_restore_the_model_they_were_writ
     assert_eq!(p.innovation_share, 1.0, "ADR-0065: individual learning");
     assert_eq!((p.fertility, p.sedentary_fertility), (0.0, 0.0), "ADR-0068: births and deaths not split");
     assert_eq!(p.village_fission_size, 0, "ADR-0070: no villages");
+    assert_eq!(
+        (p.pastoral_wealth_transmission, p.pastoral_wealth_shock),
+        (p.wealth_transmission, p.wealth_shock),
+        "#45: herds pass on what foragers' wealth does"
+    );
     // Parameters a checkpoint stored keep its values, whatever the rules.
     let now = serde_json::to_vec(&Params {
         sedentary_growth_rate: 0.03,

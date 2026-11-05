@@ -252,7 +252,13 @@
     170 km of desert: their daughters move only to neighboring cells, the Nile's are full
     of riverine foragers, and seed passed by learning stops where nobody farms. Herders
     who crossed with their flocks (#37), or migrants who travelled farther, are the
-    candidates.
+    candidates. Herders do not cross either, even since they judge land by what their
+    herds would graze (#45): they reach the Negev (about a tenth of effort by 4,000
+    BCE), but Sinai's median rain is about 45 mm and only a tenth of its cells reach
+    the 150 mm where the model's pasture begins (`pasture_precip_min`, a judgment for
+    the Fertile Crescent's margins), so it offers no grazing. Herders there lived on
+    wadis, springs and the coast, at well under 150 mm; a grazing threshold for deserts,
+    or routes along water, would test it.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

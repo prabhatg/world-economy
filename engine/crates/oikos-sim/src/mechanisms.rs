@@ -71,6 +71,10 @@ pub struct Sense<'a> {
     /// its dry land (#37).
     pub range: &'a [f64],
     pub pasture: &'a [f64],
+    /// People fed per cell if all effort went into herding domestic sheep and goats on the
+    /// wild herds' range, and on all its pasture.
+    pub range_feeds: &'a [f64],
+    pub pasture_feeds: &'a [f64],
     /// People-weighted sums of herding effort, and of it times the herd's domestic share,
     /// per cell (in [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
     pub herd_sum: &'a [u64],
@@ -89,6 +93,37 @@ pub struct Sense<'a> {
     pub towns: bool,
     pub tick: Tick,
     pub seed: u64,
+}
+
+impl Sense<'_> {
+    /// Carrying capacity of `cell` once `weight` people of practice `t` have joined its
+    /// people (#45): the land is shared, so newcomers and residents pool their practice,
+    /// people-weighted, as the cell's capacity will once they live there, at the yields
+    /// `(wild_yield_ratio, wild_herd_ratio)`. Without farming, its capacity.
+    pub fn capacity_joined(&self, cell: u32, weight: u64, t: &Traits, yields: (f64, f64)) -> u64 {
+        let c = cell as usize;
+        if !self.farming {
+            return self.capacity[c];
+        }
+        // As the cell's sums will be once the group lives there.
+        let (w, people) = (weight as f64, (self.population[c] as f64 + weight as f64) * SHARE_ONE as f64);
+        let [e, d, h, hd] = t.practice();
+        let share = |sum: u64, x: u64| (sum as f64 + w * x as f64) / people;
+        let practice = crate::environment::Practice {
+            effort: share(self.effort_sum[c], e),
+            crop: share(self.crop_sum[c], d),
+            herding: share(self.herd_sum[c], h),
+            herd_crop: share(self.herd_crop_sum[c], hd),
+        };
+        let land = crate::environment::Land {
+            forage: self.forage_capacity[c],
+            farm: self.farm[c],
+            flood: self.flood[c],
+            herd_range: self.range_feeds[c],
+            herd_pasture: self.pasture_feeds[c],
+        };
+        crate::environment::capacity_at(&land, &practice, yields)
+    }
 }
 
 /// One partition's mutable state during the decide phase.
@@ -188,15 +223,23 @@ pub fn defaults(params: &Params) -> Vec<Box<dyn Mechanism>> {
 /// The least crowded of `cells` by N/K (the first on ties), compared exactly as
 /// N_a K_b < N_b K_a.
 fn least_crowded(sense: &Sense<'_>, cells: impl IntoIterator<Item = u32>) -> Option<u32> {
-    let crowd = |c: u32| (sense.population[c as usize] as u128, sense.capacity[c as usize] as u128);
+    least_crowded_by(sense, cells, |c| sense.capacity[c as usize]).map(|(c, _)| c)
+}
+
+/// [`least_crowded`] by the capacities `capacity(c)`, with the chosen cell's capacity.
+fn least_crowded_by(
+    sense: &Sense<'_>,
+    cells: impl IntoIterator<Item = u32>,
+    capacity: impl Fn(u32) -> u64,
+) -> Option<(u32, u64)> {
     let mut best: Option<(u32, u128, u128)> = None;
     for c in cells {
-        let (n, k) = crowd(c);
+        let (n, k) = (sense.population[c as usize] as u128, capacity(c) as u128);
         if best.is_none_or(|(_, bn, bk)| n * bk < bn * k) {
             best = Some((c, n, k));
         }
     }
-    best.map(|(c, _, _)| c)
+    best.map(|(c, _, k)| (c, k as u64))
 }
 
 fn habitable_neighbors<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u32> + Clone + 'a {
@@ -477,6 +520,8 @@ pub struct Fission {
     pub exploration: f64,
     pub integration: f64,
     pub hierarchy: f64,
+    /// (wild_yield_ratio, wild_herd_ratio), for [`Sense::capacity_joined`].
+    pub yields: (f64, f64),
     pub after: Vec<&'static str>,
 }
 
@@ -490,6 +535,7 @@ impl Fission {
             exploration: p.exploration_probability,
             integration: p.settlement_integration,
             hierarchy: p.settlement_hierarchy,
+            yields: (p.wild_yield_ratio, p.wild_herd_ratio),
             after: vec!["disease"],
         }
     }
@@ -524,6 +570,10 @@ impl Fission {
         oikos_math::exp(camp + (village - camp) * effort)
     }
 
+    /// Where a daughter group of `weight` people and practice `t` goes from its full
+    /// `cell`: a random habitable neighbor if it explores, else the least crowded of the
+    /// cell and its habitable neighbors, each neighbor judged by what its land would feed
+    /// with her there ([`Sense::capacity_joined`]).
     fn destination(
         &self,
         sense: &Sense<'_>,
@@ -531,6 +581,7 @@ impl Fission {
         explore: Probability,
         id: EntityId,
         cell: u32,
+        (weight, t): (u64, &Traits),
     ) -> u32 {
         let ns = habitable_neighbors(sense, cell);
         let open = ns.clone().count();
@@ -541,7 +592,18 @@ impl Fission {
         if explore.hit(draws[0]) {
             return ns.clone().nth((((draws[1] as u64) * (open as u64)) >> 32) as usize).unwrap();
         }
-        least_crowded(sense, std::iter::once(cell).chain(ns)).unwrap()
+        let cells = std::iter::once(cell).chain(ns);
+        if !sense.farming {
+            return least_crowded(sense, cells).unwrap();
+        }
+        let capacity = |c: u32| {
+            if c == cell {
+                sense.capacity[c as usize]
+            } else {
+                sense.capacity_joined(c, weight, t, self.yields)
+            }
+        };
+        least_crowded_by(sense, cells, capacity).unwrap().0
     }
 
     /// Whether settlement `s` is at or above its limit.
@@ -628,8 +690,12 @@ impl Mechanism for Fission {
                 }
                 let c = cell as usize;
                 let room = self.village != 0 && sense.population[c] < sense.capacity[c];
-                let dest =
-                    if room { cell } else { self.destination(sense, &migration_rng, explore, id, cell) };
+                let traits = part.agents.traits(g);
+                let dest = if room {
+                    cell
+                } else {
+                    self.destination(sense, &migration_rng, explore, id, cell, (w / 2, &traits))
+                };
                 // A daughter who stays in her cell stays in her settlement while it has room;
                 // mobile foragers found none.
                 let stays = self.village != 0
@@ -641,7 +707,6 @@ impl Mechanism for Fission {
                 let half = Agents::split_weight(&mut w, take);
                 part.agents.weight[g] = w;
                 part.stats.fissions += 1;
-                let traits = part.agents.traits(g);
                 if stays {
                     let label = part.label_of(g);
                     part.spawn_in(cell, half, traits, label);
@@ -656,9 +721,12 @@ impl Mechanism for Fission {
 
 /// Forager dispersal: a cell at least `crowding` full (N/K, previous step) buds off one
 /// group with probability `probability` per period: `fraction` of its first band whose
-/// share fits moves to the least crowded habitable neighbor, if that neighbor is less
-/// crowded and can feed the group (its population, last step, plus the group within its
-/// capacity). A res-5 cell is about one band's territory. Repeated, this is
+/// share has somewhere to go moves to the least crowded habitable neighbor, if that
+/// neighbor is less crowded and can feed the group (its population, last step, plus the
+/// group within its capacity). Each neighbor is judged by what its land would feed with
+/// the group there ([`Sense::capacity_joined`], #45): herders look for grazing, which
+/// pasture without forage offers them and not foragers, and nobody goes where neither
+/// forage nor pasture can feed them. A res-5 cell is about one band's territory. Repeated, this is
 /// the wave of advance by which foragers fill a landscape (Fisher-KPP; Ammerman and
 /// Cavalli-Sforza 1984), and it works where a cell holds a single band, so fission by
 /// group size never fires (res-5 cells feed ~20-50 foragers).
@@ -668,6 +736,8 @@ pub struct Dispersal {
     pub crowding: f64,
     pub probability: f64,
     pub fraction: f64,
+    /// (wild_yield_ratio, wild_herd_ratio), for [`Sense::capacity_joined`].
+    pub yields: (f64, f64),
     pub after: Vec<&'static str>,
 }
 
@@ -678,13 +748,13 @@ impl Dispersal {
         sense.habitable[cell as usize] && n as f64 >= self.crowding * k as f64
     }
 
-    /// The least crowded habitable neighbor of `cell`, if it is less crowded than `cell`,
-    /// and its room (capacity less population, last step).
-    fn target(&self, sense: &Sense<'_>, cell: u32) -> Option<(u32, u64)> {
+    /// The least crowded habitable neighbor of `cell` by the capacities `capacity(c)`, if
+    /// it is less crowded than `cell`, and its capacity.
+    fn target(&self, sense: &Sense<'_>, cell: u32, capacity: impl Fn(u32) -> u64) -> Option<(u32, u64)> {
         let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
-        let dest = least_crowded(sense, habitable_neighbors(sense, cell))?;
-        let (nd, kd) = (sense.population[dest as usize], sense.capacity[dest as usize]);
-        (nd as u128 * (k as u128) < n as u128 * kd as u128 && nd < kd).then(|| (dest, kd - nd))
+        let (dest, kd) = least_crowded_by(sense, habitable_neighbors(sense, cell), capacity)?;
+        let nd = sense.population[dest as usize];
+        (nd as u128 * (k as u128) < n as u128 * kd as u128).then_some((dest, kd))
     }
 
     pub fn from_params(p: &Params) -> Dispersal {
@@ -693,6 +763,7 @@ impl Dispersal {
             crowding: p.dispersal_crowding,
             probability: p.dispersal_probability,
             fraction: p.dispersal_fraction,
+            yields: (p.wild_yield_ratio, p.wild_herd_ratio),
             after: vec!["fission"],
         }
     }
@@ -723,15 +794,25 @@ impl Mechanism for Dispersal {
         while i < tile.end {
             let cell = part.agents.cell[i];
             let end = i + part.agents.cell[i..tile.end].iter().take_while(|&&c| c == cell).count();
-            if self.crowded(sense, cell)
-                && go.hit(rng.u32(cell as u64, t, 0, 0))
-                && let Some((dest, room)) = self.target(sense, cell)
-            {
-                // The first band (canonical order) whose group fits buds off.
-                for a in i..end {
+            if self.crowded(sense, cell) && go.hit(rng.u32(cell as u64, t, 0, 0)) {
+                // Without farming a neighbor's capacity is its residents' whoever joins them,
+                // so the target is the same for every band.
+                let residents =
+                    (!sense.farming).then(|| self.target(sense, cell, |c| sense.capacity[c as usize]));
+                // The first band (canonical order) whose group has somewhere to go buds off.
+                for a in (residents != Some(None)).then_some(i..end).into_iter().flatten() {
                     let w = part.agents.weight[a];
                     let take = (w as f64 * self.fraction) as u64;
-                    if take > 0 && take <= room {
+                    if take == 0 {
+                        continue;
+                    }
+                    let target = residents.unwrap_or_else(|| {
+                        let traits = part.agents.traits(a);
+                        self.target(sense, cell, |c| sense.capacity_joined(c, take, &traits, self.yields))
+                    });
+                    if let Some((dest, kd)) = target
+                        && take <= kd.saturating_sub(sense.population[dest as usize])
+                    {
                         part.agents.weight[a] = w - take;
                         let traits = part.agents.traits(a);
                         part.spawn(cell, dest, take, traits);
@@ -1336,18 +1417,31 @@ impl Mechanism for Cultivation {
 /// economies with it (linearly, per generation), so farming islands on an open frontier
 /// stay equal and inequality rises as farmland fills the landscape.
 ///
+/// Herds are wealth too (#45): animals are owned, inherited and given as bridewealth on
+/// open land as well, so pastoralists pass on more (0.43) and are unequal (0.42), and
+/// drought, epizootics and raids shake their fortunes. A group's herding effort moves its
+/// transmission and shocks toward the pastoral economy's as its owned land does toward
+/// the landed one's: the three economies mix by effort (effort left to foraging, effort on
+/// owned land, effort herding), per generation.
+///
 /// Inequality changes nothing else yet: no feedback on fertility, fission, aggregation
 /// or conflict. It is updated every period by the equivalent fraction of a generation
-/// (tabulated over ownership), so a generation of periods is the generational recursion
-/// whatever the period length. Merged groups pool it,
+/// (tabulated over transmission), so a generation of periods is the generational
+/// recursion whatever the period length. Merged groups pool it,
 /// people-weighted (the spread between their mean wealth is left out), and split-off
 /// groups take their parent's.
 #[derive(Clone, Debug)]
 pub struct Inequality {
     pub period_ticks: u64,
-    /// Per period, at ownership k / [`Inequality::STEPS`]: the share of the variance kept
-    /// and the variance added.
+    /// Transmission per generation of the foraging, landed and pastoral economies, and the
+    /// variance of their shocks.
+    pub beta: [f64; 3],
+    pub shock: [f64; 3],
+    /// Per period, at transmission `beta_lo + k / STEPS (beta_hi - beta_lo)`: the share of
+    /// the variance kept, and the variance added per unit of a generation's shock.
     pub per_period: Vec<(f64, f64)>,
+    pub beta_lo: f64,
+    pub beta_hi: f64,
     /// The stored inequality of foragers that the update keeps exactly (most agents, most
     /// of the time), so they are skipped; None if rounding has no such fixed point.
     pub forager_fixed: Option<u32>,
@@ -1355,70 +1449,84 @@ pub struct Inequality {
 }
 
 impl Inequality {
-    /// Ownership steps tabulated: linear interpolation between them errs by under 1e-7.
+    /// Transmission steps tabulated: linear interpolation between them errs by under 1e-7.
     pub const STEPS: usize = 1024;
 
     pub fn from_params(p: &Params) -> Inequality {
-        assert!(p.wealth_transmission < 1.0 && p.landed_wealth_transmission < 1.0, "validated parameters");
+        let beta = [p.wealth_transmission, p.landed_wealth_transmission, p.pastoral_wealth_transmission];
+        assert!(beta.iter().all(|&b| b < 1.0), "validated parameters");
         let generations =
             p.period_ticks as f64 / (oikos_core::time::TICKS_PER_YEAR as f64 * p.generation_years);
+        let (beta_lo, beta_hi) =
+            (beta.iter().copied().fold(1.0, f64::min), beta.iter().copied().fold(0.0, f64::max));
         let per_period = (0..=Self::STEPS)
             .map(|k| {
-                let owned = k as f64 / Self::STEPS as f64;
-                let beta =
-                    p.wealth_transmission + owned * (p.landed_wealth_transmission - p.wealth_transmission);
-                let shock = p.wealth_shock + owned * (p.landed_wealth_shock - p.wealth_shock);
-                let kept = oikos_math::pow(beta * beta, generations);
+                let b = beta_lo + k as f64 / Self::STEPS as f64 * (beta_hi - beta_lo);
+                let kept = oikos_math::pow(b * b, generations);
                 // A generation of periods adds shock: the geometric sum of what each adds.
-                (kept, shock * (1.0 - kept) / (1.0 - beta * beta))
+                (kept, (1.0 - kept) / (1.0 - b * b))
             })
             .collect();
         let mut m = Inequality {
             period_ticks: p.period_ticks,
+            beta,
+            shock: [p.wealth_shock, p.landed_wealth_shock, p.pastoral_wealth_shock],
             per_period,
+            beta_lo,
+            beta_hi,
             forager_fixed: None,
             after: vec!["cultivation"],
         };
-        let fixed = Self::stored(m.stationary(0.0));
-        m.forager_fixed = (m.next_stored(fixed, 0.0) == fixed).then_some(fixed);
+        let fixed = Self::stored(m.stationary((0.0, 0.0)));
+        m.forager_fixed = (m.next_stored(fixed, (0.0, 0.0)) == fixed).then_some(fixed);
         m
     }
 
     /// Foragers at the inequality they settle at: how new worlds start (ADR-0074).
     pub fn foragers(p: &Params) -> Traits {
-        Traits { inequality: Self::stored(Self::from_params(p).stationary(0.0)), ..Traits::FORAGER }
+        Traits { inequality: Self::stored(Self::from_params(p).stationary((0.0, 0.0))), ..Traits::FORAGER }
     }
 
     fn stored(v: f64) -> u32 {
         (oikos_math::finite(v) * SHARE_ONE as f64).round().min(u32::MAX as f64) as u32
     }
 
-    /// (share kept, variance added) per period at ownership `owned` in [0, 1].
-    fn coefficients(&self, owned: f64) -> (f64, f64) {
-        let x = owned * Self::STEPS as f64;
+    /// (share kept, variance added) per period for a group with `land` of its effort on
+    /// owned land and `herds` herding (together at most 1).
+    fn coefficients(&self, (land, herds): (f64, f64)) -> (f64, f64) {
+        let mix = |x: [f64; 3]| (1.0 - land - herds) * x[0] + land * x[1] + herds * x[2];
+        let (beta, shock) = (mix(self.beta), mix(self.shock));
+        let span = self.beta_hi - self.beta_lo;
+        let x = if span > 0.0 {
+            ((beta - self.beta_lo) / span).clamp(0.0, 1.0) * Self::STEPS as f64
+        } else {
+            0.0
+        };
         let k = (x as usize).min(Self::STEPS);
-        if k == Self::STEPS {
-            return self.per_period[k];
-        }
-        let ((a0, b0), (a1, b1), f) = (self.per_period[k], self.per_period[k + 1], x - k as f64);
-        (a0 + f * (a1 - a0), b0 + f * (b1 - b0))
+        let (kept, scale) = if k == Self::STEPS {
+            self.per_period[k]
+        } else {
+            let ((a0, b0), (a1, b1), f) = (self.per_period[k], self.per_period[k + 1], x - k as f64);
+            (a0 + f * (a1 - a0), b0 + f * (b1 - b0))
+        };
+        (kept, shock * scale)
     }
 
     /// [`Inequality::next`] of a stored variance, stored.
-    pub fn next_stored(&self, v: u32, owned: f64) -> u32 {
-        Self::stored(self.next(v as f64 / SHARE_ONE as f64, owned))
+    pub fn next_stored(&self, v: u32, economy: (f64, f64)) -> u32 {
+        Self::stored(self.next(v as f64 / SHARE_ONE as f64, economy))
     }
 
-    /// The variance of log wealth a period after `v`, for a group owning its land to the
-    /// extent `owned` in [0, 1].
-    pub fn next(&self, v: f64, owned: f64) -> f64 {
-        let (kept, added) = self.coefficients(owned);
+    /// The variance of log wealth a period after `v`, for a group spending `economy.0` of
+    /// its effort on land it owns and `economy.1` herding.
+    pub fn next(&self, v: f64, economy: (f64, f64)) -> f64 {
+        let (kept, added) = self.coefficients(economy);
         kept * v + added
     }
 
-    /// The variance of log wealth a group owning its land to the extent `owned` settles at.
-    pub fn stationary(&self, owned: f64) -> f64 {
-        let (kept, added) = self.coefficients(owned);
+    /// The variance of log wealth a group of `economy` (see [`Inequality::next`]) settles at.
+    pub fn stationary(&self, economy: (f64, f64)) -> f64 {
+        let (kept, added) = self.coefficients(economy);
         added / (1.0 - kept)
     }
 
@@ -1465,11 +1573,15 @@ impl Mechanism for Inequality {
         let fixed = self.forager_fixed.unwrap_or(u32::MAX);
         let mut closure: Option<(u32, f64)> = None; // per cell, only where someone farms
         let cultivation = &agents.cultivation[tile.clone()];
+        let herding = &agents.herding[tile.clone()];
         let cells = &agents.cell[tile.clone()];
-        for ((&c, &cell), v) in cultivation.iter().zip(cells).zip(&mut agents.inequality[tile]) {
-            if c == 0 && *v == fixed {
+        let inequality = &mut agents.inequality[tile];
+        for (k, v) in inequality.iter_mut().enumerate() {
+            let c = cultivation[k];
+            if c == 0 && *v == fixed && herding[k] == 0 {
                 continue;
             }
+            let (h, cell) = (herding[k], cells[k]);
             let owned = if c == 0 {
                 0.0
             } else {
@@ -1480,7 +1592,7 @@ impl Mechanism for Inequality {
                 closure = Some((cell, closed));
                 Traits::share(c) * closed
             };
-            *v = self.next_stored(*v, owned);
+            *v = self.next_stored(*v, (owned, Traits::share(h)));
         }
     }
 }
@@ -1488,6 +1600,7 @@ impl Mechanism for Inequality {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::environment::{Land, Practice, capacity_of};
     use crate::inputs::Inputs;
 
     const ONE: u32 = SHARE_ONE;
@@ -1533,36 +1646,71 @@ mod tests {
     }
 
     /// [`run`] for several mechanisms in turn, as one step runs them.
-    fn run_all(ms: &[&dyn Mechanism], mut agents: Agents, capacity: u64) -> Agents {
+    fn run_all(ms: &[&dyn Mechanism], agents: Agents, capacity: u64) -> Agents {
+        run_on(ms, agents, &|_| (capacity, None), &Params::default())
+    }
+
+    /// [`run_all`] on land where cell `c` gives foragers `ground(c).0` people and, if
+    /// `ground(c).1` is some, has a climate, with pasture that feeds that many people under
+    /// full herding of domestic herds (no fields, no wild herds); each cell's capacity is
+    /// what it feeds its people under their pooled practice, as a world's is.
+    fn run_on(
+        ms: &[&dyn Mechanism],
+        mut agents: Agents,
+        ground: &dyn Fn(u32) -> (u64, Option<f64>),
+        p: &Params,
+    ) -> Agents {
         let grid = Grid::from_base_cell(22, 1).unwrap();
         let n = grid.len();
         let inputs = Inputs::none();
-        let mut population = vec![0; n];
-        for (&c, &w) in agents.cell.iter().zip(&agents.weight) {
-            population[c as usize] += w;
+        let farming = ground(0).1.is_some();
+        let (mut population, mut sums) = (vec![0; n], vec![[0u64; 4]; n]);
+        for i in 0..agents.len() {
+            let (c, w, t) = (agents.cell[i] as usize, agents.weight[i], agents.traits(i));
+            population[c] += w;
+            for (s, x) in sums[c].iter_mut().zip(t.practice()) {
+                *s += w * x;
+            }
         }
-        let (habitable, capacity, zeros) = (vec![true; n], vec![capacity; n], vec![0; n]);
+        let forage: Vec<u64> = (0..n as u32).map(|c| ground(c).0).collect();
+        let pasture: Vec<f64> = (0..n as u32).map(|c| ground(c).1.unwrap_or(0.0)).collect();
+        let capacity: Vec<u64> = (0..n)
+            .map(|c| {
+                if !farming || population[c] == 0 {
+                    return forage[c];
+                }
+                let people = (population[c] * SHARE_ONE as u64) as f64;
+                let [effort, crop, herding, herd_crop] = sums[c].map(|x| x as f64 / people);
+                let land = Land { forage: forage[c], herd_pasture: pasture[c], ..Land::default() };
+                capacity_of(&land, &Practice { effort, crop, herding, herd_crop }, p)
+            })
+            .collect();
+        let column = |k: usize| sums.iter().map(|s| s[k]).collect::<Vec<u64>>();
+        let (effort_sum, crop_sum, herd_sum, herd_crop_sum) = (column(0), column(1), column(2), column(3));
+        let (habitable, zeros) = (vec![true; n], vec![0.0; n]);
         let sense = Sense {
             grid: &grid,
             inputs: &inputs,
             habitable: &habitable,
             restricted: false,
             capacity: &capacity,
-            forage_capacity: &capacity,
-            farming: false,
-            suitability: &[],
-            climate_stress: &[],
-            climate_variability: &[],
+            forage_capacity: &forage,
+            farming,
+            suitability: &zeros,
+            climate_stress: &zeros,
+            climate_variability: &zeros,
             population: &population,
-            effort_sum: &zeros,
-            farm: &[],
-            floodplain: &[],
-            flood: &[],
-            range: &[],
-            pasture: &[],
-            herd_sum: &[],
-            herd_crop_sum: &[],
-            crop_sum: &zeros,
+            effort_sum: &effort_sum,
+            farm: &zeros,
+            floodplain: &zeros,
+            flood: &zeros,
+            range: &zeros,
+            pasture: &zeros,
+            range_feeds: &zeros,
+            pasture_feeds: &pasture,
+            herd_sum: &herd_sum,
+            herd_crop_sum: &herd_crop_sum,
+            crop_sum: &crop_sum,
             models: &[],
             models_for: (0.0, 0.0),
             towns: true,
@@ -1705,5 +1853,72 @@ mod tests {
         assert_eq!(alone.weight, [50, 50]);
         let together = run(&Disease::from_params(&p), farmers(&[(1, 100, 3), (2, 100, 3)]), 1000);
         assert_eq!(together.weight, [25, 25]);
+    }
+
+    /// Herders with domestic herds, `herding` of their effort, in cell 0.
+    fn herders_at_home(people: u64, herding: f64) -> Agents {
+        let mut a = Agents::default();
+        let t = Traits { herding: Traits::from_share(herding), herd_domestication: ONE, ..Traits::FORAGER };
+        a.push_in(id(1), 0, people, t, ALONE);
+        a
+    }
+
+    fn dispersal() -> (Dispersal, Params) {
+        let p = Params {
+            dispersal_crowding: 0.5,
+            dispersal_probability: 1.0,
+            dispersal_fraction: 0.5,
+            ..Params::default()
+        };
+        (Dispersal::from_params(&p), p)
+    }
+
+    #[test]
+    fn herders_move_onto_pasture_that_feeds_no_foragers() {
+        // Cell 0 feeds 50 foragers and its pasture 200 herders; 100 herders spending 0.6
+        // of their effort herding fill most of its 140. Around it is pasture that feeds
+        // nobody who forages: the 50 who leave can live there by their herds (120).
+        let (d, p) = dispersal();
+        let ground = |c: u32| if c == 0 { (50, Some(200.0)) } else { (0, Some(200.0)) };
+        let a = run_on(&[&d], herders_at_home(100, 0.6), &ground, &p);
+        assert_eq!(a.weight, [50, 50], "{:?}", a.cell);
+        assert_ne!(a.cell[1], 0, "the group left");
+    }
+
+    #[test]
+    fn foragers_do_not_move_where_only_herds_could_feed_them() {
+        let (d, p) = dispersal();
+        let mut home = Agents::default();
+        home.push_in(id(1), 0, 150, Traits::FORAGER, ALONE);
+        let ground = |c: u32| if c == 0 { (200, Some(200.0)) } else { (0, Some(200.0)) };
+        let a = run_on(&[&d], home, &ground, &p);
+        assert_eq!(a.weight, [150], "pasture feeds no foragers");
+    }
+
+    #[test]
+    fn nobody_moves_where_neither_forage_nor_pasture_can_feed_them() {
+        let (d, p) = dispersal();
+        let ground = |c: u32| if c == 0 { (50, Some(200.0)) } else { (0, Some(0.0)) };
+        let a = run_on(&[&d], herders_at_home(100, 0.6), &ground, &p);
+        assert_eq!(a.weight, [100], "barren land");
+    }
+
+    #[test]
+    fn a_herders_daughter_joins_foragers_whose_land_she_can_graze() {
+        // 130 herders split (limit 60) where their land feeds 124 (10 forage at 0.4 of
+        // their effort, 200 pasture at 0.6). The neighbors' 55 foragers are above the 50
+        // they forage, so by their residents' capacity the neighbors are more crowded than
+        // home; but their pasture feeds herders, and joined by the daughter's 65 their land
+        // feeds about 99, so she goes there.
+        let p = Params { exploration_probability: 0.0, ..params(1.0) };
+        let mut scene = herders_at_home(130, 0.6);
+        for c in 1..7 {
+            scene.push_in(EntityId::new(c, 1), c, 55, Traits::FORAGER, ALONE);
+        }
+        let ground = |c: u32| if c == 0 { (10, Some(200.0)) } else { (50, Some(200.0)) };
+        let a = run_on(&[&Fission::from_params(&p)], scene, &ground, &p);
+        let daughter = a.len() - 1;
+        assert_eq!(a.weight[daughter], 65);
+        assert_ne!(a.cell[daughter], 0, "she leaves her full cell");
     }
 }

@@ -161,7 +161,10 @@ Not brain simulation. Agents implement validated regularities:
   land is open, sharing and levelling norms keep wealth from being inherited (foragers
   and horticulturalists, Gini about 0.25); where farmland is scarce and closed in by
   other farmers, sea or desert, it becomes property and is inherited (agriculturalists,
-  about 0.48; Demsetz 1967, Carneiro 1970, Bowles and Choi 2013). It feeds back on
+  about 0.48; Demsetz 1967, Carneiro 1970, Bowles and Choi 2013). Herds are wealth
+  on open land too (#45): animals are owned, inherited and given as bridewealth, and
+  drought, epizootics and raids shake herders' fortunes (pastoralists, about 0.42). The
+  three economies mix by a group's effort: foraging, cultivating owned land, herding. It feeds back on
   nothing yet: status competition, patronage, inequality's effect on fertility, fission
   and conflict, and the spread between merged groups' mean wealth are left out.
 - **Polities:** chiefdoms → states → empires, with state capacity (taxation,
@@ -214,7 +217,11 @@ Not brain simulation. Agents implement validated regularities:
   (climate shocks, famine, violence).
   *Implemented (M1):* forager dispersal: crowded cells bud off groups into less
   crowded neighbors with room, the wave of advance by which foragers fill the region
-  (`mechanisms::Dispersal`, ADR-0048).
+  (`mechanisms::Dispersal`, ADR-0048). Migrants, dispersing or daughters leaving a
+  full cell, judge a destination by what its land would feed with them there, their
+  practice pooled with its residents' (#45): herders look for grazing, so they move onto
+  pasture where foragers find nothing, and nobody moves where neither forage nor pasture
+  can feed them.
 
 ## 4.10 Modern-era additions (1800 →)
 

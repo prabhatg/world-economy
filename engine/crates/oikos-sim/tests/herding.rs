@@ -185,6 +185,34 @@ fn domestic_herds_are_grazed_beyond_the_wild_range() {
 }
 
 #[test]
+fn herders_move_onto_pasture_where_foragers_find_nothing_and_nobody_onto_barren_land() {
+    // A third of the land is warm steppe where wild herds range; a third is frozen steppe
+    // (-40 degC, 250 mm), whose grass feeds herds but whose foraging feeds about one
+    // person a cell; the last third is frozen desert, which feeds nobody. Herders judge
+    // where to go by what their herds would graze there (#45), so they fill the frozen
+    // steppe, and nobody lives in the desert beyond the one person a cell's capacity
+    // never falls below.
+    let h3 = h3_cells();
+    let third = h3.len() / 3;
+    let zone = |c: usize| c / third.max(1); // 0 warm, 1 frozen steppe, 2 frozen desert
+    let mut b = PackBuilder::new("climate", region(&h3));
+    b.time(vec![-12_000], TimeRule::Linear);
+    let temp = (0..h3.len()).map(|c| if zone(c) == 0 { 1500 } else { -4000 }).collect();
+    let precip = (0..h3.len()).map(|c| if zone(c) == 2 { 0 } else { 250 }).collect();
+    b.field(spec("temp_mean", Dims::TimeCell, 0.01), Data::I16(temp)).unwrap();
+    b.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(precip)).unwrap();
+    let (g, c, k) = (geometry_pack(&h3), b.build(), caprines_pack(&h3, |i| zone(i) == 0));
+    let id = blake3::hash(&g).to_hex().to_string();
+    let mut w = World::with_inputs(WorldConfig::geometry(&id), 2, herders(), inputs(&[&g, &c, &k])).unwrap();
+    w.run_years(3_000, 2, 3_000);
+    let steppe = herding_in(&w, |c| zone(c as usize) == 1).0;
+    let cells = h3.len() - 2 * third;
+    assert!(steppe > 100 * third as u64, "{steppe} herders on the frozen steppe's {third} cells");
+    let desert: u64 = (0..h3.len()).filter(|&c| zone(c) == 2).map(|c| w.population[c]).sum();
+    assert!(desert <= cells as u64, "{desert} people in the desert's {cells} cells");
+}
+
+#[test]
 fn herding_is_partition_independent_and_restores() {
     let h3 = h3_cells();
     let (g, c, k) = (geometry_pack(&h3), climate_pack(&h3), caprines_pack(&h3, |i| i % 3 != 0));

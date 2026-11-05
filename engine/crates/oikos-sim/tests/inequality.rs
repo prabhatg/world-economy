@@ -2,6 +2,7 @@
 //! and meet chance shocks (Borgerhoff Mulder et al. 2009), and land that is farmed and
 //! closed in becomes property, so farmers in a filled landscape inherit more and grow
 //! unequal while foragers and farmers on an open frontier stay as equal as foragers.
+//! Herds are wealth too (#45): herders pass on more than foragers wherever they live.
 
 use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
@@ -88,6 +89,36 @@ fn farming_world(seed: u64) -> (World, Vec<u8>, Vec<u8>) {
     (World::with_inputs(WorldConfig::geometry(&id), seed, p, inputs(&[&g, &c])).unwrap(), g, c)
 }
 
+/// Dry steppe (250 mm) where wild sheep and goats range everywhere.
+fn herding_world(p: Params) -> (World, Vec<u8>) {
+    let h3 = h3_cells();
+    let mut c = PackBuilder::new("climate", region(&h3));
+    c.time(vec![-12_000], TimeRule::Linear);
+    c.field(spec("temp_mean", Dims::TimeCell, 0.01), Data::I16(vec![1500; h3.len()])).unwrap();
+    c.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(vec![250; h3.len()])).unwrap();
+    let mut k = PackBuilder::new("caprines", region(&h3));
+    k.field(spec("upland", Dims::Cell, 1e-4), Data::U16(vec![10_000; h3.len()])).unwrap();
+    let (g, c, k) = (geometry_pack(&h3), c.build(), k.build());
+    let id = blake3::hash(&g).to_hex().to_string();
+    (World::with_inputs(WorldConfig::geometry(&id), 3, p, inputs(&[&g, &c, &k])).unwrap(), g)
+}
+
+/// Bands that herd and never cultivate.
+fn herders() -> Params {
+    Params {
+        cultivation_pressure_weight: 0.0,
+        cultivation_stress_weight: 0.0,
+        cultivation_abundance_weight: 0.0,
+        cultivation_variability_weight: 0.0,
+        initial_occupancy: 0.5,
+        herding_weight: 0.6,
+        adoption_rate: 0.05,
+        innovation_share: 1.0,
+        herd_selection: 0.02,
+        ..Params::default()
+    }
+}
+
 /// Gini of a lognormal distribution with log variance `v`: erf(sigma / 2), by
 /// Abramowitz and Stegun 7.1.26 (error below 1.5e-7).
 fn gini(v: f64) -> f64 {
@@ -126,10 +157,11 @@ fn a_generation_of_yearly_steps_is_the_generational_recursion() {
     ] {
         let mut v = 1.3;
         for _ in 0..25 {
-            v = m.next(v, owned);
+            v = m.next(v, (owned, 0.0));
         }
         let want = beta * beta * 1.3 + shock;
-        assert!((v - want).abs() < 1e-12, "owned {owned}: {v} after a generation, want {want}");
+        // Tabulated over transmission (#45): a generation of interpolation errs by under 1e-7.
+        assert!((v - want).abs() < 1e-7 * want, "owned {owned}: {v} after a generation, want {want}");
     }
 }
 
@@ -146,11 +178,11 @@ fn partial_ownership_follows_the_generational_recursion_whatever_the_period() {
         let m = Inequality::from_params(&Params { period_ticks: 365 * years, ..p.clone() });
         let mut v = 1.3;
         for _ in 0..periods {
-            v = m.next(v, owned);
+            v = m.next(v, (owned, 0.0));
         }
         assert!((v - want).abs() < 1e-6 * want, "{years}-year periods: {v}, want {want}");
         let stationary = shock / (1.0 - beta * beta);
-        assert!((m.stationary(owned) - stationary).abs() < 1e-6 * stationary);
+        assert!((m.stationary((owned, 0.0)) - stationary).abs() < 1e-6 * stationary);
     }
 }
 
@@ -159,6 +191,7 @@ fn transmission_of_all_wealth_is_refused() {
     for p in [
         Params { wealth_transmission: 1.0, ..Params::default() },
         Params { landed_wealth_transmission: 1.0, ..Params::default() },
+        Params { pastoral_wealth_transmission: 1.0, ..Params::default() },
     ] {
         let err = p.validate().expect_err("refused");
         assert!(err.contains("transmission"), "{err}");
@@ -170,10 +203,65 @@ fn foragers_and_landowners_settle_at_the_inequality_of_their_economies() {
     // Hunter-gatherers: Gini 0.25 with transmission 0.19; agriculturalists 0.48 with 0.36
     // (Borgerhoff Mulder et al. 2009, Table 2), under lognormal wealth.
     let m = Inequality::from_params(&Params::default());
-    assert!((gini(m.stationary(0.0)) - 0.25).abs() < 0.002, "{}", gini(m.stationary(0.0)));
-    assert!((gini(m.stationary(1.0)) - 0.48).abs() < 0.002, "{}", gini(m.stationary(1.0)));
-    let half = m.stationary(0.5);
-    assert!(m.stationary(0.0) < half && half < m.stationary(1.0));
+    assert!((gini(m.stationary((0.0, 0.0))) - 0.25).abs() < 0.002, "{}", gini(m.stationary((0.0, 0.0))));
+    assert!((gini(m.stationary((1.0, 0.0))) - 0.48).abs() < 0.002, "{}", gini(m.stationary((1.0, 0.0))));
+    let half = m.stationary((0.5, 0.0));
+    assert!(m.stationary((0.0, 0.0)) < half && half < m.stationary((1.0, 0.0)));
+}
+
+#[test]
+fn herders_settle_at_the_inequality_of_pastoralists_wherever_they_live() {
+    // Pastoralists: Gini 0.42 with transmission 0.43 (Borgerhoff Mulder et al. 2009,
+    // Table 2): herds are owned on open land too, so herding needs no closure.
+    let p = Params::default();
+    let m = Inequality::from_params(&p);
+    assert!((gini(m.stationary((0.0, 1.0))) - 0.42).abs() < 0.002, "{}", gini(m.stationary((0.0, 1.0))));
+    // Economies mix by effort, per generation: a band farming owned land with 0.3 of its
+    // effort and herding with 0.5 passes on the mixture of all three.
+    let (land, herds) = (0.3, 0.5);
+    let mix = |f: f64, l: f64, h: f64| (1.0 - land - herds) * f + land * l + herds * h;
+    let beta = mix(p.wealth_transmission, p.landed_wealth_transmission, p.pastoral_wealth_transmission);
+    let shock = mix(p.wealth_shock, p.landed_wealth_shock, p.pastoral_wealth_shock);
+    let mut v = 1.3;
+    for _ in 0..28 {
+        v = m.next(v, (land, herds));
+    }
+    let want = beta * beta * 1.3 + shock;
+    assert!((v - want).abs() < 1e-6 * want, "{v} after a generation, want {want}");
+    let stationary = shock / (1.0 - beta * beta);
+    assert!((m.stationary((land, herds)) - stationary).abs() < 1e-6 * stationary);
+}
+
+#[test]
+fn herders_grow_more_unequal_than_foragers_beside_them() {
+    // Herding bands on open steppe, where land is never owned: their herds alone make
+    // them unequal, and with pastoralists' own transmission equal to foragers' they stay
+    // as equal as foragers (the model before #45).
+    let run = |p: Params| {
+        let (mut w, ..) = herding_world(p);
+        w.run_years(2_000, 2, 2_000);
+        let (mut herd, mut herd_v) = (0.0, 0.0);
+        for a in w.agent_slices() {
+            for i in 0..a.len() {
+                let (n, h) = (a.weight[i] as f64, a.herding[i] as f64 / SHARE_ONE as f64);
+                herd += n * h;
+                herd_v += n * h * a.inequality[i] as f64 / SHARE_ONE as f64;
+            }
+        }
+        assert!(herd > 1000.0, "the world herds: {herd}");
+        herd_v / herd
+    };
+    let p = Params::default();
+    let forager = Inequality::from_params(&p).stationary((0.0, 0.0));
+    let herding = run(herders());
+    assert!(herding > forager + 0.05, "herders {herding}, foragers {forager}");
+    let same = Params {
+        pastoral_wealth_transmission: p.wealth_transmission,
+        pastoral_wealth_shock: p.wealth_shock,
+        ..herders()
+    };
+    let level = run(same);
+    assert!((level - forager).abs() < 0.01, "with foragers' transmission: {level} against {forager}");
 }
 
 #[test]
@@ -183,8 +271,8 @@ fn settled_foragers_are_skipped_only_where_the_update_would_keep_them() {
     {
         let m = Inequality::from_params(&p);
         let fixed = m.forager_fixed.expect("rounding keeps the forager level");
-        assert_eq!(m.next_stored(fixed, 0.0), fixed);
-        assert!((fixed as f64 / SHARE_ONE as f64 - m.stationary(0.0)).abs() < 1e-9);
+        assert_eq!(m.next_stored(fixed, (0.0, 0.0)), fixed);
+        assert!((fixed as f64 / SHARE_ONE as f64 - m.stationary((0.0, 0.0))).abs() < 1e-9);
     }
 }
 
@@ -203,7 +291,7 @@ fn land_is_closed_where_neighbors_farm_it_or_nobody_can_live() {
 fn foragers_start_and_stay_as_equal_as_foragers() {
     let mut w = World::new(WorldConfig::base_cell(22, 3), 4, Params::default()).unwrap();
     w.run_years(1, 1, 1);
-    let want = Inequality::from_params(&w.params).stationary(0.0);
+    let want = Inequality::from_params(&w.params).stationary((0.0, 0.0));
     for a in w.agent_slices() {
         for &v in &a.inequality {
             let v = v as f64 / SHARE_ONE as f64;
@@ -219,7 +307,7 @@ fn farmers_grow_unequal_as_farmland_closes_in() {
     // around them, land is property and inequality rises toward the landed level.
     let (mut w, ..) = farming_world(3);
     let m = Inequality::from_params(&w.params);
-    let (forager, landed) = (m.stationary(0.0), m.stationary(1.0));
+    let (forager, landed) = (m.stationary((0.0, 0.0)), m.stationary((1.0, 0.0)));
     let mut early = None;
     let mut late = 0.0;
     for _ in 0..40 {

@@ -45,6 +45,14 @@ impl Traits {
         x as f64 / SHARE_ONE as f64
     }
 
+    /// Per person, in [`SHARE_ONE`] units: cultivation effort, effort times the crop's
+    /// domestic share, herding effort and effort times the herd's domestic share, the
+    /// products truncated; a cell's farming sums are these times each group's people.
+    pub fn practice(&self) -> [u64; 4] {
+        let (one, e, h) = (SHARE_ONE as u64, self.cultivation as u64, self.herding as u64);
+        [e, e * self.domestication as u64 / one, h, h * self.herd_domestication as u64 / one]
+    }
+
     /// The nearest fixed-point share to `x`, clamped to [0, 1].
     pub fn from_share(x: f64) -> u32 {
         (oikos_math::finite(x).clamp(0.0, 1.0) * SHARE_ONE as f64).round() as u32
@@ -517,6 +525,20 @@ impl Agents {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_practice_is_its_effort_and_domestic_shares_truncated_as_cells_sum_them() {
+        let t = Traits {
+            cultivation: 499_999_999,
+            domestication: 500_000_001,
+            herding: 300_000_001,
+            herd_domestication: 333_333_333,
+            ..Traits::FORAGER
+        };
+        // 499,999,999 x 0.500000001 = 249,999,999.999999999: truncated, as a cell's sum is.
+        assert_eq!(t.practice(), [499_999_999, 249_999_999, 300_000_001, 100_000_000]);
+        assert_eq!(Traits::FORAGER.practice(), [0; 4]);
+    }
 
     fn sample() -> Agents {
         let mut a = Agents::default();

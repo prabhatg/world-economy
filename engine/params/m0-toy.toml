@@ -280,6 +280,32 @@ sources = [
   { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
 ]
 
+[params.pastoral_wealth_transmission]
+group = "social"
+unit = "per generation"
+description = "Intergenerational transmission of household wealth held in herds (#45): animals are owned, inherited and given as bridewealth on open land too, so a group's herding effort moves its transmission toward this, beside its ownership of land (see wealth_transmission). The three economies mix by effort: foraging, owned land, herds."
+kind = { type = "probability" }
+default = 0.43
+prior = { dist = "uniform", lo = 0.25, hi = 0.61 }
+status = "literature"
+note = "Pastoralists' importance-weighted average beta, 0.43 +- 0.06 (Borgerhoff Mulder et al. 2009, Table 2; livestock as material wealth 0.67 +- 0.07, weighted 0.61). Herds are movable, self-reproducing property that parents pass on and lend among kin, so pastoral wealth is about as heritable as farmland and needs no closure of the land (Borgerhoff Mulder et al. 2009). Herding effort, not the herds' domestic share, counts: managed herds are owned whatever their size. The prior spans three standard errors."
+sources = [
+  { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
+]
+
+[params.pastoral_wealth_shock]
+group = "social"
+unit = "variance of log wealth per generation"
+description = "Variance of the chance shocks to household log wealth per generation held in herds (see wealth_shock): drought, epizootics, raids and theft, and herds' own growth (#45)."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.4992
+prior = { dist = "uniform", lo = 0.33, hi = 0.68 }
+status = "literature"
+note = "Derived: the shock that gives pastoralists' Gini of 0.42 +- 0.05 (Borgerhoff Mulder et al. 2009, Table 2) at transmission 0.43 under lognormal wealth (stationary log variance 0.6125). The prior spans Ginis of about 0.35-0.48."
+sources = [
+  { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
+]
+
 [params.generation_years]
 group = "social"
 unit = "years"

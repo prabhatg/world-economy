@@ -115,10 +115,14 @@ pub struct Practice {
 /// yield `wild_herd_ratio` of domestic ones and live only on their range; domestic herds
 /// graze all the pasture (#37).
 pub fn capacity_of(land: &Land, practice: &Practice, p: &Params) -> u64 {
+    capacity_at(land, practice, (p.wild_yield_ratio, p.wild_herd_ratio))
+}
+
+/// [`capacity_of`] at the yields of wild crops and wild herds relative to domestic ones,
+/// `(wild_yield_ratio, wild_herd_ratio)`.
+pub fn capacity_at(land: &Land, practice: &Practice, (w, h): (f64, f64)) -> u64 {
     let Practice { effort, crop, herding, herd_crop } = *practice;
-    let w = p.wild_yield_ratio;
     let fields = land.farm * (w * effort + (1.0 - w) * crop) + land.flood * crop;
-    let h = p.wild_herd_ratio;
     let herds = land.herd_range * (h * herding + (1.0 - h) * herd_crop)
         + (land.herd_pasture - land.herd_range).max(0.0) * herd_crop;
     let foraging = land.forage as f64 * (1.0 - effort - herding).max(0.0);

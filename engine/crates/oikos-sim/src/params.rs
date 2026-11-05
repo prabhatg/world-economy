@@ -38,6 +38,8 @@ pub struct Params {
     pub wealth_shock: f64,
     pub landed_wealth_transmission: f64,
     pub landed_wealth_shock: f64,
+    pub pastoral_wealth_transmission: f64,
+    pub pastoral_wealth_shock: f64,
     pub generation_years: f64,
     pub disease_threshold: f64,
     pub mobile_contact: f64,
@@ -140,6 +142,8 @@ impl Params {
             wealth_shock: real("wealth_shock")?,
             landed_wealth_transmission: real("landed_wealth_transmission")?,
             landed_wealth_shock: real("landed_wealth_shock")?,
+            pastoral_wealth_transmission: real("pastoral_wealth_transmission")?,
+            pastoral_wealth_shock: real("pastoral_wealth_shock")?,
             generation_years: real("generation_years")?,
             disease_threshold: real("disease_threshold")?,
             mobile_contact: real("mobile_contact")?,
@@ -235,6 +239,7 @@ impl Params {
         for (key, beta) in [
             ("wealth_transmission", self.wealth_transmission),
             ("landed_wealth_transmission", self.landed_wealth_transmission),
+            ("pastoral_wealth_transmission", self.pastoral_wealth_transmission),
         ] {
             if beta >= 1.0 {
                 return Err(format!(
@@ -384,6 +389,9 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("herd_wild_frequency", Restore::Inert),
     ("pasture_precip_min", Restore::Inert),
     ("pasture_precip_full", Restore::Inert),
+    // #45: herds pass on what foragers' wealth does (after the parameters they follow).
+    ("pastoral_wealth_transmission", Restore::SameAs("wealth_transmission")),
+    ("pastoral_wealth_shock", Restore::SameAs("wealth_shock")),
 ];
 
 impl Params {
