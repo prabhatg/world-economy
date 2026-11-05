@@ -57,6 +57,10 @@ in the M1 region. The author manuscript's supplement at Europe PMC (PMC5714260) 
 licence (checked 2026-11-02), so it is used for research only: it is fetched through the
 Europe PMC API, its spreadsheet checked by SHA-256, and the site table built in memory,
 never committed or packed. Sites are located by their radiocarbon samples in p3k14c.
+Sheep and goat body size and juvenile shares come from the supporting information of
+Arbuckle et al. (2014, PLoS ONE 9: e99845, CC BY, checked 2026-11-04; #37): 42 dated
+faunal assemblages of Anatolia and its neighbours, through Europe PMC's supplement
+archive, each member checked by SHA-256; the full databases are in Open Context.
 Lesions of infection come from Eshed et al. (2010, American Journal of Physical
 Anthropology 143: 121-133, doi:10.1002/ajpa.21301; ADR-0086): 2 of 200 Natufian and 9 of
 205 Neolithic skeletons from 13 sites of the southern Levant. The article is under

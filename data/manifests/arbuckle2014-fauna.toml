@@ -1,0 +1,58 @@
+# Sheep and goat body size and juvenile shares of dated faunal assemblages, Anatolia and
+# its neighbours: when caprines became domestic and how they were culled.
+dataset = "arbuckle2014-fauna"
+title = "Data sharing reveals complexity in the westward spread of domestic animals across Neolithic Turkey: Supporting Information Tables S1, S3 and S4"
+version = "PLoS ONE 9(6): e99845 (2014), supporting information"
+homepage = "https://doi.org/10.1371/journal.pone.0099845"
+citation = "Arbuckle, B.S., Kansa, S.W., Kansa, E., Orton, D., Çakırlar, C., Gourichon, L., Atici, L., Galik, A., Marciniak, A., Mulville, J., Buitenhuis, H., Carruthers, D., De Cupere, B., Demirergi, A., Frame, S., Helmer, D., Martin, L., Peters, J., Pöllath, N., Pawłowska, K., Russell, N., Twiss, K., Würtenberger, D. (2014). Data sharing reveals complexity in the westward spread of domestic animals across Neolithic Turkey. PLoS ONE 9(6): e99845. https://doi.org/10.1371/journal.pone.0099845"
+doi = "10.1371/journal.pone.0099845"
+notes = """
+Word documents in the article's supporting information, fetched as Europe PMC's
+supplement archive (built on request, so its bytes vary; each member is checked by
+SHA-256). Table S1 lists the assemblages with their phases, region and dates in
+thousands of years cal BC; Table S3 (Ovis) and Table S4 (Capra) give each measured
+assemblage's mean log size index (LSI) with sd and count, and its juvenile share with
+its count ('+' by teeth, '*' sheep and goat combined; otherwise by epiphyseal fusion).
+The assemblages' full faunal databases are published in Open Context (Table S1 links).
+The tables give no coordinates: sites are located by their radiocarbon samples in
+p3k14c, or their published coordinates (oikos_data.fauna.SITES).
+"""
+
+[license]
+# The article and its supporting information are open access under the Creative Commons
+# Attribution License (checked through Europe PMC's full-text record, 2026-11-04).
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains sheep and goat size and age data from Arbuckle et al. (2014), PLoS ONE 9(6): e99845, https://doi.org/10.1371/journal.pone.0099845, and the faunal studies it compiles (CC BY); located on H3 cells by ManyWorlds."
+verified = "2026-11-04"
+
+[access]
+kind = "europepmc_supplement"
+url = "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC4057358/supplementaryFiles"
+
+[access.members.phases]
+file = "pone.0099845.s002.docx"
+sha256 = "c436542d6ba2cee7b66a1f3d0ed943b4c40468561eeee25c247e430be070b604"
+
+[access.members.ovis]
+file = "pone.0099845.s004.docx"
+sha256 = "5a881f094acc094a4453ab6a6c24a1334e9a6086b0c5a0ccbc5b5e251857e049"
+
+[access.members.capra]
+file = "pone.0099845.s005.docx"
+sha256 = "b447f543417bd1b41c4fcea0decd40e3c18c9645c49b764d71dcf0f1998f9d79"
+
+[coverage]
+spatial = "Anatolia, with assemblages from the Levant, Upper Mesopotamia and the Zagros"
+temporal = "about 50,000 to 4,700 BC; most from 9,000 to 5,500 BC"
+
+[[variables]]
+name = "lsi"
+unit = "log10 ratio"
+description = "Mean log size index of the assemblage's measured sheep (or goat) bones against a standard animal, with sd and count"
+
+[[variables]]
+name = "juvenile"
+unit = "1"
+description = "Share of the assemblage's sheep (or goat) that died juvenile, by epiphyseal fusion or teeth, with its count"

@@ -68,6 +68,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Database of Obsidian Sourcing Studies, doi:10.5281/zenodo.55848, licensed under CC
   BY-SA 4.0, and the sourcing studies it compiles (biblio.bib in the archive); derived
   data are shared under the same license.
+- **Caprine size and age** (faunal table): Arbuckle, B.S., Kansa, S.W., Kansa, E., et al.
+  (2014), Data sharing reveals complexity in the westward spread of domestic animals
+  across Neolithic Turkey, PLoS ONE 9(6): e99845, doi:10.1371/journal.pone.0099845 (CC BY),
+  and the faunal studies and Open Context datasets it compiles.
 - **Lesions of infection** (infection-lesions record): Eshed, V., Gopher, A., Pinhasi, R.
   & Hershkovitz, I. (2010), Paleopathology and the origin of agriculture in the Levant,
   American Journal of Physical Anthropology 143: 121-133, doi:10.1002/ajpa.21301, and the

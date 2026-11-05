@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid`, `lesions`, `fauna` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -31,6 +31,7 @@ python -m oikos_data build sites m1-swasia                 # Palmisano et al. 20
 python -m oikos_data build obsidian m1-swasia              # DObsiSS volcano locations -> pack
 python -m oikos_data build obsidian_assemblages m1-swasia  # DObsiSS sourced artefacts -> table
 python -m oikos_data build humid_period m1-swasia          # Bartlein et al. 2011 6 ka rain -> pack
+python -m oikos_data build fauna m1-swasia                 # Arbuckle et al. 2014 caprine size and age -> table
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -79,6 +80,7 @@ Observation tables (Parquet, locked like packs; docs/05 §5.1):
 | `archaeobotany` (local only, never written or locked) | one per dated site phase in the region: phase, site, location, cell, period and approximate start and end calendar years, crop items (domesticates, crop progenitors, presumed crops) and all items among charred grains and seeds of its retained samples, number of samples | Origins of agriculture database (Wallace et al. 2018, ADS doi:10.5284/1046750; ADS Terms of Use and Access: research use, no redistribution of derived data) |
 | `house_ginis` (local only, never written or locked) | one per site of the region in Kohler et al. 2017: site, period, best calendar year, Gini of its house floor areas with its 80% interval where computed, houses measured, subsistence, basis, location and cell | Kohler et al. 2017, Nature 551: 619-622, Supplementary Table 2 (author manuscript, Europe PMC; research use, no redistribution); site coordinates from p3k14c |
 | `obsidian_assemblages` | one per sourced site context in the region with a dated ASPRO period: context id, site, location, cell, period and its start and end calendar years ("a or b" spans both), artefacts per traced source group and from other sources, characterization study | DObsiSS 2.0, Zenodo 55848 (CC BY-SA 4.0; shared under the same license) |
+| `fauna` | one per dated faunal assemblage in the region with sheep or goat measured: site, phase, start and end year, location, cell; for sheep (`ovis_*`) and goat (`capra_*`) the mean log size index with sd and count, and the juvenile share with its count and basis (fusion or teeth) | Arbuckle et al. 2014 (PLoS ONE, CC BY) Tables S1, S3, S4, via Europe PMC's supplement archive; sites located by p3k14c (`fauna.SITES`) |
 
 Rules:
 
