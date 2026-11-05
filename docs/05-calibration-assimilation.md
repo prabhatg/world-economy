@@ -264,6 +264,14 @@ defaults fail the subregions, so `best` over wave 6 gives new ones (ADR-0081): w
 run 216, with fertility and the wealth parameters kept at their literature values,
 consistent with every seed (largest implausibility 2.70). Success bias still spans its
 prior among the consistent worlds.
+Round 11 (ADR-0090) starts another after the lesions, floodplain farming, the African
+Humid Period and herding (ADR-0084 to ADR-0088), judged on every record: a screening of
+the 52 free parameters and six waves of 300, 24 factors emulated, leave 0.04% of the
+prior and 45 consistent worlds, none nearer the record than the calibrated defaults,
+which stay. The herding parameters, which only the sheep-size record sees, are then
+profiled at the defaults: herds turn domestic too slowly below herd_selection 0.02, and
+0.035 fits best; the effort aimed at herds is consistent only from 0.1 to 0.2 of the
+land's herding potential, and with that selection 0.12, the old value, fits best.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

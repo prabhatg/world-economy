@@ -137,7 +137,13 @@ defaults (ADR-0081). `wave7.json` activates the two settlement parameters (ADR-0
 (ADR-0083).
 Round 11 judges the lesions of infection too (ADR-0086) and is in `runs/m1/round11/`; its
 first file, `profile-mobile-contact.json`, takes `mobile_contact` over 0.2 to 0.9 at the
-calibrated defaults (every value consistent; the lesions lean toward 0.2). The onset record's tables are downloaded by hand (`data/README.md`); without
+calibrated defaults (every value consistent; the lesions lean toward 0.2). It judges
+herding's sheep-size record too (ADR-0088): `screening.json` (all 52 free parameters),
+`wave1.json` to `wave6.json` (24 factors emulated, as round 9) and `best.json` over waves
+2-6, whose best world does not beat the calibrated defaults, so they stay (ADR-0090).
+`profile-herd-selection.json` and `profile-herding-weight.json` take the two herding
+parameters over their priors at those defaults and give their calibrated values, 0.035
+and 0.12. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
