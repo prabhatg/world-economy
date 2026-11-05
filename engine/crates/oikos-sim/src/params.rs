@@ -62,6 +62,14 @@ pub struct Params {
     pub perennial_discharge: f64,
     pub humid_period_scale: f64,
     pub floodplain_yield: f64,
+    pub herding_weight: f64,
+    pub herd_density: f64,
+    pub wild_herd_ratio: f64,
+    pub herd_selection: f64,
+    pub herd_introgression: f64,
+    pub herd_wild_frequency: f64,
+    pub pasture_precip_min: f64,
+    pub pasture_precip_full: f64,
     pub humid_period_onset_bp: u64,
     pub humid_period_end_bp: u64,
     pub humid_period_transition_years: u64,
@@ -156,6 +164,14 @@ impl Params {
             perennial_discharge: real("perennial_discharge")?,
             humid_period_scale: real("humid_period_scale")?,
             floodplain_yield: real("floodplain_yield")?,
+            herding_weight: real("herding_weight")?,
+            herd_density: real("herd_density")?,
+            wild_herd_ratio: real("wild_herd_ratio")?,
+            herd_selection: real("herd_selection")?,
+            herd_introgression: real("herd_introgression")?,
+            herd_wild_frequency: real("herd_wild_frequency")?,
+            pasture_precip_min: real("pasture_precip_min")?,
+            pasture_precip_full: real("pasture_precip_full")?,
             humid_period_onset_bp: int("humid_period_onset_bp")?,
             humid_period_end_bp: int("humid_period_end_bp")?,
             humid_period_transition_years: int("humid_period_transition_years")?,
@@ -234,6 +250,12 @@ impl Params {
                 "humid_period_onset_bp ({onset}) must be at least humid_period_end_bp ({end}) plus \
                  humid_period_transition_years ({t}) earlier: the Humid Period begins before it ends, \
                  and is fully humid between its transitions (ADR-0084)"
+            ));
+        }
+        if self.pasture_precip_min >= self.pasture_precip_full {
+            return Err(format!(
+                "pasture_precip_min ({}) must be below pasture_precip_full ({})",
+                self.pasture_precip_min, self.pasture_precip_full
             ));
         }
         if self.capacity_min > self.capacity_max {
@@ -353,6 +375,15 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("humid_period_transition_years", Restore::Inert),
     // ADR-0085: no floodplain fields.
     ("floodplain_yield", Restore::Value(0.0)),
+    // #37: nobody herds.
+    ("herding_weight", Restore::Value(0.0)),
+    ("herd_density", Restore::Inert),
+    ("wild_herd_ratio", Restore::Inert),
+    ("herd_selection", Restore::Inert),
+    ("herd_introgression", Restore::Inert),
+    ("herd_wild_frequency", Restore::Inert),
+    ("pasture_precip_min", Restore::Inert),
+    ("pasture_precip_full", Restore::Inert),
 ];
 
 impl Params {

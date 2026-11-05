@@ -153,6 +153,10 @@ pub struct World {
     /// times domestic share (fixed point, see [`SHARE_ONE`]); derived from the agents.
     effort_sum: Vec<u64>,
     crop_sum: Vec<u64>,
+    /// Likewise for herding (#37): the people-weighted sums of herding effort and of it
+    /// times the herd's domestic share.
+    herd_sum: Vec<u64>,
+    herd_crop_sum: Vec<u64>,
     /// Per cell, its people as models of cultivation for learners (ADR-0076), recomputed
     /// before each step's decide phase; empty where learning reads the own cell's effort only.
     models: Vec<(f64, f64)>,
@@ -372,8 +376,9 @@ impl World {
         for (&c, &w) in agents.cell.iter().zip(&agents.weight) {
             population[c as usize] += w;
         }
-        let (mut effort_sum, mut crop_sum) = (vec![0; n], vec![0; n]);
-        add_farming(&agents, 0, &mut effort_sum, &mut crop_sum);
+        let (mut effort_sum, mut crop_sum, mut herd_sum, mut herd_crop_sum) =
+            (vec![0; n], vec![0; n], vec![0; n], vec![0; n]);
+        add_farming(&agents, 0, (&mut effort_sum, &mut crop_sum, &mut herd_sum, &mut herd_crop_sum));
         let part = Partition { cells: 0..n as u32, agents, ..Partition::default() };
         let mut habitable = vec![true; n];
         let restricted = inputs.habitable_into(tick.calendar_year(), &mut habitable);
@@ -392,6 +397,8 @@ impl World {
             farmland,
             effort_sum,
             crop_sum,
+            herd_sum,
+            herd_crop_sum,
             models: Vec::new(),
             models_for: (0.0, 0.0),
             soil: vec![SHARE_ONE; n],
@@ -444,8 +451,8 @@ impl World {
             return;
         }
         let n = self.grid.len();
-        let land = (&self.forage_capacity[..], &self.farmland.farm[..], &self.farmland.flood[..]);
-        let sums = (&self.effort_sum[..], &self.crop_sum[..]);
+        let land = (&self.forage_capacity[..], &self.farmland);
+        let sums = (&self.effort_sum[..], &self.crop_sum[..], &self.herd_sum[..], &self.herd_crop_sum[..]);
         farm_cells(land, 0..n as u32, &self.population, sums, &mut self.capacity, &self.params);
     }
 
@@ -607,6 +614,28 @@ impl World {
             .map(|c| match self.effort_sum[c] {
                 0 => 0.0,
                 e => self.crop_sum[c] as f64 / e as f64,
+            })
+            .collect()
+    }
+
+    /// Mean herding effort of each cell's people (#37), as `cultivation` is of theirs.
+    pub fn herding(&self) -> Vec<f64> {
+        let one = SHARE_ONE as f64;
+        (0..self.grid.len())
+            .map(|c| match self.population[c] {
+                0 => 0.0,
+                n => self.herd_sum[c] as f64 / (n as f64 * one),
+            })
+            .collect()
+    }
+
+    /// Domestic share of each cell's managed herds, herding-effort-weighted (#37); 0 where
+    /// nobody herds.
+    pub fn herd_domestication(&self) -> Vec<f64> {
+        (0..self.grid.len())
+            .map(|c| match self.herd_sum[c] {
+                0 => 0.0,
+                h => self.herd_crop_sum[c] as f64 / h as f64,
             })
             .collect()
     }
@@ -797,6 +826,10 @@ impl World {
                 farm: &self.farmland.farm,
                 floodplain: &self.farmland.floodplain,
                 flood: &self.farmland.flood,
+                range: &self.farmland.range,
+                pasture: &self.farmland.pasture,
+                herd_sum: &self.herd_sum,
+                herd_crop_sum: &self.herd_crop_sum,
                 crop_sum: &self.crop_sum,
                 models: &self.models,
                 models_for: self.models_for,
@@ -855,24 +888,27 @@ impl World {
         // where the land supports cultivation, the capacity the bands farm.
         let threshold = self.params.merge_threshold;
         let farming = self.farmland.active();
-        let land = (&self.forage_capacity[..], &self.farmland.farm[..], &self.farmland.flood[..]);
+        let land = (&self.forage_capacity[..], &self.farmland);
         let params = &self.params;
         let pops = split_by_ranges(&mut self.population, &ranges);
         let efforts = split_by_ranges(&mut self.effort_sum, &ranges);
         let crops = split_by_ranges(&mut self.crop_sum, &ranges);
+        let herds = split_by_ranges(&mut self.herd_sum, &ranges);
+        let herd_crops = split_by_ranges(&mut self.herd_crop_sum, &ranges);
         let caps = split_by_ranges(&mut self.capacity, &ranges);
-        let items: Vec<_> =
-            self.parts.iter_mut().zip(pops).zip(efforts.into_iter().zip(crops)).zip(caps).collect();
-        par_for_each(items, |(((part, pop), (effort, crop)), cap)| {
+        let sums = efforts.into_iter().zip(crops).zip(herds.into_iter().zip(herd_crops));
+        let items: Vec<_> = self.parts.iter_mut().zip(pops).zip(sums).zip(caps).collect();
+        par_for_each(items, |(((part, pop), ((effort, crop), (herd, herd_crop))), cap)| {
             let cells = part.cells.clone();
             part.agents.sort_in_cells(cells.clone(), &mut part.scratch, &mut part.counts);
             part.agents.merge_small_into(threshold, &mut part.scratch, cells.start, pop);
             std::mem::swap(&mut part.agents, &mut part.scratch);
             if farming {
-                effort.fill(0);
-                crop.fill(0);
-                add_farming(&part.agents, cells.start, effort, crop);
-                farm_cells(land, cells, pop, (effort, crop), cap, params);
+                for s in [&mut *effort, &mut *crop, &mut *herd, &mut *herd_crop] {
+                    s.fill(0);
+                }
+                add_farming(&part.agents, cells.start, (effort, crop, herd, herd_crop));
+                farm_cells(land, cells, pop, (effort, crop, herd, herd_crop), cap, params);
             }
         });
 
@@ -925,44 +961,55 @@ fn land_year(tick: Tick, p: &Params) -> i64 {
 
 /// Adds each agent's people-weighted effort and effort times domestic share to the sums
 /// of its cell (indexed by `cell - base`).
-fn add_farming(agents: &Agents, base: u32, effort: &mut [u64], crop: &mut [u64]) {
+fn add_farming(agents: &Agents, base: u32, sums: (&mut [u64], &mut [u64], &mut [u64], &mut [u64])) {
+    let (effort, crop, herd, herd_crop) = sums;
+    let one = SHARE_ONE as u64;
     for i in 0..agents.len() {
-        let e = agents.cultivation[i] as u64;
-        if e == 0 {
+        let (e, h) = (agents.cultivation[i] as u64, agents.herding[i] as u64);
+        if e == 0 && h == 0 {
             continue;
         }
         let c = (agents.cell[i] - base) as usize;
         let w = agents.weight[i];
         effort[c] += w * e;
-        crop[c] += w * (e * agents.domestication[i] as u64 / SHARE_ONE as u64);
+        crop[c] += w * (e * agents.domestication[i] as u64 / one);
+        herd[c] += w * h;
+        herd_crop[c] += w * (h * agents.herd_domestication[i] as u64 / one);
     }
 }
 
 /// Capacity of `cells` (local slices indexed by `cell - cells.start`; `land` is the
-/// world's forager capacity and farm capacity) from their people's cultivation sums.
+/// world's farmland, with its forager capacity) from their people's cultivation and
+/// herding sums.
 fn farm_cells(
-    land: (&[u64], &[f64], &[f64]),
+    land: (&[u64], &Farmland),
     cells: Range<u32>,
     pop: &[u64],
-    sums: (&[u64], &[u64]),
+    sums: (&[u64], &[u64], &[u64], &[u64]),
     cap: &mut [u64],
     p: &Params,
 ) {
     let one = SHARE_ONE as f64;
+    let (forage, f) = land;
     for (i, c) in cells.map(|c| c as usize).enumerate() {
-        let (forage, farm, flood) = (land.0[c], land.1[c], land.2[c]);
-        cap[i] = match sums.0[i] {
-            0 => forage,
-            e => {
+        cap[i] = match (sums.0[i], sums.2[i]) {
+            (0, 0) => forage[c],
+            (e, h) => {
                 let people = pop[i] as f64 * one;
-                environment::farmed_capacity(
-                    forage,
-                    farm,
-                    flood,
-                    e as f64 / people,
-                    sums.1[i] as f64 / people,
-                    p,
-                )
+                let land = environment::Land {
+                    forage: forage[c],
+                    farm: f.farm[c],
+                    flood: f.flood[c],
+                    herd_range: f.herd_range[c],
+                    herd_pasture: f.herd_pasture[c],
+                };
+                let practice = environment::Practice {
+                    effort: e as f64 / people,
+                    crop: sums.1[i] as f64 / people,
+                    herding: h as f64 / people,
+                    herd_crop: sums.3[i] as f64 / people,
+                };
+                environment::capacity_of(&land, &practice, p)
             }
         };
     }

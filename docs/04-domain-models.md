@@ -37,6 +37,11 @@ enters the model, and the starting mechanisms.
   parameters the records constrain (ADR-0084).
 - **Domesticable species pool** by region (wheat, barley, lentils, goats, sheep,
   cattle, pigs, rice, maize…), with suitability from agro-climatic models.
+  *Implemented (M1, sheep and goats):* bands manage caprines as a second practice within
+  one effort budget with cultivation, where wild herds range (Asia's uplands with enough
+  rain) and, with domestic animals, on pasture beyond; herding is learned from neighbors
+  as cultivation is, herds become domestic by selection where wild animals live, and
+  feed people on land that grows no crops (ADR-0087).
 - Domestication as a co-evolutionary process (selection intensity × cultivation
   effort × time), not a switch.
   *Implemented (M1):* bands carry cultivation effort and the domestic share of their

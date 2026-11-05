@@ -31,6 +31,9 @@ pub const CLIMATE: (&str, &str, &str) = ("climate", "temp_mean", "precip");
 pub const RIVERS: (&str, &str) = ("hydrology", "river_discharge");
 /// Hydrology field giving the share of each cell its rivers flood at their highest.
 pub const FLOODPLAIN: (&str, &str) = ("hydrology", "floodplain_fraction");
+/// Pack kind and field holding the share of each cell's land that is upland where wild
+/// sheep and goats lived (0 in Africa; #37).
+pub const CAPRINES: (&str, &str) = ("caprines", "upland");
 /// Geometry field giving each cell's area (km2).
 pub const AREA: (&str, &str) = ("geometry", "area_km2");
 /// Pack kind and field holding the rain the African Humid Period adds at its height
@@ -80,8 +83,46 @@ pub fn cereal_suitability(temp_c: f64, precip_mm: f64, p: &Params) -> f64 {
 /// of domestic ones on rain-fed land and nothing on the floodplain, where no wild cereals
 /// grow (ADR-0085). At least one person.
 pub fn farmed_capacity(forage: u64, farm: f64, flood: f64, effort: f64, crop: f64, p: &Params) -> u64 {
-    let fields = farm * (p.wild_yield_ratio * effort + (1.0 - p.wild_yield_ratio) * crop) + flood * crop;
-    (oikos_math::finite(forage as f64 * (1.0 - effort) + fields) as u64).max(1)
+    let land = Land { forage, farm, flood, ..Land::default() };
+    capacity_of(&land, &Practice { effort, crop, ..Practice::default() }, p)
+}
+
+/// What a cell's land feeds under each use: people per cell.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Land {
+    pub forage: u64,
+    /// Full cultivation of domestic crops on rain-fed land, and on the floodplain.
+    pub farm: f64,
+    pub flood: f64,
+    /// Full herding of domestic sheep and goats on the cell's wild herds' range, and on all
+    /// its pasture, which holds the range (#37).
+    pub herd_range: f64,
+    pub herd_pasture: f64,
+}
+
+/// A cell's people's mean practice: effort cultivating and effort times the crop's
+/// domestic share, effort herding and effort times the herd's domestic share.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Practice {
+    pub effort: f64,
+    pub crop: f64,
+    pub herding: f64,
+    pub herd_crop: f64,
+}
+
+/// Carrying capacity of a cell (at least one person): foraging with the effort left from
+/// cultivating and herding, plus fields ([`farmed_capacity`]) and herds. Managed wild herds
+/// yield `wild_herd_ratio` of domestic ones and live only on their range; domestic herds
+/// graze all the pasture (#37).
+pub fn capacity_of(land: &Land, practice: &Practice, p: &Params) -> u64 {
+    let Practice { effort, crop, herding, herd_crop } = *practice;
+    let w = p.wild_yield_ratio;
+    let fields = land.farm * (w * effort + (1.0 - w) * crop) + land.flood * crop;
+    let h = p.wild_herd_ratio;
+    let herds = land.herd_range * (h * herding + (1.0 - h) * herd_crop)
+        + (land.herd_pasture - land.herd_range).max(0.0) * herd_crop;
+    let foraging = land.forage as f64 * (1.0 - effort - herding).max(0.0);
+    (oikos_math::finite(foraging + fields + herds) as u64).max(1)
 }
 
 /// A cell's soil share (1 = its original erodible soil) after `years` with its people
@@ -151,6 +192,7 @@ struct Year<'a> {
     area: FieldView<'a>,
     rivers: Option<FieldView<'a>>,
     floodplain: Option<FieldView<'a>>,
+    upland: Option<FieldView<'a>>,
     surface: Surface<'a>,
 }
 
@@ -167,6 +209,7 @@ impl Year<'_> {
             area: inputs.field(AREA.0, AREA.1).expect("validated in from_packs"),
             rivers: inputs.field(RIVERS.0, RIVERS.1).ok(),
             floodplain: inputs.field(FLOODPLAIN.0, FLOODPLAIN.1).ok(),
+            upland: inputs.field(CAPRINES.0, CAPRINES.1).ok(),
             surface: Surface::new(inputs, calendar_year),
         })
     }
@@ -194,6 +237,16 @@ impl Year<'_> {
         let warmth =
             ((temp_c - p.cereal_temp_min) / (p.cereal_temp_full - p.cereal_temp_min)).clamp(0.0, 1.0);
         oikos_math::finite(share.clamp(0.0, 1.0) * (warmth * p.floodplain_yield - suitability).max(0.0))
+    }
+
+    /// The cell's (range, pasture) for sheep and goats as shares of its dry land (#37):
+    /// pasture where the rain grows enough grazing (`pasture_precip_min` to
+    /// `pasture_precip_full` mm), and of it the range of wild herds, its upland share.
+    fn grazing(&self, c: usize, precip_mm: f64, p: &Params) -> (f64, f64) {
+        let ramp = (precip_mm - p.pasture_precip_min) / (p.pasture_precip_full - p.pasture_precip_min);
+        let pasture = oikos_math::finite(ramp).clamp(0.0, 1.0);
+        let upland = self.upland.as_ref().and_then(|f| f.get(0, c)).unwrap_or(0.0).clamp(0.0, 1.0);
+        (upland * pasture, pasture)
     }
 
     /// Foragers the cell feeds (before rounding).
@@ -236,6 +289,14 @@ pub struct Farmland {
     /// floodplain: `floodplain` times dry-land area times `farm_density`. Floods renew its
     /// soil, so it does not wear down.
     pub flood: Vec<f64>,
+    /// Range of wild sheep and goats, and pasture for domestic ones, as shares of dry land
+    /// (#37); without a caprines pack, no range, so nobody starts herding.
+    pub range: Vec<f64>,
+    pub pasture: Vec<f64>,
+    /// People fed if all effort went into herding domestic sheep and goats on the range,
+    /// and on all the pasture: those shares times dry-land area times `herd_density`.
+    pub herd_range: Vec<f64>,
+    pub herd_pasture: Vec<f64>,
     /// Relative decline of forager capacity since `stress_window_years` earlier, in [0, 1].
     pub stress: Vec<f64>,
     /// Climate variability: the mean absolute change of suitability per century over the
@@ -272,9 +333,17 @@ impl Farmland {
             *self = Farmland::default();
             return;
         };
-        for v in
-            [&mut self.suitability, &mut self.farm, &mut self.floodplain, &mut self.flood, &mut self.stress]
-        {
+        for v in [
+            &mut self.suitability,
+            &mut self.farm,
+            &mut self.floodplain,
+            &mut self.flood,
+            &mut self.range,
+            &mut self.pasture,
+            &mut self.herd_range,
+            &mut self.herd_pasture,
+            &mut self.stress,
+        ] {
             v.resize(cells, 0.0);
         }
         self.update_variability(inputs, calendar_year, p, cells);
@@ -285,6 +354,11 @@ impl Farmland {
             self.farm[c] = oikos_math::finite(now.dry_area(c) * s * p.farm_density);
             self.floodplain[c] = climate.map_or(0.0, |(t, _)| now.floodplain(c, t, s, p));
             self.flood[c] = oikos_math::finite(now.dry_area(c) * self.floodplain[c] * p.farm_density);
+            let (range, pasture) = climate.map_or((0.0, 0.0), |(_, w)| now.grazing(c, w, p));
+            self.range[c] = range;
+            self.pasture[c] = pasture;
+            self.herd_range[c] = oikos_math::finite(now.dry_area(c) * range * p.herd_density);
+            self.herd_pasture[c] = oikos_math::finite(now.dry_area(c) * pasture * p.herd_density);
             let (k, k0) = (now.foragers(c, p), before.foragers(c, p));
             self.stress[c] = if k0 > 0.0 { (1.0 - k / k0).clamp(0.0, 1.0) } else { 0.0 };
         }

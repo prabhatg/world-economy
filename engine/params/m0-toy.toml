@@ -531,6 +531,98 @@ note = "Matches the hydrology pack's threshold for river_length (wadis excluded)
 # selection_coefficient); domestic crops raise carrying capacity. Used by worlds with a
 # climate pack; toy worlds never cultivate.
 
+[params.herding_weight]
+group = "cultivation"
+unit = "1"
+description = "Weight of wild herds' abundance in the share of effort a band aims to spend managing sheep and goats (#37): the target is herding_weight times the land it can herd on, the wild herds' range, and with a domestic herd the pasture beyond it in proportion to its domestic share. 0: nobody herds."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.12
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Until calibrated, cultivation's abundance weight: managing herds began where wild sheep and goats were hunted most, in the piedmont of the Taurus and Zagros, about 8,500-8,000 BCE (Zeder 2008), and is learned as cultivation is, from the people around a band (adoption_rate, innovation_share, neighbor_learning). Risk buffering against bad harvests and herds as wealth are not yet drivers."
+sources = [
+  { citation = "Zeder, M.A. (2008). Domestication and early agriculture in the Mediterranean Basin: origins, diffusion, and impact. Proceedings of the National Academy of Sciences 105, 11597-11604.", doi = "10.1073/pnas.0801317105" },
+]
+
+[params.herd_density]
+group = "cultivation"
+unit = "people/km2"
+description = "People fed per km2 of pasture if all their effort went into herding fully domestic sheep and goats (#37); herds of wild animals yield wild_herd_ratio of it, on their range only."
+kind = { type = "real", min = 0.0, max = 20.0 }
+default = 1.0
+prior = { dist = "log_uniform", lo = 0.2, hi = 4.0 }
+status = "placeholder"
+note = "Until calibrated: herding feeds fewer people per km2 than fields (farm_density 3.6) but on land that grows no crops; pastoralists' densities run from under one to a few people per km2 of their range."
+sources = []
+
+[params.wild_herd_ratio]
+group = "cultivation"
+unit = "1"
+description = "Yield of managed wild herds as a share of domestic ones (#37), as wild_yield_ratio is for crops."
+kind = { type = "probability" }
+default = 0.5
+prior = { dist = "uniform", lo = 0.1, hi = 1.0 }
+status = "placeholder"
+note = "Until calibrated: early management (culling young males, protecting females) of herds still wild in body and behavior yields less than herding docile domestic stock."
+sources = []
+
+[params.herd_selection]
+group = "cultivation"
+unit = "1/period"
+description = "Selection toward domestic traits in a managed herd, per period at full herding effort, logistic in the herd's domestic share (#37), as selection_coefficient is for the crop."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.05
+prior = { dist = "log_uniform", lo = 0.001, hi = 0.1 }
+status = "placeholder"
+note = "Until calibrated: herds kept with a tenth of a band's effort become mostly domestic within about a millennium, as the size reduction that marks domestic sheep and goats follows management by about that (Zeder 2008); the crop's selection (0.009) would take five. Sheep body size (Arbuckle et al. 2014) constrains it."
+sources = [
+  { citation = "Zeder, M.A. (2008). Domestication and early agriculture in the Mediterranean Basin: origins, diffusion, and impact. Proceedings of the National Academy of Sciences 105, 11597-11604.", doi = "10.1073/pnas.0801317105" },
+]
+
+[params.herd_introgression]
+group = "cultivation"
+unit = "1/period"
+description = "Gene flow from wild sheep and goats into a herd, per period at no herding effort, where wild herds range (#37), as introgression_rate is for the crop."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.0002
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "A judgment, the crop's calibrated introgression; herds kept beyond the wild animals' range keep their domestic traits."
+sources = []
+
+[params.herd_wild_frequency]
+group = "cultivation"
+unit = "1"
+description = "Share of animals with domestic-type traits in wild herds, from which selection starts where wild sheep and goats range (#37)."
+kind = { type = "probability" }
+default = 0.005
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "A judgment near the crop's: docile, smaller animals among wild herds; selection outside the wild range only works on herds brought there."
+sources = []
+
+[params.pasture_precip_min]
+group = "cultivation"
+unit = "mm/year"
+description = "Annual precipitation below which land grows no grazing for sheep and goats (#37)."
+kind = { type = "real", min = 0.0, max = 1000.0 }
+default = 150.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "A judgment: steppe grazing reaches below the dry-farming limit (about 200-250 mm), into the desert margins."
+sources = []
+
+[params.pasture_precip_full]
+group = "cultivation"
+unit = "mm/year"
+description = "Annual precipitation above which land grows full grazing for sheep and goats (#37)."
+kind = { type = "real", min = 0.0, max = 2000.0 }
+default = 300.0
+prior = { dist = "fixed" }
+status = "placeholder"
+note = "A judgment: the steppe and open woodland of the Fertile Crescent's margins."
+sources = []
+
 [params.floodplain_yield]
 group = "cultivation"
 unit = "1"

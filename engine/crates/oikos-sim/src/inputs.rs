@@ -88,6 +88,10 @@ impl Inputs {
         if inputs.pack(humid).is_ok() {
             inputs.field(humid, anomaly)?;
         }
+        let (caprines, upland) = crate::environment::CAPRINES;
+        if inputs.pack(caprines).is_ok() {
+            inputs.field(caprines, upland)?;
+        }
         Ok(inputs)
     }
 

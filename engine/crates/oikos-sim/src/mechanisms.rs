@@ -67,6 +67,14 @@ pub struct Sense<'a> {
     pub floodplain: &'a [f64],
     /// People fed per cell if all effort went into domestic crops on its floodplain.
     pub flood: &'a [f64],
+    /// Range of wild sheep and goats, and pasture for domestic ones, per cell as shares of
+    /// its dry land (#37).
+    pub range: &'a [f64],
+    pub pasture: &'a [f64],
+    /// People-weighted sums of herding effort, and of it times the herd's domestic share,
+    /// per cell (in [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
+    pub herd_sum: &'a [u64],
+    pub herd_crop_sum: &'a [u64],
     /// People-weighted sum of effort times domestic share per cell (in
     /// [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
     pub crop_sum: &'a [u64],
@@ -968,9 +976,19 @@ impl Mechanism for Inundation {
 ///   archaeobotanical record (Purugganan and Fuller 2011; Allaby et al. 2008); strong
 ///   selection the rapid one measured in experimental cultivation (Hillman and Davies 1990).
 ///
-/// Cultivation feeds back through carrying capacity ([`crate::environment::farmed_capacity`]):
-/// domestic crops feed more people per area, so populations grow, pressure rises and
-/// effort with it (Rindos 1984). Toy worlds (no climate pack) never cultivate.
+/// - **Herding** (#37, ADR-0087). A band also moves its share of effort managing sheep and
+///   goats toward a target: `herding_weight` times the land it can herd on, the wild
+///   herds' range and, with domestic animals, the pasture beyond it in proportion to their
+///   share. It learns it as it learns cultivation, from the share of herding among the
+///   people around it; both efforts move from one snapshot within one budget
+///   ([`Cultivation::share_effort`]). Management breeds herds domestic, from wild animals
+///   only where they range, and gene flow pulls them back only there
+///   ([`Cultivation::domesticate_herd`]).
+///
+/// Cultivation and herding feed back through carrying capacity
+/// ([`crate::environment::capacity_of`]): domestic crops and herds feed more people per
+/// area, so populations grow, pressure rises and effort with it (Rindos 1984). Toy worlds
+/// (no climate pack) never cultivate or herd.
 #[derive(Clone, Debug)]
 pub struct Cultivation {
     pub period_ticks: u64,
@@ -987,6 +1005,10 @@ pub struct Cultivation {
     pub selection: f64,
     pub wild_frequency: f64,
     pub introgression: f64,
+    pub herding_weight: f64,
+    pub herd_selection: f64,
+    pub herd_wild_frequency: f64,
+    pub herd_introgression: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -1007,6 +1029,10 @@ impl Cultivation {
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
+            herding_weight: p.herding_weight,
+            herd_selection: p.herd_selection,
+            herd_wild_frequency: p.herd_wild_frequency,
+            herd_introgression: p.herd_introgression,
             after: vec!["aggregation"],
         }
     }
@@ -1142,6 +1168,49 @@ impl Cultivation {
         Self::example_of(std::iter::once(at(cell, 1.0)).chain(neighbors))
     }
 
+    /// The share of effort a band with a herd `domestic` aims to spend herding (#37):
+    /// `herding_weight` times the land it can herd on, the wild herds' `range` and, with
+    /// domestic animals, the `pasture` beyond it in proportion to their share (at most 1).
+    pub fn herding_target(&self, range: f64, pasture: f64, domestic: f64) -> f64 {
+        let land = (range + (pasture - range).max(0.0) * domestic).min(1.0);
+        oikos_math::finite(self.herding_weight * land).clamp(0.0, 1.0)
+    }
+
+    /// Cultivation and herding effort within one effort budget: proportionally less of
+    /// each where together they would exceed it (#37).
+    pub fn share_effort(cultivation: f64, herding: f64) -> (f64, f64) {
+        let total = cultivation + herding;
+        if total <= 1.0 { (cultivation, herding) } else { (cultivation / total, herding / total) }
+    }
+
+    /// Domestic share of a herd after one period at herding `effort`, from `d` (#37):
+    /// management selects for domestic traits as sowing does, from the wild animals'
+    /// domestic-type share only where wild herds `range`, and gene flow from them pulls the
+    /// share back there; herds kept beyond the range keep their traits.
+    pub fn domesticate_herd(&self, d: f64, effort: f64, range: f64) -> f64 {
+        let gain = self.herd_selection * effort * d.max(self.herd_wild_frequency * range) * (1.0 - d);
+        let loss = self.herd_introgression * (1.0 - effort) * d * range;
+        oikos_math::finite(d + gain - loss).clamp(0.0, 1.0)
+    }
+
+    /// The share of herding effort among the people a band in `cell` learns from: its
+    /// cell's and, by `neighbor_learning`, the cells around it (#37). None if it sees
+    /// nobody.
+    fn herding_seen(&self, sense: &Sense<'_>, cell: u32) -> Option<f64> {
+        let at = |c: u32| {
+            (sense.herd_sum[c as usize] as f64, sense.population[c as usize] as f64 * SHARE_ONE as f64)
+        };
+        let (mut herd, mut people) = at(cell);
+        if self.neighbor_learning != 0.0 {
+            for &c in sense.grid.neighbors(cell) {
+                let (h, n) = at(c);
+                herd += self.neighbor_learning * h;
+                people += self.neighbor_learning * n;
+            }
+        }
+        (people > 0.0).then(|| oikos_math::finite(herd / people))
+    }
+
     /// Domestic share of the crop after one period at `effort`, from `d`.
     pub fn domesticate(&self, d: f64, effort: f64) -> f64 {
         let gain = self.selection * effort * d.max(self.wild_frequency) * (1.0 - d);
@@ -1174,6 +1243,7 @@ impl Mechanism for Cultivation {
         // Learning from the own cell by how many plant (ADR-0065) is computed as it was.
         let own_cell_only = self.own_cell_only();
         let mut example: Option<(usize, Option<f64>)> = None; // per cell, only where needed
+        let mut herders: Option<(usize, Option<f64>)> = None; // likewise for herding
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
@@ -1188,7 +1258,18 @@ impl Mechanism for Cultivation {
                 sense.climate_stress[cell],
                 sense.climate_variability[cell],
             );
-            if target == 0.0 && traits.cultivation == 0 && traits.domestication == 0 {
+            let herd_target = self.herding_target(
+                sense.range[cell],
+                sense.pasture[cell],
+                Traits::share(traits.herd_domestication),
+            );
+            if target == 0.0
+                && herd_target == 0.0
+                && traits.cultivation == 0
+                && traits.domestication == 0
+                && traits.herding == 0
+                && traits.herd_domestication == 0
+            {
                 continue;
             }
             let (e, d) = (Traits::share(traits.cultivation), Traits::share(traits.domestication));
@@ -1205,11 +1286,31 @@ impl Mechanism for Cultivation {
                 example = Some((cell, seen));
                 seen.unwrap_or(e)
             };
+            let (h, dh) = (Traits::share(traits.herding), Traits::share(traits.herd_domestication));
+            let next_h = if herd_target == 0.0 && traits.herding == 0 {
+                0.0
+            } else {
+                let seen = match herders {
+                    Some((at, seen)) if at == cell => seen,
+                    _ => self.herding_seen(sense, cell as u32),
+                };
+                herders = Some((cell, seen));
+                self.adopt(h, herd_target, seen.unwrap_or(h))
+            };
+            let (next_e, next_h) = Self::share_effort(self.adopt(e, target, seen), next_h);
+            let cultivation = Traits::toward(traits.cultivation, next_e);
+            // Rounding toward each change may overshoot the budget by a unit or two.
+            let herding = Traits::toward(traits.herding, next_h).min(SHARE_ONE - cultivation);
             agents.set_traits(
                 i,
                 Traits {
-                    cultivation: Traits::toward(traits.cultivation, self.adopt(e, target, seen)),
+                    cultivation,
                     domestication: Traits::toward(traits.domestication, self.domesticate(d, e)),
+                    herding,
+                    herd_domestication: Traits::toward(
+                        traits.herd_domestication,
+                        self.domesticate_herd(dh, h, sense.range[cell]),
+                    ),
                     ..traits
                 },
             );
@@ -1457,6 +1558,10 @@ mod tests {
             farm: &[],
             floodplain: &[],
             flood: &[],
+            range: &[],
+            pasture: &[],
+            herd_sum: &[],
+            herd_crop_sum: &[],
             crop_sum: &zeros,
             models: &[],
             models_for: (0.0, 0.0),

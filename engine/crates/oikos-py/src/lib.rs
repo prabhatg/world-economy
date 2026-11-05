@@ -210,6 +210,17 @@ impl PyWorld {
         f64_array(py, self.0.village_sizes().into_iter())
     }
 
+    /// Mean herding effort of each cell's people (float64; #37).
+    fn herding<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.herding().into_iter())
+    }
+
+    /// Domestic share of each cell's managed herds (float64, herding-weighted; 0 where
+    /// nobody herds; #37).
+    fn herd_domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.herd_domestication().into_iter())
+    }
+
     /// Infected people per cell (float64): each settlement's people times the endemic
     /// prevalence at its size and practice (ADR-0075); over its people, its prevalence.
     fn infected<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
