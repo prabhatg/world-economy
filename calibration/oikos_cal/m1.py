@@ -5,7 +5,8 @@ Mesopotamia (Palmisano et al. 2021; ADR-0059), sourced obsidian (DObsiSS; ADR-00
 crops among charred plant remains (Wallace et al. 2018; ADR-0064), the house-size
 inequality of dated sites (Kohler et al. 2017; ADR-0074), the areas of the survey
 sites (Palmisano et al. 2021; #34) and lesions of infection on Natufian and Neolithic
-skeletons of the southern Levant (Eshed et al. 2010; #42).
+skeletons of the southern Levant (Eshed et al. 2010; #42) and the body size of sheep in
+dated faunal assemblages (Arbuckle et al. 2014; #37).
 
 A run is a point u of the unit cube of the registry's free parameters (those with a
 prior to sample; `oikos.sample_params` maps u onto the priors), a world built from the
@@ -52,6 +53,12 @@ discrepancy 0.1, a judgment that covers lesions sampling infection loosely (loca
 infections as well as the crowd infection the model has) and a few sites sampling a
 region.
 
+Sheep size (#37) is each era's mean log size index of measured sheep bones, eras split at
+8,500, 7,500, 7,000, 6,500 and 6,000 BCE, against a mixture of wild and domestic sizes by
+the domestic share of the bones the people around each assemblage discarded; judged
+together, discrepancy 0.015 on each (sex ratios, regional sizes, bones measured, hunting
+choices), with the endpoints' shared uncertainty in the observation covariance.
+
 The house-size Ginis are judged since the maintainer's decision of 2026-11-03 (#43);
 round 10's first waves left them out (ADR-0077).
 
@@ -67,20 +74,20 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, lesions as lesions_record, pack, rachis, region
+from oikos_data import DATA, archaeobotany, fauna, lesions as lesions_record, pack, rachis, region
 from oikos_data import inequality as inequality_pipeline
 from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
 
-from . import domestication, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets, villages
+from . import domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets, villages
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period", "caprines")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
-               "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1}
+               "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1, "herds": 0.015}
 VILLAGE_DENSITY = 121.0  # people per hectare: geometric mean of 50 and 294
 VILLAGE_DENSITY_SD = 0.45  # log scale: 50-294 as a 95% range
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
@@ -99,6 +106,7 @@ SUBREGIONS = {"southern Levant": (29.0, 34.5, 34.0, 39.0),
 # world can match the dates yet; #44.
 UNJUDGED_SUBREGIONS = {"northeast Africa": (22.0, 32.0, 24.0, 34.0)}
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
+HERD_EDGES = (-8_500, -7_500, -7_000, -6_500, -6_000)  # sheep size eras: wild, the size falls, domestic
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources
 OBSIDIAN_ERA = -6_900
 OBSIDIAN_MIN_ARTEFACTS = 3
@@ -172,6 +180,8 @@ class Problem:
         self.stands = stands(self.onset)
         periods, skeletons, _ = lesions_record.load()
         self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true)
+        assemblages = pq.read_table(io.BytesIO(fauna.build_table(r, offline=True))).to_pydict()
+        self.herds = herds.Operator(assemblages, self.cells, self.radiocarbon.settings.true, HERD_EDGES)
         self.inequality = None
         if "inequality" not in leave_out:
             houses = pq.read_table(io.BytesIO(inequality_pipeline.build_table(r, offline=True))).to_pydict()
@@ -199,13 +209,14 @@ class Problem:
             self.radiocarbon, radiocarbon.subregions(self.radiocarbon.obs.blocks, UNJUDGED_SUBREGIONS),
             discrepancy_sd=DISCREPANCY["subregions"], rng=np.random.default_rng(0))
         self.eras.append(targets.InfectionLesions(self.lesions, discrepancy_sd=DISCREPANCY["lesions"]))
+        self.eras.append(targets.SheepSize(self.herds, discrepancy_sd=DISCREPANCY["herds"]))
         if self.inequality is not None:
             self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]
         first = np.cumsum([0] + [len(e.targets) for e in self.eras])
         self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3]),
                        self.eras[4].group(first[4]), self.eras[5].group(first[5]), self.eras[6].group(first[6]),
-                       self.eras[7].group(first[7])]
+                       self.eras[7].group(first[7]), self.eras[9].group(first[9])]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def outputs(self, activity):

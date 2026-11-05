@@ -13,7 +13,9 @@ and settled people-years times the variance of log household wealth among the se
 and settlement-years times the log of each settlement's people, so dividing by
 settlement-years gives the mean log size of the settlements anywhere (#34); and infected
 people-years, so dividing by people-years gives the prevalence of the endemic infection
-anywhere (#42).
+anywhere (#42); and herders, their domestic animals and the foragers hunting where wild
+sheep and goats range, in people-years times the effort spent on each, the bones a faunal
+assemblage samples (#37).
 Recording only reads the world through the bindings; it never changes its history.
 """
 
@@ -35,6 +37,9 @@ class Activity:
     inequality: np.ndarray = None  # settled people-years times their variance of log wealth [cell, century]
     village_size: np.ndarray = None  # settlement-years times the log of their people [cell, century]
     infected: np.ndarray = None  # infected people-years [cell, century]
+    herders: np.ndarray = None  # people-years times herding effort [cell, century]
+    herd_domestic: np.ndarray = None  # the same times the herd's domestic share [cell, century]
+    hunters: np.ndarray = None  # people-years times foraging effort times wild herds' range [cell, century]
 
     def visible(self, cultivator_visibility):
         """People-years with each cultivator counting 1 + `cultivator_visibility` times."""
@@ -48,8 +53,8 @@ def activity(world, end, every=10, parts=4) -> Activity:
     if first % 100 or end % 100 or end <= first:
         raise ValueError(f"record from {first} to {end}: both must be century boundaries, end after start")
     window = Window(first, end)
-    people, cultivators, domestic, settlements, inequality, village_size, infected = (
-        np.zeros((world.cells, window.centuries)) for _ in range(7))
+    people, cultivators, domestic, settlements, inequality, village_size, infected, herders, herd_domestic, hunters = (
+        np.zeros((world.cells, window.centuries)) for _ in range(10))
     obsidian = {name: np.zeros((world.cells, window.centuries)) for name in world.obsidian()}
     while world.year < end:
         c = (world.year - first) // 100
@@ -65,6 +70,12 @@ def activity(world, end, every=10, parts=4) -> Activity:
         settlements[:, c] += n * world.settlements()
         village_size[:, c] += n * world.village_sizes()
         infected[:, c] += n * world.infected()
+        herding, cultivation = world.herding(), world.cultivation()
+        herded = n * pop * herding
+        herders[:, c] += herded
+        herd_domestic[:, c] += herded * world.herd_domestication()
+        hunters[:, c] += n * pop * np.clip(1.0 - cultivation - herding, 0.0, None) * world.caprine_range()
         world.run_years(n, parts=parts)
-    return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality, village_size, infected)
+    return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality, village_size, infected,
+                    herders, herd_domestic, hunters)
 

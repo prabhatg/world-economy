@@ -245,6 +245,13 @@ impl PyWorld {
         f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
     }
 
+    /// Range of wild sheep and goats per cell, as a share of its dry land (float64; #37;
+    /// zeros without a climate or caprines pack).
+    fn caprine_range<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let s = &self.0.farmland.range;
+        f64_array(py, (0..self.0.grid.len()).map(|c| s.get(c).copied().unwrap_or(0.0)))
+    }
+
     /// Climate stress per cell in [0, 1]: the relative decline of forager capacity over
     /// the last `stress_window_years` (float64; zeros without a climate pack).
     fn climate_stress<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {

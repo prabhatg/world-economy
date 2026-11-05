@@ -429,6 +429,23 @@ class InfectionLesions:
         return np.array([self.op.expected(activity)])
 
 
+class SheepSize:
+    def __init__(self, op, discrepancy_sd=0.015):
+        """Eras of `op` (`herds.Operator`): each era's mean sheep LSI, with the sampling
+        variance of its assemblages and the wild and domestic sizes' shared uncertainty;
+        judged together."""
+        self.op = op
+        self.targets = [_target(n, z, op.covariance[k, k], discrepancy_sd**2)
+                        for k, (n, z) in enumerate(zip(op.names, op.observed))]
+
+    def group(self, first):
+        n = len(self.targets)
+        return Group(list(range(first, first + n)), self.op.covariance, dof=n)
+
+    def model(self, activity):
+        return self.op.expected(activity)
+
+
 class HouseGinis:
     def __init__(self, op, discrepancy_sd=0.05):
         """One target per site of `op` (`inequality.Operator`): its house-size Gini, with

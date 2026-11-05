@@ -68,6 +68,11 @@ def test_the_record_summaries(problem):
                                     "cultivation effort rich minus poor stands after 7600 BCE"]
     assert problem.groups[7].indices == [66, 67] and problem.groups[7].dof == 2
     assert oc[1].observed > 0.3, "by the late PPNB the richest stands were farmed far more"
+    ss = [t for t in problem.targets if t.name.startswith("sheep size")]
+    assert [t.name for t in ss][0] == "sheep size (LSI) 12000-8500 BCE" and len(ss) == 6
+    assert ss[0].observed > 0.04 and all(t.observed < -0.03 for t in ss[3:]), "wild, then domestic sizes"
+    first = problem.names.index(ss[0].name)
+    assert problem.groups[-1].indices == list(range(first, first + 6)) and problem.groups[-1].dof == 6
     assert problem.names[-7:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
                                   "log-likelihood obsidian", "people 3000 BCE",
                                   *(f"radiocarbon northeast Africa {q}% by, not judged" for q in (10, 25, 50))]

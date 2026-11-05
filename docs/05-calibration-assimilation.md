@@ -119,6 +119,14 @@ Gurven and Kaplan (2007), scaled to that birth rate. It sees the Neolithic demog
 transition, which the stock records cannot (ADR-0067). The Levant cemetery record is to
 come (#33).
 
+**Implemented (sheep size operator, ADR-0088, #37):** `herds.Operator` compares the mean
+log size index of measured sheep bones in six eras (Arbuckle et al. 2014) with a mixture
+of wild and domestic sizes by the domestic share of the caprine bones the people around
+each assemblage discarded: from their herds by herding effort, and from wild sheep and
+goats hunted on the range at a tenth of that per unit of foraging effort. The wild and
+domestic sizes are judgments from the record's earliest and latest assemblages, their
+uncertainty shared by the eras. It sees when herds became domestic, not how many there were.
+
 **Implemented (infection-lesions operator, ADR-0086, #42):** `lesions.Operator` compares
 the lesions of infection on 200 Natufian and 205 Neolithic skeletons of the southern
 Levant (2 and 9 affected; Eshed et al. 2010) with the prevalence of the endemic

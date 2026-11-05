@@ -260,7 +260,8 @@ def test_cultivation_fields():
     w = oikos.World(seed=3)
     w.run_years(300, parts=2)
     for name in ("cultivation", "domestication", "suitability", "climate_stress", "climate_variability", "settlements",
-                 "village_sizes", "inequality", "infected", "herding", "herd_domestication"):
+                 "village_sizes", "inequality", "infected", "herding", "herd_domestication",
+                 "caprine_range"):
         v = getattr(w, name)()
         assert v.dtype == np.float64 and v.shape == (w.cells,), name
         assert not v.any(), f"{name}: toy worlds never cultivate"

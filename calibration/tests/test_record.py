@@ -71,6 +71,15 @@ class _ObsidianWorld:
     def infected(self):
         return np.zeros(2)
 
+    def herding(self):
+        return np.zeros(2)
+
+    def herd_domestication(self):
+        return np.zeros(2)
+
+    def caprine_range(self):
+        return np.zeros(2)
+
     def run_years(self, n, parts):
         self.year += n
 
@@ -144,3 +153,32 @@ def test_infection_is_recorded_as_infected_people_years():
     assert a.infected[0, 0] / a.people[0, 0] == pytest.approx(0.3)
     toy = record.activity(oikos.World(seed=4), end=-11_900)
     assert toy.infected.shape == toy.people.shape and not toy.infected.any(), "foragers' camps carry none"
+
+
+class _HerdingWorld(_ObsidianWorld):
+    """Cell 0: ten people, 0.2 of their effort herding a herd 0.5 then 0.9 domestic, 0.3
+    cultivating, on land that is 0.8 wild herds' range; cell 1: nobody."""
+
+    def cultivation(self):
+        return np.array([0.3, 0.0])
+
+    def herding(self):
+        return np.array([0.2, 0.0])
+
+    def herd_domestication(self):
+        return np.array([0.5 if self.year < -11_950 else 0.9, 0.0])
+
+    def caprine_range(self):
+        return np.array([0.8, 0.0])
+
+
+def test_herds_and_hunted_wild_herds_are_recorded_by_the_effort_spent_on_them():
+    # Bones come from herds and from wild sheep and goats hunted on their range, in
+    # proportion to the effort spent on each (#37): herders, their domestic animals, and
+    # foragers on the range, in people-years.
+    a = record.activity(_HerdingWorld(), end=-11_900, every=50, parts=1)
+    np.testing.assert_allclose(a.herders[:, 0], [100 * 10 * 0.2, 0])
+    np.testing.assert_allclose(a.herd_domestic[:, 0], [50 * 10 * 0.2 * 0.5 + 50 * 10 * 0.2 * 0.9, 0])
+    np.testing.assert_allclose(a.hunters[:, 0], [100 * 10 * (1 - 0.3 - 0.2) * 0.8, 0])
+    toy = record.activity(oikos.World(seed=4), end=-11_900)
+    assert not toy.herders.any() and not toy.hunters.any(), "toy worlds have no wild herds"
