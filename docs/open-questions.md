@@ -265,7 +265,13 @@
     together, or of something the model lacks (pack animals, water points, the coast's
     fishing)? And crossing does not move the subregion's dates: the Nile's foragers from
     12,000 BCE date it millennia early in every setting, so the first question decides
-    whether the subregion can be judged.
+    whether the subregion can be judged. Since ADR-0093 most of that came instead from
+    the Western Desert, which the model left empty: with the Humid Period's rain over
+    Egypt fitted to the desert's own estimates, at four times the fit, it is settled, and
+    the 25% and 50% dates match the record. What remains is the Delta and Cairo block, whose 2,200-3,500
+    foragers from 12,000 BCE keep the 10% point about 1,100 years early: sites under
+    the Delta's silt and below its water table, a coast drowned by the rising sea, or
+    fewer people there than the model's river and coast bonus allows?
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

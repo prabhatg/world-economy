@@ -40,7 +40,14 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   reconstructions at 6 and 21 ka: a global synthesis, Climate Dynamics 37, 775–802,
   doi:10.1007/s00382-010-0904-1; data from NOAA WDS-Paleo (contribution 2010-127),
   dedicated to the public domain (CC0), and the pollen and plant-macrofossil records it
-  synthesizes.
+  synthesizes. Holocene rainfall in Egypt's Western Desert (the same pack's fit,
+  ADR-0093): Neumann, K. (1989), Holocene vegetation of the Eastern Sahara: charcoal
+  from prehistoric sites, African Archaeological Review 7, 97–116, as cited by
+  Bubenzer, O. & Riemer, H. (2007), Geoarchaeology 22, 607–620,
+  doi:10.1002/gea.20176; and the Nabta Playa estimates of Neumann (1989), Barakat
+  (1995) and Wendorf & Schild (1980), as cited by Wendorf, F. & Schild, R. (1998),
+  Nabta Playa and its role in northeastern African prehistory, Journal of
+  Anthropological Archaeology 17, 97–123.
 - **RiverATLAS and LakeATLAS v1.0 / HydroATLAS** (hydrology pack): Linke, S. et al.
   (2019), Scientific Data 6: 283; Lehner, B., Messager, M.L., Korver, M.C., Linke, S.
   (2022), Scientific Data 9: 351; river reaches from HydroRIVERS (Lehner & Grill 2013,

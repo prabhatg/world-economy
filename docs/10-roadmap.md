@@ -122,8 +122,10 @@ groups' worth fits best, though any value above one fits as well within the spre
 between seeds, and villages are about 100 people, as a cell's land holds one town and
 the small groups it sheds; hierarchy is not identified.
 The forcing has the African Humid Period (ADR-0084, #44): rain from Eastern Saharan
-reconstructions, timed and scaled by parameters. It hardly moves northeast Africa's
-dates, which also need a farmed Nile, so the subregion is still recorded, not judged.
+reconstructions, timed and scaled by parameters; refitted over Egypt to the Western
+Desert's own estimates (ADR-0093), it settles the desert while it lasts and brings
+northeast Africa's 25% and 50% dates to the record's, but the Delta's foragers keep its
+10% point early, so the subregion is still recorded, not judged.
 Floodplains can be farmed with domestic crops (ADR-0085), opening the Mesopotamian
 alluvium, but the model's farming does not cross Sinai to the Nile.
 Lesions of infection on Natufian and Neolithic skeletons are a record (ADR-0086, #42):

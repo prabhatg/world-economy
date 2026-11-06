@@ -7,13 +7,16 @@ records show a wetter Sahara from about 11,000 to 5,000 years ago (Tierney et al
 Humid Period adds at its height; the engine adds it to the climate pack's precipitation
 along a time course and amplitude set by parameters, which the records constrain.
 
-The anomaly comes from Bartlein et al.'s (2011) 6 ka reconstructions, which in the
-Eastern Sahara hold two grid cells, both in Sudan, where lakes were still full at 6 ka
-(the West Nubian Palaeolake until about 4,000 14C years BP; Hoelzmann et al. 2000,
-2001): an exponential in latitude through them, extrapolated north over Egypt, where no
-reconstruction exists (+28 mm a year at 24 N, +4 mm at 27 N). It is held over Africa
-only: west of the Suez isthmus, the Gulf of Suez and the Red Sea. Arabia's humid phase
-is not part of it (open question 39).
+The anomaly is an exponential in latitude fitted, in log space, to Bartlein et al.'s
+(2011) 6 ka reconstructions, which in the Eastern Sahara hold two grid cells, both in
+Sudan, where lakes were still full at 6 ka (the West Nubian Palaeolake until about 4,000
+14C years BP; Hoelzmann et al. 2000, 2001), and to estimates for Egypt's Western Desert
+from the plants and animals of its Holocene sites (`SITES`; ADR-0093). Through the two
+cells alone it fell off by e every 1.6 degrees, leaving the desert's oases nearly as dry
+as today (+11 mm a year at Dakhla), where charcoal and fauna record tens of millimetres;
+with the estimates, by e every 2.8 degrees. It is held over Africa only: west of the
+Suez isthmus, the Gulf of Suez and the Red Sea. Arabia's humid phase is not part of it
+(open question 39).
 """
 
 import csv
@@ -33,6 +36,18 @@ DOMAIN = (18.0, -18.0)
 # 33.5 N east of it, south of Crete and Anatolia.
 NORTH = ((12.0, 37.5), (33.5,))
 SCALE = 0.1  # mm/year per stored step
+# Holocene wet-phase rain in Egypt's Western Desert (latitude, mm/year, source), each the
+# geometric mean of the range its source gives. Amounts from charcoal and bones found at
+# sites, not the sites' dates, which the radiocarbon record judges. Left out: Kroepelin's
+# (1987) 100-150 mm for the Gilf Kebir, as only secondary citations were seen, and the
+# about 30 mm Wendorf and Schild (1998) cite from Kroepelin (1993), whose place is unclear.
+SITES = (
+    (22.5, 100.0, "Nabta Playa: 50-100 mm from charcoal (Neumann 1989; Barakat 1995), 100-200 mm from fauna "
+                  "(Wendorf and Schild 1980), as cited by Wendorf and Schild 1998, J. Anthropol. Archaeol. 17, 97-123"),
+    (25.0, 71.0, "Abu Ballas, Gilf Kebir, Great Sand Sea and Djara (about 23-27 N): at most 50 mm in the early and "
+                 "100 mm in the mid-Holocene from charcoal (Neumann 1989), as cited by Bubenzer and Riemer 2007, "
+                 "Geoarchaeology 22, 607-620, doi:10.1002/gea.20176"),
+)
 
 
 def african(lat, lng):
@@ -45,26 +60,27 @@ def african(lat, lng):
     return south <= lat <= north and west <= lng < float(np.interp(lat, lats, lngs))
 
 
-def anchor(rows, box):
+def anchor(rows, box, sites=()):
     """(a, b) of ln(anomaly) = a + b * latitude, fitted by least squares to the grid cells
     of `rows` (lat, lon, map_anm_mean) whose centers lie in `box` (south, north, west,
-    east) with more rain than today; at least two, falling off northward."""
+    east) with more rain than today, at least two, and to `sites` (lat, mm, source);
+    falling off northward."""
     s, n, w, e = box
     pts = [(float(r["lat"]), float(r["map_anm_mean"])) for r in rows
            if s <= float(r["lat"]) <= n and w <= float(r["lon"]) <= e and float(r["map_anm_mean"]) > 0]
     if len(pts) < 2:
         raise ValueError(f"the Humid Period's anomaly needs at least two wetter grid cells in {box}; found {len(pts)}")
-    lat, anomaly = np.array(pts).T
+    lat, anomaly = np.array(pts + [(lat, mm) for lat, mm, _ in sites]).T
     b, a = np.polyfit(lat, np.log(anomaly), 1)
     if b >= 0:
         raise ValueError(f"the anomaly in {box} does not fall off northward (slope {b:.3f} per degree)")
     return float(a), float(b)
 
 
-def build_pack(region, sources, rows, box):
+def build_pack(region, sources, rows, box, sites=()):
     """Humid-period pack bytes: per cell, the anomaly of the Eastern Saharan fit at the
     cell's center if it is African, else 0. Pure."""
-    a, b = anchor(rows, box)
+    a, b = anchor(rows, box, sites)
     cells = region.cells()
     values = np.zeros(len(cells), dtype=np.uint16)
     for i, c in enumerate(cells):
@@ -77,7 +93,8 @@ def build_pack(region, sources, rows, box):
                    attribution=src.get("attribution"))
     bld.field("precip_anomaly", "mm/year",
               "Annual precipitation the African Humid Period adds at its height (Bartlein et al. 2011's Eastern "
-              f"Saharan 6 ka anomalies, exp({a:.4f} {b:+.4f} lat), over Africa; 0 elsewhere)", values, scale=SCALE)
+              f"Saharan 6 ka anomalies{' and ' + '; '.join(src for _, _, src in sites) if sites else ''}: "
+              f"exp({a:.4f} {b:+.4f} lat), over Africa; 0 elsewhere)", values, scale=SCALE)
     return bld.build()
 
 
@@ -96,4 +113,4 @@ def inputs(offline=False):
 
 def build_humid_pack(region, update=False, offline=False):
     sources, rows, box = inputs(offline)
-    return build_pack(region, sources, rows, box)
+    return build_pack(region, sources, rows, box, SITES)

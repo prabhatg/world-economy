@@ -1,5 +1,6 @@
-"""The African Humid Period (ADR-0084): the rain it added over Africa at its height, from
-the Eastern Saharan reconstructions of Bartlein et al. (2011), falling off northward."""
+"""The African Humid Period (ADR-0084, ADR-0093): the rain it added over Africa at its
+height, from the Eastern Saharan reconstructions of Bartlein et al. (2011) and estimates
+for Egypt's Western Desert, falling off northward."""
 
 import math
 
@@ -28,6 +29,23 @@ def test_the_anomaly_falls_off_northward_through_the_eastern_saharan_cells():
     assert math.isclose(math.exp(a + b * 19.0), 604.7667, rel_tol=1e-9)
     assert math.isclose(math.exp(a + b * 21.0), 177.1667, rel_tol=1e-9)
     assert b < 0, "less rain northward"
+
+
+def test_site_estimates_join_the_fit_in_log_space():
+    sites = ((22.5, 100.0, "Nabta"), (25.0, 71.0, "Abu Ballas to Djara"))
+    a, b = humid.anchor(ROWS, EASTERN_SAHARA, sites)
+    lat = np.array([19.0, 21.0, 22.5, 25.0])
+    mm = np.array([604.7667, 177.1667, 100.0, 71.0])
+    bb, aa = np.polyfit(lat, np.log(mm), 1)
+    assert (a, b) == pytest.approx((aa, bb), rel=1e-12)
+    a0, b0 = humid.anchor(ROWS, EASTERN_SAHARA)
+    assert b0 < b < 0, "the Western Desert's estimates make the fall-off gentler, still northward"
+
+
+def test_the_western_desert_estimates_are_sourced_and_in_egypt():
+    assert len(humid.SITES) >= 2
+    for lat, mm, source in humid.SITES:
+        assert 22.0 <= lat <= 30.0 and 20.0 <= mm <= 300.0 and source
 
 
 def test_the_anomaly_needs_two_cells_that_fall_off_northward():

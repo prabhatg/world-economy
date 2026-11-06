@@ -34,7 +34,8 @@ enters the model, and the starting mechanisms.
   coasts), recomputed as the climate changes (`oikos-sim::environment`, ADR-0047).
   The forcing's climate model has no African Humid Period, so a `humid_period` pack adds
   the rain reconstructions give the Eastern Sahara at its height, scaled and timed by
-  parameters the records constrain (ADR-0084).
+  parameters the records constrain (ADR-0084); its fall-off over Egypt is fitted to the
+  Western Desert's own estimates, from its sites' charcoal and fauna (ADR-0093).
 - **Domesticable species pool** by region (wheat, barley, lentils, goats, sheep,
   cattle, pigs, rice, maize…), with suitability from agro-climatic models.
   *Implemented (M1, sheep and goats):* bands manage caprines as a second practice within

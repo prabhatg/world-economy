@@ -27,8 +27,9 @@ the figshare API and checked against its published MD5. Soils come from SoilGrid
 (ADR-0045; CC BY 4.0 per Poggio et al. 2021, checked 2026-10-28), 1 km aggregates.
 The African Humid Period, which CHELSA-TraCE21k's climate model misses, comes from the
 mid-Holocene precipitation reconstructions of Bartlein et al. (2011; NOAA WDS-Paleo,
-CC0, checked 2026-11-04; ADR-0084), extrapolated north over Egypt from its two Eastern
-Saharan grid cells.
+CC0, checked 2026-11-04; ADR-0084), fitted together with published estimates for
+Egypt's Western Desert from the charcoal and fauna of its Holocene sites (Neumann 1989;
+Wendorf and Schild 1980, 1998; Bubenzer and Riemer 2007; ADR-0093).
 Radiocarbon observations come from p3k14c (ADR-0046): the public, location-fuzzed
 release in the authors' MIT-licensed compendium on Zenodo (the canonical tDAR copy needs
 a browser), calibrated with IntCal20 (CC BY 4.0); both checked 2026-10-28.

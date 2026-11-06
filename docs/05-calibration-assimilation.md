@@ -81,9 +81,10 @@ accrued from 12,000 BCE. Years rather than log shares, because early eras can be
 The bootstrap resamples whole sites within each subregion, so a site's many dates move
 together; research intensity still cancels per block. Judged together, discrepancy 300
 years on each. The region-wide eras cannot see one subregion early and another late;
-these do. Northeast Africa is recorded, not judged: the climate forcing has no African
-Humid Period, so no world can occupy the Western Desert when its dates say people did
-(#44).
+these do. Northeast Africa is recorded, not judged (#44): since ADR-0093 the Western
+Desert is settled during the African Humid Period and the subregion's 25% and 50% points
+match the record, but its 10% point is about 1,100 years early, from the foragers the
+model keeps in the Delta from 12,000 BCE, where the record has nothing before 5,500 BCE.
 
 **Implemented (onset contrasts, ADR-0080, #36):** the onset phases are split by the
 engine's own wild-cereal suitability at them (the same ramps of precipitation and

@@ -147,7 +147,10 @@ and 0.12.
 Round 12 starts after herd wealth and herders' movement (ADR-0089) in `runs/m1/round12/`:
 `profile-pastoral-transmission.json` and `profile-pastoral-shock.json` take the two herd
 wealth parameters over their priors at the calibrated defaults; the summaries are flat,
-so their literature values stay (ADR-0091). The onset record's tables are downloaded by hand (`data/README.md`); without
+so their literature values stay (ADR-0091). `profile-humid-period-scale.json` takes the
+African Humid Period's scale over its prior after its anomaly was refitted to the Western
+Desert's estimates (ADR-0093): only 4, the top of the prior, settles the desert while the
+Humid Period lasts. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
