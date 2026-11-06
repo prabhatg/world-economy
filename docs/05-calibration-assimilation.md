@@ -272,6 +272,9 @@ which stay. The herding parameters, which only the sheep-size record sees, are t
 profiled at the defaults: herds turn domestic too slowly below herd_selection 0.02, and
 0.035 fits best; the effort aimed at herds is consistent only from 0.1 to 0.2 of the
 land's herding potential, and with that selection 0.12, the old value, fits best.
+Profiles of herd wealth's transmission and shock (ADR-0091) at those defaults are flat:
+herding is too small a share of M1's effort, and its dated houses too much farmers', for
+the record to see how unequal herders were, so the literature values stay.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

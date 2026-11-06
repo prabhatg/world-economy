@@ -288,7 +288,7 @@ kind = { type = "probability" }
 default = 0.43
 prior = { dist = "uniform", lo = 0.25, hi = 0.61 }
 status = "literature"
-note = "Pastoralists' importance-weighted average beta, 0.43 +- 0.06 (Borgerhoff Mulder et al. 2009, Table 2; livestock as material wealth 0.67 +- 0.07, weighted 0.61). Herds are movable, self-reproducing property that parents pass on and lend among kin, so pastoral wealth is about as heritable as farmland and needs no closure of the land (Borgerhoff Mulder et al. 2009). Herding effort, not the herds' domestic share, counts: managed herds are owned whatever their size. The prior spans three standard errors."
+note = "Pastoralists' importance-weighted average beta, 0.43 +- 0.06 (Borgerhoff Mulder et al. 2009, Table 2; livestock as material wealth 0.67 +- 0.07, weighted 0.61). Herds are movable, self-reproducing property that parents pass on and lend among kin, so pastoral wealth is about as heritable as farmland and needs no closure of the land (Borgerhoff Mulder et al. 2009). Herding effort, not the herds' domestic share, counts: managed herds are owned whatever their size. The prior spans three standard errors. Not identified by the M1 record (ADR-0091): at the calibrated defaults every value from 0.25 to 0.61 is consistent for three seeds and the summary log-likelihood stays at -65.8 (calibration/runs/m1/round12/profile-pastoral-transmission.json); herding is a small share of effort before 3,000 BCE and the dated houses are farmers', so herd wealth moves their Ginis by under 0.01."
 sources = [
   { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
 ]
@@ -301,7 +301,7 @@ kind = { type = "real", min = 0.0, max = 5.0 }
 default = 0.4992
 prior = { dist = "uniform", lo = 0.33, hi = 0.68 }
 status = "literature"
-note = "Derived: the shock that gives pastoralists' Gini of 0.42 +- 0.05 (Borgerhoff Mulder et al. 2009, Table 2) at transmission 0.43 under lognormal wealth (stationary log variance 0.6125). The prior spans Ginis of about 0.35-0.48."
+note = "Derived: the shock that gives pastoralists' Gini of 0.42 +- 0.05 (Borgerhoff Mulder et al. 2009, Table 2) at transmission 0.43 under lognormal wealth (stationary log variance 0.6125). The prior spans Ginis of about 0.35-0.48. Not identified by the M1 record (ADR-0091): at the calibrated defaults every value from 0.33 to 0.68 is consistent for three seeds, the summary log-likelihood running from -66.0 to -65.7, less than the spread between seeds (calibration/runs/m1/round12/profile-pastoral-shock.json)."
 sources = [
   { citation = "Borgerhoff Mulder, M., Bowles, S., Hertz, T., et al. (2009). Intergenerational wealth transmission and the dynamics of inequality in small-scale societies. Science 326, 682-688.", doi = "10.1126/science.1178336" },
 ]

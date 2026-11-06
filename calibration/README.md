@@ -143,7 +143,11 @@ herding's sheep-size record too (ADR-0088): `screening.json` (all 52 free parame
 2-6, whose best world does not beat the calibrated defaults, so they stay (ADR-0090).
 `profile-herd-selection.json` and `profile-herding-weight.json` take the two herding
 parameters over their priors at those defaults and give their calibrated values, 0.035
-and 0.12. The onset record's tables are downloaded by hand (`data/README.md`); without
+and 0.12.
+Round 12 starts after herd wealth and herders' movement (ADR-0089) in `runs/m1/round12/`:
+`profile-pastoral-transmission.json` and `profile-pastoral-shock.json` take the two herd
+wealth parameters over their priors at the calibrated defaults; the summaries are flat,
+so their literature values stay (ADR-0091). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
