@@ -118,6 +118,7 @@ fn checkpoints_from_before_each_added_parameter_restore_the_model_they_were_writ
         (p.wealth_transmission, p.wealth_shock),
         "#45: herds pass on what foragers' wealth does"
     );
+    assert_eq!((p.herd_pressure_weight, p.wadi_share), (0.0, 0.0), "#44: herding by land alone, no wadis");
     // Parameters a checkpoint stored keep its values, whatever the rules.
     let now = serde_json::to_vec(&Params {
         sedentary_growth_rate: 0.03,

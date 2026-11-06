@@ -41,7 +41,11 @@ enters the model, and the starting mechanisms.
   one effort budget with cultivation, where wild herds range (Asia's uplands with enough
   rain) and, with domestic animals, on pasture beyond; herding is learned from neighbors
   as cultivation is, herds become domestic by selection where wild animals live, and
-  feed people on land that grows no crops (ADR-0087).
+  feed people on land that grows no crops (ADR-0087). Deserts too dry for open grazing
+  still feed flocks along their wadis, which collect runoff from the land around them;
+  and need can drive herding as it drives cultivation, through domestic stock, so
+  crowded herders specialize where nothing else feeds them, though the M1 record keeps
+  that hypothesis off for now (ADR-0092).
 - Domestication as a co-evolutionary process (selection intensity × cultivation
   effort × time), not a switch.
   *Implemented (M1):* bands carry cultivation effort and the domestic share of their

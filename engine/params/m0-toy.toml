@@ -572,6 +572,20 @@ sources = [
   { citation = "Arbuckle, B.S. et al. (2014). Data sharing reveals complexity in the westward spread of domestic animals across Neolithic Turkey. PLoS ONE 9(6), e99845.", doi = "10.1371/journal.pone.0099845" },
 ]
 
+[params.herd_pressure_weight]
+group = "cultivation"
+unit = "1"
+description = "Weight of population pressure in the share of effort a band aims to spend herding (#44): people beyond cultivation_crowding times what foraging feeds, full at one capacity more, as for cultivation, add herd_pressure_weight times that pressure to the target wherever the band's flock can graze. 0: herding follows the land alone (ADR-0087)."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Off, as the M1 record prefers it at the other calibrated defaults (ADR-0092): need of 0.2 to 0.8 keeps every record consistent but fits the summaries worse (log-likelihood -67.9 at 0.4 and -74.9 at 0.8 against -65.6, seed 1), as more herding breeds sheep domestic sooner than their size falls in Arbuckle et al. (2014); with herd_selection 0.02 the best is -69.0 (0.8), and at 0.01 no value is consistent. Herders cross Sinai to the Nile only with 0.8 and wadis at the top of their prior, reaching it from about 4,000 BCE (a tenth of effort by 3,000), against goats in Egypt by about 5,900 BCE. A round that varies it with the herding parameters it trades against can test it again. Need turns people to more work per calorie when wild food falls short (Binford 1968; Cohen 1977), as for cultivation; where rain grows no crops, the work goes into flocks, which can be moved to whatever grazing there is, and it goes through domestic stock, as wild herds cannot be worked harder to feed more people. Goat herding reached Egypt by about 5,900 BCE with the herder-gatherers of the Negev and Sinai, before farming (about 5,350 BCE), and the oldest African caprines are from Sodmein Cave in the Eastern Desert, 6,200-5,000 BCE (Vermeersch et al. 2015)."
+sources = [
+  { citation = "Binford, L.R. (1968). Post-Pleistocene adaptations. In S.R. Binford and L.R. Binford (eds.), New Perspectives in Archeology, 313-341. Aldine." },
+  { citation = "Vermeersch, P.M., Linseele, V., Marinova, E., Van Neer, W., Moeyersons, J. and Rethemeyer, J. (2015). Early and Middle Holocene human occupation of the Egyptian Eastern Desert: Sodmein Cave. African Archaeological Review 32, 465-503.", doi = "10.1007/s10437-015-9195-6" },
+]
+
 [params.herd_density]
 group = "cultivation"
 unit = "people/km2"
@@ -652,6 +666,30 @@ prior = { dist = "fixed" }
 status = "placeholder"
 note = "A judgment: the steppe and open woodland of the Fertile Crescent's margins."
 sources = []
+
+[params.wadi_share]
+group = "cultivation"
+unit = "1"
+description = "Share of dry land in wadi beds and hollows that collect runoff from the rest (#44): there grazing grows as on open land with the rain plus runoff_coefficient of the rain on the rest of the land, so deserts below pasture_precip_min still graze flocks along their wadis. 0: no wadis."
+kind = { type = "real", min = 0.0, max = 0.5 }
+default = 0.03
+prior = { dist = "log_uniform", lo = 0.01, hi = 0.1 }
+status = "placeholder"
+note = "A judgment: wadi channels and their floors are a few percent of desert uplands, and runoff from the slopes around them concentrates the rain of the open land there, as the Negev's ancient runoff fields used (Bruins et al. 2019, runoff_coefficient); herders in the Negev and Sinai lived along wadis, springs and the coast. A finer grid could take the share from terrain."
+sources = []
+
+[params.runoff_coefficient]
+group = "cultivation"
+unit = "1"
+description = "Share of the rain on the land outside wadis that runs off into them (#44)."
+kind = { type = "probability" }
+default = 0.1
+prior = { dist = "uniform", lo = 0.05, hi = 0.3 }
+status = "literature"
+note = "The average annual runoff coefficient used for the catchments of the ancient terraced wadi fields of Horvat Haluqim in the central Negev Highlands, approximate (Bruins et al. 2019); small loess and rock catchments yield more in heavy storms and less in light ones."
+sources = [
+  { citation = "Bruins, H.J., Bithan-Guedj, H. and Svoray, T. (2019). GIS-based hydrological modelling to assess runoff yields in ancient-agricultural terraced wadi fields (central Negev desert). Journal of Arid Environments 166, 91-107." },
+]
 
 [params.floodplain_yield]
 group = "cultivation"

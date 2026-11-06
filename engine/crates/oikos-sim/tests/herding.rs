@@ -6,7 +6,7 @@
 use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
 use oikos_sim::agents::SHARE_ONE;
-use oikos_sim::environment::{Land, Practice, capacity_of};
+use oikos_sim::environment::{Land, Practice, capacity_of, pasture_share};
 use oikos_sim::inputs::Inputs;
 use oikos_sim::mechanisms::Cultivation;
 use oikos_sim::{Params, World, WorldConfig, checkpoint};
@@ -76,10 +76,73 @@ fn herders() -> Params {
 #[test]
 fn bands_aim_to_herd_where_wild_herds_range_and_domestic_ones_can_graze() {
     let c = Cultivation::from_params(&Params { herding_weight: 0.5, ..Params::default() });
-    assert_eq!(c.herding_target(0.8, 1.0, 0.0), 0.4, "wild herds on their range only");
-    assert_eq!(c.herding_target(0.0, 1.0, 0.0), 0.0, "no wild animals to start with");
-    assert_eq!(c.herding_target(0.0, 1.0, 1.0), 0.5, "a domestic herd grazes any pasture");
-    assert_eq!(c.herding_target(0.2, 0.6, 0.5), 0.2, "half domestic: the range and half the rest");
+    assert_eq!(c.herding_target(0.8, 1.0, 0.0, 0.0), 0.4, "wild herds on their range only");
+    assert_eq!(c.herding_target(0.0, 1.0, 0.0, 0.0), 0.0, "no wild animals to start with");
+    assert_eq!(c.herding_target(0.0, 1.0, 1.0, 0.0), 0.5, "a domestic herd grazes any pasture");
+    assert_eq!(c.herding_target(0.2, 0.6, 0.5, 0.0), 0.2, "half domestic: the range and half the rest");
+}
+
+#[test]
+fn crowded_bands_aim_to_herd_more_wherever_their_flocks_can_graze() {
+    // Need drives herding as it drives cultivation (#44): people beyond what foraging
+    // feeds turn to their domestic flocks, on any land they can graze, however little.
+    let p = Params {
+        herding_weight: 0.1,
+        herd_pressure_weight: 0.6,
+        cultivation_crowding: 1.0,
+        ..Params::default()
+    };
+    let c = Cultivation::from_params(&p);
+    assert_eq!(c.pressure(100, 100), 0.0, "foragers at their land's capacity feel none");
+    assert_eq!(c.pressure(150, 100), 0.5);
+    assert_eq!(c.pressure(300, 100), 1.0, "full at one capacity more");
+    assert!((c.herding_target(0.0, 1.0, 1.0, 1.0) - 0.7).abs() < 1e-12);
+    assert!((c.herding_target(0.0, 1.0, 1.0, 0.5) - 0.4).abs() < 1e-12);
+    let desert = c.herding_target(0.0, 0.02, 1.0, 1.0);
+    assert!(
+        (desert - (0.1 * 0.02 + 0.6)).abs() < 1e-12,
+        "a little grazing is enough to keep a flock: {desert}"
+    );
+    assert_eq!(c.herding_target(0.0, 1.0, 0.0, 1.0), 0.0, "no wild animals and no herd: nothing to herd");
+    // Wild herds cannot be worked harder to feed more people: need acts through domestic
+    // stock, in proportion to its share.
+    assert!((c.herding_target(1.0, 1.0, 0.0, 1.0) - 0.1).abs() < 1e-12, "wild herds: the land alone");
+    assert!(
+        (c.herding_target(1.0, 1.0, 0.5, 1.0) - (0.1 + 0.3)).abs() < 1e-12,
+        "half domestic: half the need"
+    );
+    assert_eq!(c.herding_target(0.0, 0.0, 1.0, 1.0), 0.0, "nothing to graze: no herding");
+    let none = Cultivation::from_params(&Params { herd_pressure_weight: 0.0, ..p });
+    assert_eq!(none.herding_target(0.0, 1.0, 1.0, 1.0), 0.1, "weight 0: the land alone, as before");
+}
+
+#[test]
+fn wadis_gather_runoff_into_grazing_where_rain_alone_grows_none() {
+    // Below pasture_precip_min the open land grows no grazing, but wadi beds, a share
+    // wadi_share of the land, collect runoff_coefficient of the rain on the rest (#44).
+    let p = Params {
+        pasture_precip_min: 150.0,
+        pasture_precip_full: 300.0,
+        wadi_share: 0.1,
+        runoff_coefficient: 0.2,
+        ..Params::default()
+    };
+    let wadi = |rain: f64| rain * (1.0 + 0.2 * 0.9 / 0.1);
+    let at100 = pasture_share(100.0, &p);
+    assert!((at100 - 0.1 * (wadi(100.0) - 150.0) / 150.0).abs() < 1e-12, "{at100}");
+    assert_eq!(pasture_share(0.0, &p), 0.0, "no rain, no runoff");
+    assert_eq!(pasture_share(300.0, &p), 1.0, "full grazing everywhere");
+    let at200 = pasture_share(200.0, &p);
+    assert!((at200 - (0.9 * 50.0 / 150.0 + 0.1)).abs() < 1e-12, "open land and full wadis: {at200}");
+    let mut last = 0.0;
+    for rain in 0..400 {
+        let s = pasture_share(rain as f64, &p);
+        assert!((0.0..=1.0).contains(&s) && s >= last, "{rain} mm: {s}");
+        last = s;
+    }
+    let dry = Params { wadi_share: 0.0, ..p };
+    assert_eq!(pasture_share(100.0, &dry), 0.0, "without wadis, as before");
+    assert!((pasture_share(225.0, &dry) - 0.5).abs() < 1e-12);
 }
 
 #[test]
@@ -210,6 +273,69 @@ fn herders_move_onto_pasture_where_foragers_find_nothing_and_nobody_onto_barren_
     assert!(steppe > 100 * third as u64, "{steppe} herders on the frozen steppe's {third} cells");
     let desert: u64 = (0..h3.len()).filter(|&c| zone(c) == 2).map(|c| w.population[c]).sum();
     assert!(desert <= cells as u64, "{desert} people in the desert's {cells} cells");
+}
+
+#[test]
+fn herders_cross_a_desert_whose_wadis_feed_their_flocks() {
+    // Warm steppe where wild herds range, around the grid's first cell; then a belt of
+    // frozen desert (-40 degC, 60 mm) three cells wide, whose foraging feeds about one
+    // person a cell and whose open land grows no grass, only its wadis; then steppe
+    // beyond, with no wild herds. Herders carry their domestic
+    // flocks across only if need keeps them herding where their land feeds little else
+    // and the wadis feed their flocks (#44); without wadis nobody herds beyond.
+    let h3 = h3_cells();
+    let g = Grid::from_base_cell(22, 3).unwrap();
+    let mut ring = vec![u32::MAX; g.len()];
+    let mut frontier = vec![0u32];
+    ring[0] = 0;
+    while let Some(c) = frontier.pop() {
+        for &n in g.neighbors(c) {
+            if ring[n as usize] > ring[c as usize] + 1 {
+                ring[n as usize] = ring[c as usize] + 1;
+                frontier.push(n);
+            }
+        }
+    }
+    let zone = |c: usize| match ring[c] {
+        0..=3 => 0, // steppe with wild herds
+        4..=6 => 1, // desert
+        _ => 2,     // steppe beyond
+    };
+    assert!((0..h3.len()).filter(|&c| zone(c) == 2).count() > 50, "a steppe beyond the desert");
+    let mut b = PackBuilder::new("climate", region(&h3));
+    b.time(vec![-12_000], TimeRule::Linear);
+    let temp = (0..h3.len()).map(|c| if zone(c) == 1 { -4000 } else { 1500 }).collect();
+    b.field(spec("temp_mean", Dims::TimeCell, 0.01), Data::I16(temp)).unwrap();
+    let precip = (0..h3.len()).map(|c| if zone(c) == 1 { 60 } else { 250 }).collect();
+    b.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(precip)).unwrap();
+    let (geo, c, k) = (geometry_pack(&h3), b.build(), caprines_pack(&h3, |i| zone(i) == 0));
+    let id = blake3::hash(&geo).to_hex().to_string();
+    let beyond = |cell: u32| zone(cell as usize) == 2;
+    // Herders beyond the desert after 500 years, and the desert's people after 1,500.
+    let run = |p: Params| {
+        let mut w = World::with_inputs(WorldConfig::geometry(&id), 3, p, inputs(&[&geo, &c, &k])).unwrap();
+        w.run_years(500, 2, 500);
+        let crossed = herding_in(&w, beyond).0;
+        w.run_years(1_000, 2, 1_000);
+        (crossed, (0..h3.len()).filter(|&c| zone(c) == 1).map(|c| w.population[c]).sum::<u64>())
+    };
+    let crossing = Params {
+        herd_pressure_weight: 0.8,
+        wadi_share: 0.05,
+        runoff_coefficient: 0.2,
+        herd_selection: 0.1, // herds domestic within a few centuries, so need acts
+        ..herders()
+    };
+    let (crossed, desert) = run(crossing.clone());
+    let (dry, empty) = run(Params { wadi_share: 0.0, ..crossing.clone() });
+    let (unneeded, sparse) = run(Params { herd_pressure_weight: 0.0, ..crossing });
+    assert!(crossed > 1_000, "{crossed} herd beyond the desert");
+    assert!(crossed > 10 * dry.max(10), "{crossed} cross with wadis, {dry} without");
+    assert!(crossed > 10 * unneeded.max(10), "{crossed} cross with need, {unneeded} without");
+    // A cell's capacity never falls below one person, so a few cross even without wadis,
+    // but only herders kept herding by need live in the desert itself.
+    assert!(desert > 10 * empty.max(10), "{desert} live in the desert with wadis, {empty} without");
+    assert!(desert > 3 * sparse, "{desert} with need, {sparse} without");
 }
 
 #[test]

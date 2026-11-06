@@ -244,11 +244,10 @@ impl Year<'_> {
     }
 
     /// The cell's (range, pasture) for sheep and goats as shares of its dry land (#37):
-    /// pasture where the rain grows enough grazing (`pasture_precip_min` to
-    /// `pasture_precip_full` mm), and of it the range of wild herds, its upland share.
+    /// pasture where the rain grows enough grazing ([`pasture_share`]), and of it the
+    /// range of wild herds, its upland share.
     fn grazing(&self, c: usize, precip_mm: f64, p: &Params) -> (f64, f64) {
-        let ramp = (precip_mm - p.pasture_precip_min) / (p.pasture_precip_full - p.pasture_precip_min);
-        let pasture = oikos_math::finite(ramp).clamp(0.0, 1.0);
+        let pasture = pasture_share(precip_mm, p);
         let upland = self.upland.as_ref().and_then(|f| f.get(0, c)).unwrap_or(0.0).clamp(0.0, 1.0);
         (upland * pasture, pasture)
     }
@@ -262,6 +261,24 @@ impl Year<'_> {
             if river || self.surface.shore(c) { p.aquatic_bonus * p.forager_density_ref } else { 0.0 };
         oikos_math::finite(self.dry_area(c) * (forager_density(npp, p) + aquatic))
     }
+}
+
+/// Share of dry land that grazes sheep and goats at `precip_mm` of rain a year (#37,
+/// #44): open land from `pasture_precip_min` to full at `pasture_precip_full`, and its
+/// wadi beds, a share `wadi_share`, the same with their own rain plus `runoff_coefficient`
+/// of the rain on the rest, so a desert too dry to graze still feeds flocks along its
+/// wadis (Bruins et al. 2019).
+pub fn pasture_share(precip_mm: f64, p: &Params) -> f64 {
+    let ramp = |rain: f64| {
+        oikos_math::finite((rain - p.pasture_precip_min) / (p.pasture_precip_full - p.pasture_precip_min))
+            .clamp(0.0, 1.0)
+    };
+    let w = p.wadi_share;
+    if w <= 0.0 {
+        return ramp(precip_mm);
+    }
+    let wadi = precip_mm * (1.0 + p.runoff_coefficient * (1.0 - w) / w);
+    ((1.0 - w) * ramp(precip_mm) + w * ramp(wadi)).clamp(0.0, 1.0)
 }
 
 /// Writes each cell's forager carrying capacity in `calendar_year` into `out` (at least

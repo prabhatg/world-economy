@@ -257,8 +257,15 @@
     BCE), but Sinai's median rain is about 45 mm and only a tenth of its cells reach
     the 150 mm where the model's pasture begins (`pasture_precip_min`, a judgment for
     the Fertile Crescent's margins), so it offers no grazing. Herders there lived on
-    wadis, springs and the coast, at well under 150 mm; a grazing threshold for deserts,
-    or routes along water, would test it.
+    wadis, springs and the coast, at well under 150 mm. Since ADR-0092 wadis graze
+    flocks in deserts, and need can drive herding through domestic stock: herders then
+    cross the north coast (117-162 mm) to the Nile, but only with strong need and wadis
+    at the top of their prior, from about 4,000 BCE, and the sheep-size record prefers
+    need off. Is the crossing a matter of the herding parameters, which a round can vary
+    together, or of something the model lacks (pack animals, water points, the coast's
+    fishing)? And crossing does not move the subregion's dates: the Nile's foragers from
+    12,000 BCE date it millennia early in every setting, so the first question decides
+    whether the subregion can be judged.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

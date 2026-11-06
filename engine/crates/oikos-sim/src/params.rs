@@ -65,6 +65,7 @@ pub struct Params {
     pub humid_period_scale: f64,
     pub floodplain_yield: f64,
     pub herding_weight: f64,
+    pub herd_pressure_weight: f64,
     pub herd_density: f64,
     pub wild_herd_ratio: f64,
     pub herd_selection: f64,
@@ -72,6 +73,8 @@ pub struct Params {
     pub herd_wild_frequency: f64,
     pub pasture_precip_min: f64,
     pub pasture_precip_full: f64,
+    pub wadi_share: f64,
+    pub runoff_coefficient: f64,
     pub humid_period_onset_bp: u64,
     pub humid_period_end_bp: u64,
     pub humid_period_transition_years: u64,
@@ -169,6 +172,7 @@ impl Params {
             humid_period_scale: real("humid_period_scale")?,
             floodplain_yield: real("floodplain_yield")?,
             herding_weight: real("herding_weight")?,
+            herd_pressure_weight: real("herd_pressure_weight")?,
             herd_density: real("herd_density")?,
             wild_herd_ratio: real("wild_herd_ratio")?,
             herd_selection: real("herd_selection")?,
@@ -176,6 +180,8 @@ impl Params {
             herd_wild_frequency: real("herd_wild_frequency")?,
             pasture_precip_min: real("pasture_precip_min")?,
             pasture_precip_full: real("pasture_precip_full")?,
+            wadi_share: real("wadi_share")?,
+            runoff_coefficient: real("runoff_coefficient")?,
             humid_period_onset_bp: int("humid_period_onset_bp")?,
             humid_period_end_bp: int("humid_period_end_bp")?,
             humid_period_transition_years: int("humid_period_transition_years")?,
@@ -392,6 +398,10 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     // #45: herds pass on what foragers' wealth does (after the parameters they follow).
     ("pastoral_wealth_transmission", Restore::SameAs("wealth_transmission")),
     ("pastoral_wealth_shock", Restore::SameAs("wealth_shock")),
+    // #44: herding follows the land alone, and deserts below the pasture threshold graze nothing.
+    ("herd_pressure_weight", Restore::Value(0.0)),
+    ("wadi_share", Restore::Value(0.0)),
+    ("runoff_coefficient", Restore::Inert),
 ];
 
 impl Params {

@@ -1060,7 +1060,14 @@ impl Mechanism for Inundation {
 /// - **Herding** (#37, ADR-0087). A band also moves its share of effort managing sheep and
 ///   goats toward a target: `herding_weight` times the land it can herd on, the wild
 ///   herds' range and, with domestic animals, the pasture beyond it in proportion to their
-///   share. It learns it as it learns cultivation, from the share of herding among the
+///   share; and, wherever it can herd at all, need, as for cultivation: by
+///   `herd_pressure_weight`, the population pressure of people beyond what foraging feeds,
+///   in proportion to the herd's domestic share (#44), as wild animals cannot be worked
+///   harder to feed more people and specialized herding came with docile domestic stock
+///   (Zeder 2008). Where rain grows no crops, crowded people turn to their flocks, which graze
+///   wherever there is grass, along a desert's wadis too
+///   ([`crate::environment::pasture_share`]): so herders, not farmers, cross deserts, as
+///   goat herding reached Egypt through the Negev and Sinai before farming did. It learns it as it learns cultivation, from the share of herding among the
 ///   people around it; both efforts move from one snapshot within one budget
 ///   ([`Cultivation::share_effort`]). Management breeds herds domestic, from wild animals
 ///   only where they range, and gene flow pulls them back only there
@@ -1087,6 +1094,7 @@ pub struct Cultivation {
     pub wild_frequency: f64,
     pub introgression: f64,
     pub herding_weight: f64,
+    pub herd_pressure_weight: f64,
     pub herd_selection: f64,
     pub herd_wild_frequency: f64,
     pub herd_introgression: f64,
@@ -1111,6 +1119,7 @@ impl Cultivation {
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
             herding_weight: p.herding_weight,
+            herd_pressure_weight: p.herd_pressure_weight,
             herd_selection: p.herd_selection,
             herd_wild_frequency: p.herd_wild_frequency,
             herd_introgression: p.herd_introgression,
@@ -1132,13 +1141,19 @@ impl Cultivation {
         if suitability <= 0.0 {
             return 0.0;
         }
-        let crowding = people as f64 / forage.max(1) as f64;
-        let pressure = (crowding - self.crowding).clamp(0.0, 1.0);
+        let pressure = self.pressure(people, forage);
         let drive = self.pressure_weight * pressure
             + self.stress_weight * stress
             + self.abundance_weight * suitability;
         let reliability = (1.0 - self.variability_weight * variability).clamp(0.0, 1.0);
         oikos_math::finite(drive * reliability).clamp(0.0, 1.0)
+    }
+
+    /// Population pressure in a cell, in [0, 1]: its `people` beyond `crowding` times what
+    /// foraging feeds there (`forage`), full at one capacity more.
+    pub fn pressure(&self, people: u64, forage: u64) -> f64 {
+        let crowding = people as f64 / forage.max(1) as f64;
+        oikos_math::finite(crowding - self.crowding).clamp(0.0, 1.0)
     }
 
     /// Effort after one period of moving from `effort` toward `target`, for a band that
@@ -1251,10 +1266,16 @@ impl Cultivation {
 
     /// The share of effort a band with a herd `domestic` aims to spend herding (#37):
     /// `herding_weight` times the land it can herd on, the wild herds' `range` and, with
-    /// domestic animals, the `pasture` beyond it in proportion to their share (at most 1).
-    pub fn herding_target(&self, range: f64, pasture: f64, domestic: f64) -> f64 {
+    /// domestic animals, the `pasture` beyond it in proportion to their share; and, on any
+    /// such land, `herd_pressure_weight` times the cell's population `pressure` times that
+    /// share (#44): wild herds cannot be worked harder to feed more people. At most 1.
+    pub fn herding_target(&self, range: f64, pasture: f64, domestic: f64, pressure: f64) -> f64 {
         let land = (range + (pasture - range).max(0.0) * domestic).min(1.0);
-        oikos_math::finite(self.herding_weight * land).clamp(0.0, 1.0)
+        if land <= 0.0 {
+            return 0.0;
+        }
+        let need = self.herd_pressure_weight * pressure * domestic;
+        oikos_math::finite(self.herding_weight * land + need).clamp(0.0, 1.0)
     }
 
     /// Cultivation and herding effort within one effort budget: proportionally less of
@@ -1343,6 +1364,7 @@ impl Mechanism for Cultivation {
                 sense.range[cell],
                 sense.pasture[cell],
                 Traits::share(traits.herd_domestication),
+                self.pressure(sense.population[cell], sense.forage_capacity[cell]),
             );
             if target == 0.0
                 && herd_target == 0.0
