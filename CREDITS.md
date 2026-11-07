@@ -106,6 +106,13 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
 - **Taphonomic correction:** Surovell, T.A. et al. (2009), Journal of Archaeological
   Science 36: 1715–1724, doi:10.1016/j.jas.2009.03.029; validated by Bluhm, L.E. &
   Surovell, T.A. (2019), Quaternary Research 91: 325–328, doi:10.1017/qua.2018.78.
+- **Dates out of sight (drowned land, buried lowlands):** Stanley, D.J. & Warne, A.G.
+  (1994), Worldwide initiation of Holocene marine deltas by deceleration of sea-level
+  rise, Science 265: 228–231, doi:10.1126/science.265.5169.228; Stanley, D.J. &
+  Toscano, M.A. (2009), Ancient archaeological sites buried and submerged along Egypt's
+  Nile delta coast, Journal of Coastal Research 25: 158–170, doi:10.2112/08-0013.1;
+  Altaweel, M. et al. (2019), New insights on the role of environmental dynamics shaping
+  southern Mesopotamia, Iraq 81: 23–46, doi:10.1017/irq.2019.2.
 - **Site-phase binning and simulation-based SPD comparison:** Shennan, S. et al. (2013),
   Nature Communications 4: 2486, doi:10.1038/ncomms3486; Timpson, A. et al. (2014),
   Journal of Archaeological Science 52: 549–557, doi:10.1016/j.jas.2014.08.011;

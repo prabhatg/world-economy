@@ -28,8 +28,10 @@ exactly.
 **Implemented (radiocarbon density operator, ADR-0050):** `calibration/oikos_cal`
 (`radiocarbon.Operator`) scores a world's recorded activity (`record.activity`:
 people-years per cell and century) against the dates table. It forward-models
-taphonomic loss (Surovell et al. 2009) and measurement plus calibration (a kernel from
-IntCal20 per error class), bins dates by site and 200-year phase, and compares the
+taphonomic loss (Surovell et al. 2009), activity out of sight (on land the sea has since
+drowned, and on river-fed lowland plains before they aggraded, 7,500-5,500 BCE, under
+their silt; ADR-0095),
+and measurement plus calibration (a kernel from IntCal20 per error class), bins dates by site and 200-year phase, and compares the
 distribution of binned calibrated mass over centuries within coarse H3 blocks (a
 multinomial given each block's total), so research intensity per block cancels.
 `synthetic_dates` draws dates from a known history to validate it. At the placeholder
@@ -81,10 +83,11 @@ accrued from 12,000 BCE. Years rather than log shares, because early eras can be
 The bootstrap resamples whole sites within each subregion, so a site's many dates move
 together; research intensity still cancels per block. Judged together, discrepancy 300
 years on each. The region-wide eras cannot see one subregion early and another late;
-these do. Northeast Africa is recorded, not judged (#44): since ADR-0093 the Western
-Desert is settled during the African Humid Period and the subregion's 25% and 50% points
-match the record, but its 10% point is about 1,100 years early, from the foragers the
-model keeps in the Delta from 12,000 BCE, where the record has nothing before 5,500 BCE.
+these do. Northeast Africa is the fifth, judged since ADR-0095 (#44): the Western Desert
+is settled during the African Humid Period (ADR-0093), and the Delta's early foragers,
+whose record begins about 5,500 BCE, are out of sight, on land drowned since or under the
+delta's silt. At the defaults its 10% point is about 700 years early (implausibility
+about 2), its 25% and 50% points near the record.
 
 **Implemented (onset contrasts, ADR-0080, #36):** the onset phases are split by the
 engine's own wild-cereal suitability at them (the same ramps of precipitation and

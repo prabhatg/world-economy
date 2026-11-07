@@ -9,7 +9,7 @@ through the Python bindings (`oikos`) and never change them.
 | Module | What it is |
 |---|---|
 | `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years, domestic-crop people-years, obsidian in use per source group, settlement-years (ADR-0072) and settled people-years times their inequality (ADR-0074), per cell and century while a world runs |
-| `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; each site's date mass for bootstraps that resample sites, and `subregions` (boxes of blocks, ADR-0079); `synthetic_dates` for validation |
+| `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, activity out of sight (`drowned` land and `buried` lowlands, ADR-0095), calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; each site's date mass for bootstraps that resample sites, and `subregions` (boxes of blocks, ADR-0079); `synthetic_dates` for validation |
 | `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
 | `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settlements (ADR-0072; settled people-years before) dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
@@ -151,7 +151,11 @@ so their literature values stay (ADR-0091). `profile-humid-period-scale.json` ta
 African Humid Period's scale over its prior after its anomaly was refitted to the Western
 Desert's estimates (ADR-0093): 4 is the least that settles the desert while the Humid Period lasts;
 `profile-humid-period-scale-wide.json` takes it over the wider prior, 4 to 10, where the
-summaries are flat (ADR-0094). The onset record's tables are downloaded by hand (`data/README.md`); without
+summaries are flat (ADR-0094).
+Round 13 starts after dates out of sight and northeast Africa's judging (ADR-0095) in
+`runs/m1/round13/`: `profile-humid-period-scale.json` takes the scale over 0-10 with the
+subregion judged; 0 and 2 are inconsistent with it, 4 to 10 consistent and nearly flat,
+and the default stays 4, nearest the sites' rain estimates. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

@@ -71,6 +71,7 @@ import io
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
+import h3
 import numpy as np
 import pyarrow.parquet as pq
 
@@ -79,6 +80,7 @@ from oikos_data import inequality as inequality_pipeline
 from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
+from oikos_data.hydrology import FLOWING
 
 from . import domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets, villages
 
@@ -97,14 +99,31 @@ RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE a
 SUBREGIONS = {"southern Levant": (29.0, 34.5, 34.0, 39.0),
               "Anatolia": (36.5, 42.5, 26.0, 36.0),
               "northern Levant, Cyprus and Upper Mesopotamia": (34.5, 39.0, 34.0, 45.0),
-              "Zagros and Iran": (30.0, 38.5, 45.0, 54.0)}
-# Recorded, not judged: the subregion's dates come from the Western Desert while the
-# African Humid Period watered it and from the Nile valley once it was farmed, from about
-# 5,000 BCE, with almost none before 9,000 BCE (Kuper and Kropelin 2006). The forcing now
-# has the Humid Period (ADR-0084) and floodplains can be farmed (ADR-0085), but farming
-# does not reach the Nile and it holds as many foragers from 12,000 BCE as later, so no
-# world can match the dates yet; #44.
-UNJUDGED_SUBREGIONS = {"northeast Africa": (22.0, 32.0, 24.0, 34.0)}
+              "Zagros and Iran": (30.0, 38.5, 45.0, 54.0),
+              # Dated from the Western Desert while the African Humid Period watered it, and
+              # from the Nile valley once it was farmed, from about 5,000 BCE (Kuper and
+              # Kropelin 2006); judged since the Humid Period's rain (ADR-0093) and the dates
+              # out of sight (ADR-0095) let worlds match it (#44).
+              "northeast Africa": (22.0, 32.0, 24.0, 34.0)}
+# Dates come only from sites in sight (ADR-0095): none from land the sea has drowned since
+# (by 3,000 BCE, the coastline pack's last slice, when the sea stood within a few metres of
+# today's level; today's coast, from another elevation model, differs from it along every
+# shore by resolution alone), and few from before the alluvial lowlands aggraded: cells
+# flatter than LOWLAND_SLOPE and lower than LOWLAND_ELEVATION that a river floods (more
+# than FLOODED of the cell) or runs within RIVER_RINGS cells of: the Nile delta, the
+# Mesopotamian alluvium, the Kura lowland. Deltas began to build when the sea's rise slowed,
+# 8,500-6,500 radiocarbon years ago (Stanley and Warne 1994, doi:10.1126/science.265.5169.228),
+# about 7,500-5,500 BCE (BURIED), and the delta's fluvial sediment and shallow water table
+# bury its early sites (Stanley and Toscano 2009, doi:10.2112/08-0013.1); southern
+# Mesopotamia was habitable from the eleventh millennium BCE, yet no site there predates
+# the Ubaid, its older surfaces under metres of alluvium (Altaweel et al. 2019,
+# doi:10.1017/irq.2019.2). Depressions without rivers (Qattara, Siwa) are not buried. A
+# sediment map would replace the terrain and hydrology proxy.
+LOWLAND_SLOPE = 0.2  # degrees, a cell's mean
+LOWLAND_ELEVATION = 100.0  # m above sea level, a cell's mean
+FLOODED = 0.02  # floodplain fraction (GIEMS-D15)
+RIVER_RINGS = 2  # cells from a perennial river
+BURIED = (-7_500, -5_500)  # calendar years: all buried before, all in sight after
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 HERD_EDGES = (-8_500, -7_500, -7_000, -6_500, -6_000)  # sheep size eras: wild, the size falls, domestic
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources
@@ -116,8 +135,7 @@ RICH_STANDS = 0.95  # wild-cereal suitability of a phase's cells and centuries: 
 CONTRAST_MIN_PHASES = 5
 OPTIONAL = ("inequality",)  # records a round may leave out; the diagnostics need the others
 DIAGNOSTICS = ["log-likelihood radiocarbon", "log-likelihood domestication", "log-likelihood obsidian",
-               "people 3000 BCE"] + [f"radiocarbon {n} {q}% by, not judged" for n in UNJUDGED_SUBREGIONS
-                                     for q in (10, 25, 50)]
+               "people 3000 BCE"]
 
 
 def packs():
@@ -150,6 +168,29 @@ def stands(op):
                              climate.header["time"]["calendar_year"], {k: reg[k]["default"] for k in onset.CEREAL})
 
 
+def visibility(cells, window):
+    """The share of activity in each of `cells` and `window`'s centuries that could have
+    left dates (`radiocarbon.drowned` times `radiocarbon.buried`), from the built
+    coastline, terrain and hydrology packs."""
+    read = {k: pack.read((DATA / "build" / f"m1-swasia.{k}.oikospack").read_bytes())
+            for k in ("coastline", "terrain", "hydrology")}
+    want = pack.cells_hash(cells)
+    if any(p.header["region"]["cells_hash"] != want for p in read.values()):
+        raise ValueError("the coastline, terrain and hydrology packs must be built for these cells, in this order")
+    field = lambda k, name, fill: np.nan_to_num(np.asarray(read[k].values(name), dtype=float).ravel(), nan=fill)
+    coast = read["coastline"]
+    seen = radiocarbon.drowned(coast.values("land_fraction"), coast.header["time"]["calendar_year"], window)
+    ids = [h3.int_to_str(int(c)) for c in cells]
+    index = {c: i for i, c in enumerate(ids)}
+    river = np.zeros(len(ids), dtype=bool)
+    for i in np.nonzero(field("hydrology", "river_discharge", 0.0) >= FLOWING)[0]:
+        river[[index[n] for n in h3.grid_disk(ids[i], RIVER_RINGS) if n in index]] = True
+    lowland = ((field("terrain", "slope_mean", np.inf) < LOWLAND_SLOPE)
+               & (field("terrain", "elev_mean", np.inf) < LOWLAND_ELEVATION)
+               & ((field("hydrology", "floodplain_fraction", 0.0) > FLOODED) | river))
+    return seen * radiocarbon.buried(lowland, window, *BURIED)
+
+
 class Problem:
     """Operators, targets and the simulator of M1; build once per process."""
 
@@ -166,7 +207,8 @@ class Problem:
         contexts = pq.read_table(io.BytesIO(obsidian_pipeline.build_obsidian_table(r, offline=True))).to_pydict()
         sources_pack = pack.read(obsidian_pipeline.build_obsidian_pack(r, offline=True))
         reach = {g: self.cells[sources_pack.raw(g) > 0] for g in obsidian.GROUPS}
-        self.radiocarbon = radiocarbon.Operator(dates, sources[2], self.cells)
+        self.radiocarbon = radiocarbon.Operator(dates, sources[2], self.cells,
+                                                visibility=visibility(self.cells, radiocarbon.Settings().true))
         if self.radiocarbon.settings.true.end != END:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
         self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true)
@@ -205,9 +247,6 @@ class Problem:
                                             discrepancy_sd=DISCREPANCY["contrasts"], rng=np.random.default_rng(0),
                                             min_phases=CONTRAST_MIN_PHASES)]
         self.subregions = self.eras[6]
-        self.unjudged = targets.RadiocarbonSubregions(
-            self.radiocarbon, radiocarbon.subregions(self.radiocarbon.obs.blocks, UNJUDGED_SUBREGIONS),
-            discrepancy_sd=DISCREPANCY["subregions"], rng=np.random.default_rng(0))
         self.eras.append(targets.InfectionLesions(self.lesions, discrepancy_sd=DISCREPANCY["lesions"]))
         self.eras.append(targets.SheepSize(self.herds, discrepancy_sd=DISCREPANCY["herds"]))
         if self.inequality is not None:
@@ -225,7 +264,7 @@ class Problem:
         return np.concatenate([summaries, [self.radiocarbon.log_likelihood(activity.visible(0)),
                                            self.domestication.log_likelihood(activity),
                                            self.obsidian.log_likelihood(activity),
-                                           activity.people[:, -1].sum() / 100], self.unjudged.model(activity)])
+                                           activity.people[:, -1].sum() / 100]])
 
     def simulate(self, params, seed):
         """Outputs of the world with parameter overrides `params` (values, not u)."""

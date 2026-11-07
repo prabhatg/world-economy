@@ -218,9 +218,7 @@
     in Anatolia more than Epipalaeolithic camps (intensity that changes with the period
     does not cancel within a block, unlike constant intensity); or core villages that
     grow too slowly (the village sizes of ADR-0078 point the same way, #39). Northeast
-    Africa is recorded, not judged (#44): the forcing has had an African Humid Period
-    since ADR-0084, but its dates also need a Nile that is farmed from about 5,000 BCE
-    and, before 9,000 BCE, almost empty.
+    Africa is judged since ADR-0095 (#44, open question 40).
 38. What made Upper Mesopotamian villages grow from the Halaf to the Late Chalcolithic
     (126 to 179 people at the middle density) while Central Anatolia's stayed level
     (ADR-0078, ADR-0082)? Settlements of several groups can reach the record's level
@@ -268,10 +266,16 @@
     whether the subregion can be judged. Since ADR-0093 most of that came instead from
     the Western Desert, which the model left empty: with the Humid Period's rain over
     Egypt fitted to the desert's own estimates, at four times the fit, it is settled, and
-    the 25% and 50% dates match the record. What remains is the Delta and Cairo block, whose 2,200-3,500
-    foragers from 12,000 BCE keep the 10% point about 1,100 years early: sites under
-    the Delta's silt and below its water table, a coast drowned by the rising sea, or
-    fewer people there than the model's river and coast bonus allows?
+    the 25% and 50% dates match the record. Since ADR-0095 the Delta and Cairo block's
+    2,200-3,500 foragers from 12,000 BCE are out of sight, on land drowned since and
+    under the delta's silt before it aggraded (7,500-5,500 BCE), and the subregion is
+    judged: its 10% point is about 700 years early at the defaults (implausibility about
+    2), less at a stronger Humid Period. Open still: whether the Nile valley held fewer
+    foragers during the Humid Period, when floods were high and the desert drew people
+    away (Kuper and Kropelin 2006), which burial can hide but not tell apart; and lakes
+    the model counts from 12,000 BCE that are young or man-made (the Bitter Lakes,
+    filled by the Suez canal; the Delta's lagoons), whose shores give foragers the
+    aquatic bonus.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

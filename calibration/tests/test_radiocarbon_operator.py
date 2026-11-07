@@ -190,3 +190,62 @@ def test_a_table_without_usable_dates_is_refused():
     a = int(cells_in_two_blocks()[0])
     with pytest.raises(ValueError, match="no usable dates"):
         rc.Operator(table([(a, "Tell Y", 10_000, 30, 1)]), linear_curve(), cells_in_two_blocks(), SETTINGS)
+
+
+def test_land_the_sea_has_since_drowned_keeps_no_dates():
+    # Slices at the first and last centuries: one cell is all land, then half sea; one is
+    # land throughout; one is always sea.
+    t = TRUE.midpoints()
+    land = np.array([[1.0, 1.0, 0.0], [0.5, 1.0, 0.0]])
+    v = rc.drowned(land, [t[0], t[-1]], TRUE)
+    assert v.shape == (3, TRUE.centuries)
+    assert v[0, 0] == pytest.approx(0.5), "half of what was land then is sea now"
+    assert v[0, -1] == pytest.approx(1.0) and (np.diff(v[0]) > 0).all(), "the sea rises between the slices"
+    assert (v[1] == 1).all() and (v[2] == 1).all(), "dry land, and the open sea, hide nothing"
+    with pytest.raises(ValueError, match="ascending"):
+        rc.drowned(land, [t[-1], t[0]], TRUE)
+    with pytest.raises(ValueError, match="land"):
+        rc.drowned(land * np.nan, [t[0], t[-1]], TRUE)
+
+
+def test_old_camps_on_aggrading_lowlands_are_buried():
+    # Before the plain began to aggrade fast nothing is in sight, after it everything, and
+    # in between a growing share, as the depth of burial varies from place to place.
+    v = rc.buried(np.array([True, False]), TRUE, start=-9_000, end=-8_000)
+    t = TRUE.midpoints()
+    assert (v[0, t < -9_000] == 0).all() and (v[0, t > -8_000] == 1).all()
+    mid = (t > -9_000) & (t < -8_000)
+    assert (np.diff(v[0, mid]) > 0).all() and v[0, t == -8_450][0] == pytest.approx(0.55)
+    assert (v[1] == 1).all(), "uplands keep their old surfaces"
+    with pytest.raises(ValueError, match="start"):
+        rc.buried(np.array([True]), TRUE, start=-8_000, end=-9_000)
+
+
+def test_activity_out_of_sight_leaves_no_dates():
+    cells = cells_in_two_blocks()
+    h = np.ones((4, TRUE.centuries))
+    data = rc.synthetic_dates(cells, h, TRUE, linear_curve(), 300, [30.0], rc.SUROVELL_2009, np.random.default_rng(4))
+    seen = np.ones_like(h)
+    seen[0, :20] = 0.0
+    seen[2] = 0.5
+    op = rc.Operator(data, linear_curve(), cells, SETTINGS, visibility=seen)
+    plain = rc.Operator(data, linear_curve(), cells, SETTINGS)
+    assert op.log_likelihood(h) == pytest.approx(plain.log_likelihood(h * seen))
+    np.testing.assert_allclose(op.expected(h), plain.expected(h * seen))
+    for bad in (np.ones((3, TRUE.centuries)), np.full_like(h, np.nan), 2 * h, -h):
+        with pytest.raises(ValueError, match="visibility"):
+            rc.Operator(data, linear_curve(), cells, SETTINGS, visibility=bad)
+
+
+def test_a_world_whose_early_camps_are_buried_fits_once_they_are_out_of_sight():
+    # The Levant block's people were there from the start, but its dates come only from
+    # after -8,000: its older surfaces lie under silt. Seen as it is, the record looks
+    # like a late arrival; scored with the burial, the true history fits.
+    cells = cells_in_two_blocks()
+    h = np.ones((4, TRUE.centuries))
+    seen = rc.buried(np.array([True, True, False, False]), TRUE, start=-8_000, end=-8_000)
+    data = rc.synthetic_dates(cells, h * seen, TRUE, linear_curve(), 600, [30.0], rc.SUROVELL_2009,
+                              np.random.default_rng(8))
+    blind = rc.Operator(data, linear_curve(), cells, SETTINGS)
+    aware = rc.Operator(data, linear_curve(), cells, SETTINGS, visibility=seen)
+    assert aware.log_likelihood(h) > blind.log_likelihood(h) + 20

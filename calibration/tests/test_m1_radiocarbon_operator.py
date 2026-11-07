@@ -3,6 +3,8 @@ cached, and, for scoring a world, the M1 packs and the bindings)."""
 
 import io
 
+import h3
+
 import numpy as np
 import pyarrow.parquet as pq
 import pytest
@@ -62,3 +64,29 @@ def test_an_m1_world_is_scored(m1):
     e = op.expected(a.visible(0)).sum(axis=(0, 1))
     assert e[-10:].sum() > e[:10].sum(), "foragers and farmers grow over the Holocene"
     print(f"M1 default world: {score:.1f}; flat history: {op.log_likelihood(np.ones_like(a.people)):.1f}")
+
+
+def test_m1_dates_leave_out_drowned_land_and_buried_lowlands(m1):
+    from oikos_cal import m1 as problem
+
+    cells, _, op = m1
+    if not all((DATA / "build" / f"m1-swasia.{k}.oikospack").exists() for k in ("coastline", "terrain", "hydrology")):
+        pytest.skip("M1 packs not built; run python -m oikos_data build <pack> m1-swasia")
+    v = problem.visibility(cells, op.settings.true)
+    t = op.settings.true.midpoints()
+    at = lambda lat, lng: int(np.searchsorted(cells, h3.str_to_int(h3.latlng_to_cell(lat, lng, cells_resolution(cells)))))
+    start, end = problem.BURIED
+    for name, (lat, lng) in {"the Nile delta": (30.96, 30.22), "the Mesopotamian alluvium at Ur": (30.96, 46.1)}.items():
+        i = at(lat, lng)
+        assert (v[i, t < start] == 0).all() and (v[i, t > end] > 0.99).all(), name
+    for name, (lat, lng) in {"the Zagros": (34.3, 47.1), "the Qattara depression, flat and low but no river's":
+                             (30.0, 27.5)}.items():
+        assert (v[at(lat, lng), t < -6_000] > 0.99).all(), name
+    assert (v[:, 0] < 0.5).sum() > 100, "the late-glacial Gulf and shelves are under the sea now"
+    assert (v[:, -1] < 0.95).sum() < 100, "by 3,000 BCE the sea stood near its level now, but at the Gulf's head"
+    with pytest.raises(ValueError, match="cells"):
+        problem.visibility(cells[::-1], op.settings.true)
+
+
+def cells_resolution(cells):
+    return h3.get_resolution(h3.int_to_str(int(cells[0])))

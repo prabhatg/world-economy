@@ -54,9 +54,10 @@ def test_the_record_summaries(problem):
     up = [t.observed for t in vs if "upper_mesopotamia" in t.name]
     assert up[-1] > up[0] + 0.2, "Upper Mesopotamian sites grow into the Late Chalcolithic"
     sr = [t for t in problem.targets if t.name.endswith("% by")]
-    assert len(sr) == 12 and sr[0].name == "radiocarbon southern Levant 10% by"
-    assert problem.groups[6].indices == list(range(54, 66)) and problem.groups[6].dof == 12
-    by = {t.name: t.observed for t in sr + problem.unjudged.targets}
+    assert len(sr) == 15 and sr[0].name == "radiocarbon southern Levant 10% by"
+    assert sr[-1].name == "radiocarbon northeast Africa 50% by", "judged since the dates out of sight are (#44)"
+    assert problem.groups[6].indices == list(range(54, 69)) and problem.groups[6].dof == 15
+    by = {t.name: t.observed for t in sr}
     for late in ("Anatolia", "northeast Africa"):
         for q in (10, 25, 50):
             assert by[f"radiocarbon {late} {q}% by"] > by[f"radiocarbon southern Levant {q}% by"] + 300, \
@@ -66,16 +67,15 @@ def test_the_record_summaries(problem):
     oc = [t for t in problem.targets if "rich minus poor" in t.name]
     assert [t.name for t in oc] == ["cultivation effort rich minus poor stands before 7600 BCE",
                                     "cultivation effort rich minus poor stands after 7600 BCE"]
-    assert problem.groups[7].indices == [66, 67] and problem.groups[7].dof == 2
+    assert problem.groups[7].indices == [69, 70] and problem.groups[7].dof == 2
     assert oc[1].observed > 0.3, "by the late PPNB the richest stands were farmed far more"
     ss = [t for t in problem.targets if t.name.startswith("sheep size")]
     assert [t.name for t in ss][0] == "sheep size (LSI) 12000-8500 BCE" and len(ss) == 6
     assert ss[0].observed > 0.04 and all(t.observed < -0.03 for t in ss[3:]), "wild, then domestic sizes"
     first = problem.names.index(ss[0].name)
     assert problem.groups[-1].indices == list(range(first, first + 6)) and problem.groups[-1].dof == 6
-    assert problem.names[-7:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
-                                  "log-likelihood obsidian", "people 3000 BCE",
-                                  *(f"radiocarbon northeast Africa {q}% by, not judged" for q in (10, 25, 50))]
+    assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
+                                  "log-likelihood obsidian", "people 3000 BCE"]
 
 
 def test_worlds_are_run_in_parallel_and_reproducibly(problem):

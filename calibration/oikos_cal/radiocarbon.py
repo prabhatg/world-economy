@@ -8,7 +8,9 @@ forward-models that chain and compares in the space of calibrated dates:
    cultivators optionally more visible (sedentary sites leave more datable material);
 2. taphonomic loss: older deposits survive less, by the global rate of Surovell et al.
    (2009, doi:10.1016/j.jas.2009.03.029), validated by Bluhm & Surovell (2019,
-   doi:10.1017/qua.2018.78);
+   doi:10.1017/qua.2018.78); and some are out of sight (`visibility`, ADR-0095): on land
+   the sea has since drowned (`drowned`), or under the silt of aggrading lowlands
+   (`buried`), where no survey or excavation reaches them;
 3. measurement and calibration: the kernel K[k, t, s] is the calibrated probability that
    falls in century s for a sample whose true date is uniform in century t, measured
    with the typical error of class k and calibrated exactly as the dates pipeline does
@@ -44,8 +46,8 @@ import numpy as np
 
 from oikos_data.radiocarbon import Curve, calibrate
 
-__all__ = ["Window", "Taphonomy", "SUROVELL_2009", "NO_TAPHONOMY", "Settings", "Observations", "kernel",
-           "observe", "subregions", "Operator", "synthetic_dates"]
+__all__ = ["Window", "Taphonomy", "SUROVELL_2009", "NO_TAPHONOMY", "drowned", "buried", "Settings", "Observations",
+           "kernel", "observe", "subregions", "Operator", "synthetic_dates"]
 
 
 @dataclass(frozen=True)
@@ -82,6 +84,33 @@ class Taphonomy:
 
 SUROVELL_2009 = Taphonomy(offset=2176.4, exponent=1.3925309)
 NO_TAPHONOMY = Taphonomy(offset=2176.4, exponent=0.0)
+
+
+def drowned(land, years, window: Window):
+    """Visibility [cell, century] of activity on land the rising sea has since drowned:
+    the share of each cell's land in a century that is still land at the last slice.
+    `land` [slice, cell] is the land fraction at calendar `years` (ascending),
+    linear in between, as the engine reads the coastline pack. Submerged sites are missing
+    from terrestrial date compilations, so their share of activity leaves no dates."""
+    land, years = np.asarray(land, dtype=float), np.asarray(years, dtype=float)
+    if len(years) != len(land) or np.any(np.diff(years) <= 0):
+        raise ValueError("the coastline's years must be ascending, one per slice of land")
+    if not np.isfinite(land).all() or land.min() < 0 or land.max() > 1:
+        raise ValueError("land fractions must be finite and in [0, 1]")
+    then = np.stack([np.interp(window.midpoints(), years, col) for col in land.T])
+    return np.divide(np.minimum(then, land[-1][:, None]), then, out=np.ones_like(then), where=then > 0)
+
+
+def buried(lowland, window: Window, start, end):
+    """Visibility [cell, century] on the cells marked `lowland`, whose older surfaces lie
+    under the silt of an aggrading plain: nothing before calendar year `start`, all after
+    `end`, and a share rising linearly in between, as the depth of burial varies from
+    place to place (a step if they are equal)."""
+    if end < start:
+        raise ValueError(f"burial must end after its start, not {end} before {start}")
+    t = window.midpoints()
+    seen = (t >= start).astype(float) if end == start else np.clip((t - start) / (end - start), 0.0, 1.0)
+    return np.where(np.asarray(lowland, dtype=bool)[:, None], seen[None, :], 1.0)
 
 
 @dataclass(frozen=True)
@@ -206,8 +235,18 @@ def subregions(blocks, boxes):
 class Operator:
     """Scores activity histories against one observation table; build once, score many."""
 
-    def __init__(self, dates, curve: Curve, cells, settings: Settings = Settings()):
-        """`cells`: H3 ids of the world's cells, in the order activity arrays use."""
+    def __init__(self, dates, curve: Curve, cells, settings: Settings = Settings(), visibility=None):
+        """`cells`: H3 ids of the world's cells, in the order activity arrays use;
+        `visibility` [cell, century]: the share of activity that could leave dates
+        (`drowned`, `buried`), all of it by default."""
+        shape = (len(cells), settings.true.centuries)
+        if visibility is not None:
+            visibility = np.asarray(visibility, dtype=float)
+            if visibility.shape != shape:
+                raise ValueError(f"visibility must be [cells, centuries] = {shape}, not {visibility.shape}")
+            if not np.isfinite(visibility).all() or visibility.min() < 0 or visibility.max() > 1:
+                raise ValueError("visibility must be finite shares in [0, 1]")
+        self.visibility = visibility
         self.settings = settings
         self.obs = observe(dates, curve, settings)
         self.kernel = kernel(curve, settings.true, settings.observed, self.obs.errors, settings.step, settings.pad)
@@ -221,6 +260,8 @@ class Operator:
         if activity.shape != (len(self.cell_block), self.settings.true.centuries):
             raise ValueError(f"activity must be [cells, centuries] = "
                              f"{(len(self.cell_block), self.settings.true.centuries)}, not {activity.shape}")
+        if self.visibility is not None:
+            activity = activity * self.visibility
         used = self.cell_block >= 0
         a = np.zeros((len(self.obs.blocks), activity.shape[1]))
         np.add.at(a, self.cell_block[used], activity[used])
