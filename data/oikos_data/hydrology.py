@@ -8,7 +8,9 @@ largest reach's natural long-term discharge and Strahler order, and a floodplain
 fraction (each reach's catchment area times its maximum inundation extent, GIEMS-D15,
 spread along the reach by length, over the cell area, less the lake surface, which
 GIEMS also counts). Lakes come from LakeATLAS (HydroLAKES polygons),
-rasterized at 1/120 degree; reservoirs are left out because they are modern.
+rasterized at 1/120 degree; reservoirs are left out because they are modern, and so are
+lakes a modern work filled that HydroLAKES counts as natural (`MODERN_LAKES`), whose
+surface is not floodplain either: before the work it was dry.
 """
 
 import h3
@@ -22,8 +24,19 @@ FLOWING = 1.0  # m3/s: least mean natural discharge counted in river_length
 LAKE_RES = 120  # lake raster samples per degree
 KM_PER_DEG = 6371.0088 * np.pi / 180  # mean Earth radius
 RIVER_COLUMNS = ["DIS_AV_CMS", "ORD_STRA", "CATCH_SKM", "inu_pc_cmx"]
-LAKE_COLUMNS = ["Lake_type"]
+LAKE_COLUMNS = ["Lake_type", "Pour_lat", "Pour_long"]
 RESERVOIR = 2
+# Lakes HydroLAKES counts as natural that a modern work filled, by where they pour
+# (south, north, west, east): the land was dry or salt flat before.
+MODERN_LAKES = {
+    # The Bitter Lakes and Timsah: a dry salt basin and a marsh until the Suez Canal
+    # filled them in 1869 (Por 1978), and the ponds the canal and its freshwater
+    # canal feed. Not the Delta's lagoons, which are natural, if Holocene.
+    "Isthmus of Suez": (30.1, 30.8, 32.1, 32.7),
+    # The Toshka lakes: Lake Nasser's overflow into the desert from 1998 (Chipman and
+    # Lillesand 2007). South of the M1 region, listed for any region reaching it.
+    "Toshka depression": (22.3, 24.0, 29.5, 31.8),
+}
 
 
 def river_fields(region, geoms, attrs):
@@ -53,16 +66,29 @@ def river_fields(region, geoms, attrs):
     return length, discharge, order, flood
 
 
+def modern(lat, lng):
+    """Whether a lake pouring at (lat, lng) was filled by a modern work."""
+    return any(s <= lat <= n and w <= lng <= e for s, n, w, e in MODERN_LAKES.values())
+
+
 def lake_fraction(region, geoms, attrs):
+    """Per cell, the share covered by natural lakes and the share by lakes a modern
+    work filled (reservoirs excluded from both)."""
+    kinds = [None if int(t) == RESERVOIR else modern(la, lo) for t, la, lo in
+             zip(attrs["Lake_type"], attrs["Pour_lat"], attrs["Pour_long"])]
+    return (_water(region, [g for g, k in zip(geoms, kinds) if k is False]),
+            _water(region, [g for g, k in zip(geoms, kinds) if k is True]))
+
+
+def _water(region, geoms):
     from rasterio import features
     from rasterio.transform import from_origin
 
     s, n, w, e = climate.bounds(region)
     rows, cols = int(np.ceil((n - s) * LAKE_RES)), int(np.ceil((e - w) * LAKE_RES))
-    natural = [g for g, t in zip(geoms, attrs["Lake_type"]) if int(t) != RESERVOIR]
     water = np.zeros((rows, cols), dtype=np.uint8)
-    if natural:
-        water = features.rasterize(((g, 1) for g in natural), out_shape=(rows, cols),
+    if geoms:
+        water = features.rasterize(((g, 1) for g in geoms), out_shape=(rows, cols),
                                    transform=from_origin(w, n, 1 / LAKE_RES, 1 / LAKE_RES), fill=0, dtype="uint8")
     # Two by two blocks: fractions at 1/60 degree, assigned to cells like the climate samples.
     blocks = water[: rows // 2 * 2, : cols // 2 * 2].reshape(rows // 2, 2, cols // 2, 2).mean(axis=(1, 3))
@@ -78,7 +104,7 @@ def build(region, rivers, lakes):
     (rm, rsha, (rg, ra)), (lm, lsha, (lg, la)) = rivers, lakes
     length, discharge, order, flood = river_fields(region, rg, ra)
     area = np.array([h3.cell_area(h3.int_to_str(int(c)), "km^2") for c in cells])
-    lake = lake_fraction(region, lg, la)
+    lake, filled = lake_fraction(region, lg, la)
 
     b = pack.Builder("hydrology", pack.region(region.name, region.resolution, cells))
     for m, sha in ((rm, rsha), (lm, lsha)):
@@ -91,8 +117,9 @@ def build(region, rivers, lakes):
             np.round(discharge * 1000).astype(np.uint32), scale=0.001)
     b.field("river_order", "1", "Strahler order of the largest reach in the cell (0: none)" + src, order.astype(np.uint8))
     b.field("floodplain_fraction", "1", "Share of the cell inundated at maximum extent along its reaches (GIEMS-D15)" + src,
-            np.round(np.clip(flood / area - lake, 0, 1) * 10000).astype(np.uint16), scale=1e-4)
-    b.field("lake_fraction", "1", f"Share of the cell covered by natural lakes ({lm['dataset']}, modern; reservoirs excluded)",
+            np.round(np.clip(flood / area - lake - filled, 0, 1) * 10000).astype(np.uint16), scale=1e-4)
+    b.field("lake_fraction", "1", f"Share of the cell covered by natural lakes ({lm['dataset']}, modern; reservoirs "
+            "and lakes a modern work filled excluded)",
             np.round(np.clip(lake, 0, 1) * 10000).astype(np.uint16), scale=1e-4)
     return b.build()
 

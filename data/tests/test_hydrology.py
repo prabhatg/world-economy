@@ -21,8 +21,10 @@ def rivers(*reaches):
 
 
 def lakes(*polys):
-    """(Polygon, Lake_type) per lake; type 2 is a reservoir."""
-    return [p[0] for p in polys], {"Lake_type": np.array([p[1] for p in polys])}
+    """(Polygon, Lake_type) per lake; type 2 is a reservoir. Each pours at its centroid."""
+    pour = [p[0].centroid for p in polys]
+    return [p[0] for p in polys], {"Lake_type": np.array([p[1] for p in polys]),
+                                   "Pour_lat": np.array([c.y for c in pour]), "Pour_long": np.array([c.x for c in pour])}
 
 
 def build(r=None, l=None):
@@ -91,3 +93,22 @@ def test_floodplain_excludes_lake_surface():
     p = build(rivers((line, 100.0, 4, 200.0, 100.0)), lakes((lake, 1)))
     c = np.searchsorted(BOX.cells(), h3.str_to_int(h3.latlng_to_cell(35.5, 40.5, 5)))
     assert p.values("lake_fraction")[c] > 0.9 and p.values("floodplain_fraction")[c] < 0.1
+
+
+def test_lakes_a_modern_work_filled_count_neither_as_lake_nor_as_floodplain(monkeypatch):
+    monkeypatch.setattr(hydrology, "MODERN_LAKES", {"a canal's basin": (35.4, 35.6, 40.4, 40.6)})
+    filled = shapely.box(40.3, 35.3, 40.7, 35.7)  # pours at its centroid, inside the box
+    line = shapely.LineString([(40.4, 35.5), (40.6, 35.5)])
+    p = build(rivers((line, 100.0, 4, 200.0, 100.0)), lakes((filled, 1)))
+    c = np.searchsorted(BOX.cells(), h3.str_to_int(h3.latlng_to_cell(35.5, 40.5, 5)))
+    assert p.values("lake_fraction")[c] == 0, "dry before the work"
+    assert p.values("floodplain_fraction")[c] < 0.1, "nor is its water a river's flood"
+
+
+def test_the_modern_lakes_are_the_suez_canal_s_and_lake_nasser_s_overflow():
+    s, n, w, e = hydrology.MODERN_LAKES["Isthmus of Suez"]
+    assert s <= 30.41 <= n and w <= 32.36 <= e, "the Great Bitter Lake's pour point"
+    assert not (s <= 31.0 <= n), "not the Delta's lagoons"
+    s, n, w, e = hydrology.MODERN_LAKES["Toshka depression"]
+    assert s <= 23.06 <= n and w <= 31.07 <= e, "Toshka 1"
+    assert not (w <= 32.89 <= e), "not Lake Nasser itself, a reservoir anyway"
