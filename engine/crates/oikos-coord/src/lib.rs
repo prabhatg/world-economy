@@ -24,6 +24,25 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::{Component, Path};
 
+/// The content-addressed files `unit` names, each `{id, path}`: its forcing packs and
+/// its zone file (`activity.zones`, #47). Hosts fetch them by id and rewrite their paths,
+/// so a reference in any other form, which the engine would read where it points, is
+/// refused.
+pub fn files_mut(unit: &mut Value) -> Result<Vec<&mut Value>, String> {
+    let mut out = Vec::new();
+    for (key, v) in unit.as_object_mut().into_iter().flatten() {
+        match key.as_str() {
+            "inputs" => out.extend(v.as_array_mut().into_iter().flatten()),
+            "activity" => out.extend(v.get_mut("zones").filter(|z| !z.is_null())),
+            _ => {}
+        }
+    }
+    if out.iter().any(|r| !r.is_object()) {
+        return Err("file references (inputs, activity.zones) must be {id, path} objects".into());
+    }
+    Ok(out)
+}
+
 /// Checks that a host can run `unit` inside its run directory: an initial start (v0
 /// ships no checkpoints), and every output path relative, without `..`.
 pub fn confined(unit: &Value) -> Result<(), String> {

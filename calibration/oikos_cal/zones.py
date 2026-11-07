@@ -25,8 +25,16 @@ from .radiocarbon import Window
 FORMAT = "oikos-zones/1"
 
 
-def _key(cells):
-    return np.sort(np.asarray(cells, dtype=np.int64)).tobytes()
+def _key(cells, n):
+    """A cell selector as its zone's key: integer indices, or a mask over all `n` cells."""
+    cells = np.asarray(cells)
+    if cells.dtype == bool:
+        if cells.shape != (n,):
+            raise KeyError(f"a mask of {cells.shape} cells, not the world's {n}")
+        cells = np.flatnonzero(cells)
+    elif cells.size and not np.issubdtype(cells.dtype, np.integer):
+        raise KeyError(f"cells by {cells.dtype}, not by integer index")
+    return np.sort(cells.astype(np.int64).ravel()).tobytes()
 
 
 class Zones:
@@ -52,6 +60,11 @@ class Zones:
                     self.zones.append((flag, s))
 
     def encode(self):
+        if getattr(self, "_encoded", None) is None:
+            self._encoded = self._encode()
+        return self._encoded
+
+    def _encode(self):
         weighted = [z for z, (flag, _) in enumerate(self.zones) if flag]
         w = {"cells": [], "row": [], "rows": []}
         if self.weights is not None:
@@ -82,10 +95,18 @@ class Zones:
         cells = np.asarray(cells, dtype=np.uint64)
         if doc.get("format") != FORMAT:
             raise ValueError(f"not a zone file ({FORMAT})")
-        if doc["cells_hash"] != pack.cells_hash(cells):
+        if doc["cells"] != len(cells) or doc["cells_hash"] != pack.cells_hash(cells):
             raise ValueError("the zones are for other cells than these")
         window = Window(doc["first_year"], doc["first_year"] + 100 * doc["centuries"])
-        w = doc["weights"]
+        w, n = doc["weights"], len(doc["zones"])
+        if doc["weighted"] != list(range(n - len(doc["weighted"]), n)):
+            raise ValueError("the weighted zones are the last ones, in order")
+        if len(w["cells"]) != len(w["row"]) or any(not 0 <= r < len(w["rows"]) for r in w["row"]):
+            raise ValueError("each weighted cell needs a row that exists")
+        if any(len(r) != window.centuries for r in w["rows"]):
+            raise ValueError(f"each weight row has the record's {window.centuries} centuries")
+        if w["cells"] != sorted(set(w["cells"])) or any(not 0 <= c < len(cells) for c in w["cells"]):
+            raise ValueError("weighted cells ascending, each once, in the world")
         weights = None
         if w["rows"]:
             rows = np.array(w["rows"], dtype=np.uint64).view(float)
@@ -97,6 +118,7 @@ class Zones:
         out = cls(cells, window, sets, weighted, weights)
         if [s.tolist() for _, s in out.zones] != doc["zones"]:
             raise ValueError("a zone file lists unweighted zones first, each once, cells ascending")
+        out._encoded = bytes(data)  # its id is the hash of the file as given
         return out
 
     def sums(self, field):
@@ -129,7 +151,7 @@ class Zoned:
         self.zones, self.data = zones, data
 
     def _zone(self, cells, weighted=False):
-        z = self.zones.index.get((weighted, _key(cells)))
+        z = self.zones.index.get((weighted, _key(cells, len(self.zones.cells))))
         if z is None:
             raise KeyError(f"cells {np.sort(np.asarray(cells)).tolist()[:8]}... are not a zone"
                            f"{' weighted' if weighted else ''}: add them to their operator's zones")
@@ -142,31 +164,34 @@ class Zoned:
         if isinstance(cells, slice):
             if cells != slice(None):
                 raise KeyError("only every cell (:) or a zone's cells")
-            return self.data[[self._zone(np.arange(len(self.zones.cells)))], when][0]
+            return self.data[self._zone(np.arange(len(self.zones.cells)))][when]
         cells = np.asarray(cells)
         if cells.ndim == 2:  # np.ix_(cells, centuries)
+            if cells.shape[1] != 1 or np.ndim(when) != 2 or np.shape(when)[0] != 1:
+                raise KeyError("only np.ix_(cells, centuries) of two index arrays")
             return self.data[[self._zone(cells.ravel())]][:, np.asarray(when).ravel()]
+        if not isinstance(when, (slice, int, np.integer)):
+            raise KeyError("a zone's cells with a slice or one century; paired index arrays pick one value per cell")
         return self.data[[self._zone(cells)], when]
 
     def weighted(self, sets):
         """[set, century] weighted sums over `sets`, each a weighted zone."""
         return self.data[[self._zone(s, weighted=True) for s in sets]]
 
-    def _with(self, other, op):
-        if isinstance(other, Zoned):
-            if other.zones is not self.zones:
-                raise ValueError("fields of different zones")
-            other = other.data
-        elif not np.isscalar(other):
-            raise TypeError("a zoned field combines with a scalar or a field of the same zones")
-        return Zoned(self.zones, op(self.data, other))
-
     def __add__(self, other):
-        return self._with(other, np.add)
+        """Fields add per cell, so their zone sums add; a constant per cell does not."""
+        if not isinstance(other, Zoned):
+            raise TypeError("a zoned field adds only to a field of the same zones")
+        if other.zones is not self.zones:
+            raise ValueError("fields of different zones")
+        return Zoned(self.zones, self.data + other.data)
 
     __radd__ = __add__
 
     def __mul__(self, other):
-        return self._with(other, np.multiply)
+        """Scaling by a constant scales the zone sums; a product of fields is not a sum's."""
+        if isinstance(other, Zoned) or not np.isscalar(other):
+            raise TypeError("a zoned field multiplies only by a scalar")
+        return Zoned(self.zones, self.data * other)
 
     __rmul__ = __mul__

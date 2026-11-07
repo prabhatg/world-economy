@@ -50,7 +50,8 @@ def test_archives_unpack_inside_their_directory_only(tmp_path):
 
 def test_a_world_computed_through_the_coordinator_records_what_the_bindings_do(tmp_path):
     oikos = pytest.importorskip("oikos", reason="build the bindings: maturin develop -m engine/crates/oikos-py/Cargo.toml")
-    from oikos_cal import m1, record
+    from oikos_cal import m1, record, zones
+    from oikos_data import region
 
     try:
         packs = m1.packs()
@@ -65,16 +66,29 @@ def test_a_world_computed_through_the_coordinator_records_what_the_bindings_do(t
         url = re.search(r" on (http://\S+)", serve.stderr.readline()).group(1)
         params, end = {"humid_period_scale": 6.0}, -11_000
         ids = coord.submit(url, "t", [(params, 3)], end=end)
-        for host in ("a", "b"):  # two hosts agree: the quorum of new hosts
+        def work(host):
             subprocess.run([str(ENGINE / "oikos-coord"), "work", "--coordinator", url, "--host", host,
                             "--oikos", str(ENGINE / "oikos"), "--cache", str(tmp_path / host / "packs"),
                             "--scratch", str(tmp_path / host / "runs"), "--until-idle"], check=True)
+
+        for host in ("a", "b"):  # two hosts agree: the quorum of new hosts
+            work(host)
         assert coord.wait(url, "t", poll=0) == {"open": 0, "done": 1, "failed": 0, "leased": 0}
         got = coord.collect(url, ids[0], tmp_path / "got", lambda a: a)
+        # The same world, its record summed over zones (#47).
+        want = record.activity(oikos.World.from_packs(packs, seed=3, params=params), end=end)
+        cells = region.load("m1-swasia").cells()
+        z = zones.Zones(cells, want.window, [np.arange(len(cells)), np.arange(0, len(cells), 5)])
+        (tmp_path / "zones.json").write_bytes(z.encode())
+        ids = coord.submit(url, "r", [(params, 3)], end=end, zones={"id": z.id, "path": str(tmp_path / "zones.json")})
+        for host in ("a", "b"):
+            work(host)
+        assert coord.wait(url, "r", poll=0)["done"] == 1
+        reduced = coord.collect(url, ids[0], tmp_path / "got", lambda a: a, zones=z)
     finally:
         serve.kill()
-    want = record.activity(oikos.World.from_packs(packs, seed=3, params=params), end=end)
     assert got.window == want.window
     for name in record.FIELDS:
         np.testing.assert_array_equal(getattr(got, name), getattr(want, name), err_msg=name)
+        np.testing.assert_array_equal(getattr(reduced, name).data, getattr(z.reduce(want), name).data, err_msg=name)
     assert not (tmp_path / "got").exists(), "the archive is removed once scored"

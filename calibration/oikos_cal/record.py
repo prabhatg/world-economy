@@ -88,13 +88,26 @@ FIELDS = ("people", "cultivators", "domestic", "settlements", "inequality", "vil
           "herd_domestic", "hunters")
 
 
-def read(store) -> Activity:
+def read(store, zones=None) -> Activity:
     """The `activity.zarr` record a work unit wrote (#46): arrays [century, cell] on disk,
-    [cell, century] here, as `activity` gives them."""
+    [cell, century] here, as `activity` gives them. A reduced record (#47), summed over
+    the zones of a zone file, needs those `zones.Zones` and comes back `zones.Zoned`."""
     import zarr
 
     g = zarr.open_group(str(Path(store)), mode="r")
     a = g.attrs
-    arrays = {name: np.ascontiguousarray(g[name][:].T) for name in FIELDS}
-    obsidian = {s: np.ascontiguousarray(g[f"obsidian/{s}"][:].T) for s in a["obsidian_sources"]}
-    return Activity(Window(int(a["first_year"]), int(a["end_year"])), obsidian=obsidian, **arrays)
+    window = Window(int(a["first_year"]), int(a["end_year"]))
+    wrap = lambda x: np.ascontiguousarray(x.T)
+    if "zones" in a:
+        from .zones import Zoned
+
+        if zones is None or zones.id != a["zones"]:
+            raise ValueError(f"{store} is summed over zones {a['zones']}: read it with those zones")
+        if zones.window != window:
+            raise ValueError(f"{store} covers {window}, its zones {zones.window}")
+        wrap = lambda x: Zoned(zones, np.ascontiguousarray(x.T))
+    elif zones is not None:
+        raise ValueError(f"{store} is a full record, not summed over zones")
+    arrays = {name: wrap(g[name][:]) for name in FIELDS}
+    obsidian = {s: wrap(g[f"obsidian/{s}"][:]) for s in a["obsidian_sources"]}
+    return Activity(window, obsidian=obsidian, **arrays)

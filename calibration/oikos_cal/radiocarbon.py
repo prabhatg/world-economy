@@ -262,6 +262,9 @@ class Operator:
     def _blocks(self, activity):
         """[block, century] activity, seen through `visibility`."""
         if hasattr(activity, "weighted"):  # a reduced record (`zones.Zoned`)
+            if activity.zones.window != self.settings.true:
+                raise ValueError(f"the record's zones cover {activity.zones.window}, the operator {self.settings.true}")
+            check_weights(activity, self.visibility)
             sets = self.cells()
             return activity.weighted(sets) if self.visibility is not None else np.concatenate(
                 [activity[s] for s in sets])
@@ -292,6 +295,14 @@ class Operator:
 
     def log_likelihood(self, activity, taphonomy: Taphonomy = SUROVELL_2009):
         return float((self.obs.mass * np.log(self._shares(activity, taphonomy))).sum())
+
+
+def check_weights(zoned, visibility):
+    """Raises unless a reduced record's weighted zones were weighted by `visibility`."""
+    w = zoned.zones.weights
+    same = visibility is None if w is None else visibility is not None and np.array_equal(w, visibility)
+    if not same and not (w is None and visibility is not None and (np.asarray(visibility) == 1).all()):
+        raise ValueError("the record's zones were weighted by another visibility than the operator's")
 
 
 def synthetic_dates(cells, activity, true: Window, curve: Curve, n, errors, taphonomy: Taphonomy, rng):

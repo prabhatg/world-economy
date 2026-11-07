@@ -79,3 +79,53 @@ def test_zones_refuse_cells_outside_the_world():
         zones.Zones(CELLS, WINDOW, [np.array([0, 8])])
     with pytest.raises(ValueError, match="weights"):
         zones.Zones(CELLS, WINDOW, [], weighted=[np.array([0])], weights=np.ones((len(CELLS), 4)))
+
+
+def test_reads_zone_sums_cannot_answer_raise_instead_of_answering_wrongly():
+    full = _activity(np.random.default_rng(4))
+    z = _zones().reduce(full).people
+    with pytest.raises(KeyError):
+        z[np.array([0, 1, 2]), np.array([0, 1, 2])]  # paired indexing: one value per cell
+    with pytest.raises(KeyError, match="mask"):
+        z[np.array([True, True, False])]  # a mask the size of no world
+    mask = np.zeros(len(CELLS), dtype=bool)
+    mask[[0, 1, 2]] = True
+    np.testing.assert_allclose(z[mask].sum(axis=0), full.people[mask].sum(axis=0), rtol=1e-14)
+    with pytest.raises(KeyError):
+        z[np.array([0.0, 1.0, 2.0])]
+    np.testing.assert_allclose(z[:, [0, 2]].sum(), full.people[:, [0, 2]].sum(), rtol=1e-14)
+    with pytest.raises(TypeError):
+        z + 1.0  # a constant per cell, not per zone
+    with pytest.raises(TypeError):
+        z * z
+
+
+def test_radiocarbon_refuses_zones_weighted_by_another_visibility():
+    from oikos_cal import radiocarbon
+
+    weights = np.ones((len(CELLS), WINDOW.centuries))
+    weights[0] = 0.5
+    reduced = _zones(weights).reduce(_activity(np.random.default_rng(5)))
+    with pytest.raises(ValueError, match="visibility"):
+        radiocarbon.check_weights(reduced.people, np.ones_like(weights))
+    radiocarbon.check_weights(reduced.people, weights)
+
+
+def test_a_decoded_zone_file_keeps_its_bytes_and_refuses_malformed_ones():
+    weights = np.ones((len(CELLS), WINDOW.centuries))
+    weights[3] = 0.25
+    z = _zones(weights)
+    pretty = json.dumps(json.loads(z.encode()), indent=1).encode()
+    assert zones.Zones.decode(pretty, CELLS).encode() == pretty, "the id is the hash of the file as given"
+
+    def bad(change, match):
+        doc = json.loads(z.encode())
+        change(doc)
+        with pytest.raises(ValueError, match=match):
+            zones.Zones.decode(json.dumps(doc).encode(), CELLS)
+
+    bad(lambda d: d["weights"]["rows"][0].pop(), "centuries")
+    bad(lambda d: d.update(cells=7), "cells")
+    bad(lambda d: d.update(weighted=d["weighted"] + [99]), "weighted")
+    bad(lambda d: d["weights"].update(row=[5]), "row")
+    bad(lambda d: d["zones"][0].reverse(), "ascending")

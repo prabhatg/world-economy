@@ -676,6 +676,7 @@ name = "oikos-coord"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "oikos-io",
  "oikos-sim",
  "serde",
  "serde_json",

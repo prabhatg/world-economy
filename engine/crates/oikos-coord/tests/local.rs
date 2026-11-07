@@ -145,6 +145,54 @@ fn workers_fetch_packs_by_id_and_the_coordinator_keeps_its_own_copy() {
 }
 
 #[test]
+fn workers_fetch_a_units_zone_file_like_its_packs() {
+    let dir = scratch("zones");
+    let base = start(&dir.join("coord"));
+    let config = serde_json::from_value(json!({ "base_cell": 22, "resolution": 3 })).unwrap();
+    let world = oikos_sim::World::new(config, 1, Default::default()).unwrap();
+    let h3: Vec<u64> = (0..world.grid.len() as u32).map(|c| world.grid.h3(c)).collect();
+    let zones = serde_json::to_vec(&json!({
+        "format": "oikos-zones/1", "cells_hash": oikos_io::pack::cells_hash(&h3), "cells": h3.len(),
+        "first_year": world.tick.calendar_year(), "centuries": 1, "zones": [[0, 1]], "weighted": [],
+        "weights": { "cells": [], "row": [], "rows": [] } }))
+    .unwrap();
+    let path = dir.join("zones.json");
+    std::fs::write(&path, &zones).unwrap();
+    let id = blake3::hash(&zones).to_hex().to_string();
+    let activity =
+        json!({ "dir": "rec", "every_years": 10, "zones": { "id": id, "path": path.to_string_lossy() } });
+    post(
+        &format!("{base}/experiments/zones"),
+        json!([{ "id": "z0", "unit": toy(json!({ "activity": activity })) }]),
+    );
+    std::fs::remove_file(&path).unwrap();
+    let w = Worker { base: base.clone(), host: "a".into(), cache: dir.join("cache"), runner: &InProcess };
+    assert_eq!(w.round(1, &dir.join("runs")).unwrap(), 1);
+    let unit: Value = serde_json::from_slice(&get(&format!("{base}/units/z0"))).unwrap();
+    assert_eq!(unit["failures"], json!([]), "{unit}");
+    let tar = get(&format!("{base}/archives/z0/a.tar"));
+    let mut group = String::new();
+    for e in tar::Archive::new(&tar[..]).entries().unwrap() {
+        let mut e = e.unwrap();
+        if e.path().unwrap().ends_with("rec/activity.zarr/zarr.json") {
+            e.read_to_string(&mut group).unwrap();
+        }
+    }
+    assert!(group.contains(&id), "the record is summed over the zones: {group}");
+}
+
+#[test]
+fn file_references_must_be_objects_so_hosts_can_rewrite_their_paths() {
+    let dir = scratch("refs");
+    let base = start(&dir.join("coord"));
+    let id = "a".repeat(64);
+    let zones = json!({ "activity": { "dir": "rec", "every_years": 10, "zones": [id, "/etc/hosts"] } });
+    assert!(refused(&base, "z", json!([{ "id": "z0", "unit": toy(zones) }])).contains("{id, path}"));
+    let inputs = json!({ "inputs": [[id, "/etc/hosts"]] });
+    assert!(refused(&base, "i", json!([{ "id": "i0", "unit": toy(inputs) }])).contains("{id, path}"));
+}
+
+#[test]
 fn units_that_are_not_work_units_or_write_outside_their_run_are_refused() {
     let dir = scratch("refused");
     let base = start(&dir.join("coord"));

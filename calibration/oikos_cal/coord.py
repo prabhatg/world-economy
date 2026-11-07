@@ -6,7 +6,8 @@ and the coordinator accepts each result when hosts agree on its state hash. The
 calibration host then fetches each accepted run's archive, reads its record and scores
 it with the same operators as an in-process run, so `evaluate(..., coordinator=url)`
 gives what `m1.evaluate` gives, bit for bit. A full M1 record is about 94 MB, so each
-archive is unpacked, scored and removed in turn.
+archive is unpacked, scored and removed in turn. With a zone file (`zones`, #47) the
+hosts record only their zones' sums, 1.7 MB, and the outputs agree to rounding.
 """
 
 import io
@@ -29,23 +30,24 @@ def _call(url, data=None, method=None):
         return r.read()
 
 
-def units(experiment, jobs, refs=None, end=m1.END):
-    """[{id, unit}] for `jobs` (params, seed): ids `<experiment>-<index>`."""
+def units(experiment, jobs, refs=None, end=m1.END, zones=None):
+    """[{id, unit}] for `jobs` (params, seed): ids `<experiment>-<index>`. `zones`: {id,
+    path} of a zone file, to record its zones' sums."""
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", experiment):
         raise ValueError(f"experiment {experiment!r}: letters, digits, '-', '_' and '.' only")
     refs = m1.pack_refs() if refs is None else refs
     out = []
     for i, (params, seed) in enumerate(jobs):
         uid = f"{experiment}-{i:05d}"
-        wu = m1.work_unit(params, seed, out=RECORD, end=end, refs=refs)
+        wu = m1.work_unit(params, seed, out=RECORD, end=end, refs=refs, zones=zones)
         wu["id"] = uid
         out.append({"id": uid, "unit": wu})
     return out
 
 
-def submit(url, experiment, jobs, refs=None, end=m1.END):
+def submit(url, experiment, jobs, refs=None, end=m1.END, zones=None):
     """Submits `jobs` as `experiment`; returns their unit ids, in order."""
-    us = units(experiment, jobs, refs, end)
+    us = units(experiment, jobs, refs, end, zones)
     _call(f"{url}/experiments/{experiment}", json.dumps(us).encode(), "POST")
     return [u["id"] for u in us]
 
@@ -68,9 +70,9 @@ def unpack(tar_bytes, dest):
         t.extractall(dest, filter="data")
 
 
-def collect(url, unit_id, scratch, score):
+def collect(url, unit_id, scratch, score, zones=None):
     """`score(activity)` of a done unit's accepted record, fetched into `scratch` and
-    removed afterwards."""
+    removed afterwards; a reduced record is read with its `zones.Zones`."""
     doc = json.loads(_call(f"{url}/units/{unit_id}"))
     if doc["status"] != "done":
         raise RuntimeError(f"unit {unit_id} is {doc['status']}, not done")
@@ -78,6 +80,6 @@ def collect(url, unit_id, scratch, score):
     scratch = Path(scratch)
     try:
         unpack(_call(f"{url}/archives/{unit_id}/{host}.tar"), scratch)
-        return score(record.read(scratch / RECORD / "activity.zarr"))
+        return score(record.read(scratch / RECORD / "activity.zarr", zones))
     finally:
         shutil.rmtree(scratch, ignore_errors=True)

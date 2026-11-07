@@ -181,8 +181,11 @@ people-years; herders, domestic herds and hunters where wild sheep and goats ran
 obsidian in use per source group), sampled every `every_years`, with each cell's H3 index.
 It is `oikos_cal.record.activity` computed in the engine, operation by operation, so
 the two are bit-identical; a calibration world then runs wherever the CLI runs
-(`oikos_cal.m1.work_unit`, `record.read`). An M1 world's record is about 94 MB in
-3,258 files; volunteers will need it reduced to what the operators read.
+(`oikos_cal.m1.work_unit`, `record.read`). An M1 world's record is about 91 MB in
+3,258 files. **Reduced (ADR-0099, #47):** with `activity.zones`, a zone file by id,
+the arrays are [century, zone] instead, each zone's sum of its cells (a weighted zone's
+cells each times its weight in that century), added in ascending cell order exactly as
+`oikos_cal.zones.Zones.sums` adds them: 1.7 MB for an M1 world.
 
 ## 3.8a Inputs: forcing packs
 

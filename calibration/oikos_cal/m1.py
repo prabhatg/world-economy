@@ -161,17 +161,19 @@ def pack_refs():
     return out
 
 
-def work_unit(params, seed, out, end=END, every=10, partitions=4, refs=None):
+def work_unit(params, seed, out, end=END, every=10, partitions=4, refs=None, zones=None):
     """A work unit running the M1 world with `params` overrides and `seed` from 12,000
     BCE to `end`, writing its calibration record (`record.read`) into `out` (#46):
-    what `simulate` scores, on any host with the `oikos` CLI. `refs`: `pack_refs()`."""
+    what `simulate` scores, on any host with the `oikos` CLI. `refs`: `pack_refs()`;
+    `zones`: {id, path} of a zone file, to record its zones' sums instead (#47)."""
     refs = pack_refs() if refs is None else refs
     geometry = [r["id"] for r in refs if r["kind"] == "geometry"]
     if len(geometry) != 1:
         raise ValueError(f"a world needs exactly one geometry pack, got {len(geometry)}")
     return {"format": 1, "id": Path(out).name, "world": {"geometry": geometry[0]}, "seed": seed, "params": params,
             "start": {"kind": "initial"}, "years": end + 12_000, "partitions": partitions,
-            "summary_every_years": 1000, "activity": {"dir": str(out), "every_years": every},
+            "summary_every_years": 1000,
+            "activity": {"dir": str(out), "every_years": every, **({"zones": dict(zones)} if zones else {})},
             "inputs": [{"id": r["id"], "path": r["path"]} for r in refs]}
 
 
@@ -290,12 +292,15 @@ class Problem:
     def zones(self):
         """The reduced record's zones (#47): every cell set the operators read, the radiocarbon
         blocks weighted by visibility, and every cell (the population diagnostic)."""
+        if getattr(self, "_zones", None) is not None:
+            return self._zones
         ops = [self.domestication, self.sites, self.villages, self.obsidian, self.onset, self.lesions, self.herds]
         if self.inequality is not None:
             ops.append(self.inequality)
         sets = [np.arange(len(self.cells))] + [s for op in ops for s in op.cells()]
         rc = self.radiocarbon
-        return zones.Zones(self.cells, rc.settings.true, sets, rc.cells(), rc.visibility)
+        self._zones = zones.Zones(self.cells, rc.settings.true, sets, rc.cells(), rc.visibility)
+        return self._zones
 
     def outputs(self, activity):
         """Summaries then diagnostics of a recorded world, in `names` order."""
@@ -329,15 +334,24 @@ def _run(job):
 def _score(job):
     from . import coord
 
-    url, unit_id, scratch = job
-    return coord.collect(url, unit_id, scratch, _problem.outputs)
+    url, unit_id, scratch, reduced = job
+    return coord.collect(url, unit_id, scratch, _problem.outputs, _problem.zones() if reduced else None)
 
 
-def evaluate(jobs, workers, leave_out=(), coordinator=None, poll=30):
+def _zone_file(directory):
+    z = _problem.zones()
+    path = Path(directory) / f"{z.id}.zones.json"
+    path.write_bytes(z.encode())
+    return {"id": z.id, "path": str(path)}
+
+
+def evaluate(jobs, workers, leave_out=(), coordinator=None, poll=30, reduced=False):
     """Outputs [job, name] of (params, seed) jobs, run in `workers` processes, judged
     without the records `leave_out`. With `coordinator` (an `oikos-coord serve` URL),
     the worlds run on the hosts working for it and are scored here in `workers`
-    processes (ADR-0097): the same outputs, bit for bit."""
+    processes (ADR-0097): the same outputs, bit for bit. `reduced`: hosts record only
+    the sums over `Problem.zones` (#47), 1.7 MB to upload instead of 91 MB, and the
+    outputs agree to rounding."""
     ctx = multiprocessing.get_context("spawn")  # never fork a process whose rayon pool is running
     with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_start, initargs=(tuple(leave_out),)) as ex:
         if coordinator is None:
@@ -345,13 +359,14 @@ def evaluate(jobs, workers, leave_out=(), coordinator=None, poll=30):
         from . import coord
 
         experiment = time.strftime("cal-%Y%m%d-%H%M%S") + f"-{os.getpid()}"
-        ids = coord.submit(coordinator, experiment, jobs)
-        counts = coord.wait(coordinator, experiment, poll)
-        if counts["failed"]:
-            raise RuntimeError(f"{experiment}: {counts['failed']} units failed validation; "
-                               f"see {coordinator}/experiments/{experiment}")
         scratch = Path(tempfile.mkdtemp(prefix=f"{experiment}-"))
         try:
-            return np.array(list(ex.map(_score, [(coordinator, i, scratch / i) for i in ids])))
+            zone_file = ex.submit(_zone_file, scratch).result() if reduced else None
+            ids = coord.submit(coordinator, experiment, jobs, zones=zone_file)
+            counts = coord.wait(coordinator, experiment, poll)
+            if counts["failed"]:
+                raise RuntimeError(f"{experiment}: {counts['failed']} units failed validation; "
+                                   f"see {coordinator}/experiments/{experiment}")
+            return np.array(list(ex.map(_score, [(coordinator, i, scratch / i, reduced) for i in ids])))
         finally:
             shutil.rmtree(scratch, ignore_errors=True)

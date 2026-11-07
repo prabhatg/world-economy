@@ -90,11 +90,9 @@ impl Worker<'_> {
     /// The unit ready to run in `dir`: confined, with its packs fetched.
     fn prepare(&self, mut unit: Value) -> Result<Value, String> {
         crate::confined(&unit)?;
-        if let Some(inputs) = unit.get_mut("inputs").and_then(Value::as_array_mut) {
-            for input in inputs {
-                let id = input["id"].as_str().ok_or("input id")?.to_string();
-                input["path"] = json!(self.pack(&id)?.to_string_lossy());
-            }
+        for input in crate::files_mut(&mut unit)? {
+            let id = input["id"].as_str().ok_or("input id")?.to_string();
+            input["path"] = json!(self.pack(&id)?.to_string_lossy());
         }
         Ok(unit)
     }

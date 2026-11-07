@@ -2,21 +2,23 @@
 //!
 //! v0 has no accounts or authentication: run it where only your own workers reach it.
 //! The state is snapshot to `state.json` after every change (written to a temporary file
-//! and renamed, so a crash leaves the last whole snapshot). Forcing packs an experiment
-//! names are checked against their content hash and copied into `packs/`, then served
-//! by id; workers' run directories come back as tar archives, kept per unit and host.
+//! and renamed, so a crash leaves the last whole snapshot). Forcing packs and zone files
+//! (#47) an experiment names are checked against their content hash and copied into
+//! `packs/`, then served by id; workers' run directories come back as tar archives,
+//! kept per unit and host.
 //!
 //! Routes (bodies are JSON unless said):
 //! - `POST /experiments/<name>` `[{"id", "unit"}]`: submit work units; their `inputs`
-//!   paths must be readable here (or the pack already copied), and workers receive them
-//!   by id only. Each unit must parse as a work unit and run inside its run directory.
+//!   and `activity.zones` paths must be readable here (or the file already copied), and
+//!   workers receive them by id only. Each unit must parse as a work unit and run inside
+//!   its run directory.
 //! - `GET /experiments/<name>`: counts and each unit's status.
 //! - `POST /lease` `{"host", "n"}`: up to `n` leases, each `{"lease", "unit_id", "deadline", "unit"}`.
 //! - `PUT /archives/<lease>?host=<host>` (tar bytes), then `POST /report/<lease>`
 //!   `{"host", "result"}` with the engine's `WorkResult`; or `POST /fail/<lease>`
 //!   `{"host", "error"}` when the run failed.
 //! - `GET /units/<id>`: status and the accepted report; `GET /archives/<unit>/<host>.tar`.
-//! - `GET /packs/<id>`: a pack's bytes. `GET /status`: counts.
+//! - `GET /packs/<id>`: a pack's or zone file's bytes. `GET /status`: counts.
 
 use crate::{Coordinator, Policy, Status};
 use serde_json::{Value, json};
@@ -185,25 +187,22 @@ impl Server {
             serde_json::from_value::<oikos_sim::WorkUnit>(unit.clone())
                 .map_err(|e| format!("unit {id}: {e}"))?;
             crate::confined(&unit).map_err(|e| format!("unit {id}: {e}"))?;
-            if let Some(inputs) = unit.get_mut("inputs").and_then(Value::as_array_mut) {
-                for input in inputs {
-                    let pid = pack_id(input["id"].as_str().ok_or("submit: input id")?)?.to_string();
-                    let kept = self.pack_path(&pid)?;
-                    if !kept.exists() {
-                        let path = input["path"].as_str().filter(|p| !p.is_empty());
-                        let path =
-                            path.ok_or_else(|| format!("pack {pid} is unknown here; give its path"))?;
-                        let bytes = std::fs::read(path).map_err(|e| format!("pack {path}: {e}"))?;
-                        let actual = blake3::hash(&bytes).to_hex().to_string();
-                        if actual != pid {
-                            return Err(format!("pack {path} has id {actual}, not {pid}"));
-                        }
-                        let tmp = kept.with_extension("tmp");
-                        std::fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
-                        std::fs::rename(&tmp, &kept).map_err(|e| e.to_string())?;
+            for input in crate::files_mut(&mut unit).map_err(|e| format!("unit {id}: {e}"))? {
+                let pid = pack_id(input["id"].as_str().ok_or("submit: input id")?)?.to_string();
+                let kept = self.pack_path(&pid)?;
+                if !kept.exists() {
+                    let path = input["path"].as_str().filter(|p| !p.is_empty());
+                    let path = path.ok_or_else(|| format!("pack {pid} is unknown here; give its path"))?;
+                    let bytes = std::fs::read(path).map_err(|e| format!("pack {path}: {e}"))?;
+                    let actual = blake3::hash(&bytes).to_hex().to_string();
+                    if actual != pid {
+                        return Err(format!("pack {path} has id {actual}, not {pid}"));
                     }
-                    input["path"] = json!("");
+                    let tmp = kept.with_extension("tmp");
+                    std::fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
+                    std::fs::rename(&tmp, &kept).map_err(|e| e.to_string())?;
                 }
+                input["path"] = json!("");
             }
             units.push((id, unit));
         }

@@ -21,7 +21,8 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
 | `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
 | `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones, onset eras, village sizes, radiocarbon subregions (ADR-0079), onset contrasts by wild-cereal stands (ADR-0080), house Ginis |
-| `oikos_cal/coord.py` | Calibration worlds through Coordinator v0 (ADR-0097): jobs submitted to `oikos-coord serve` as M1 work units, each accepted run's archive fetched, its record read and scored here, then removed |
+| `oikos_cal/coord.py` | Calibration worlds through Coordinator v0 (ADR-0097): jobs submitted to `oikos-coord serve` as M1 work units, each accepted run's archive fetched, its record read and scored here, then removed; with `--reduced`, records summed over the operators' zones |
+| `oikos_cal/zones.py` | The reduced calibration record (ADR-0099, #47): the cell sets every operator reads (`cells()` on each, gathered by `m1.Problem.zones`), radiocarbon's blocks weighted by visibility; the zone file the engine sums a record over, and `Zoned`, which answers the operators' reads from those sums |
 | `oikos_cal/ensemble.py` | Ensembles for the viewer (ADR-0063): the calibrated defaults and the best consistent worlds of a `best` record, run as work units by the `oikos` CLI with outputs, and a `catalog.json` |
 | `oikos_cal/m1.py` | The M1 problem: operators, targets, worlds run in worker processes |
 | `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / best / profile / ensemble / report` |
@@ -92,6 +93,10 @@ hosts working for an `oikos-coord serve` (ADR-0097; `engine/README.md`) instead 
 local processes: the jobs become one experiment of M1 work units, a host's result
 stands when hosts agree on its state hash, and each accepted record is fetched and
 scored here in `--workers` processes. The outputs are the same, bit for bit.
+`--reduced` makes the hosts record only the sums over the operators' zones
+(ADR-0099): a record to upload of 1.7 MB instead of 91 MB, for volunteers; the outputs
+then agree with the full record's to rounding (5e-16 relative on an M1 world), not bit
+for bit.
 `profile` varies one parameter with every other at its default and chooses the
 consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
 log-likelihoods): for a parameter a new record

@@ -14,7 +14,14 @@
 //! The record is a Zarr group `activity.zarr` of float64 arrays [century, cell], with
 //! each cell's H3 index. Recording only reads the world, so it never changes a run's
 //! state hash, and its bytes are identical for any partition count.
+//!
+//! A full M1 record is about 94 MB, too much for a volunteer to upload. Every operator
+//! reads it as per-century sums over cell sets, so a work unit may name a zone file
+//! (`oikos_cal.zones`, #47): the arrays are then [century, zone], each zone's sum of its
+//! cells in ascending order, a weighted zone's cells each times its weight in that
+//! century, exactly as `oikos_cal.zones.Zones.sums` adds them.
 
+use crate::inputs::PackRef;
 use crate::world::World;
 use oikos_core::time::TICKS_PER_YEAR;
 use oikos_io::{Sink, zarr};
@@ -29,7 +36,124 @@ pub struct ActivitySpec {
     /// Years between samples; must divide a century.
     #[serde(default = "default_every_years")]
     pub every_years: u64,
+    /// A zone file, by id: record sums over its zones instead of every cell (#47).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zones: Option<PackRef>,
 }
+
+/// The zone file's format, as `oikos_cal.zones` writes it.
+pub const ZONES_FORMAT: &str = "oikos-zones/1";
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ZoneFile {
+    format: String,
+    cells_hash: String,
+    cells: usize,
+    first_year: i64,
+    centuries: usize,
+    zones: Vec<Vec<usize>>,
+    weighted: Vec<usize>,
+    weights: WeightFile,
+}
+
+/// Weights of the cells listed (the others weigh 1), as rows of IEEE 754 bits per century.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WeightFile {
+    cells: Vec<usize>,
+    row: Vec<usize>,
+    rows: Vec<Vec<u64>>,
+}
+
+/// Cell sets to sum the record over, some weighted per cell and century.
+struct Zones {
+    id: String,
+    cells: Vec<Vec<usize>>,
+    weighted: Vec<bool>,
+    /// Per cell, its row of `rows`, if it has one.
+    row: Vec<Option<usize>>,
+    rows: Vec<Vec<f64>>,
+}
+
+impl Zones {
+    fn load(
+        r: &PackRef,
+        world: &World,
+        first_year: i64,
+        centuries: usize,
+        read: &Read,
+    ) -> Result<Zones, String> {
+        let bytes = read(&r.path)?;
+        let id = blake3::hash(&bytes).to_hex().to_string();
+        if id != r.id {
+            return Err(format!("zones {}: the file's hash is {id}", r.id));
+        }
+        let f: ZoneFile = serde_json::from_slice(&bytes).map_err(|e| format!("zones {}: {e}", r.id))?;
+        let n = world.grid.len();
+        let h3: Vec<u64> = (0..n as u32).map(|c| world.grid.h3(c)).collect();
+        let err = |m: String| Err(format!("zones {}: {m}", r.id));
+        if f.format != ZONES_FORMAT {
+            return err(format!("format {}, not {ZONES_FORMAT}", f.format));
+        }
+        if f.cells != n || f.cells_hash != oikos_io::pack::cells_hash(&h3) {
+            return err("made for other cells than the world's".into());
+        }
+        if f.first_year != first_year || f.centuries != centuries {
+            return err(format!(
+                "{} centuries from {}, the record {centuries} from {first_year}",
+                f.centuries, f.first_year
+            ));
+        }
+        let w = &f.weights;
+        if f.zones.iter().flatten().chain(&w.cells).any(|&c| c >= n) {
+            return err(format!("cells outside the world's {n}"));
+        }
+        if f.weighted.iter().any(|&z| z >= f.zones.len()) || w.row.iter().any(|&i| i >= w.rows.len()) {
+            return err("a weighted zone or weight row that does not exist".into());
+        }
+        if w.cells.len() != w.row.len() || w.rows.iter().any(|r| r.len() != centuries) {
+            return err(format!("each weighted cell needs a row of {centuries} centuries"));
+        }
+        if f.zones.iter().any(|z| z.windows(2).any(|p| p[0] > p[1])) {
+            return err("each zone's cells ascending".into());
+        }
+        if w.cells.windows(2).any(|p| p[0] >= p[1]) {
+            return err("weighted cells ascending, each once".into());
+        }
+        let first_weighted = f.zones.len().saturating_sub(f.weighted.len());
+        if f.weighted.iter().enumerate().any(|(i, &z)| z != first_weighted + i) {
+            return err("the weighted zones are the last ones, in order".into());
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        if !f.zones.iter().enumerate().all(|(z, cells)| seen.insert((z >= first_weighted, cells))) {
+            return err("each zone once".into());
+        }
+        let mut row = vec![None; n];
+        for (&c, &i) in w.cells.iter().zip(&w.row) {
+            row[c] = Some(i);
+        }
+        let mut weighted = vec![false; f.zones.len()];
+        f.weighted.iter().for_each(|&z| weighted[z] = true);
+        let rows = w.rows.iter().map(|r| r.iter().map(|&b| f64::from_bits(b)).collect()).collect();
+        Ok(Zones { id, cells: f.zones, weighted, row, rows })
+    }
+
+    /// Each zone's sum of `values` (one per cell) in century `t`.
+    fn sums(&self, t: usize, values: &[f64]) -> Vec<f64> {
+        let weight = |c: usize| self.row[c].map(|i| self.rows[i][t]);
+        (self.cells.iter().zip(&self.weighted))
+            .map(|(cells, &weighted)| {
+                cells.iter().fold(0.0, |acc, &c| match (weighted, weight(c)) {
+                    (true, Some(w)) => acc + values[c] * w,
+                    _ => acc + values[c],
+                })
+            })
+            .collect()
+    }
+}
+
+type Read<'a> = dyn Fn(&str) -> Result<Vec<u8>, String> + 'a;
 
 fn default_every_years() -> u64 {
     10
@@ -60,11 +184,14 @@ pub struct ActivityRecorder {
     rows: Vec<Vec<f64>>,
     series: Vec<zarr::TimeSeries<f64>>,
     files: Vec<String>,
+    zones: Option<Zones>,
+    /// Centuries written so far.
+    century: usize,
 }
 
 impl ActivityRecorder {
     /// Starts recording `years` from the world's current year, taking the first sample.
-    pub fn start(world: &World, spec: ActivitySpec, years: u64) -> Result<Self, String> {
+    pub fn start(world: &World, spec: ActivitySpec, years: u64, read: &Read) -> Result<Self, String> {
         let first_year = world.tick.calendar_year();
         if world.tick.0 % TICKS_PER_YEAR != 0 || first_year % 100 != 0 || years % 100 != 0 || years == 0 {
             return Err(format!(
@@ -77,7 +204,14 @@ impl ActivityRecorder {
         if (spec.every_years * TICKS_PER_YEAR) % world.base_period_ticks() != 0 {
             return Err(format!("activity: every_years {} is not a whole number of steps", spec.every_years));
         }
+        let zones = (spec.zones.as_ref())
+            .map(|r| Zones::load(r, world, first_year, (years / 100) as usize, read))
+            .transpose()?;
         let cells = world.grid.len() as u64;
+        let (width, dim) = match &zones {
+            Some(z) => (z.cells.len() as u64, "zone"),
+            None => (cells, "cell"),
+        };
         let sources = world.obsidian_sources();
         let names =
             FIELDS.iter().map(|(n, _)| n.to_string()).chain(sources.iter().map(|s| format!("obsidian/{s}")));
@@ -88,10 +222,10 @@ impl ActivityRecorder {
             .map(|(name, description)| {
                 zarr::TimeSeries::new(
                     &format!("{}/activity.zarr/{name}", spec.dir),
-                    cells,
+                    width,
                     1,
                     CELL_CHUNK,
-                    &["century", "cell"],
+                    &["century", dim],
                     json!({ "description": description }),
                 )
             })
@@ -103,6 +237,8 @@ impl ActivityRecorder {
             end_year: first_year + years as i64,
             series,
             files: Vec::new(),
+            zones,
+            century: 0,
         };
         r.sample(world);
         Ok(r)
@@ -130,9 +266,13 @@ impl ActivityRecorder {
             out(p, b)
         };
         for (s, row) in self.series.iter_mut().zip(self.rows.iter_mut()) {
-            s.push(row, &mut sink)?;
+            match &self.zones {
+                Some(z) => s.push(&z.sums(self.century, row), &mut sink)?,
+                None => s.push(row, &mut sink)?,
+            }
             row.iter_mut().for_each(|v| *v = 0.0);
         }
+        self.century += 1;
         Ok(())
     }
 
@@ -197,13 +337,15 @@ impl ActivityRecorder {
             s.finish(&mut sink)?;
         }
         let root = format!("{}/activity.zarr", self.spec.dir);
-        let h3: Vec<u64> = (0..world.grid.len() as u32).map(|c| world.grid.h3(c)).collect();
-        let attrs = json!({ "description": "H3 index of each cell" });
-        zarr::write_1d(&format!("{root}/cell_h3"), &h3, CELL_CHUNK, "cell", attrs, &mut sink)?;
+        if self.zones.is_none() {
+            let h3: Vec<u64> = (0..world.grid.len() as u32).map(|c| world.grid.h3(c)).collect();
+            let attrs = json!({ "description": "H3 index of each cell" });
+            zarr::write_1d(&format!("{root}/cell_h3"), &h3, CELL_CHUNK, "cell", attrs, &mut sink)?;
+        }
         if !world.obsidian_sources().is_empty() {
             zarr::write_group(&format!("{root}/obsidian"), json!({}), &mut sink)?;
         }
-        let attrs = json!({
+        let mut attrs = json!({
             "engine": crate::ENGINE,
             "first_year": self.first_year,
             "end_year": self.end_year,
@@ -211,6 +353,11 @@ impl ActivityRecorder {
             "obsidian_sources": world.obsidian_sources(),
             "description": "Activity per century and cell, sampled every every_years years (#46)",
         });
+        if let Some(z) = &self.zones {
+            attrs["zones"] = json!(z.id);
+            attrs["description"] =
+                json!("Activity per century, summed over each zone of the zone file (#47)");
+        }
         zarr::write_group(&root, attrs, &mut sink)?;
         Ok(self.files)
     }

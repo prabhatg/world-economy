@@ -116,8 +116,11 @@ pub fn run_work_unit(
     } else {
         let mut rec =
             wu.outputs.as_ref().map(|s| Recorder::start(&world, s.clone(), &mut sink)).transpose()?;
-        let mut act =
-            wu.activity.as_ref().map(|s| ActivityRecorder::start(&world, s.clone(), wu.years)).transpose()?;
+        let mut act = wu
+            .activity
+            .as_ref()
+            .map(|s| ActivityRecorder::start(&world, s.clone(), wu.years, &read))
+            .transpose()?;
         let summaries = world.run_years_observed(wu.years, parts, every, &mut |w, stats| {
             if let Some(r) = rec.as_mut() {
                 r.observe(w, stats, &mut sink)?;

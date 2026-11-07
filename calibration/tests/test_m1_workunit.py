@@ -38,3 +38,27 @@ def test_an_m1_work_unit_records_what_the_bindings_do(tmp_path):
     for k in want.obsidian:
         np.testing.assert_array_equal(got.obsidian[k], want.obsidian[k], err_msg=k)
     assert got.people.sum() > 0
+
+    # The same world summed over zones (#47): what `zones.Zones.reduce` gives, bit for bit.
+    from oikos_cal import zones
+    from oikos_data import region
+
+    rng = np.random.default_rng(0)
+    cells = region.load("m1-swasia").cells()
+    n = len(cells)
+    weights = np.ones((n, want.window.centuries))
+    weights[100:200] = rng.uniform(0, 1, (100, want.window.centuries))
+    z = zones.Zones(cells, want.window, [np.arange(n), np.arange(0, n, 7)], weighted=[np.arange(50, 400)],
+                    weights=weights)
+    (tmp_path / "zones.json").write_bytes(z.encode())
+    wu = m1.work_unit(params, seed=3, out="zoned", end=end, zones={"id": z.id, "path": "zones.json"})
+    (tmp_path / "zoned.json").write_text(json.dumps(wu))
+    subprocess.run([str(CLI), "run", "zoned.json", "-o", "zoned.result.json"], cwd=tmp_path, check=True)
+    reduced = record.read(tmp_path / "zoned" / "activity.zarr", zones=z)
+    expect = z.reduce(want)
+    for name in record.FIELDS:
+        np.testing.assert_array_equal(getattr(reduced, name).data, getattr(expect, name).data, err_msg=name)
+    for k in want.obsidian:
+        np.testing.assert_array_equal(reduced.obsidian[k].data, expect.obsidian[k].data, err_msg=k)
+    with pytest.raises(ValueError, match="zones"):
+        record.read(tmp_path / "zoned" / "activity.zarr")

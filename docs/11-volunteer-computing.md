@@ -91,7 +91,10 @@ headless client: it leases units, fetches their forcing packs by id into a cache
 checks each against its BLAKE3 id, checks that the unit writes only inside its run
 directory, runs the `oikos` CLI in a child process in a fresh
 directory, uploads that directory as a tar archive and reports the result. The gate
-runs two workers on the golden unit through it and requires the golden hash. Postgres,
+runs two workers on the golden unit through it and requires the golden hash. A
+calibration world's record is 91 MB in full; with a zone file (ADR-0099, #47), fetched
+by id like a pack, the engine writes only the sums over the cell sets the operators
+read, 1.7 MB, near the ~1 MB output target. Postgres,
 signed URLs and object storage replace the JSON snapshot and local archives when one
 machine is no longer enough.
 

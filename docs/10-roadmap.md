@@ -162,8 +162,9 @@ Work items are GitHub issues under the M1 milestone.
   their results by quorum on the state hash with adaptive replication, keeps each
   run's outputs as an archive and serves forcing packs by content hash; `oikos-coord
   work` is the headless host; `oikos_cal` submits waves through it (`--coordinator`).
-  Next: spot VMs as hosts, and a record reduced to the zones the operators read, small
-  enough for volunteers to upload ([#47](https://github.com/prabhatg/world-economy/issues/47)).
+  Third step done (ADR-0099, #47): hosts can record only the sums over the zones the
+  operators read, 1.7 MB instead of 91 MB, small enough for volunteers to upload
+  (`--reduced`). Next: spot VMs as hosts.
 - **Browser client v0**: closed alpha, runs M1 work units and shows "your world".
 - **Exit:** plausible emergence of farming and villages in the right windows across
   ensembles, with quantified fit; competing domestication hypotheses compared;
