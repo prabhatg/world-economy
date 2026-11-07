@@ -171,12 +171,26 @@ fn sample_rejects_what_it_cannot_map() {
         let e = r.sample(&u(&[("growth_rate", bad)])).unwrap_err();
         assert!(e.contains("growth_rate") && e.contains("[0, 1]"), "{e}");
     }
+}
+
+#[test]
+fn sample_maps_normal_priors_truncated_to_the_range() {
     let src = with(
         "prior = { dist = \"uniform\", lo = 0.002, hi = 0.03 }",
         "prior = { dist = \"normal\", mean = 0.01, sd = 0.005 }",
     );
-    let e = Registry::from_toml(&src).unwrap().sample(&u(&[("growth_rate", 0.5)])).unwrap_err();
-    assert!(e.contains("growth_rate") && e.contains("normal"), "{e}");
+    let r = Registry::from_toml(&src).unwrap();
+    let real = |x: f64| match r.sample(&u(&[("growth_rate", x)])).unwrap()["growth_rate"] {
+        Value::Real(v) => v,
+        other => panic!("expected a real, got {other:?}"),
+    };
+    assert_eq!(real(0.0), 0.0, "the kind's range, [0, 0.1], exactly at its ends");
+    assert_eq!(real(1.0), 0.1);
+    // Python's statistics.NormalDist, truncated to the range.
+    for (x, want) in [(0.25, 0.006891393915398877), (0.5, 0.010142584632954588), (0.9, 0.01647311993322567)] {
+        let got = real(x);
+        assert!((got - want).abs() < 1e-15, "u {x}: {got} vs {want}");
+    }
 }
 
 #[test]

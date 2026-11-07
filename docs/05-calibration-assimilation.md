@@ -151,8 +151,10 @@ prior (`fixed`, `uniform`, `log_uniform`, `normal`), status (`placeholder`, `lit
 rejects out-of-range overrides in work units and checkpoints. `oikos params` exports
 it as JSON for calibration tools, which sample priors from the same definitions.
 `Registry::sample` maps unit-cube coordinates onto each prior (inverse CDF of uniform
-and log-uniform priors, integers rounded; normal priors to follow) with the engine's
-reproducible math, so a sampler's design points give the same overrides on every host.
+and log-uniform priors, and of normal priors truncated to the parameter's range;
+integers rounded) with the engine's reproducible math (`oikos_math::normal_quantile`:
+Acklam's approximation refined by a Halley step on the pinned `libm`'s `erfc`), so a
+sampler's design points give the same overrides on every host.
 
 ## 5.1b Python bindings (implemented)
 

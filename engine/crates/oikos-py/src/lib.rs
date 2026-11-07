@@ -418,8 +418,9 @@ fn registry_py(py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
 }
 
 /// Maps unit-interval values `{key: u}` (u in [0, 1]) onto each parameter's prior and
-/// returns the overrides `{key: value}`, ready for `World(params=...)`. Uniform and
-/// log-uniform priors are supported; integer parameters are rounded.
+/// returns the overrides `{key: value}`, ready for `World(params=...)`. Uniform,
+/// log-uniform and normal priors (truncated to the parameter's range) are supported;
+/// integer parameters are rounded.
 #[pyfunction]
 fn sample_params<'py>(py: Python<'py>, u: &Bound<'py, PyDict>) -> PyResult<Bound<'py, PyAny>> {
     let mut unit = BTreeMap::new();

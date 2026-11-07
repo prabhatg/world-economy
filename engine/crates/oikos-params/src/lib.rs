@@ -138,7 +138,8 @@ impl Registry {
     }
 
     /// Maps unit-interval coordinates `u[key] ∈ [0, 1]` onto each parameter's prior:
-    /// the inverse CDF of its uniform or log-uniform prior, rounded to the nearest
+    /// the inverse CDF of its uniform, log-uniform or normal prior (a normal prior
+    /// truncated to the parameter's range), rounded to the nearest
     /// integer for integer parameters. Calibration samplers (Latin hypercube, Sobol,
     /// ABC proposals) work in the unit cube and use this to get overrides. Only the
     /// requested keys are returned. Uses `oikos_math`, so the same `u` gives the same
@@ -213,7 +214,8 @@ impl ParamDef {
         }
         let (lo, hi) = match self.prior {
             Prior::Fixed => return Err("prior is fixed (not calibrated), so it cannot be sampled".into()),
-            Prior::Normal { .. } => return Err("sampling normal priors is not supported yet".into()),
+            // A normal prior is truncated to the parameter's range.
+            Prior::Normal { .. } => self.bounds(),
             Prior::Uniform { lo, hi } | Prior::LogUniform { lo, hi } => (lo, hi),
         };
         // The endpoints map exactly onto the prior bounds; rounding could miss them.
@@ -221,6 +223,11 @@ impl ParamDef {
             _ if u == 0.0 => lo,
             _ if u == 1.0 => hi,
             Prior::LogUniform { .. } => lo * oikos_math::exp(u * oikos_math::ln(hi / lo)),
+            Prior::Normal { mean, sd } => {
+                use oikos_math::{normal_cdf, normal_quantile};
+                let (a, b) = (normal_cdf((lo - mean) / sd), normal_cdf((hi - mean) / sd));
+                mean + sd * normal_quantile(a + u * (b - a))
+            }
             _ => lo + u * (hi - lo),
         }
         .clamp(lo, hi);
