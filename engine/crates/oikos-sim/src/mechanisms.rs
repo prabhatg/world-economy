@@ -82,6 +82,8 @@ pub struct Sense<'a> {
     /// People-weighted sum of effort times domestic share per cell (in
     /// [`crate::agents::SHARE_ONE`] units), after the previous step's commit.
     pub crop_sum: &'a [u64],
+    /// Likewise for emmer and einkorn (#38), sown with the crop.
+    pub wheat_sum: &'a [[u64; 2]],
     /// Per cell, its people as models of cultivation, (farming, all) as
     /// [`Cultivation::cell_models`] weighs them at `models_for` (success bias, wild yield
     /// ratio), computed once a step for the world's parameters; empty where they learn
@@ -1066,6 +1068,16 @@ impl Mechanism for Inundation {
 ///   rates stand for how people harvested each crop, a practice learned with cultivation
 ///   itself. The crop's own share is barley's, which stands for the package in carrying
 ///   capacity; the wheats' shares ride along, for the records of their rachis.
+/// - **Seed exchange** (#48, ADR-0102). Seed moves between people, not only with them:
+///   farmers renew, replace and gift seed through kinship, marriage and exchange
+///   partners, out of reciprocity and the trust those ties carry (seed networks:
+///   Pautasso et al. 2013); payoff bias in whose seed is taken is not modelled. So a band
+///   replaces `seed_exchange` times its effort of its seed stock, each period, with seed
+///   at the domestic shares sown by the people it learns from: its cell's and, by
+///   `neighbor_learning`, the cells around it, by the effort each sows. Villages where
+///   few farm then sow domestic crops bred elsewhere, as the oases of the Syrian steppe
+///   did; and the core's crops take in some of the wilder seed around them. Off by
+///   default, a hypothesis for calibration to weigh.
 ///
 /// - **Herding** (#37, ADR-0087). A band also moves its share of effort managing sheep and
 ///   goats toward a target: `herding_weight` times the land it can herd on, the wild
@@ -1103,6 +1115,7 @@ pub struct Cultivation {
     pub selection: f64,
     pub wild_frequency: f64,
     pub introgression: f64,
+    pub seed_exchange: f64,
     /// Selection on emmer's and einkorn's domestic traits under full effort (#38).
     pub wheat_selection: [f64; 2],
     pub herding_weight: f64,
@@ -1130,6 +1143,7 @@ impl Cultivation {
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
+            seed_exchange: p.seed_exchange,
             wheat_selection: [
                 p.emmer_selection_ratio * p.selection_coefficient,
                 p.einkorn_selection_ratio * p.selection_coefficient,
@@ -1329,6 +1343,34 @@ impl Cultivation {
         (people > 0.0).then(|| oikos_math::finite(herd / people))
     }
 
+    /// The domestic shares of the crop, emmer and einkorn sown by the people a band in
+    /// `cell` exchanges seed with (#48): its cell's and, by `neighbor_learning`, the cells
+    /// around it, kin and marriage partners as for learning, by the effort each sows. None
+    /// if nobody sows there.
+    fn seed_seen(&self, sense: &Sense<'_>, cell: u32) -> Option<[f64; 3]> {
+        let at = |c: u32| {
+            let (c, [em, ek]) = (c as usize, sense.wheat_sum[c as usize]);
+            [sense.effort_sum[c], sense.crop_sum[c], em, ek].map(|x| x as f64)
+        };
+        let mut sums = at(cell);
+        if self.neighbor_learning != 0.0 {
+            for &c in sense.grid.neighbors(cell) {
+                for (s, x) in sums.iter_mut().zip(at(c)) {
+                    *s += self.neighbor_learning * x;
+                }
+            }
+        }
+        let [sown, crops @ ..] = sums;
+        (sown > 0.0).then(|| crops.map(|x| oikos_math::finite(x / sown)))
+    }
+
+    /// A crop's domestic share after seed exchange (#48): a band sowing at `effort` and
+    /// share `d` replaces `seed_exchange` times that share of its stock with seed at the
+    /// share `seen` among those it exchanges with.
+    pub fn exchange_seed(&self, d: f64, effort: f64, seen: f64) -> f64 {
+        oikos_math::finite(d + self.seed_exchange * effort * (seen - d)).clamp(0.0, 1.0)
+    }
+
     /// Domestic share of the crop after one period at `effort`, from `d`.
     pub fn domesticate(&self, d: f64, effort: f64) -> f64 {
         self.select(d, effort, self.selection)
@@ -1374,6 +1416,7 @@ impl Mechanism for Cultivation {
         let own_cell_only = self.own_cell_only();
         let mut example: Option<(usize, Option<f64>)> = None; // per cell, only where needed
         let mut herders: Option<(usize, Option<f64>)> = None; // likewise for herding
+        let mut seeds: Option<(usize, Option<[f64; 3]>)> = None; // likewise for seed exchange
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
@@ -1433,12 +1476,27 @@ impl Mechanism for Cultivation {
             let cultivation = Traits::toward(traits.cultivation, next_e);
             // Rounding toward each change may overshoot the budget by a unit or two.
             let herding = Traits::toward(traits.herding, next_h).min(SHARE_ONE - cultivation);
-            let wheats = self.domesticate_wheats(traits.wheat_domestication.map(Traits::share), e);
+            let mut wheats = self.domesticate_wheats(traits.wheat_domestication.map(Traits::share), e);
+            let mut domestic = self.domesticate(d, e);
+            if self.seed_exchange != 0.0 && e > 0.0 {
+                let seen = match seeds {
+                    Some((at, seen)) if at == cell => seen,
+                    _ => self.seed_seen(sense, cell as u32),
+                };
+                seeds = Some((cell, seen));
+                if let Some([crop, emmer, einkorn]) = seen {
+                    domestic = self.exchange_seed(domestic, e, crop);
+                    wheats = [
+                        self.exchange_seed(wheats[EMMER], e, emmer),
+                        self.exchange_seed(wheats[EINKORN], e, einkorn),
+                    ];
+                }
+            }
             agents.set_traits(
                 i,
                 Traits {
                     cultivation,
-                    domestication: Traits::toward(traits.domestication, self.domesticate(d, e)),
+                    domestication: Traits::toward(traits.domestication, domestic),
                     herding,
                     herd_domestication: Traits::toward(
                         traits.herd_domestication,
@@ -1718,11 +1776,14 @@ mod tests {
         let n = grid.len();
         let inputs = Inputs::none();
         let farming = ground(0).1.is_some();
-        let (mut population, mut sums) = (vec![0; n], vec![[0u64; 4]; n]);
+        let (mut population, mut sums, mut wheat_sum) = (vec![0; n], vec![[0u64; 4]; n], vec![[0u64; 2]; n]);
         for i in 0..agents.len() {
             let (c, w, t) = (agents.cell[i] as usize, agents.weight[i], agents.traits(i));
             population[c] += w;
             for (s, x) in sums[c].iter_mut().zip(t.practice()) {
+                *s += w * x;
+            }
+            for (s, x) in wheat_sum[c].iter_mut().zip(t.wheat_practice()) {
                 *s += w * x;
             }
         }
@@ -1765,6 +1826,7 @@ mod tests {
             herd_sum: &herd_sum,
             herd_crop_sum: &herd_crop_sum,
             crop_sum: &crop_sum,
+            wheat_sum: &wheat_sum,
             models: &[],
             models_for: (0.0, 0.0),
             towns: true,

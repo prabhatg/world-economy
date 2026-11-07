@@ -94,6 +94,7 @@ pub struct Params {
     pub selection_coefficient: f64,
     pub domestic_wild_frequency: f64,
     pub introgression_rate: f64,
+    pub seed_exchange: f64,
     pub farm_density: f64,
     pub wild_yield_ratio: f64,
     pub soil_erosion_rate: f64,
@@ -203,6 +204,7 @@ impl Params {
             selection_coefficient: real("selection_coefficient")?,
             domestic_wild_frequency: real("domestic_wild_frequency")?,
             introgression_rate: real("introgression_rate")?,
+            seed_exchange: real("seed_exchange")?,
             farm_density: real("farm_density")?,
             wild_yield_ratio: real("wild_yield_ratio")?,
             soil_erosion_rate: real("soil_erosion_rate")?,
@@ -409,6 +411,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     // #38: the wheats selected as the crop, which the one crop stood for.
     ("emmer_selection_ratio", Restore::Value(1.0)),
     ("einkorn_selection_ratio", Restore::Value(1.0)),
+    // #48: a band's seed came from its own fields alone.
+    ("seed_exchange", Restore::Value(0.0)),
 ];
 
 impl Params {

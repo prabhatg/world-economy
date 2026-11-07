@@ -68,6 +68,13 @@ impl Traits {
         [e, e * self.domestication as u64 / one, h, h * self.herd_domestication as u64 / one]
     }
 
+    /// Effort times emmer's and einkorn's domestic shares (#38), as [`Traits::practice`]
+    /// gives the crop's.
+    pub fn wheat_practice(&self) -> [u64; 2] {
+        let (one, e) = (SHARE_ONE as u64, self.cultivation as u64);
+        self.wheat_domestication.map(|d| e * d as u64 / one)
+    }
+
     /// The nearest fixed-point share to `x`, clamped to [0, 1].
     pub fn from_share(x: f64) -> u32 {
         (oikos_math::finite(x).clamp(0.0, 1.0) * SHARE_ONE as f64).round() as u32

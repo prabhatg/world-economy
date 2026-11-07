@@ -279,6 +279,61 @@ fn the_wheats_ride_on_the_same_fields_without_feeding_back() {
 }
 
 #[test]
+fn seed_exchange_moves_a_bands_seed_toward_what_is_sown_around_it() {
+    // Farmers renew and replace seed from kin and neighbours (Pautasso et al. 2013), as
+    // much as they sow.
+    let c = Cultivation::from_params(&Params { seed_exchange: 0.2, ..only(0.0, 0.0, 0.0) });
+    assert_eq!(c.exchange_seed(0.1, 0.5, 0.9), 0.1 + 0.2 * 0.5 * (0.9 - 0.1));
+    assert_eq!(c.exchange_seed(0.1, 0.0, 0.9), 0.1, "a band that sows nothing takes no seed");
+    assert_eq!(c.exchange_seed(0.9, 1.0, 0.1), 0.9 - 0.2 * 0.8, "wild seed comes too");
+    let off = Cultivation::from_params(&only(0.0, 0.0, 0.0));
+    assert_eq!(off.exchange_seed(0.1, 1.0, 0.9), 0.1, "off by default (#48)");
+    let all = Cultivation::from_params(&Params { seed_exchange: 1.0, ..only(0.0, 0.0, 0.0) });
+    assert_eq!(all.exchange_seed(0.1, 1.0, 0.9), 0.9, "never past what it sees");
+}
+
+/// Core cells (even) grow wild cereals fully; margin cells (odd), at 230 mm, a fifth as
+/// well, so few there sow.
+fn core_and_margin(_: i64, c: usize) -> (f64, f64) {
+    if c % 2 == 0 { (15.0, 500.0) } else { (15.0, 230.0) }
+}
+
+#[test]
+fn seed_exchange_carries_domestic_seed_to_the_margins() {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], core_and_margin));
+    let p = Params {
+        selection_coefficient: 0.02,
+        emmer_selection_ratio: 0.5,
+        einkorn_selection_ratio: 0.2,
+        neighbor_learning: 1.0,
+        ..only(0.0, 0.0, 1.0)
+    };
+    let run = |exchange| {
+        let mut w = world(&[&g, &c], 5, Params { seed_exchange: exchange, ..p.clone() });
+        w.run_years(2500, 3, 2500);
+        w
+    };
+    let (alone, exchanging) = (run(0.0), run(0.3));
+    // Sown-weighted shares of the margin's crops, and of the core's.
+    let sown = |w: &World, margin: bool, share: fn(&World) -> Vec<f64>| {
+        let (d, e) = (share(w), w.cultivation());
+        let cells = (0..h3.len()).filter(|&c| (c % 2 == 1) == margin && e[c] > 0.0);
+        let (x, y) = cells.fold((0.0, 0.0), |(x, y), c| (x + e[c] * d[c], y + e[c]));
+        assert!(y > 0.0, "some sow in the {}", if margin { "margin" } else { "core" });
+        x / y
+    };
+    let crops: [fn(&World) -> Vec<f64>; 3] =
+        [World::domestication, World::emmer_domestication, World::einkorn_domestication];
+    for crop in crops {
+        let (margin, core) = (sown(&alone, true, crop), sown(&alone, false, crop));
+        let traded = sown(&exchanging, true, crop);
+        assert!(margin < core, "alone, the margin's few plots lag: {margin} {core}");
+        assert!(traded > margin + 0.05, "seed from the core: {traded} against {margin}");
+    }
+}
+
+#[test]
 fn toy_worlds_never_cultivate() {
     let mut w = World::new(WorldConfig::base_cell(22, 3), 4, Params::default()).unwrap();
     let start = w.capacity.clone();
@@ -448,7 +503,8 @@ fn cultivation_is_partition_independent_and_restores() {
         (15.0, if y < -11_500 { 450.0 } else { 300.0 + 40.0 * (c % 7) as f64 })
     });
     let g = geometry_pack(&h3);
-    let p = Params { selection_coefficient: 0.05, ..Params::default() };
+    // Seed exchange reads the sums of neighbouring cells, which partitions split (#48).
+    let p = Params { selection_coefficient: 0.05, seed_exchange: 0.2, ..Params::default() };
     let run = |parts| {
         let mut w = world(&[&g, &climate], 9, p.clone());
         w.run_years(1500, parts, 1500);

@@ -157,6 +157,9 @@ pub struct World {
     /// times the herd's domestic share.
     herd_sum: Vec<u64>,
     herd_crop_sum: Vec<u64>,
+    /// Per cell, the people-weighted sums of effort times emmer's and einkorn's domestic
+    /// shares (#38), for the seed bands exchange (#48).
+    wheat_sum: Vec<[u64; 2]>,
     /// Per cell, its people as models of cultivation for learners (ADR-0076), recomputed
     /// before each step's decide phase; empty where learning reads the own cell's effort only.
     models: Vec<(f64, f64)>,
@@ -378,7 +381,9 @@ impl World {
         }
         let (mut effort_sum, mut crop_sum, mut herd_sum, mut herd_crop_sum) =
             (vec![0; n], vec![0; n], vec![0; n], vec![0; n]);
-        add_farming(&agents, 0, (&mut effort_sum, &mut crop_sum, &mut herd_sum, &mut herd_crop_sum));
+        let mut wheat_sum = vec![[0; 2]; n];
+        let sums = (&mut effort_sum[..], &mut crop_sum[..], &mut herd_sum[..], &mut herd_crop_sum[..]);
+        add_farming(&agents, 0, sums, &mut wheat_sum);
         let part = Partition { cells: 0..n as u32, agents, ..Partition::default() };
         let mut habitable = vec![true; n];
         let restricted = inputs.habitable_into(tick.calendar_year(), &mut habitable);
@@ -399,6 +404,7 @@ impl World {
             crop_sum,
             herd_sum,
             herd_crop_sum,
+            wheat_sum,
             models: Vec::new(),
             models_for: (0.0, 0.0),
             soil: vec![SHARE_ONE; n],
@@ -863,6 +869,7 @@ impl World {
                 herd_sum: &self.herd_sum,
                 herd_crop_sum: &self.herd_crop_sum,
                 crop_sum: &self.crop_sum,
+                wheat_sum: &self.wheat_sum,
                 models: &self.models,
                 models_for: self.models_for,
                 towns: self.towns,
@@ -927,10 +934,12 @@ impl World {
         let crops = split_by_ranges(&mut self.crop_sum, &ranges);
         let herds = split_by_ranges(&mut self.herd_sum, &ranges);
         let herd_crops = split_by_ranges(&mut self.herd_crop_sum, &ranges);
+        let wheats = split_by_ranges(&mut self.wheat_sum, &ranges);
         let caps = split_by_ranges(&mut self.capacity, &ranges);
         let sums = efforts.into_iter().zip(crops).zip(herds.into_iter().zip(herd_crops));
-        let items: Vec<_> = self.parts.iter_mut().zip(pops).zip(sums).zip(caps).collect();
-        par_for_each(items, |(((part, pop), ((effort, crop), (herd, herd_crop))), cap)| {
+        let items: Vec<_> =
+            self.parts.iter_mut().zip(pops).zip(sums).zip(caps.into_iter().zip(wheats)).collect();
+        par_for_each(items, |(((part, pop), ((effort, crop), (herd, herd_crop))), (cap, wheat))| {
             let cells = part.cells.clone();
             part.agents.sort_in_cells(cells.clone(), &mut part.scratch, &mut part.counts);
             part.agents.merge_small_into(threshold, &mut part.scratch, cells.start, pop);
@@ -939,7 +948,8 @@ impl World {
                 for s in [&mut *effort, &mut *crop, &mut *herd, &mut *herd_crop] {
                     s.fill(0);
                 }
-                add_farming(&part.agents, cells.start, (effort, crop, herd, herd_crop));
+                wheat.fill([0; 2]);
+                add_farming(&part.agents, cells.start, (effort, crop, herd, herd_crop), wheat);
                 farm_cells(land, cells, pop, (effort, crop, herd, herd_crop), cap, params);
             }
         });
@@ -998,7 +1008,12 @@ fn land_year(tick: Tick, p: &Params) -> i64 {
 
 /// Adds each agent's people-weighted effort and effort times domestic share to the sums
 /// of its cell (indexed by `cell - base`).
-fn add_farming(agents: &Agents, base: u32, sums: (&mut [u64], &mut [u64], &mut [u64], &mut [u64])) {
+fn add_farming(
+    agents: &Agents,
+    base: u32,
+    sums: (&mut [u64], &mut [u64], &mut [u64], &mut [u64]),
+    wheats: &mut [[u64; 2]],
+) {
     let (effort, crop, herd, herd_crop) = sums;
     for i in 0..agents.len() {
         if agents.cultivation[i] == 0 && agents.herding[i] == 0 {
@@ -1011,6 +1026,10 @@ fn add_farming(agents: &Agents, base: u32, sums: (&mut [u64], &mut [u64], &mut [
         crop[c] += w * d;
         herd[c] += w * h;
         herd_crop[c] += w * hd;
+        let wheat = &mut wheats[c];
+        for (s, x) in wheat.iter_mut().zip(agents.traits(i).wheat_practice()) {
+            *s += w * x;
+        }
     }
 }
 

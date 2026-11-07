@@ -138,8 +138,8 @@ herding parameters: herds turn domestic at 0.035 per period at full effort, and 
 effort aimed at herds is 0.12 of the land's herding potential.
 Bands sow emmer and einkorn with their crop (ADR-0101, #38), each selected at its own
 fraction of the crop's selection, and the wheats' rachis records join barley's; einkorn's
-selection is calibrated by profile, and oases of the steppe wait on springs and seed
-exchange (#48).
+selection is calibrated by profile. Seed exchange along kinship and exchange ties is in as
+a hypothesis for the next round to weigh (ADR-0102); the oases' springs wait (#48).
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
