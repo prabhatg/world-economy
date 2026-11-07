@@ -932,6 +932,11 @@ impl World {
         self.run_years_observed(years, parts, summary_every, &mut |_, _| Ok(())).expect("no-op observer")
     }
 
+    /// Ticks per step: the schedule's base period.
+    pub fn base_period_ticks(&self) -> u64 {
+        self.schedule.base_period()
+    }
+
     /// [`World::run_years`], calling `observe` after every step (outputs, diagnostics).
     /// Observers get read-only access, so they cannot change the simulation.
     pub fn run_years_observed(

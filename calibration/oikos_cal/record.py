@@ -17,9 +17,12 @@ anywhere (#42); and herders, their domestic animals and the foragers hunting whe
 sheep and goats range, in people-years times the effort spent on each, the bones a faunal
 assemblage samples (#37).
 Recording only reads the world through the bindings; it never changes its history.
+The engine writes the same record as a work-unit output (`activity`, #46), bit for bit,
+so a calibration world can run wherever the `oikos` CLI runs; `read` loads it.
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -79,3 +82,19 @@ def activity(world, end, every=10, parts=4) -> Activity:
     return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality, village_size, infected,
                     herders, herd_domestic, hunters)
 
+
+
+FIELDS = ("people", "cultivators", "domestic", "settlements", "inequality", "village_size", "infected", "herders",
+          "herd_domestic", "hunters")
+
+
+def read(store) -> Activity:
+    """The `activity.zarr` record a work unit wrote (#46): arrays [century, cell] on disk,
+    [cell, century] here, as `activity` gives them."""
+    import zarr
+
+    g = zarr.open_group(str(Path(store)), mode="r")
+    a = g.attrs
+    arrays = {name: np.ascontiguousarray(g[name][:].T) for name in FIELDS}
+    obsidian = {s: np.ascontiguousarray(g[f"obsidian/{s}"][:].T) for s in a["obsidian_sources"]}
+    return Activity(Window(int(a["first_year"]), int(a["end_year"])), obsidian=obsidian, **arrays)

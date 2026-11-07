@@ -85,18 +85,6 @@ def series(fields):
     return {"people": [int(x) for x in people], "farming": ratio(sown, people), "domestic": ratio(crop.sum(axis=1), sown)}
 
 
-def _packs():
-    from oikos_data import pack
-
-    from . import m1
-
-    out = []
-    for path in m1.packs():
-        p = pack.read(Path(path).read_bytes())
-        out.append({"kind": p.header["kind"], "id": p.id, "path": str(Path(path).resolve())})
-    return out
-
-
 def _years(store):
     import zarr
 
@@ -112,7 +100,9 @@ def build(best_path, out, k=8, seed=1, years=9_000, every=100, oikos="../engine/
     best = json.loads(Path(best_path).read_text())
     registry = json.loads(subprocess.run([oikos, "params"], capture_output=True, text=True, check=True).stdout)
     defaults = {n: p["default"] for n, p in registry["params"].items()}
-    worlds, packs = choose(best, k, defaults), _packs()
+    from . import m1
+
+    worlds, packs = choose(best, k, defaults), m1.pack_refs()
     out.mkdir(parents=True, exist_ok=True)
 
     def run(w):

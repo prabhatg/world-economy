@@ -66,6 +66,7 @@ fn fork_diverges_from_parent() {
         summary_every_years: 300,
         checkpoint_out: None,
         outputs: None,
+        activity: None,
         inputs: vec![],
     };
     let read = |_: &str| Ok(ckpt.clone());

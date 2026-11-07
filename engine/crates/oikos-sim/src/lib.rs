@@ -13,6 +13,7 @@
 //! The M0 mechanism is a toy (logistic growth + band fission and migration); it
 //! exists to exercise the engine, not to model history.
 
+pub mod activity;
 pub mod agents;
 pub mod checkpoint;
 pub mod environment;

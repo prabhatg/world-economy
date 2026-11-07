@@ -3,6 +3,7 @@
 //! The same JSON work unit runs on a volunteer browser, desktop, phone, cloud spot VM
 //! or HPC node. Results contain only integers and hashes so they compare exactly.
 
+use crate::activity::{ActivityRecorder, ActivitySpec};
 use crate::checkpoint;
 use crate::inputs::{Inputs, PackRef};
 use crate::output::{OutputSpec, Recorder};
@@ -48,6 +49,9 @@ pub struct WorkUnit {
     /// Zarr fields and Parquet tables to record during the run.
     #[serde(default)]
     pub outputs: Option<OutputSpec>,
+    /// The calibration record (activity per cell and century) to write (#46).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activity: Option<ActivitySpec>,
     /// Forcing packs, by id (a geometry-pack `world` needs its geometry pack here).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub inputs: Vec<PackRef>,
@@ -107,16 +111,30 @@ pub fn run_work_unit(
     };
     let mut sink = |p: &str, b: &[u8]| write(p, b);
     let (parts, every) = (wu.partitions.max(1), wu.summary_every_years.max(1));
-    let (summaries, files) = match &wu.outputs {
-        None => (world.run_years(wu.years, parts, every), Vec::new()),
-        Some(spec) => {
-            let mut rec = Recorder::start(&world, spec.clone(), &mut sink)?;
-            let summaries = world.run_years_observed(wu.years, parts, every, &mut |w, stats| {
-                rec.observe(w, stats, &mut sink)
-            })?;
-            let files = rec.finish(&world, &mut sink)?;
-            (summaries, files)
+    let (summaries, files) = if wu.outputs.is_none() && wu.activity.is_none() {
+        (world.run_years(wu.years, parts, every), Vec::new())
+    } else {
+        let mut rec =
+            wu.outputs.as_ref().map(|s| Recorder::start(&world, s.clone(), &mut sink)).transpose()?;
+        let mut act =
+            wu.activity.as_ref().map(|s| ActivityRecorder::start(&world, s.clone(), wu.years)).transpose()?;
+        let summaries = world.run_years_observed(wu.years, parts, every, &mut |w, stats| {
+            if let Some(r) = rec.as_mut() {
+                r.observe(w, stats, &mut sink)?;
+            }
+            match act.as_mut() {
+                Some(a) => a.observe(w, &mut sink),
+                None => Ok(()),
+            }
+        })?;
+        let mut files = match rec {
+            Some(r) => r.finish(&world, &mut sink)?,
+            None => Vec::new(),
+        };
+        if let Some(a) = act {
+            files.extend(a.finish(&world, &mut sink)?);
         }
+        (summaries, files)
     };
     if let Some(path) = &wu.checkpoint_out {
         write(path, &checkpoint::encode(&world))?;

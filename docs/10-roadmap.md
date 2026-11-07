@@ -155,7 +155,9 @@ Work items are GitHub issues under the M1 milestone.
   (`python -m oikos_cal ensemble`). The map shows one world's people, farming, soil
   loss or obsidian; the charts show every world.
 - **Coordinator v0** (work generator, dispatcher, result ingest, validator) with cloud
-  spot workers as the first client class.
+  spot workers as the first client class. First step done (ADR-0096, #46): a
+  calibration world is a work unit whose result carries its calibration record, so it
+  runs wherever the `oikos` CLI runs and is scored on the calibration host.
 - **Browser client v0**: closed alpha, runs M1 work units and shows "your world".
 - **Exit:** plausible emergence of farming and villages in the right windows across
   ensembles, with quantified fit; competing domestication hypotheses compared;

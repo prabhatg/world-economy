@@ -120,3 +120,31 @@ fn parquet_rejects_ragged_columns() {
         table::write(&[table::Column::U64("a", vec![1, 2]), table::Column::U64("b", vec![1])]).unwrap_err();
     assert!(e.contains("b"), "{e}");
 }
+
+#[test]
+fn float_time_series_keep_their_bits() {
+    // Calibration records are float64 sums (#46): written exactly, read back exactly.
+    let values = [0.1f64, 1e-300, 3.0, f64::MAX, -0.0, 7.25];
+    let mut files = Files::new();
+    let mut w = zarr::TimeSeries::new("rec", 3, 4, 2, &["century", "cell"], serde_json::json!({}));
+    w.push(&values[..3], &mut sink(&mut files)).unwrap();
+    w.push(&values[3..], &mut sink(&mut files)).unwrap();
+    w.finish(&mut sink(&mut files)).unwrap();
+    let meta: serde_json::Value = serde_json::from_slice(&files["rec/zarr.json"]).unwrap();
+    assert_eq!(meta["data_type"], "float64");
+    assert_eq!(meta["shape"], serde_json::json!([2, 3]));
+    let bits = |k: &str| decode_chunk(&files[k]);
+    let (a, b) = (bits("rec/c/0/0"), bits("rec/c/0/1"));
+    assert_eq!(a.len(), 8, "full chunk shape, padded with zeros");
+    let read = |c: &[u64], r: usize, j: usize| f64::from_bits(c[r * 2 + j]);
+    for (r, row) in values.chunks(3).enumerate() {
+        assert_eq!(read(&a, r, 0).to_bits(), row[0].to_bits());
+        assert_eq!(read(&a, r, 1).to_bits(), row[1].to_bits());
+        assert_eq!(read(&b, r, 0).to_bits(), row[2].to_bits());
+    }
+    let mut files = Files::new();
+    zarr::write_1d("x", &[0.5f64, 2.0], 2, "cell", serde_json::json!({}), &mut sink(&mut files)).unwrap();
+    let meta: serde_json::Value = serde_json::from_slice(&files["x/zarr.json"]).unwrap();
+    assert_eq!(meta["data_type"], "float64");
+    assert_eq!(f64::from_bits(decode_chunk(&files["x/c/0"])[1]), 2.0);
+}

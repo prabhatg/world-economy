@@ -1,4 +1,5 @@
-//! Minimal Zarr v3 writer for unsigned 64-bit arrays.
+//! Minimal Zarr v3 writer for 64-bit arrays: unsigned integers (fields) and floats
+//! (calibration records, #46).
 //!
 //! Only what the engine needs: groups, 1-D static arrays, and 2-D (time × cell) arrays
 //! that grow along time as a run proceeds. Chunks use the `bytes` (little-endian) and
@@ -14,13 +15,37 @@ use std::io::Write;
 
 const GZIP_LEVEL: u32 = 5;
 
+/// An element type the writer stores: 8 bytes, little-endian, zero as fill value.
+pub trait Element: Copy + Default {
+    const DATA_TYPE: &'static str;
+    fn le_bytes(self) -> [u8; 8];
+}
+
+impl Element for u64 {
+    const DATA_TYPE: &'static str = "uint64";
+    fn le_bytes(self) -> [u8; 8] {
+        self.to_le_bytes()
+    }
+}
+
+impl Element for f64 {
+    const DATA_TYPE: &'static str = "float64";
+    fn le_bytes(self) -> [u8; 8] {
+        self.to_le_bytes()
+    }
+}
+
 /// `zarr.json` for a uint64 array.
 pub fn array_metadata(shape: &[u64], chunks: &[u64], dims: &[&str], attributes: Value) -> String {
+    metadata::<u64>(shape, chunks, dims, attributes)
+}
+
+fn metadata<T: Element>(shape: &[u64], chunks: &[u64], dims: &[&str], attributes: Value) -> String {
     let meta = json!({
         "zarr_format": 3,
         "node_type": "array",
         "shape": shape,
-        "data_type": "uint64",
+        "data_type": T::DATA_TYPE,
         "chunk_grid": { "name": "regular", "configuration": { "chunk_shape": chunks } },
         "chunk_key_encoding": { "name": "default", "configuration": { "separator": "/" } },
         "fill_value": 0,
@@ -44,18 +69,18 @@ pub fn write_group(path: &str, attributes: Value, out: &mut Sink) -> Result<(), 
     out(&join(path, "zarr.json"), serde_json::to_string_pretty(&meta).expect("serializes").as_bytes())
 }
 
-fn encode(values: &[u64]) -> Vec<u8> {
+fn encode<T: Element>(values: &[T]) -> Vec<u8> {
     let mut gz = GzEncoder::new(Vec::with_capacity(values.len() * 2), Compression::new(GZIP_LEVEL));
     for v in values {
-        gz.write_all(&v.to_le_bytes()).expect("in-memory write");
+        gz.write_all(&v.le_bytes()).expect("in-memory write");
     }
     gz.finish().expect("in-memory gzip")
 }
 
 /// Writes a 1-D array `name` with chunks of `chunk` elements.
-pub fn write_1d(
+pub fn write_1d<T: Element>(
     name: &str,
-    data: &[u64],
+    data: &[T],
     chunk: u64,
     dim: &str,
     attributes: Value,
@@ -64,28 +89,28 @@ pub fn write_1d(
     assert!(chunk > 0);
     for (i, part) in data.chunks(chunk as usize).enumerate() {
         let mut padded = part.to_vec();
-        padded.resize(chunk as usize, 0);
+        padded.resize(chunk as usize, T::default());
         out(&format!("{name}/c/{i}"), &encode(&padded))?;
     }
-    let meta = array_metadata(&[data.len() as u64], &[chunk], &[dim], attributes);
+    let meta = metadata::<T>(&[data.len() as u64], &[chunk], &[dim], attributes);
     out(&join(name, "zarr.json"), meta.as_bytes())
 }
 
 /// A 2-D array of shape (time, cells) written row by row; chunks are emitted as soon
 /// as a band of `time_chunk` rows is complete, so memory stays bounded.
-pub struct TimeSeries {
+pub struct TimeSeries<T: Element = u64> {
     name: String,
     cells: u64,
     time_chunk: u64,
     cell_chunk: u64,
     dims: [String; 2],
     attributes: Value,
-    band: Vec<u64>,
+    band: Vec<T>,
     band_rows: u64,
     rows: u64,
 }
 
-impl TimeSeries {
+impl<T: Element> TimeSeries<T> {
     pub fn new(
         name: &str,
         cells: u64,
@@ -93,7 +118,7 @@ impl TimeSeries {
         cell_chunk: u64,
         dims: &[&str; 2],
         attributes: Value,
-    ) -> TimeSeries {
+    ) -> TimeSeries<T> {
         assert!(time_chunk > 0 && cell_chunk > 0);
         TimeSeries {
             name: name.to_string(),
@@ -108,7 +133,7 @@ impl TimeSeries {
         }
     }
 
-    pub fn push(&mut self, row: &[u64], out: &mut Sink) -> Result<(), String> {
+    pub fn push(&mut self, row: &[T], out: &mut Sink) -> Result<(), String> {
         if row.len() as u64 != self.cells {
             return Err(format!("{}: row has {} values, expected {}", self.name, row.len(), self.cells));
         }
@@ -125,9 +150,9 @@ impl TimeSeries {
         let ti = (self.rows - self.band_rows) / self.time_chunk;
         let (tc, cc) = (self.time_chunk as usize, self.cell_chunk as usize);
         let n_cell_chunks = self.cells.div_ceil(self.cell_chunk);
-        let mut chunk = vec![0u64; tc * cc];
+        let mut chunk = vec![T::default(); tc * cc];
         for ci in 0..n_cell_chunks {
-            chunk.iter_mut().for_each(|v| *v = 0);
+            chunk.iter_mut().for_each(|v| *v = T::default());
             let c0 = (ci * self.cell_chunk) as usize;
             let width = cc.min(self.cells as usize - c0);
             for r in 0..self.band_rows as usize {
@@ -145,7 +170,7 @@ impl TimeSeries {
     pub fn finish(mut self, out: &mut Sink) -> Result<(), String> {
         self.flush(out)?;
         let dims = [self.dims[0].as_str(), self.dims[1].as_str()];
-        let meta = array_metadata(
+        let meta = metadata::<T>(
             &[self.rows, self.cells],
             &[self.time_chunk, self.cell_chunk],
             &dims,

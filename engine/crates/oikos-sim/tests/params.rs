@@ -72,6 +72,7 @@ fn work_unit_with_out_of_range_params_fails() {
         summary_every_years: 10,
         checkpoint_out: None,
         outputs: None,
+        activity: None,
         inputs: vec![],
     };
     let e = run_work_unit(&wu, |p| Err(p.into()), |_, _| Ok(())).unwrap_err();

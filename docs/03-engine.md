@@ -173,6 +173,17 @@ parts per 10,000 (`scale_factor` 1e-4), the shares a viewer maps
 hash is unchanged and output bytes are identical across partition counts and between
 native and wasm32. The gate verifies them with zarr-python and pyarrow.
 
+**Implemented (calibration record, ADR-0096, #46):** a work unit's optional `activity`
+block writes `activity.zarr`: float64 arrays [century, cell] of what the observation
+operators score (people-years; the same times cultivation effort, the crop's domestic
+share and the settled's inequality; settlement-years and their log size; infected
+people-years; herders, domestic herds and hunters where wild sheep and goats range;
+obsidian in use per source group), sampled every `every_years`, with each cell's H3 index.
+It is `oikos_cal.record.activity` computed in the engine, operation by operation, so
+the two are bit-identical; a calibration world then runs wherever the CLI runs
+(`oikos_cal.m1.work_unit`, `record.read`). An M1 world's record is about 94 MB in
+3,258 files; volunteers will need it reduced to what the operators read.
+
 ## 3.8a Inputs: forcing packs
 
 Environmental inputs (geometry, climate, terrain, soils, hydrology, sea level) reach a

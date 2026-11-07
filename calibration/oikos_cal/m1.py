@@ -70,6 +70,7 @@ be published with them.
 import io
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 
 import h3
 import numpy as np
@@ -84,7 +85,7 @@ from oikos_data.hydrology import FLOWING
 
 from . import domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets, villages
 
-__all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "Problem", "evaluate"]
+__all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "pack_refs", "work_unit", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period", "caprines")
 END = -3_000
@@ -144,6 +145,29 @@ def packs():
     if missing:
         raise FileNotFoundError(f"M1 packs not built: {missing}; run python -m oikos_data build <pack> m1-swasia")
     return [str(p) for p in paths]
+
+
+def pack_refs():
+    """The M1 packs as a work unit's inputs: [{kind, id, path}], paths absolute."""
+    out = []
+    for path in packs():
+        p = pack.read(Path(path).read_bytes())
+        out.append({"kind": p.header["kind"], "id": p.id, "path": str(Path(path).resolve())})
+    return out
+
+
+def work_unit(params, seed, out, end=END, every=10, partitions=4, refs=None):
+    """A work unit running the M1 world with `params` overrides and `seed` from 12,000
+    BCE to `end`, writing its calibration record (`record.read`) into `out` (#46):
+    what `simulate` scores, on any host with the `oikos` CLI. `refs`: `pack_refs()`."""
+    refs = pack_refs() if refs is None else refs
+    geometry = [r["id"] for r in refs if r["kind"] == "geometry"]
+    if len(geometry) != 1:
+        raise ValueError(f"a world needs exactly one geometry pack, got {len(geometry)}")
+    return {"format": 1, "id": Path(out).name, "world": {"geometry": geometry[0]}, "seed": seed, "params": params,
+            "start": {"kind": "initial"}, "years": end + 12_000, "partitions": partitions,
+            "summary_every_years": 1000, "activity": {"dir": str(out), "every_years": every},
+            "inputs": [{"id": r["id"], "path": r["path"]} for r in refs]}
 
 
 def habitable(cells):
