@@ -78,6 +78,19 @@ def test_the_record_summaries(problem):
                                   "log-likelihood obsidian", "people 3000 BCE"]
 
 
+def test_the_wheats_leave_out_the_villages_the_model_cannot_farm(problem):
+    from oikos_cal import m1
+
+    # El Kowm 2 alone would be einkorn's era after 7000 BCE; an oasis the model cannot farm (#48)
+    assert "El Kowm 2" in m1.OASES
+    eras = [t.name for t in problem.targets if t.name.startswith("domestic einkorn")]
+    assert eras == ["domestic einkorn before 9000 BCE", "domestic einkorn 9000-8000 BCE",
+                    "domestic einkorn after 8000 BCE"]
+    assert len([t for t in problem.targets if t.name.startswith("domestic emmer")]) == 4
+    assert len(problem.wheats[1].n) == 7 and problem.wheats[1].crop == "einkorn"
+    assert len([t for t in problem.targets if t.name.startswith("domestic barley")]) == 4, "barley's eras keep it"
+
+
 def test_worlds_are_run_in_parallel_and_reproducibly(problem):
     from oikos_cal import m1
 
@@ -138,6 +151,8 @@ def test_a_reduced_record_scores_as_the_full_one(problem):
     arrays = {name: rng.uniform(0, 100, shape) for name in record.FIELDS}
     arrays["domestic"] = arrays["cultivators"] * rng.uniform(0, 1, shape)
     arrays["herd_domestic"] = arrays["herders"] * rng.uniform(0, 1, shape)
+    for wheat in ("emmer_domestic", "einkorn_domestic"):
+        arrays[wheat] = arrays["cultivators"] * rng.uniform(0, 1, shape)
     full = record.Activity(problem.radiocarbon.settings.true, obsidian={g: rng.uniform(0, 100, shape)
                                                                         for g in obsidian.GROUPS}, **arrays)
     z = problem.zones()

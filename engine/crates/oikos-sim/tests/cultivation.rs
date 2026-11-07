@@ -207,6 +207,78 @@ fn domestic_traits_fade_without_cultivation() {
 }
 
 #[test]
+fn each_wheat_domesticates_at_its_own_pace() {
+    // Allaby et al. (2017): under the same cultivation, emmer and einkorn gained domestic
+    // traits more slowly than barley, at a fraction of its selection.
+    let c = Cultivation::from_params(&Params {
+        selection_coefficient: 0.01,
+        emmer_selection_ratio: 0.5,
+        einkorn_selection_ratio: 0.0,
+        ..only(0.0, 0.0, 0.0)
+    });
+    let (mut barley, mut emmer, mut einkorn) = (0.0, 0.0, 0.0);
+    for _ in 0..1500 {
+        barley = c.domesticate(barley, 1.0);
+        [emmer, einkorn] = c.domesticate_wheats([emmer, einkorn], 1.0);
+    }
+    assert!(barley > 0.99 && emmer > 0.2 && emmer < barley / 2.0, "{barley} {emmer}");
+    assert_eq!(einkorn, 0.0, "without selection the wild type stays");
+    // At barley's own selection a wheat follows it exactly.
+    let same = Cultivation::from_params(&Params {
+        emmer_selection_ratio: 1.0,
+        einkorn_selection_ratio: 1.0,
+        ..only(0.0, 0.0, 0.0)
+    });
+    let d = same.domesticate(0.3, 0.4);
+    assert_eq!(same.domesticate_wheats([0.3, 0.3], 0.4), [d, d]);
+}
+
+#[test]
+fn the_wheats_ride_on_the_same_fields_without_feeding_back() {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let p = Params { selection_coefficient: 0.02, ..only(0.8, 0.0, 0.2) };
+    let run = |emmer, einkorn| {
+        let p = Params { emmer_selection_ratio: emmer, einkorn_selection_ratio: einkorn, ..p.clone() };
+        let mut w = world(&[&g, &c], 5, p);
+        w.run_years(3000, 3, 3000);
+        w
+    };
+    let same = run(1.0, 1.0);
+    assert!(
+        same.agent_slices().all(|a| a
+            .wheat_domestication
+            .iter()
+            .zip(&a.domestication)
+            .all(|(w, &d)| *w == [d, d]))
+    );
+    let slower = run(0.5, 0.2);
+    assert_eq!(slower.population, same.population, "only the crop barley stands for feeds people");
+    let (dom, emmer, einkorn) =
+        (slower.domestication(), slower.emmer_domestication(), slower.einkorn_domestication());
+    let farmed: Vec<usize> = (0..h3.len()).filter(|&c| slower.cultivation()[c] > 0.5).collect();
+    assert!(!farmed.is_empty());
+    for &c in &farmed {
+        assert!(
+            dom[c] >= emmer[c] && emmer[c] >= einkorn[c] && einkorn[c] > 0.0,
+            "{} {} {}",
+            dom[c],
+            emmer[c],
+            einkorn[c]
+        );
+    }
+    // Fields worked fully keep every crop domestic; the rest lag by their selection.
+    let mean = |x: &[f64]| farmed.iter().map(|&c| x[c]).sum::<f64>() / farmed.len() as f64;
+    assert!(
+        mean(&dom) > mean(&emmer) && mean(&emmer) > mean(&einkorn),
+        "{} {} {}",
+        mean(&dom),
+        mean(&emmer),
+        mean(&einkorn)
+    );
+}
+
+#[test]
 fn toy_worlds_never_cultivate() {
     let mut w = World::new(WorldConfig::base_cell(22, 3), 4, Params::default()).unwrap();
     let start = w.capacity.clone();
@@ -645,14 +717,16 @@ fn soil_is_partition_independent_and_restores() {
 /// foragers' inequality, in a settlement of its own).
 fn before_inequality(now: &[u8], agents: usize, params: &Params) -> (Vec<u8>, Vec<u8>) {
     let forager = oikos_sim::mechanisms::Inequality::foragers(params).inequality.to_le_bytes();
-    let at = now.len() - 44 * agents;
+    let at = now.len() - 52 * agents;
     let (mut before, mut restored) = (now[..at].to_vec(), now[..at].to_vec());
-    for r in now[at..].chunks(44) {
+    for r in now[at..].chunks(52) {
         before.extend_from_slice(&r[..28]);
         restored.extend_from_slice(&r[..28]);
         restored.extend_from_slice(&forager);
         restored.extend_from_slice(&0u32.to_le_bytes());
         restored.extend_from_slice(&[0; 8]); // no herding (#37)
+        restored.extend_from_slice(&r[24..28]); // wheats as domestic as the crop (#38)
+        restored.extend_from_slice(&r[24..28]);
     }
     (before, restored)
 }

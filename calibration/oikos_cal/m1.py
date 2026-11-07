@@ -1,6 +1,6 @@
 """The M1 calibration problem (docs/05 §5.2, ADR-0052): Neolithic Southwest Asia worlds,
-12,000 to 3,000 BCE, against the radiocarbon record (p3k14c, IntCal20), the barley
-rachis record (Allaby et al. 2017), survey site counts in Central Anatolia and Upper
+12,000 to 3,000 BCE, against the radiocarbon record (p3k14c, IntCal20), the barley,
+emmer and einkorn rachis records (Allaby et al. 2017; the wheats since #38), survey site counts in Central Anatolia and Upper
 Mesopotamia (Palmisano et al. 2021; ADR-0059), sourced obsidian (DObsiSS; ADR-0061),
 crops among charred plant remains (Wallace et al. 2018; ADR-0064), the house-size
 inequality of dated sites (Kohler et al. 2017; ADR-0074), the areas of the survey
@@ -137,6 +137,14 @@ OBSIDIAN_ERA = -6_900
 OBSIDIAN_MIN_ARTEFACTS = 3
 ONSET_EDGES = (-10_000, -8_800, -7_600)  # Late Epipalaeolithic, PPNA, Early-Middle PPNB, Late PPNB
 ONSET_MIN_ITEMS = 50
+WHEATS = ("emmer", "einkorn")
+# Villages the model cannot farm yet: oases of the Syrian steppe, watered by springs the
+# hydrology packs lack, whose crops most likely came domestic from farming kin and
+# exchange partners (#48). The model's few plots there stay wild. El Kowm 2 alone would be
+# einkorn's era after 7000 BCE, so the wheats leave it out; barley's eras keep it, as
+# rounds up to 13 judged them, among some ten sites an era.
+OASES = ("El Kowm 2",)
+WHEAT_EDGES = {"emmer": (-9_000, -8_000, -7_000), "einkorn": (-9_000, -8_000)}  # each era holding an assemblage
 RICH_STANDS = 0.95  # wild-cereal suitability of a phase's cells and centuries: nearly full
 CONTRAST_MIN_PHASES = 5
 OPTIONAL = ("inequality",)  # records a round may leave out; the diagnostics need the others
@@ -233,7 +241,9 @@ class Problem:
         self.cells = r.cells()
         sources = dates_pipeline.inputs(offline=True)
         dates = pq.read_table(io.BytesIO(dates_pipeline.build(r, *sources)[0])).to_pydict()
-        barley = pq.read_table(io.BytesIO(rachis.build(r, *rachis.inputs(offline=True)))).to_pydict()
+        ears = pq.read_table(io.BytesIO(rachis.build(r, *rachis.inputs(offline=True)))).to_pydict()
+        barley = domestication.crop(ears, "barley")
+        wheats = {c: domestication.crop(ears, c, leave_out=OASES) for c in WHEATS}
         surveys = pq.read_table(io.BytesIO(sites_pipeline.build(r, *sites_pipeline.inputs(offline=True)))).to_pydict()
         contexts = pq.read_table(io.BytesIO(obsidian_pipeline.build_obsidian_table(r, offline=True))).to_pydict()
         sources_pack = pack.read(obsidian_pipeline.build_obsidian_pack(r, offline=True))
@@ -243,6 +253,7 @@ class Problem:
         if self.radiocarbon.settings.true.end != END:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
         self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true)
+        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true) for c in WHEATS]
         self.sites = sites.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.villages = villages.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach,
@@ -280,6 +291,9 @@ class Problem:
         self.subregions = self.eras[6]
         self.eras.append(targets.InfectionLesions(self.lesions, discrepancy_sd=DISCREPANCY["lesions"]))
         self.eras.append(targets.SheepSize(self.herds, discrepancy_sd=DISCREPANCY["herds"]))
+        for op in self.wheats:
+            self.eras.append(targets.DomesticationEras(op, wheats[op.crop], edges=WHEAT_EDGES[op.crop],
+                                                       discrepancy_sd=DISCREPANCY["domestication"]))
         if self.inequality is not None:
             self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]
@@ -294,7 +308,8 @@ class Problem:
         blocks weighted by visibility, and every cell (the population diagnostic)."""
         if getattr(self, "_zones", None) is not None:
             return self._zones
-        ops = [self.domestication, self.sites, self.villages, self.obsidian, self.onset, self.lesions, self.herds]
+        ops = [self.domestication, self.sites, self.villages, self.obsidian, self.onset, self.lesions, self.herds,
+               *self.wheats]
         if self.inequality is not None:
             ops.append(self.inequality)
         sets = [np.arange(len(self.cells))] + [s for op in ops for s in op.cells()]

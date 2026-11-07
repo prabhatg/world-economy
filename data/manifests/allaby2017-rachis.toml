@@ -11,9 +11,11 @@ al. 2016) is a machine-readable table: site and phase, latitude, longitude, medi
 (cal BC, from the site's radiocarbon dates; Fuller et al. 2012, 2014), percentages of
 shattering and non-shattering rachis, the number of rachis fragments determined, the
 number excluded as indeterminate, and the primary archaeobotanical source; cite those
-through this dataset. Tables S7 (emmer) and S10 (einkorn) are embedded as images and
-are not read. Non-shattering counts are the percentage times the determined total,
-rounded.
+through this dataset. Tables S7 (emmer) and S10 (einkorn), with the same columns, are
+embedded as Enhanced Metafile pictures that keep their text; they are read from it
+(oikos_data.rachis.emf_rows), and their totals match the supplement's plots (Figures S5
+and S8: 672 and 504 fragments). Non-shattering counts are the percentage times the
+determined total, rounded.
 """
 
 [license]
@@ -31,11 +33,11 @@ url = "https://ndownloader.figshare.com/files/9393370"
 file = "allaby2017-rstb20160429_si_001.docx"
 md5 = "f0e3f22a7bddf3014a5f247cb753dc84"
 # Caption that introduces each crop's table.
-tables = { barley = "Table S4." }
+tables = { barley = "Table S4.", emmer = "Table S7.", einkorn = "Table S10." }
 
 [coverage]
-spatial = "Southwest Asia (Levant, Upper Euphrates, Zagros, Anatolia): 26 barley assemblages"
-temporal = "10,800 to 6,200 cal BC"
+spatial = "Southwest Asia (Levant, Upper Euphrates, Zagros, Anatolia): 26 barley, 9 emmer and 8 einkorn assemblages"
+temporal = "10,800 to 6,200 cal BC"  # barley; emmer 9,080-6,345, einkorn 10,275-6,725
 
 [[variables]]
 name = "non-shattering %"

@@ -75,6 +75,9 @@ fn farming_world(seed: u64, integration: f64, hierarchy: f64) -> (World, Vec<u8>
         forager_density_ref: 0.01,
         farm_density: 0.2,
         selection_coefficient: 0.005,
+        // The wheats selected as the crop, as checkpoints from before them restore (#38).
+        emmer_selection_ratio: 1.0,
+        einkorn_selection_ratio: 1.0,
         adoption_rate: 0.02,
         innovation_share: 1.0,
         fission_threshold: 60,
@@ -234,7 +237,7 @@ fn checkpoints_from_before_settlements_restore_every_group_alone() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let n = w.agent_count();
-    let agents_at = now.len() - 44 * n;
+    let agents_at = now.len() - 52 * n;
     let mut old = b"OIKOSCK5".to_vec();
     let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
     old.extend_from_slice(&now[8..at]);
@@ -249,7 +252,7 @@ fn checkpoints_from_before_settlements_restore_every_group_alone() {
     old.extend_from_slice(&json);
     old.extend_from_slice(&now[at + 4 + len..agents_at]);
     for k in 0..n {
-        old.extend_from_slice(&now[agents_at + 44 * k..agents_at + 44 * k + 32]);
+        old.extend_from_slice(&now[agents_at + 52 * k..agents_at + 52 * k + 32]);
     }
     let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
     assert_eq!(checkpoint::encode(&restored), now);
@@ -263,13 +266,54 @@ fn checkpoints_from_before_herding_restore_with_no_herds() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let n = w.agent_count();
-    let agents_at = now.len() - 44 * n;
+    let agents_at = now.len() - 52 * n;
     let mut old = b"OIKOSCK6".to_vec();
     old.extend_from_slice(&now[8..agents_at]);
     for k in 0..n {
-        old.extend_from_slice(&now[agents_at + 44 * k..agents_at + 44 * k + 36]);
+        old.extend_from_slice(&now[agents_at + 52 * k..agents_at + 52 * k + 36]);
     }
     let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
     assert!(restored.agent_slices().all(|a| a.herding.iter().chain(&a.herd_domestication).all(|&x| x == 0)));
     assert_eq!(checkpoint::encode(&restored), now, "no world herds yet, so nothing is lost");
+}
+
+#[test]
+fn checkpoints_from_before_the_wheats_restore_them_as_the_crop() {
+    // OIKOSCK7 kept one crop's domestic share, standing for the crop package (#38): each
+    // wheat restores as domestic as it, at its selection, so a world whose wheats are
+    // selected as barley is (as `farming_world`'s are) loses nothing.
+    let (mut w, g, c) = farming_world(9, 3.0, 0.0);
+    w.run_years(300, 2, 300);
+    let now = checkpoint::encode(&w);
+    let n = w.agent_count();
+    let agents_at = now.len() - 52 * n;
+    let mut old = b"OIKOSCK7".to_vec();
+    let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
+    old.extend_from_slice(&now[8..at]);
+    let len = u32::from_le_bytes(now[at..at + 4].try_into().unwrap()) as usize;
+    let mut params: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&now[at + 4..at + 4 + len]).unwrap();
+    for k in ["emmer_selection_ratio", "einkorn_selection_ratio"] {
+        assert!(params.remove(k).is_some(), "{k}");
+    }
+    let json = serde_json::to_vec(&params).unwrap();
+    old.extend_from_slice(&(json.len() as u32).to_le_bytes());
+    old.extend_from_slice(&json);
+    old.extend_from_slice(&now[at + 4 + len..agents_at]);
+    for k in 0..n {
+        old.extend_from_slice(&now[agents_at + 52 * k..agents_at + 52 * k + 44]);
+    }
+    let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
+    assert!(
+        restored.agent_slices().any(|a| a.domestication.iter().any(|&d| d > 0)),
+        "the crop is part domestic"
+    );
+    assert!(
+        restored.agent_slices().all(|a| a
+            .wheat_domestication
+            .iter()
+            .zip(&a.domestication)
+            .all(|(w, &d)| *w == [d, d]))
+    );
+    assert_eq!(checkpoint::encode(&restored), now, "wheats selected as barley lose nothing");
 }

@@ -307,14 +307,16 @@ fn obsidian_is_partition_independent_and_restores() {
 /// checkpoint its restored world encodes to (every group at foragers' inequality).
 fn before_inequality(now: &[u8], agents: usize, params: &Params) -> (Vec<u8>, Vec<u8>) {
     let forager = oikos_sim::mechanisms::Inequality::foragers(params).inequality.to_le_bytes();
-    let at = now.len() - 44 * agents;
+    let at = now.len() - 52 * agents;
     let (mut before, mut restored) = (now[..at].to_vec(), now[..at].to_vec());
-    for r in now[at..].chunks(44) {
+    for r in now[at..].chunks(52) {
         before.extend_from_slice(&r[..28]);
         restored.extend_from_slice(&r[..28]);
         restored.extend_from_slice(&forager);
         restored.extend_from_slice(&0u32.to_le_bytes());
         restored.extend_from_slice(&[0; 8]); // no herding (#37)
+        restored.extend_from_slice(&r[24..28]); // wheats as domestic as the crop (#38)
+        restored.extend_from_slice(&r[24..28]);
     }
     (before, restored)
 }

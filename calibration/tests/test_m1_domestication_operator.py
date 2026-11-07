@@ -19,7 +19,7 @@ def m1():
         inputs = rachis.inputs(offline=True)
     except raster.MissingInputs:
         pytest.skip("rachis supplement not cached; run: python -m oikos_data build rachis m1-swasia")
-    return r.cells(), pq.read_table(io.BytesIO(rachis.build(r, *inputs))).to_pydict()
+    return r.cells(), dom.crop(pq.read_table(io.BytesIO(rachis.build(r, *inputs))).to_pydict(), "barley")
 
 
 def best_logistic(table, selection):

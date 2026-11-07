@@ -75,8 +75,14 @@ enters the model, and the starting mechanisms.
   Fields wear the soil down and yields fall once it thins below a critical share (land
   degradation, ADR-0055; 3.4e-4 per year at full effort in the calibrated defaults,
   against soil formation 7.1e-4).
-  Wild-cereal suitability comes from temperature and precipitation; soils, irrigation
-  and animals are not yet included.
+  Bands sow emmer and einkorn with their crop (ADR-0101, #38): the same fields and effort,
+  each wheat selected at its own fraction of the crop's selection (0.74 for emmer, from
+  the early rates of Allaby et al. 2017; 0.9 for einkorn, calibrated, as the early
+  rates' 0.14 leaves it wild where the record has it domestic), standing
+  for how each was harvested; the crop's share is barley's, which stands for the package
+  in carrying capacity, and the wheats' are judged against their own rachis records.
+  Wild-cereal suitability comes from temperature and precipitation, one for every crop;
+  where each crop's ancestor grew, pulses, soils and irrigation are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
   oil, gas, uranium, renewables potential.
 

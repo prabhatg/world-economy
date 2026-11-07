@@ -221,6 +221,17 @@ impl PyWorld {
         f64_array(py, self.0.herd_domestication().into_iter())
     }
 
+    /// Domestic share of the emmer each cell sows with its crop (float64, effort-weighted;
+    /// 0 where nobody cultivates; #38).
+    fn emmer_domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.emmer_domestication().into_iter())
+    }
+
+    /// Domestic share of the einkorn each cell sows with its crop (float64; #38).
+    fn einkorn_domestication<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        f64_array(py, self.0.einkorn_domestication().into_iter())
+    }
+
     /// Infected people per cell (float64): each settlement's people times the endemic
     /// prevalence at its size and practice (ADR-0075); over its people, its prevalence.
     fn infected<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -293,8 +304,8 @@ impl PyWorld {
     /// `inequality`, the variance of log household wealth among the group's households;
     /// `settlement` (uint32), 0 for a group that lives by itself, else the label it
     /// shares with the other groups of its settlement, unique within its cell (ADR-0082);
-    /// and `herding` (of effort) and `herd_domestication` (of the herd) as float64 shares
-    /// (#37).
+    /// `herding` (of effort) and `herd_domestication` (of the herd) as float64 shares
+    /// (#37); and `emmer_domestication` and `einkorn_domestication`, the wheats' (#38).
     fn agents<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let slices = || self.0.agent_slices();
         let out = PyDict::new(py);
@@ -313,6 +324,10 @@ impl PyWorld {
             "herd_domestication",
             f64_array(py, slices().flat_map(|a| share(&a.herd_domestication)))?,
         )?;
+        for (name, c) in [("emmer_domestication", 0), ("einkorn_domestication", 1)] {
+            let wheat = slices().flat_map(|a| a.wheat_domestication.iter().map(move |d| Traits::share(d[c])));
+            out.set_item(name, f64_array(py, wheat)?)?;
+        }
         Ok(out)
     }
 

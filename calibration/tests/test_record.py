@@ -56,6 +56,12 @@ class _ObsidianWorld:
     def domestication(self):
         return np.zeros(2)
 
+    def emmer_domestication(self):
+        return np.zeros(2)
+
+    def einkorn_domestication(self):
+        return np.zeros(2)
+
     def obsidian(self):
         return {"west": np.array([(self.year + 12_000) / 1000, 0.0]), "east": np.array([0.5, 0.0])}
 

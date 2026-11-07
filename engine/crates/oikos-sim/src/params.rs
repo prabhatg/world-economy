@@ -70,6 +70,8 @@ pub struct Params {
     pub wild_herd_ratio: f64,
     pub herd_selection: f64,
     pub herd_introgression: f64,
+    pub emmer_selection_ratio: f64,
+    pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
     pub pasture_precip_min: f64,
     pub pasture_precip_full: f64,
@@ -177,6 +179,8 @@ impl Params {
             wild_herd_ratio: real("wild_herd_ratio")?,
             herd_selection: real("herd_selection")?,
             herd_introgression: real("herd_introgression")?,
+            emmer_selection_ratio: real("emmer_selection_ratio")?,
+            einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
             pasture_precip_min: real("pasture_precip_min")?,
             pasture_precip_full: real("pasture_precip_full")?,
@@ -402,6 +406,9 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("herd_pressure_weight", Restore::Value(0.0)),
     ("wadi_share", Restore::Value(0.0)),
     ("runoff_coefficient", Restore::Inert),
+    // #38: the wheats selected as the crop, which the one crop stood for.
+    ("emmer_selection_ratio", Restore::Value(1.0)),
+    ("einkorn_selection_ratio", Restore::Value(1.0)),
 ];
 
 impl Params {

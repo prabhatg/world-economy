@@ -136,6 +136,10 @@ and the size of sheep in dated faunal assemblages is a record (ADR-0088). Round 
 (ADR-0090), judged on every record, keeps the calibrated defaults and calibrates the
 herding parameters: herds turn domestic at 0.035 per period at full effort, and the
 effort aimed at herds is 0.12 of the land's herding potential.
+Bands sow emmer and einkorn with their crop (ADR-0101, #38), each selected at its own
+fraction of the crop's selection, and the wheats' rachis records join barley's; einkorn's
+selection is calibrated by profile, and oases of the steppe wait on springs and seed
+exchange (#48).
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

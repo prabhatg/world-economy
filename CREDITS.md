@@ -62,11 +62,13 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   2019, Manning & Timpson 2014, 14SEA).
 - **IntCal20** (radiocarbon calibration): Reimer, P.J. et al. (2020), Radiocarbon 62:
   725–757, doi:10.1017/RDC.2020.41. CC BY 4.0.
-- **Barley rachis assemblages** (domestication timing): Allaby, R.G., Stevens, C.,
+- **Barley, emmer and einkorn rachis assemblages** (domestication timing, and each
+  wheat's selection relative to barley's, #38): Allaby, R.G., Stevens, C.,
   Lucas, L., Maeda, O. & Fuller, D.Q. (2017), Phil. Trans. R. Soc. B 372: 20160429,
   doi:10.1098/rstb.2016.0429; supplement doi:10.6084/m9.figshare.5436709.v1 (CC BY 4.0),
   and the archaeobotanical reports it compiles (Colledge, Kislev, Tanno & Willcox,
-  van Zeist & Bakker-Heeres, de Moulins, Fairbairn et al., and others).
+  van Zeist & Bakker-Heeres, de Moulins, Fairbairn et al., Weide et al., White &
+  Makarewicz, Arranz-Otaegui et al., and others).
 - **Survey settlements** (site counts): Palmisano, A., Lawrence, D., de Gruchy, M.W.,
   Bevan, A. & Shennan, S. (2021), Quaternary Science Reviews 252: 106739,
   doi:10.1016/j.quascirev.2020.106739; data doi:10.5281/zenodo.4322979 (CC BY 4.0), and

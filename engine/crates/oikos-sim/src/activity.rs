@@ -2,7 +2,8 @@
 //!
 //! Observation operators score a world by its activity per cell and century, sampled
 //! every few years (a left Riemann sum of each cell's state): people-years; the same
-//! weighted by cultivation effort, by effort times the crop's domestic share and by
+//! weighted by cultivation effort, by effort times the crop's (and each wheat's, #38)
+//! domestic share and by
 //! effort times the settled people's wealth inequality; per obsidian source group,
 //! people-years times its availability; settlement-years, settlement-years times their log
 //! size and infected people-years; herders, their domestic herds, and the foragers hunting
@@ -160,7 +161,7 @@ fn default_every_years() -> u64 {
 }
 
 /// The record's arrays, in the order they are written; obsidian follows, per source.
-pub const FIELDS: [(&str, &str); 10] = [
+pub const FIELDS: [(&str, &str); 12] = [
     ("people", "people-years"),
     ("cultivators", "people-years times cultivation effort"),
     ("domestic", "people-years times cultivation effort times the crop's domestic share"),
@@ -171,6 +172,8 @@ pub const FIELDS: [(&str, &str); 10] = [
     ("herders", "people-years times herding effort"),
     ("herd_domestic", "people-years times herding effort times the herd's domestic share"),
     ("hunters", "people-years times foraging effort times wild sheep and goats' range"),
+    ("emmer_domestic", "people-years times cultivation effort times the emmer's domestic share"),
+    ("einkorn_domestic", "people-years times cultivation effort times the einkorn's domestic share"),
 ];
 
 /// Cells per chunk: a century of one array is a few chunks.
@@ -284,6 +287,7 @@ impl ActivityRecorder {
         let (settlements, village_sizes, infected) =
             (world.settlements(), world.village_sizes(), world.infected());
         let (herding, herd_domestication) = (world.herding(), world.herd_domestication());
+        let (emmer, einkorn) = (world.emmer_domestication(), world.einkorn_domestication());
         let range = &world.farmland.range;
         let obsidian: Vec<Vec<f64>> =
             (0..world.obsidian_sources().len()).map(|i| world.obsidian(i)).collect();
@@ -298,6 +302,8 @@ impl ActivityRecorder {
             herders,
             herd_domestic,
             hunters,
+            emmer_domestic,
+            einkorn_domestic,
         ] = &mut self.rows[..FIELDS.len()]
         else {
             unreachable!("one row per field")
@@ -308,6 +314,8 @@ impl ActivityRecorder {
             let sown = np * cultivation[c];
             cultivators[c] += sown;
             domestic[c] += sown * domestication[c];
+            emmer_domestic[c] += sown * emmer[c];
+            einkorn_domestic[c] += sown * einkorn[c];
             unequal[c] += sown * inequality[c];
             settled[c] += n * settlements[c];
             village[c] += n * village_sizes[c];

@@ -16,9 +16,9 @@ SITE = h3.latlng_to_cell(35.87, 38.40, 5)  # Abu Hureyra
 CELLS = np.array(sorted(h3.str_to_int(c) for c in h3.grid_disk(SITE, 3)), dtype=np.uint64)
 
 
-def assemblages(years, k, n, cell=SITE):
+def assemblages(years, k, n, cell=SITE, crop="barley"):
     m = len(years)
-    return {"crop": ["barley"] * m, "site": [f"site {i}" for i in range(m)], "h3": [h3.str_to_int(cell)] * m,
+    return {"crop": [crop] * m, "site": [f"site {i}" for i in range(m)], "h3": [h3.str_to_int(cell)] * m,
             "median_year": list(years), "k_nonshattering": list(k), "n_rachis": list(n)}
 
 
@@ -55,6 +55,27 @@ def test_the_model_share_is_the_domestic_share_of_the_crop_near_the_site_around_
     a.cultivators[:] = 0
     a.domestic[:] = 0
     assert op.shares(a)[0] == pytest.approx(op.wild), "nobody cultivates nearby: only wild stands"
+
+
+def test_each_crop_is_judged_by_its_own_share():
+    # Emmer and einkorn are sown with the crop (#38): the same cultivators, their own shares.
+    a = logistic_world(0.0)
+    a.emmer_domestic = a.cultivators * 0.2
+    a.einkorn_domestic = a.cultivators * 0.05
+    emmer = dom.Operator(assemblages([-7_950], [0], [10], crop="emmer"), CELLS, WINDOW)
+    einkorn = dom.Operator(assemblages([-7_950], [0], [10], crop="einkorn"), CELLS, WINDOW)
+    barley = dom.Operator(assemblages([-7_950], [0], [10]), CELLS, WINDOW)
+    assert [op.shares(a)[0] for op in (barley, emmer, einkorn)] == pytest.approx([0.5, 0.2, 0.05])
+    mixed = assemblages([-7_950], [0], [10])
+    for k, v in assemblages([-7_900], [1], [10], crop="emmer").items():
+        mixed[k] += v
+    with pytest.raises(ValueError, match="one crop"):
+        dom.Operator(mixed, CELLS, WINDOW)
+    with pytest.raises(ValueError, match="rye"):
+        dom.Operator(assemblages([-7_950], [0], [10], crop="rye"), CELLS, WINDOW)
+    assert dom.crop(mixed, "emmer")["median_year"] == [-7_900]
+    assert dom.crop(mixed, "emmer", leave_out=("site 0",))["median_year"] == [], "sites a crop's record leaves out"
+    assert dom.crop(mixed, "barley", leave_out=("site 9",))["median_year"] == [-7_950]
 
 
 def test_assemblages_outside_the_window_or_the_world_are_refused():

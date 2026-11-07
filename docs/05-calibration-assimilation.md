@@ -43,7 +43,8 @@ then falls, the model about threefold and on (open question 25).
 scores the domestic share of the crop sown near each dated barley assemblage of Allaby
 et al. 2017 (`data/oikos_data/rachis.py`) against its rachis counts, beta-binomially.
 In M1 it separates the competing domestication hypotheses: protracted selection scores
--92.8, rapid selection -157.5.
+-92.8, rapid selection -157.5. One operator judges each crop (ADR-0101): barley against
+the crop's share, emmer and einkorn against the shares of the wheats sown with it.
 
 **Implemented (site-count operator, ADR-0059):** `sites.Operator` counts the survey site
 phases of Palmisano et al. 2021 (`data/oikos_data/sites.py`) in each era aoristically,

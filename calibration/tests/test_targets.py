@@ -101,6 +101,13 @@ def test_the_model_side_of_domestication_eras():
     assert (np.diff(m) > 0).all()
 
 
+def test_domestication_eras_are_named_for_their_crop():
+    t = dom.crop({k: v for k, v in rachis_table().items()}, "barley")
+    t["crop"] = ["einkorn"] * len(t["crop"])
+    eras = targets.DomesticationEras(dom.Operator(t, CELLS, WINDOW), t, edges=(-9_000, -8_000, -7_000))
+    assert eras.targets[0].name == "domestic einkorn before 9000 BCE"
+
+
 def test_an_era_without_assemblages_is_refused():
     t = rachis_table()
     op = dom.Operator(t, CELLS, WINDOW)

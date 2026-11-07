@@ -10,7 +10,7 @@ through the Python bindings (`oikos`) and never change them.
 |---|---|
 | `oikos_cal/record.py` | `activity(world, end)`: people-years, cultivator people-years, domestic-crop people-years, obsidian in use per source group, settlement-years (ADR-0072) and settled people-years times their inequality (ADR-0074), per cell and century while a world runs; `read(store)` loads the same record written by a work unit (`activity`, ADR-0096) |
 | `oikos_cal/radiocarbon.py` | Radiocarbon-density operator (ADR-0050): taphonomic loss, activity out of sight (`drowned` land and `buried` lowlands, ADR-0095), calibration kernel from IntCal20, site-phase bins, multinomial over centuries per block; each site's date mass for bootstraps that resample sites, and `subregions` (boxes of blocks, ADR-0079); `synthetic_dates` for validation |
-| `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts |
+| `oikos_cal/domestication.py` | Domestication-timing operator (ADR-0051): domestic share of the crop sown near each dated rachis assemblage, beta-binomial against its counts; one per crop, barley, emmer and einkorn (ADR-0101) |
 | `oikos_cal/sites.py` | Site-count operator (ADR-0059): aoristic survey site counts per era in each survey's landscape, and a world's settlements (ADR-0072; settled people-years before) dated through the surveys' own period scheme |
 | `oikos_cal/obsidian.py` | Obsidian sourcing operator (ADR-0061): share of Cappadocian obsidian in use around each sourced assemblage over its period, beta-binomial against its counts; contexts no chain of land cells joins to a volcano (Cyprus) are dropped |
 | `oikos_cal/juvenile.py` | Juvenile-index operator (ADR-0068): a cemetery's share of 5-19 year olds among its dead over 5, from the world's fertility and local growth there, through a stable population with hunter-gatherer Siler mortality; the Levant record is to come (#33) |
@@ -166,7 +166,7 @@ summaries are flat (ADR-0094).
 Round 13 starts after dates out of sight and northeast Africa's judging (ADR-0095) in
 `runs/m1/round13/`: `profile-humid-period-scale.json` takes the scale over 0-10 with the
 subregion judged; 0 and 2 are inconsistent with it, 4 to 10 consistent and nearly flat,
-and the default stays 4, nearest the sites' rain estimates. The onset record's tables are downloaded by hand (`data/README.md`); without
+and the default stays 4, nearest the sites' rain estimates. `profile-einkorn-selection-ratio.json` takes einkorn's selection over 0.14 to 1.5 once the wheats are judged (ADR-0101): 0.5 to 1.1 are consistent and 0.9 fits best, so it replaces the literature's 0.14, which leaves einkorn wild. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

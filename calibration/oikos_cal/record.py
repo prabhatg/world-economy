@@ -15,7 +15,8 @@ settlement-years gives the mean log size of the settlements anywhere (#34); and 
 people-years, so dividing by people-years gives the prevalence of the endemic infection
 anywhere (#42); and herders, their domestic animals and the foragers hunting where wild
 sheep and goats range, in people-years times the effort spent on each, the bones a faunal
-assemblage samples (#37).
+assemblage samples (#37); and effort times the domestic share of the emmer and the
+einkorn sown with the crop, as for the crop (#38).
 Recording only reads the world through the bindings; it never changes its history.
 The engine writes the same record as a work-unit output (`activity`, #46), bit for bit,
 so a calibration world can run wherever the `oikos` CLI runs; `read` loads it.
@@ -43,6 +44,8 @@ class Activity:
     herders: np.ndarray = None  # people-years times herding effort [cell, century]
     herd_domestic: np.ndarray = None  # the same times the herd's domestic share [cell, century]
     hunters: np.ndarray = None  # people-years times foraging effort times wild herds' range [cell, century]
+    emmer_domestic: np.ndarray = None  # people-years times effort times emmer's domestic share [cell, century]
+    einkorn_domestic: np.ndarray = None  # the same for einkorn [cell, century]
 
     def visible(self, cultivator_visibility):
         """People-years with each cultivator counting 1 + `cultivator_visibility` times."""
@@ -56,8 +59,8 @@ def activity(world, end, every=10, parts=4) -> Activity:
     if first % 100 or end % 100 or end <= first:
         raise ValueError(f"record from {first} to {end}: both must be century boundaries, end after start")
     window = Window(first, end)
-    people, cultivators, domestic, settlements, inequality, village_size, infected, herders, herd_domestic, hunters = (
-        np.zeros((world.cells, window.centuries)) for _ in range(10))
+    (people, cultivators, domestic, settlements, inequality, village_size, infected, herders, herd_domestic, hunters,
+     emmer_domestic, einkorn_domestic) = (np.zeros((world.cells, window.centuries)) for _ in range(12))
     obsidian = {name: np.zeros((world.cells, window.centuries)) for name in world.obsidian()}
     while world.year < end:
         c = (world.year - first) // 100
@@ -67,6 +70,8 @@ def activity(world, end, every=10, parts=4) -> Activity:
         sown = n * pop * world.cultivation()
         cultivators[:, c] += sown
         domestic[:, c] += sown * world.domestication()
+        emmer_domestic[:, c] += sown * world.emmer_domestication()
+        einkorn_domestic[:, c] += sown * world.einkorn_domestication()
         inequality[:, c] += sown * world.inequality()
         for name, held in world.obsidian().items():
             obsidian[name][:, c] += n * pop * held
@@ -80,12 +85,12 @@ def activity(world, end, every=10, parts=4) -> Activity:
         hunters[:, c] += n * pop * np.clip(1.0 - cultivation - herding, 0.0, None) * world.caprine_range()
         world.run_years(n, parts=parts)
     return Activity(window, people, cultivators, domestic, obsidian, settlements, inequality, village_size, infected,
-                    herders, herd_domestic, hunters)
+                    herders, herd_domestic, hunters, emmer_domestic, einkorn_domestic)
 
 
 
 FIELDS = ("people", "cultivators", "domestic", "settlements", "inequality", "village_size", "infected", "herders",
-          "herd_domestic", "hunters")
+          "herd_domestic", "hunters", "emmer_domestic", "einkorn_domestic")
 
 
 def read(store, zones=None) -> Activity:

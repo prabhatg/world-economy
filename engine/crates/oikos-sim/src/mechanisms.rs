@@ -12,7 +12,7 @@
 //! it before the next tile starts. Mechanisms must therefore be local to the cells of
 //! the tile they are given (reading anything else only through [`Sense`]).
 
-use crate::agents::{ALONE, Agents, SHARE_ONE, Settlement, Traits};
+use crate::agents::{ALONE, Agents, EINKORN, EMMER, SHARE_ONE, Settlement, Traits};
 use crate::params::Params;
 use crate::schedule::{Component, MechanismSpec};
 use crate::world::StepStats;
@@ -959,6 +959,8 @@ impl Mechanism for Aggregation {
                     inequality: pooled(wb, tb.inequality, w, ta.inequality),
                     herding: pooled(wb, tb.herding, w, ta.herding),
                     herd_domestication: pooled(wb, tb.herd_domestication, w, ta.herd_domestication),
+                    wheat_domestication: [EMMER, EINKORN]
+                        .map(|c| pooled(wb, tb.wheat_domestication[c], w, ta.wheat_domestication[c])),
                 },
             );
             agents.weight[b] = wb + w;
@@ -1056,6 +1058,14 @@ impl Mechanism for Inundation {
 ///   spent cultivating. Weak selection gives the protracted domestication seen in the
 ///   archaeobotanical record (Purugganan and Fuller 2011; Allaby et al. 2008); strong
 ///   selection the rapid one measured in experimental cultivation (Hillman and Davies 1990).
+///   Bands sow emmer and einkorn with the crop (#38), in the same fields under the same
+///   effort, and each wheat is selected at its own fraction of the crop's selection, as
+///   the founder crops were domesticated at different paces (Allaby et al. 2017; Fuller
+///   et al. 2014). Selection is what the harvest does: reaping ripe ears with sickles
+///   selects strongly, beating or uprooting them weakly (Hillman and Davies 1990), so the
+///   rates stand for how people harvested each crop, a practice learned with cultivation
+///   itself. The crop's own share is barley's, which stands for the package in carrying
+///   capacity; the wheats' shares ride along, for the records of their rachis.
 ///
 /// - **Herding** (#37, ADR-0087). A band also moves its share of effort managing sheep and
 ///   goats toward a target: `herding_weight` times the land it can herd on, the wild
@@ -1093,6 +1103,8 @@ pub struct Cultivation {
     pub selection: f64,
     pub wild_frequency: f64,
     pub introgression: f64,
+    /// Selection on emmer's and einkorn's domestic traits under full effort (#38).
+    pub wheat_selection: [f64; 2],
     pub herding_weight: f64,
     pub herd_pressure_weight: f64,
     pub herd_selection: f64,
@@ -1118,6 +1130,10 @@ impl Cultivation {
             selection: p.selection_coefficient,
             wild_frequency: p.domestic_wild_frequency,
             introgression: p.introgression_rate,
+            wheat_selection: [
+                p.emmer_selection_ratio * p.selection_coefficient,
+                p.einkorn_selection_ratio * p.selection_coefficient,
+            ],
             herding_weight: p.herding_weight,
             herd_pressure_weight: p.herd_pressure_weight,
             herd_selection: p.herd_selection,
@@ -1315,7 +1331,19 @@ impl Cultivation {
 
     /// Domestic share of the crop after one period at `effort`, from `d`.
     pub fn domesticate(&self, d: f64, effort: f64) -> f64 {
-        let gain = self.selection * effort * d.max(self.wild_frequency) * (1.0 - d);
+        self.select(d, effort, self.selection)
+    }
+
+    /// Domestic shares of emmer and einkorn after one period at `effort` (#38).
+    pub fn domesticate_wheats(&self, d: [f64; 2], effort: f64) -> [f64; 2] {
+        [
+            self.select(d[0], effort, self.wheat_selection[0]),
+            self.select(d[1], effort, self.wheat_selection[1]),
+        ]
+    }
+
+    fn select(&self, d: f64, effort: f64, selection: f64) -> f64 {
+        let gain = selection * effort * d.max(self.wild_frequency) * (1.0 - d);
         let loss = self.introgression * (1.0 - effort) * d;
         oikos_math::finite(d + gain - loss).clamp(0.0, 1.0)
     }
@@ -1372,6 +1400,7 @@ impl Mechanism for Cultivation {
                 && traits.domestication == 0
                 && traits.herding == 0
                 && traits.herd_domestication == 0
+                && traits.wheat_domestication == [0; 2]
             {
                 continue;
             }
@@ -1404,6 +1433,7 @@ impl Mechanism for Cultivation {
             let cultivation = Traits::toward(traits.cultivation, next_e);
             // Rounding toward each change may overshoot the budget by a unit or two.
             let herding = Traits::toward(traits.herding, next_h).min(SHARE_ONE - cultivation);
+            let wheats = self.domesticate_wheats(traits.wheat_domestication.map(Traits::share), e);
             agents.set_traits(
                 i,
                 Traits {
@@ -1414,6 +1444,8 @@ impl Mechanism for Cultivation {
                         traits.herd_domestication,
                         self.domesticate_herd(dh, h, sense.range[cell]),
                     ),
+                    wheat_domestication: [EMMER, EINKORN]
+                        .map(|c| Traits::toward(traits.wheat_domestication[c], wheats[c])),
                     ..traits
                 },
             );

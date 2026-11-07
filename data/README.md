@@ -26,7 +26,7 @@ python -m oikos_data build hydrology m1-swasia    # downloads RiverATLAS + LakeA
 python -m oikos_data build soils m1-swasia        # reads SoilGrids 1 km windows once (~1 min)
 python -m oikos_data build radiocarbon_dates m1-swasia     # p3k14c + IntCal20 -> build/*.parquet
 python -m oikos_data build radiocarbon_density m1-swasia
-python -m oikos_data build rachis m1-swasia                # Allaby et al. 2017 barley rachis table
+python -m oikos_data build rachis m1-swasia                # Allaby et al. 2017 barley, emmer, einkorn rachis
 python -m oikos_data build sites m1-swasia                 # Palmisano et al. 2021 survey settlements
 python -m oikos_data build obsidian m1-swasia              # DObsiSS volcano locations -> pack
 python -m oikos_data build obsidian_assemblages m1-swasia  # DObsiSS sourced artefacts -> table
@@ -77,7 +77,7 @@ Observation tables (Parquet, locked like packs; docs/05 §5.1):
 |---|---|---|
 | `radiocarbon_dates` | one per p3k14c date in the region: lab id, 14C age/error, material, taxa, site, source database, location accuracy, cell, IntCal20 median year, probability share in the window | p3k14c 1.0.0 (MIT), IntCal20 (CC BY 4.0); repeated lab ids keep their first row |
 | `radiocarbon_density` | cell × century (12,000–3,000 BCE): summed calibrated probability and number of dates, for dates located within 500 m or exactly | as above |
-| `rachis` | one per archaeobotanical assemblage in the region: crop, site and phase, location, cell, median calendar year, non-shattering share and count, rachis fragments determined and excluded, primary source | Allaby et al. 2017 supplement, Table S4 (barley; CC BY 4.0) |
+| `rachis` | one per archaeobotanical assemblage in the region: crop, site and phase, location, cell, median calendar year, non-shattering share and count, rachis fragments determined and excluded, primary source | Allaby et al. 2017 supplement, Tables S4 (barley), S7 (emmer) and S10 (einkorn), the wheats' read from the text of their EMF pictures (CC BY 4.0) |
 | `sites` | one per survey site phase in the region: survey window, site id, location, cell, start and end calendar years of its cultural period, size in hectares (NaN when unknown), source survey | Palmisano et al. 2021, Zenodo 4322979 (Central Anatolia and Upper Mesopotamia; CC BY 4.0) |
 | `archaeobotany` (local only, never written or locked) | one per dated site phase in the region: phase, site, location, cell, period and approximate start and end calendar years, crop items (domesticates, crop progenitors, presumed crops) and all items among charred grains and seeds of its retained samples, number of samples | Origins of agriculture database (Wallace et al. 2018, ADS doi:10.5284/1046750; ADS Terms of Use and Access: research use, no redistribution of derived data) |
 | `house_ginis` (local only, never written or locked) | one per site of the region in Kohler et al. 2017: site, period, best calendar year, Gini of its house floor areas with its 80% interval where computed, houses measured, subsistence, basis, location and cell | Kohler et al. 2017, Nature 551: 619-622, Supplementary Table 2 (author manuscript, Europe PMC; research use, no redistribution); site coordinates from p3k14c |

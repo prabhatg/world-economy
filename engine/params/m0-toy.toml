@@ -924,6 +924,33 @@ sources = [
   { citation = "Hillman, G.C., Davies, M.S. (1990). Measured domestication rates in wild wheats and barley under primitive cultivation, and their archaeological implications. Journal of World Prehistory 4, 157-222.", doi = "10.1007/BF00974763" },
 ]
 
+[params.emmer_selection_ratio]
+group = "cultivation"
+unit = "1"
+description = "Selection for domestic traits in emmer wheat, sown with the crop under the same effort, as a fraction of the crop's (barley's) selection_coefficient (#38)."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.74
+prior = { dist = "log_uniform", lo = 0.05, hi = 2.0 }
+status = "literature"
+note = "Allaby et al. (2017, Table S13) estimate early selection from the rachis record of each crop and region: in the southern Levant, 0.00068 per generation for emmer against 0.00091 for barley, a ratio of 0.74 (in the eastern Fertile Crescent emmer's is 0.0011, with no barley estimate there). Ratios rather than rates, as the record measures selection in fields whose effort the model sets, the same for every crop. Wide prior: each estimate rests on a few assemblages, and their 95% intervals span an order of magnitude."
+sources = [
+  { citation = "Allaby, R.G., Stevens, C., Lucas, L., Maeda, O., Fuller, D.Q. (2017). Geographic mosaics and changing rates of cereal domestication. Philosophical Transactions of the Royal Society B 372: 20160429 (Table S13).", doi = "10.1098/rstb.2016.0429" },
+]
+
+[params.einkorn_selection_ratio]
+group = "cultivation"
+unit = "1"
+description = "Selection for domestic traits in einkorn wheat, sown with the crop under the same effort, as a fraction of the crop's (barley's) selection_coefficient (#38)."
+kind = { type = "real", min = 0.0, max = 5.0 }
+default = 0.9
+prior = { dist = "log_uniform", lo = 0.05, hi = 2.0 }
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0101): with every other parameter at its calibrated default, the values from 0.5 to 1.1 are consistent with every record for three seeds, and 0.9 fits the summaries best (log-likelihood -83.0, against -83.7 at 1 and -83.4 at 0.8). The literature's 0.14 is not: einkorn then stays wild where the record has it mostly domestic by 7,600 BCE (Cafer Höyük, 46 of 57 ears). Allaby et al. (2017, Table S13) give 0.00053 per generation for einkorn at Qaramel against 0.0037 for barley at Jerf el-Ahmar, a ratio of 0.14 that rests on Qaramel's one early assemblage (10,275 cal BC, 18 fragments); the prior stays wide around it."
+sources = [
+  { citation = "ManyWorlds M1 calibration (ADR-0101): einkorn_selection_ratio from 0.14 to 1.5 with the other parameters at their calibrated defaults, three seeds each, calibration/runs/m1/round13/profile-einkorn-selection-ratio.json.", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round13/profile-einkorn-selection-ratio.json" },
+  { citation = "Allaby, R.G., Stevens, C., Lucas, L., Maeda, O., Fuller, D.Q. (2017). Geographic mosaics and changing rates of cereal domestication. Philosophical Transactions of the Royal Society B 372: 20160429 (Table S13).", doi = "10.1098/rstb.2016.0429" },
+]
+
 [params.domestic_wild_frequency]
 group = "cultivation"
 unit = "1"

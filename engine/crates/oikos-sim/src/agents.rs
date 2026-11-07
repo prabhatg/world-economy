@@ -19,6 +19,11 @@ pub const SHARE_ONE: u32 = 1_000_000_000;
 /// The settlement label of a group that lives by itself, a settlement of one group.
 pub const ALONE: u32 = 0;
 
+/// Index of emmer in [`Traits::wheat_domestication`].
+pub const EMMER: usize = 0;
+/// Index of einkorn in [`Traits::wheat_domestication`].
+pub const EINKORN: usize = 1;
+
 /// A band's practice (ADR-0049), as shares of [`SHARE_ONE`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Traits {
@@ -34,12 +39,22 @@ pub struct Traits {
     pub herding: u32,
     /// Share of domestic animals in the herd the band manages (#37).
     pub herd_domestication: u32,
+    /// Shares of domestic-type plants in the emmer and the einkorn ([`EMMER`], [`EINKORN`])
+    /// the band sows with its crop (#38); the crop's own share is barley's, which stands
+    /// for the package in carrying capacity. One column, as they are copied together.
+    pub wheat_domestication: [u32; 2],
 }
 
 impl Traits {
     /// Foragers: no cultivation, wild crops.
-    pub const FORAGER: Traits =
-        Traits { cultivation: 0, domestication: 0, inequality: 0, herding: 0, herd_domestication: 0 };
+    pub const FORAGER: Traits = Traits {
+        cultivation: 0,
+        domestication: 0,
+        inequality: 0,
+        herding: 0,
+        herd_domestication: 0,
+        wheat_domestication: [0; 2],
+    };
 
     pub fn share(x: u32) -> f64 {
         x as f64 / SHARE_ONE as f64
@@ -82,6 +97,8 @@ pub struct Agents {
     pub herding: Vec<u32>,
     /// [`Traits::herd_domestication`] per agent.
     pub herd_domestication: Vec<u32>,
+    /// [`Traits::wheat_domestication`] per agent.
+    pub wheat_domestication: Vec<[u32; 2]>,
     /// The settlement each group lives in: [`ALONE`], or a label it shares with the other
     /// groups of its settlement, unique within its cell (drawn from the cell's birth
     /// counter). Labels never span cells.
@@ -156,6 +173,7 @@ struct Pool {
     inequality: u128,
     herding: u64,
     herd_domestication: u64,
+    wheat_domestication: [u64; 2],
 }
 
 impl Pool {
@@ -166,6 +184,9 @@ impl Pool {
         self.inequality += w as u128 * t.inequality as u128;
         self.herding += w * t.herding as u64;
         self.herd_domestication += w * t.herd_domestication as u64;
+        for (sum, &d) in self.wheat_domestication.iter_mut().zip(&t.wheat_domestication) {
+            *sum += w * d as u64;
+        }
     }
 
     /// People-weighted mean traits (rounded down).
@@ -175,6 +196,7 @@ impl Pool {
             && self.inequality == 0
             && self.herding == 0
             && self.herd_domestication == 0
+            && self.wheat_domestication == [0; 2]
         {
             return Traits::FORAGER;
         }
@@ -189,6 +211,7 @@ impl Pool {
             },
             herding: (self.herding / w) as u32,
             herd_domestication: (self.herd_domestication / w) as u32,
+            wheat_domestication: self.wheat_domestication.map(|d| (d / w) as u32),
         }
     }
 }
@@ -222,6 +245,7 @@ impl Agents {
         self.inequality.push(traits.inequality);
         self.herding.push(traits.herding);
         self.herd_domestication.push(traits.herd_domestication);
+        self.wheat_domestication.push(traits.wheat_domestication);
         self.settlement.push(settlement);
     }
 
@@ -232,6 +256,7 @@ impl Agents {
             inequality: self.inequality[i],
             herding: self.herding[i],
             herd_domestication: self.herd_domestication[i],
+            wheat_domestication: self.wheat_domestication[i],
         }
     }
 
@@ -241,6 +266,7 @@ impl Agents {
         self.inequality[i] = t.inequality;
         self.herding[i] = t.herding;
         self.herd_domestication[i] = t.herd_domestication;
+        self.wheat_domestication[i] = t.wheat_domestication;
     }
 
     pub fn append(&mut self, other: &mut Agents) {
@@ -252,6 +278,7 @@ impl Agents {
         self.inequality.append(&mut other.inequality);
         self.herding.append(&mut other.herding);
         self.herd_domestication.append(&mut other.herd_domestication);
+        self.wheat_domestication.append(&mut other.wheat_domestication);
         self.settlement.append(&mut other.settlement);
     }
 
@@ -265,6 +292,7 @@ impl Agents {
         self.inequality.extend_from_slice(&other.inequality[span.clone()]);
         self.herding.extend_from_slice(&other.herding[span.clone()]);
         self.herd_domestication.extend_from_slice(&other.herd_domestication[span.clone()]);
+        self.wheat_domestication.extend_from_slice(&other.wheat_domestication[span.clone()]);
         self.settlement.extend_from_slice(&other.settlement[span]);
     }
 
@@ -284,6 +312,7 @@ impl Agents {
         self.inequality = order.iter().map(|&i| self.inequality[i]).collect();
         self.herding = order.iter().map(|&i| self.herding[i]).collect();
         self.herd_domestication = order.iter().map(|&i| self.herd_domestication[i]).collect();
+        self.wheat_domestication = order.iter().map(|&i| self.wheat_domestication[i]).collect();
         self.settlement = order.iter().map(|&i| self.settlement[i]).collect();
     }
 
@@ -322,6 +351,13 @@ impl Agents {
                         inequality: mean(&self.inequality),
                         herding: mean(&self.herding),
                         herd_domestication: mean(&self.herd_domestication),
+                        wheat_domestication: [EMMER, EINKORN].map(|c| {
+                            let s: u128 = small
+                                .iter()
+                                .map(|&k| self.weight[k] as u128 * self.wheat_domestication[k][c] as u128)
+                                .sum();
+                            (s / people as u128) as u32
+                        }),
                     };
                     out.push_in(self.id[j], cell, people, t, self.settlement[j]);
                 }
@@ -340,6 +376,7 @@ impl Agents {
         self.inequality.clear();
         self.herding.clear();
         self.herd_domestication.clear();
+        self.wheat_domestication.clear();
         self.settlement.clear();
     }
 
@@ -418,7 +455,9 @@ impl Agents {
         scratch.herding.clear();
         scratch.herding.resize(n, 0);
         scratch.herd_domestication.clear();
+        scratch.wheat_domestication.clear();
         scratch.herd_domestication.resize(n, 0);
+        scratch.wheat_domestication.resize(n, [0; 2]);
         scratch.settlement.clear();
         scratch.settlement.resize(n, ALONE);
         // Scatter; afterwards counts[k] is the end of cell k's group.
@@ -434,6 +473,7 @@ impl Agents {
             scratch.inequality[dst] = self.inequality[i];
             scratch.herding[dst] = self.herding[i];
             scratch.herd_domestication[dst] = self.herd_domestication[i];
+            scratch.wheat_domestication[dst] = self.wheat_domestication[i];
             scratch.settlement[dst] = self.settlement[i];
         }
 
@@ -456,6 +496,7 @@ impl Agents {
                     scratch.inequality[i] = scratch.inequality[i - 1];
                     scratch.herding[i] = scratch.herding[i - 1];
                     scratch.herd_domestication[i] = scratch.herd_domestication[i - 1];
+                    scratch.wheat_domestication[i] = scratch.wheat_domestication[i - 1];
                     scratch.settlement[i] = scratch.settlement[i - 1];
                     i -= 1;
                 }
@@ -708,10 +749,10 @@ mod tests {
     /// Random agents in `cells` cells with unique ids.
     fn arb_agents(cells: u32) -> impl Strategy<Value = Agents> {
         let row = (0..cells, 0u64..1_000, 0u64..40, 0..=SHARE_ONE, 0..=SHARE_ONE, 0..=u32::MAX, 0u64..4);
-        let herds = (0..=SHARE_ONE / 2, 0..=SHARE_ONE);
+        let herds = (0..=SHARE_ONE / 2, 0..=SHARE_ONE, 0..=SHARE_ONE, 0..=SHARE_ONE);
         prop::collection::vec((row, herds), 0..300).prop_map(|rows| {
             let mut a = Agents::default();
-            for (i, ((cell, counter, w, e, d, v, s), (h, hd))) in rows.into_iter().enumerate() {
+            for (i, ((cell, counter, w, e, d, v, s), (h, hd, em, ek))) in rows.into_iter().enumerate() {
                 // Unique ids: counter space partitioned by row index.
                 let e = e / 2; // effort shares that leave room for herding
                 let t = Traits {
@@ -720,6 +761,7 @@ mod tests {
                     inequality: v,
                     herding: h,
                     herd_domestication: hd,
+                    wheat_domestication: [em, ek],
                 };
                 let id = EntityId::new(cell, counter * 1_000 + i as u64);
                 // Most groups live alone; the rest in one of a few settlements of their cell.

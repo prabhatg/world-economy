@@ -35,7 +35,8 @@ release in the authors' MIT-licensed compendium on Zenodo (the canonical tDAR co
 a browser), calibrated with IntCal20 (CC BY 4.0); both checked 2026-10-28.
 Domestication timing comes from the barley rachis assemblages (shattering vs
 non-shattering ears) of Allaby et al. 2017's supplement on figshare (CC BY 4.0, checked
-2026-10-29; ADR-0051); its emmer and einkorn tables are images and are not yet read.
+2026-10-29; ADR-0051); its emmer and einkorn tables are EMF pictures that keep their
+text, read from it since ADR-0101.
 Settlement counts come from the survey compilation of Palmisano et al. 2021 on Zenodo
 (CC BY 4.0, checked 2026-10-29; ADR-0059): dated site phases from surface surveys in
 South-Central Anatolia and Upper Mesopotamia. Its Southern Levant settlements (DAAHL)

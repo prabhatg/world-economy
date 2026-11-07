@@ -16,9 +16,13 @@ beta-binomial around the model share, with `concentration` φ (variance
 p(1-p)(n+φ)/(n(1+φ)) of the share): φ = 10 lets a single assemblage sit far from the
 regional trend without dominating the score, and the binomial is the limit φ → ∞.
 
+Each crop is judged by its own record against its own share (#38): barley against the
+crop's, emmer and einkorn against the wheats bands sow with it (`record.Activity`'s
+`emmer_domestic`, `einkorn_domestic`), under the same effort.
+
 What it does not yet model: the share of the harvest gathered from wild stands by
-cultivators, regional crops other than barley, and the dating uncertainty of each phase
-beyond the window.
+cultivators, where each crop's wild ancestor grew, and the dating uncertainty of each
+phase beyond the window.
 """
 
 import math
@@ -28,7 +32,10 @@ import numpy as np
 
 from .radiocarbon import Window
 
-__all__ = ["beta_binomial", "Operator"]
+__all__ = ["CROPS", "beta_binomial", "crop", "Operator"]
+
+# Each crop's domestic people-years in `record.Activity`.
+CROPS = {"barley": "domestic", "emmer": "emmer_domestic", "einkorn": "einkorn_domestic"}
 
 _lgamma = np.vectorize(math.lgamma, otypes=[float])
 
@@ -44,12 +51,25 @@ def beta_binomial(k, n, p, concentration):
     return _lgamma(n + 1) - _lgamma(k + 1) - _lgamma(n - k + 1) + _lbeta(k + a, n - k + b) - _lbeta(a, b)
 
 
+def crop(table, name, leave_out=()):
+    """The rows of a rachis table (columns as lists) for crop `name`, but those of the sites `leave_out`."""
+    keep = [i for i, (c, s) in enumerate(zip(table["crop"], table["site"])) if c == name and s not in leave_out]
+    return {k: [v[i] for i in keep] for k, v in table.items()}
+
+
 class Operator:
-    """Scores domestication histories against a rachis table (columns as
-    `oikos_data.rachis`: h3, median_year, k_nonshattering, n_rachis)."""
+    """Scores domestication histories against a rachis table of one crop (columns as
+    `oikos_data.rachis`: crop, h3, median_year, k_nonshattering, n_rachis)."""
 
     def __init__(self, table, cells, window: Window, rings=1, half_window=1, concentration=2.0, wild=0.001):
         """`cells`: H3 ids of the world's cells (ascending, the order activity arrays use)."""
+        crops = sorted(set(table["crop"]))
+        if len(crops) > 1:
+            raise ValueError(f"the table holds {crops}: judge one crop at a time (`crop`)")
+        self.crop = crops[0] if crops else "barley"
+        if self.crop not in CROPS:
+            raise ValueError(f"no model share for {self.crop}; the model sows {sorted(CROPS)}")
+        self.field = CROPS[self.crop]
         self.window, self.concentration, self.wild = window, concentration, wild
         cells = np.asarray(cells, dtype=np.uint64)
         self.k = np.asarray(table["k_nonshattering"], dtype=float)
@@ -74,10 +94,11 @@ class Operator:
         """Model domestic share of the crop at each assemblage."""
         if activity.window != self.window:
             raise ValueError(f"activity covers {activity.window}, the operator {self.window}")
+        domestic = getattr(activity, self.field)
         out = np.empty(len(self.near))
         for i, (cells, when) in enumerate(zip(self.near, self.when)):
             sown = activity.cultivators[cells, when].sum()
-            out[i] = activity.domestic[cells, when].sum() / sown if sown > 0 else self.wild
+            out[i] = domestic[cells, when].sum() / sown if sown > 0 else self.wild
         return out
 
     def log_likelihood(self, activity):

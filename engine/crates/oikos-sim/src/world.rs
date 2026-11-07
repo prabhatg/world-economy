@@ -20,7 +20,7 @@
 //! drifted more than [`IMBALANCE_TOLERANCE_PCT`] above the mean. Results never depend
 //! on the partitioning, so these are performance settings, not model parameters.
 
-use crate::agents::{Agents, SHARE_ONE, Traits};
+use crate::agents::{Agents, EINKORN, EMMER, SHARE_ONE, Traits};
 use crate::environment::{self, Farmland};
 use crate::exchange::Obsidian;
 use crate::inputs::Inputs;
@@ -614,6 +614,36 @@ impl World {
             .map(|c| match self.effort_sum[c] {
                 0 => 0.0,
                 e => self.crop_sum[c] as f64 / e as f64,
+            })
+            .collect()
+    }
+
+    /// Domestic share of the emmer each cell sows with its crop (#38), effort-weighted as
+    /// [`World::domestication`] is (0 where nobody cultivates).
+    pub fn emmer_domestication(&self) -> Vec<f64> {
+        self.wheat_domestication(EMMER)
+    }
+
+    /// Domestic share of the einkorn each cell sows with its crop (#38).
+    pub fn einkorn_domestication(&self) -> Vec<f64> {
+        self.wheat_domestication(EINKORN)
+    }
+
+    /// Summed from the agents when asked (records sample it once a decade), with each
+    /// group's effort times share truncated as [`Traits::practice`] truncates the crop's.
+    fn wheat_domestication(&self, wheat: usize) -> Vec<f64> {
+        let one = SHARE_ONE as u64;
+        let mut sum = vec![0u64; self.grid.len()];
+        for a in self.agent_slices() {
+            for i in (0..a.len()).filter(|&i| a.cultivation[i] != 0) {
+                let d = a.wheat_domestication[i][wheat] as u64;
+                sum[a.cell[i] as usize] += a.weight[i] * (a.cultivation[i] as u64 * d / one);
+            }
+        }
+        (0..self.grid.len())
+            .map(|c| match self.effort_sum[c] {
+                0 => 0.0,
+                e => sum[c] as f64 / e as f64,
             })
             .collect()
     }

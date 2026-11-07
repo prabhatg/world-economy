@@ -22,7 +22,8 @@ likelihoods use:
   research intensity still cancels per block. Observation variance and covariance are a
   bootstrap over each subregion's sites (all its dates resampled together), apart in
   each subregion; all subregions are one group;
-- domestication eras: the mean domestic share of barley assemblages in each era,
+- domestication eras: the mean domestic share of one crop's assemblages (barley, emmer
+  or einkorn, #38) in each era,
   weighted by n / (n + φ), the share of an assemblage's information that beta-binomial
   overdispersion φ leaves (ADR-0051). Observation variance is that of the weighted mean
   of beta-binomial shares around it;
@@ -177,7 +178,7 @@ class DomesticationEras:
             p = (w * share[m]).sum() / w.sum()
             n, phi = op.n[m], op.concentration
             v = max(p * (1 - p), 1e-6) * (n + phi) / (n * (1 + phi))
-            self.targets.append(_target(f"domestic barley {name}", p, (w * w * v).sum() / w.sum() ** 2,
+            self.targets.append(_target(f"domestic {op.crop} {name}", p, (w * w * v).sum() / w.sum() ** 2,
                                         discrepancy_sd**2))
 
     def model(self, activity):

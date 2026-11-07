@@ -31,8 +31,7 @@ def test_an_m1_work_unit_records_what_the_bindings_do(tmp_path):
 
     want = record.activity(oikos.World.from_packs(packs, seed=3, params=params), end=end)
     assert got.window == want.window
-    for name in ("people", "cultivators", "domestic", "settlements", "inequality", "village_size", "infected",
-                 "herders", "herd_domestic", "hunters"):
+    for name in record.FIELDS:
         np.testing.assert_array_equal(getattr(got, name), getattr(want, name), err_msg=name)
     assert list(got.obsidian) == list(want.obsidian) and want.obsidian
     for k in want.obsidian:
