@@ -157,7 +157,12 @@ Work items are GitHub issues under the M1 milestone.
 - **Coordinator v0** (work generator, dispatcher, result ingest, validator) with cloud
   spot workers as the first client class. First step done (ADR-0096, #46): a
   calibration world is a work unit whose result carries its calibration record, so it
-  runs wherever the `oikos` CLI runs and is scored on the calibration host.
+  runs wherever the `oikos` CLI runs and is scored on the calibration host. Second
+  step done (ADR-0097, #21): `oikos-coord serve` leases units to hosts, validates
+  their results by quorum on the state hash with adaptive replication, keeps each
+  run's outputs as an archive and serves forcing packs by content hash; `oikos-coord
+  work` is the headless host; `oikos_cal` submits waves through it (`--coordinator`).
+  Next: spot VMs as hosts.
 - **Browser client v0**: closed alpha, runs M1 work units and shows "your world".
 - **Exit:** plausible emergence of farming and villages in the right windows across
   ensembles, with quantified fit; competing domestication hypotheses compared;

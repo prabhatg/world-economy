@@ -81,12 +81,34 @@ Rust services on GCP (portable to any cloud):
 - **Lesson from SETI@home**: the central result pipeline (ingest, validate, analyze)
   was the bottleneck — it is designed and load-tested before public launch.
 
+*Implemented (v0, ADR-0097, #21):* the `oikos-coord` crate. Its state machine
+(`Coordinator`) holds experiments' units, leases and host records, with no I/O, and
+every decision is a function of the calls and the times passed in, so it is tested
+exactly and snapshot to JSON. `oikos-coord serve` wraps it in a small HTTP/JSON API
+(submit, lease, archive upload, report, status, packs by id) for one trusted
+network: no accounts, no signatures, no capability matching. `oikos-coord work` is the
+headless client: it leases units, fetches their forcing packs by id into a cache and
+checks each against its BLAKE3 id, checks that the unit writes only inside its run
+directory, runs the `oikos` CLI in a child process in a fresh
+directory, uploads that directory as a tar archive and reports the result. The gate
+runs two workers on the golden unit through it and requires the golden hash. Postgres,
+signed URLs and object storage replace the JSON snapshot and local archives when one
+machine is no longer enough.
+
 ## 11.4 Result validation & trust
 
 - **Bitwise determinism** (doc 3.5) makes validation a hash comparison of canonical
   outputs.
 - **Adaptive replication**: new hosts get 2× replication; established reliable hosts
   1× with random spot-check replicas; any mismatch drops reliability and re-issues.
+  *v0 (ADR-0097):* a unit is done when two distinct hosts report the same state hash,
+  or one trusted host does (trusted after `trusted_after` agreements and never
+  outvoted); one unit in `spot_check_one_in`, chosen by a hash of its id, is
+  replicated anyway; a disagreement asks for one more host, up to `max_replicas`, and
+  marks the hosts in the minority outvoted. Whether a result may stand alone is fixed
+  by its host's trust when it arrives; a later result disagreeing with one accepted
+  alone reopens the unit. A host is never given a unit twice; a unit whose run fails on
+  `max_replicas` hosts is failed.
 - **Homogeneous redundancy** for GPU-float kernels that are not bit-exact across
   vendors: replicas compared only within the same platform class.
 - **Plausibility checks**: conservation laws and invariant checks recomputed server-side

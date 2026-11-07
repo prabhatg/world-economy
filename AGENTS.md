@@ -31,7 +31,7 @@ work item in them is a GitHub issue.
 | [README.md](README.md) | Overview, decision summary, index of design docs |
 | [docs/](docs/README.md) | Design documents 01–15 ([map](docs/README.md)), [ADR log](docs/adr/README.md), [open questions](docs/open-questions.md) |
 | [docs/index.html](docs/index.html) | Public website (GitHub Pages from `/docs` on `main`) |
-| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli`, `oikos-py` (Python bindings) |
+| [engine/](engine/README.md) | Rust workspace: `oikos-core`, `oikos-math`, `oikos-grid`, `oikos-params`, `oikos-io`, `oikos-sim`, `oikos-cli`, `oikos-coord` (Coordinator v0), `oikos-py` (Python bindings) |
 | [engine/python/](engine/python/tests/test_bindings.py) | Python binding tests (pytest) and examples |
 | [data/](data/README.md) | Regions, dataset manifests, ingestion pipelines (`oikos_data`), forcing-pack lock file |
 | [calibration/](calibration/README.md) | Observation operators, screening, emulators and history matching (`oikos_cal`); recorded runs in `calibration/runs/` |
@@ -76,6 +76,7 @@ scripts/bench.sh               # throughput + scaling sweep -> target/bench.json
 scripts/instructions.sh        # exact wasm instruction count per agent-step (deterministic)
 cargo run --release -p oikos-cli -- run examples/outputs.workunit.json -o target/example-result.json
 cargo run --release -p oikos-cli -- params        # registry as JSON
+cargo test --release -p oikos-coord               # Coordinator v0 (native only; serve/work: engine/README.md)
 maturin develop --release -m crates/oikos-py/Cargo.toml   # Python module `oikos` into the venv
 pytest python/tests                               # Python binding tests
 (cd ../data && python -m oikos_data check)        # rebuild locked forcing packs, compare ids
@@ -94,7 +95,9 @@ only on purpose and commit the full `pip freeze`.
 
 `oikos-py` links against Python, so it is not a workspace default member: `cargo test`,
 `cargo clippy` and the wasm build skip it, and the gate builds it with maturin. New
-crates must be added to `default-members` in `engine/Cargo.toml`. The bindings are thin
+crates must be added to `default-members` in `engine/Cargo.toml`; the one other exception
+is `oikos-coord`, which serves HTTP and is native only, so the gate runs its clippy and
+tests by name. The bindings are thin
 wrappers: simulation logic belongs in `oikos-sim`, and Python must see the same hashes
 as the CLI.
 

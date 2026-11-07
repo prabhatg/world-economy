@@ -21,6 +21,7 @@ through the Python bindings (`oikos`) and never change them.
 | `oikos_cal/emulator.py` | Gaussian-process emulators (linear trend, ARD length scales, nugget) and Latin hypercubes |
 | `oikos_cal/history.py` | History matching: targets, implausibility (one by one and for correlated groups), waves, sampling the space not yet ruled out |
 | `oikos_cal/targets.py` | Summaries of the record for history matching: radiocarbon eras, domestication eras, site eras, obsidian zones, onset eras, village sizes, radiocarbon subregions (ADR-0079), onset contrasts by wild-cereal stands (ADR-0080), house Ginis |
+| `oikos_cal/coord.py` | Calibration worlds through Coordinator v0 (ADR-0097): jobs submitted to `oikos-coord serve` as M1 work units, each accepted run's archive fetched, its record read and scored here, then removed |
 | `oikos_cal/ensemble.py` | Ensembles for the viewer (ADR-0063): the calibrated defaults and the best consistent worlds of a `best` record, run as work units by the `oikos` CLI with outputs, and a `catalog.json` |
 | `oikos_cal/m1.py` | The M1 problem: operators, targets, worlds run in worker processes |
 | `oikos_cal/__main__.py` | `python -m oikos_cal screen / wave / best / profile / ensemble / report` |
@@ -86,6 +87,11 @@ continuing that file leave it out too unless a later wave adds it back (`--leave
 with no record); a wave never leaves out a record the waves it continues judged
 (ADR-0077). Round 10's first three waves left the house-size Ginis out; since the
 maintainer's decision of 2026-11-03 (#43) committed run files may carry them.
+`--coordinator URL` (on `screen`, `wave`, `best` and `profile`) runs the worlds on the
+hosts working for an `oikos-coord serve` (ADR-0097; `engine/README.md`) instead of in
+local processes: the jobs become one experiment of M1 work units, a host's result
+stands when hosts agree on its state hash, and each accepted record is fetched and
+scored here in `--workers` processes. The outputs are the same, bit for bit.
 `profile` varies one parameter with every other at its default and chooses the
 consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
 log-likelihoods): for a parameter a new record

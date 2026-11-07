@@ -69,6 +69,10 @@ be published with them.
 
 import io
 import multiprocessing
+import os
+import shutil
+import tempfile
+import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -311,9 +315,32 @@ def _run(job):
     return _problem.simulate(params, seed)
 
 
-def evaluate(jobs, workers, leave_out=()):
+def _score(job):
+    from . import coord
+
+    url, unit_id, scratch = job
+    return coord.collect(url, unit_id, scratch, _problem.outputs)
+
+
+def evaluate(jobs, workers, leave_out=(), coordinator=None, poll=30):
     """Outputs [job, name] of (params, seed) jobs, run in `workers` processes, judged
-    without the records `leave_out`."""
+    without the records `leave_out`. With `coordinator` (an `oikos-coord serve` URL),
+    the worlds run on the hosts working for it and are scored here in `workers`
+    processes (ADR-0097): the same outputs, bit for bit."""
     ctx = multiprocessing.get_context("spawn")  # never fork a process whose rayon pool is running
     with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_start, initargs=(tuple(leave_out),)) as ex:
-        return np.array(list(ex.map(_run, jobs)))
+        if coordinator is None:
+            return np.array(list(ex.map(_run, jobs)))
+        from . import coord
+
+        experiment = time.strftime("cal-%Y%m%d-%H%M%S") + f"-{os.getpid()}"
+        ids = coord.submit(coordinator, experiment, jobs)
+        counts = coord.wait(coordinator, experiment, poll)
+        if counts["failed"]:
+            raise RuntimeError(f"{experiment}: {counts['failed']} units failed validation; "
+                               f"see {coordinator}/experiments/{experiment}")
+        scratch = Path(tempfile.mkdtemp(prefix=f"{experiment}-"))
+        try:
+            return np.array(list(ex.map(_score, [(coordinator, i, scratch / i) for i in ids])))
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)

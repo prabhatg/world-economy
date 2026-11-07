@@ -11,6 +11,7 @@ Rust workspace for the ManyWorlds simulation engine. Design: [docs/03-engine.md]
 | `oikos-io` | Output formats: minimal Zarr v3 writer (gzip, deterministic bytes) and Parquet tables |
 | `oikos-sim` | Super-individual agent store, phased partitioned step, checkpoints, work units |
 | `oikos-cli` | `oikos` binary: runs work units (natively or under wasmtime), benchmarks, exports the parameter registry (`oikos params`) |
+| `oikos-coord` | Coordinator v0 (ADR-0097): `oikos-coord serve` dispatches work units by lease and validates results by quorum on the state hash; `oikos-coord work` is a host that runs them with the `oikos` CLI. Native only, so not a default member: the gate checks and tests it separately |
 | `oikos-py` | Python module `oikos` (PyO3, abi3 wheel built with maturin): create, run, fork and read worlds in-process. Not a default member: `cargo test` and the wasm build skip it |
 
 The M0 mechanism is a toy (logistic growth, band fission and migration over the
@@ -59,6 +60,18 @@ cargo test --release --target wasm32-wasip1
 cargo build --release --target wasm32-wasip1 -p oikos-cli
 wasmtime run --dir . target/wasm32-wasip1/release/oikos.wasm run golden/m0-toy.workunit.json
 ```
+
+### Coordinator
+
+```sh
+cargo build --release -p oikos-cli -p oikos-coord
+target/release/oikos-coord serve --dir target/coord --addr 127.0.0.1:8650
+# submit: POST /experiments/<name> with [{"id": ..., "unit": <work unit>}, ...]
+target/release/oikos-coord work --coordinator http://127.0.0.1:8650 --host my-host \
+  --oikos target/release/oikos --until-idle
+```
+
+v0 has no authentication: run it only where your own workers reach it.
 
 ### Python
 

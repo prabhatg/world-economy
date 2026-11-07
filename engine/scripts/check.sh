@@ -20,9 +20,12 @@ cargo fmt --all --check
 
 step "clippy"
 cargo clippy --all-targets -- -D warnings
+# The coordinator is native only (it serves HTTP), so it is not a default member.
+cargo clippy -p oikos-coord --all-targets -- -D warnings
 
 step "tests (native, release)"
 cargo test --release
+cargo test --release -p oikos-coord
 
 if [[ $quick == 1 ]]; then
   echo "quick gate passed"
@@ -37,6 +40,30 @@ cargo build --release -p oikos-cli
 native=$(./target/release/oikos run golden/m0-toy.workunit.json)
 diff <(grep -v '"engine"' golden/m0-toy.json) <(echo "$native" | grep -v '"engine"')
 native_hash=$(echo "$native" | sed -n 's/.*"state_hash": "\([0-9a-f]*\)".*/\1/p')
+
+step "coordinator: two workers run the golden unit with the CLI; quorum accepts its hash"
+cargo build --release -p oikos-coord
+coord=target/coord-smoke
+rm -rf "$coord" && mkdir -p "$coord"
+./target/release/oikos-coord serve --dir "$coord/state" --addr 127.0.0.1:0 2>"$coord/serve.log" &
+coord_pid=$!
+trap 'kill $coord_pid 2>/dev/null || true' EXIT
+url=""
+for _ in $(seq 100); do
+  url=$(sed -n 's/.* on \(http:[^ ]*\)$/\1/p' "$coord/serve.log")
+  [[ -n "$url" ]] && break
+  sleep 0.1
+done
+[[ -n "$url" ]] || { cat "$coord/serve.log"; exit 1; }
+printf '[{"id": "golden", "unit": %s}]' "$(cat golden/m0-toy.workunit.json)" |
+  curl -sf -X POST --data-binary @- "$url/experiments/smoke" >/dev/null
+for h in a b; do
+  ./target/release/oikos-coord work --coordinator "$url" --host "$h" --oikos "$PWD/target/release/oikos" \
+    --cache "$coord/$h/packs" --scratch "$coord/$h/runs" --until-idle
+done
+unit=$(curl -sf "$url/units/golden")
+grep -q '"status": "done"' <<<"$unit" || { echo "coordinator: unit not done: $unit"; exit 1; }
+grep -q "\"state_hash\": \"$native_hash\"" <<<"$unit" || { echo "coordinator: hash differs: $unit"; exit 1; }
 
 wasm_hash="skipped"
 if command -v wasmtime >/dev/null; then

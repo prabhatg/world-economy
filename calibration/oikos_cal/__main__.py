@@ -26,6 +26,7 @@ import numpy as np
 from . import emulator, history, screening
 
 CUTOFF = history.CUTOFF
+COORDINATOR = "an oikos-coord serve URL: run the worlds on the hosts working for it, score them here (ADR-0097)"
 LEAVE_OUT = "records not to judge or record (m1.OPTIONAL; default: those of the files continued, else none)"
 SITES = "settlements"  # what the site targets compare with the surveys (ADR-0072)
 
@@ -55,11 +56,11 @@ def _groups(js):
     return [history.Group(g["indices"], g["covariance"], g["dof"]) for g in js or []]
 
 
-def _run(jobs, workers, leave_out=()):
+def _run(jobs, workers, leave_out=(), coordinator=None):
     from . import m1
 
     start = time.time()
-    out = m1.evaluate(jobs, workers, leave_out)
+    out = m1.evaluate(jobs, workers, leave_out, coordinator)
     print(f"{len(jobs)} runs in {time.time() - start:.0f} s ({workers} workers)", file=sys.stderr)
     return out
 
@@ -120,7 +121,7 @@ def screen(args):
     noise = list(range(args.seed, args.seed + args.noise_seeds))
     leave = left_out(args.leave_out, [])
     ts, names, _ = _problem_targets(leave)
-    out = _run([(p, args.seed) for p in params] + [({}, s) for s in noise], args.workers, leave)
+    out = _run([(p, args.seed) for p in params] + [({}, s) for s in noise], args.workers, leave, args.coordinator)
     runs, noisy = out[: len(params)], out[len(params) :]
     _write(args.out, {"command": "screen", "revision": _revision(), "seed": args.seed, "sites": SITES,
                       "left_out": leave, "levels": args.levels,
@@ -266,7 +267,7 @@ def wave(args):
     params = [oikos.sample_params(dict(zip(factors, x))) for x in u]
     seeds = [1000 * number + i for i in range(len(u))]
     ts, names, groups = _problem_targets(leave)
-    out = _run(list(zip(params, seeds)), args.workers, leave)
+    out = _run(list(zip(params, seeds)), args.workers, leave, args.coordinator)
     doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": seed, "sites": SITES,
            "left_out": leave, "factors": factors,
            "active": active, "u": u.tolist(), "params": params, "seeds": seeds, "names": names,
@@ -352,7 +353,8 @@ def best(args):
     cs = candidates(docs, args.top)
     seeds = list(range(1, args.seeds + 1))
     ts, names, groups = _problem_targets(leave)
-    out = _run([(c["params"], s) for c in cs for s in seeds], args.workers, leave).reshape(len(cs), len(seeds), -1)
+    out = _run([(c["params"], s) for c in cs for s in seeds], args.workers, leave, args.coordinator)
+    out = out.reshape(len(cs), len(seeds), -1)
     check = {"targets": _targets_json(ts), "groups": _groups_json(groups)}
     ll = [j for j, n in enumerate(names) if n.startswith("log-likelihood")]
     for c, o in zip(cs, out):
@@ -387,7 +389,7 @@ def profile(args):
     leave = left_out(args.leave_out, [])
     ts, names, groups = _problem_targets(leave)
     seeds = list(range(1, args.seeds + 1))
-    out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers, leave)
+    out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers, leave, args.coordinator)
     doc = {"command": "profile", "revision": _revision(), "sites": SITES, "left_out": leave, "parameter": args.parameter,
            "values": args.values,
            "seeds": seeds, "names": names, "outputs": out.reshape(len(args.values), len(seeds), -1).tolist(),
@@ -495,6 +497,7 @@ def main(argv=None):
     s.add_argument("--seed", type=int, default=1)
     s.add_argument("--workers", type=int, default=workers)
     s.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
+    s.add_argument("--coordinator", help=COORDINATOR)
     s.add_argument("--out", required=True)
     w = sub.add_parser("wave", help="one history-matching wave")
     w.add_argument("--runs", type=int, default=200)
@@ -508,12 +511,14 @@ def main(argv=None):
     w.add_argument("--seed", type=int, help="seed of the wave's points (default: its number)")
     w.add_argument("--workers", type=int, default=workers)
     w.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
+    w.add_argument("--coordinator", help=COORDINATOR)
     w.add_argument("--out", required=True)
     b = sub.add_parser("best", help="rerun the best consistent runs with the other parameters at their defaults")
     b.add_argument("waves", nargs="+", help="wave files, in order")
     b.add_argument("--top", type=int, default=10)
     b.add_argument("--seeds", type=int, default=3)
     b.add_argument("--workers", type=int, default=workers)
+    b.add_argument("--coordinator", help=COORDINATOR)
     b.add_argument("--out", required=True)
     pr = sub.add_parser("profile", help="one parameter over values, the others at their defaults")
     pr.add_argument("parameter")
@@ -521,6 +526,7 @@ def main(argv=None):
     pr.add_argument("--seeds", type=int, default=3)
     pr.add_argument("--workers", type=int, default=workers)
     pr.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
+    pr.add_argument("--coordinator", help=COORDINATOR)
     pr.add_argument("--out", required=True)
     e = sub.add_parser("ensemble", help="run plausible worlds with outputs for the viewer")
     e.add_argument("best", help="a best file: its consistent candidates join the calibrated defaults")

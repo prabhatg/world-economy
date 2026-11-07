@@ -1,8 +1,9 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
-# Everything but oikos-py, which links against Python and is built by maturin (see
-# scripts/check.sh). Add new crates here too, so `cargo test` and the wasm build see them.
+# Everything but oikos-py, which links against Python and is built by maturin, and
+# oikos-coord, which serves HTTP and is native only (scripts/check.sh checks both). Add
+# new crates here too, so `cargo test` and the wasm build see them.
 default-members = [
   "crates/oikos-cli",
   "crates/oikos-core",
