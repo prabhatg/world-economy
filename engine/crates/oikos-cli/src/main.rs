@@ -8,7 +8,7 @@
 //!   oikos params    (parameter registry as JSON: units, ranges, priors, sources)
 //!   oikos pack <file>   (forcing pack id, header and per-field value ranges)
 
-use oikos_sim::{Params, WorkUnit, World, WorldConfig, checkpoint, run_work_unit};
+use oikos_sim::{Params, WorkUnit, World, WorldConfig, checkpoint, run_work_unit_with};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -26,13 +26,23 @@ fn run(args: &[String]) -> Result<(), String> {
     match args.first().map(String::as_str) {
         Some("run") => {
             let path = args.get(1).ok_or("run: missing work unit path")?;
-            let out = match args.get(2).map(String::as_str) {
-                Some("-o") => Some(args.get(3).ok_or("-o: missing path")?.clone()),
-                Some(other) => return Err(format!("unexpected argument {other}")),
-                None => None,
-            };
+            let (mut out, mut progress) = (None, false);
+            let mut rest = args[2..].iter();
+            while let Some(arg) = rest.next() {
+                match arg.as_str() {
+                    "-o" => out = Some(rest.next().ok_or("-o: missing path")?.clone()),
+                    "--progress" => progress = true,
+                    other => return Err(format!("unexpected argument {other}")),
+                }
+            }
             let wu: WorkUnit = serde_json::from_slice(&read(path)?).map_err(|e| format!("{path}: {e}"))?;
-            let result = run_work_unit(&wu, read, write)?;
+            // One JSON line per century on stderr, for hosts that show a run's progress.
+            let mut report = |years: u64| {
+                if progress && (years % 100 == 0 || years == wu.years) {
+                    eprintln!("{{\"years\": {years}, \"of\": {}}}", wu.years);
+                }
+            };
+            let result = run_work_unit_with(&wu, read, write, &mut report)?;
             let json = serde_json::to_string_pretty(&result).map_err(|e| e.to_string())? + "\n";
             match out {
                 Some(p) => write(&p, json.as_bytes()),
@@ -64,7 +74,7 @@ fn run(args: &[String]) -> Result<(), String> {
             println!("{}", oikos_sim::params::registry().to_json());
             Ok(())
         }
-        _ => Err("usage: oikos run <workunit.json> [-o result.json] | oikos hash <checkpoint> [pack...] | oikos bench | oikos params | oikos pack <file>".into()),
+        _ => Err("usage: oikos run <workunit.json> [-o result.json] [--progress] | oikos hash <checkpoint> [pack...] | oikos bench | oikos params | oikos pack <file>".into()),
     }
 }
 

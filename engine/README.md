@@ -71,6 +71,11 @@ target/release/oikos-coord work --coordinator http://127.0.0.1:8650 --host my-ho
   --oikos target/release/oikos --until-idle
 ```
 
+`serve --client ../viewer/dist` also serves the browser client (ADR-0100, #22) at
+`/client/volunteer.html` (build it with `npm run build` in `viewer/` after the wasm
+CLI). `oikos run unit.json --progress` prints the years done, once per century, as
+JSON lines on stderr.
+
 v0 has no authentication: run it only where your own workers reach it.
 
 ### Python

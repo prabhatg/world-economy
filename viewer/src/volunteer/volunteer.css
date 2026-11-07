@@ -1,0 +1,52 @@
+/* The volunteer page (#22): one column, one action, status at a glance (design system §2). */
+
+.volunteer {
+  max-width: 640px; margin: 0 auto; padding: var(--space-7) var(--space-5) var(--space-8);
+  display: flex; flex-direction: column; gap: var(--space-7);
+}
+.volunteer .intro h1 { font-size: var(--text-headline); }
+.volunteer .summary { font-size: 1.0625rem; max-width: 36em; }
+.eyebrow a { color: inherit; text-underline-offset: 3px; }
+.action { margin-top: var(--space-5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.action .btn-primary { min-width: 184px; }
+.btn-primary.btn-tonal { background: var(--surface-container-high); color: var(--on-surface); }
+.btn-text {
+  align-self: flex-start; min-height: 48px; padding: 0 var(--space-2); margin-left: calc(-1 * var(--space-2));
+  border: 0; background: none; color: var(--on-surface); font: inherit; font-weight: 700;
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.btn-text[hidden] { display: none; }
+.cost { flex: 1 1 220px; font-size: var(--text-label); color: var(--on-surface-variant); }
+
+.now { display: flex; flex-direction: column; gap: var(--space-3); }
+.now h2 { font-size: var(--text-title); font-variant-numeric: tabular-nums; }
+.detail { color: var(--on-surface-variant); font-variant-numeric: tabular-nums; }
+.now progress {
+  appearance: none; width: 100%; height: 8px; border: 0; border-radius: var(--radius-full);
+  background: var(--surface-container-high); overflow: hidden;
+}
+.now progress::-webkit-progress-bar { background: var(--surface-container-high); border-radius: var(--radius-full); }
+.now progress::-webkit-progress-value { background: var(--secondary); border-radius: var(--radius-full); }
+.now progress::-moz-progress-bar { background: var(--secondary); border-radius: var(--radius-full); }
+.now progress::-webkit-progress-value { transition: width var(--dur-medium) var(--ease-standard); } /* 0 ms when motion is reduced (tokens) */
+
+.yours { display: flex; flex-direction: column; gap: var(--space-4); }
+.yours[hidden], .now progress[hidden] { display: none; }
+.verdict { font-weight: 700; }
+.yours .chart svg { max-width: 400px; }
+
+.stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.stats div { padding: var(--space-4) var(--space-5); border-radius: var(--radius-l); background: var(--surface-container-low); }
+.stats dt { font-size: var(--text-label); color: var(--on-surface-variant); }
+.stats dd {
+  margin: var(--space-1) 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+}
+.tally .note { margin-top: var(--space-3); font-size: var(--text-label); }
+.mono { font-family: var(--font-mono); }
+.volunteer .provenance p { font-size: var(--text-body); }
+
+@media (max-width: 600px) {
+  .volunteer { padding: var(--space-6) var(--space-4) var(--space-7); gap: var(--space-6); }
+  .action .btn-primary { width: 100%; }
+}

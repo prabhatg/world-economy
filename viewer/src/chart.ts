@@ -16,6 +16,10 @@ export interface ChartSpec {
   log: boolean;
   format: (v: number) => string;
   onSelect?: (world: number) => void;
+  /** The selected line's label (default "This world"). */
+  label?: string;
+  /** Mark the time on the map with a vertical line (default true). */
+  cursor?: boolean;
 }
 
 // Drawn at about the panel's width, so 12 px text renders at about 13 px.
@@ -85,7 +89,7 @@ export function drawChart(svg: SVGSVGElement, spec: ChartSpec): void {
     t.textContent = text;
     svg.append(t);
   };
-  lineLabel("This world", mine, "end-label selected");
+  lineLabel(spec.label ?? "This world", mine, "end-label selected");
   if (others.length) {
     // Beside the other world whose end is farthest from this one, so labels never collide.
     const far = others.reduce((a, b) => (Math.abs(end(b) - mine) > Math.abs(end(a) - mine) ? b : a));
@@ -100,7 +104,7 @@ export function drawChart(svg: SVGSVGElement, spec: ChartSpec): void {
   }
   const cx = x(t);
   const cy = y(series[selected][t]);
-  svg.append(el("line", { x1: cx, x2: cx, y1: PAD.top - 6, y2: H - PAD.bottom, class: "cursor" }));
+  if (spec.cursor ?? true) svg.append(el("line", { x1: cx, x2: cx, y1: PAD.top - 6, y2: H - PAD.bottom, class: "cursor" }));
   svg.append(el("circle", { cx, cy, r: 4, class: "dot" }));
   const value = el("text", { x: cx, y: PAD.top - 10, class: "value", "text-anchor": cx > W - 70 ? "end" : cx < PAD.left + 30 ? "start" : "middle" });
   value.textContent = format(series[selected][t]);

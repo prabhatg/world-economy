@@ -148,6 +148,8 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
 ### Software in our viewer
 - **deck.gl**, **luma.gl** and **loaders.gl** (vis.gl, OpenJS Foundation; MIT): the map.
 - **h3-js** (Uber Technologies, Apache-2.0): cell boundaries.
+- **browser_wasi_shim** (bjorn3; MIT or Apache-2.0): runs the engine in volunteers' browsers.
+- **noble-hashes** (Paul Miller; MIT): BLAKE3, so the browser checks every file it downloads.
 - **Vite** and **Vitest** (MIT), **TypeScript** (Microsoft, Apache-2.0) and
   **Playwright** (Microsoft, Apache-2.0): building, testing and rendering checks.
 

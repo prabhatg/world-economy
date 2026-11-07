@@ -9,6 +9,7 @@ use crate::inputs::{Inputs, PackRef};
 use crate::output::{OutputSpec, Recorder};
 use crate::params::Params;
 use crate::world::{Summary, World, WorldConfig};
+use oikos_core::time::TICKS_PER_YEAR;
 use serde::{Deserialize, Serialize};
 
 pub const FORMAT: u32 = 1;
@@ -87,6 +88,17 @@ pub fn run_work_unit(
     read: impl Fn(&str) -> Result<Vec<u8>, String>,
     write: impl Fn(&str, &[u8]) -> Result<(), String>,
 ) -> Result<WorkResult, String> {
+    run_work_unit_with(wu, read, write, &mut |_| {})
+}
+
+/// [`run_work_unit`], calling `progress` with the whole years done each time they grow, so
+/// a host can show how far a long run has come. It only reads the clock: the run is the same.
+pub fn run_work_unit_with(
+    wu: &WorkUnit,
+    read: impl Fn(&str) -> Result<Vec<u8>, String>,
+    write: impl Fn(&str, &[u8]) -> Result<(), String>,
+    progress: &mut dyn FnMut(u64),
+) -> Result<WorkResult, String> {
     if wu.format != FORMAT {
         return Err(format!("unsupported work unit format {}", wu.format));
     }
@@ -111,34 +123,34 @@ pub fn run_work_unit(
     };
     let mut sink = |p: &str, b: &[u8]| write(p, b);
     let (parts, every) = (wu.partitions.max(1), wu.summary_every_years.max(1));
-    let (summaries, files) = if wu.outputs.is_none() && wu.activity.is_none() {
-        (world.run_years(wu.years, parts, every), Vec::new())
-    } else {
-        let mut rec =
-            wu.outputs.as_ref().map(|s| Recorder::start(&world, s.clone(), &mut sink)).transpose()?;
-        let mut act = wu
-            .activity
-            .as_ref()
-            .map(|s| ActivityRecorder::start(&world, s.clone(), wu.years, &read))
-            .transpose()?;
-        let summaries = world.run_years_observed(wu.years, parts, every, &mut |w, stats| {
-            if let Some(r) = rec.as_mut() {
-                r.observe(w, stats, &mut sink)?;
-            }
-            match act.as_mut() {
-                Some(a) => a.observe(w, &mut sink),
-                None => Ok(()),
-            }
-        })?;
-        let mut files = match rec {
-            Some(r) => r.finish(&world, &mut sink)?,
-            None => Vec::new(),
-        };
-        if let Some(a) = act {
-            files.extend(a.finish(&world, &mut sink)?);
+    let mut rec = wu.outputs.as_ref().map(|s| Recorder::start(&world, s.clone(), &mut sink)).transpose()?;
+    let mut act = wu
+        .activity
+        .as_ref()
+        .map(|s| ActivityRecorder::start(&world, s.clone(), wu.years, &read))
+        .transpose()?;
+    let (start, mut done) = (world.tick.0, 0);
+    let summaries = world.run_years_observed(wu.years, parts, every, &mut |w, stats| {
+        if let Some(r) = rec.as_mut() {
+            r.observe(w, stats, &mut sink)?;
         }
-        (summaries, files)
+        if let Some(a) = act.as_mut() {
+            a.observe(w, &mut sink)?;
+        }
+        let years = (w.tick.0 - start) / TICKS_PER_YEAR;
+        if years > done {
+            done = years;
+            progress(done);
+        }
+        Ok(())
+    })?;
+    let mut files = match rec {
+        Some(r) => r.finish(&world, &mut sink)?,
+        None => Vec::new(),
     };
+    if let Some(a) = act {
+        files.extend(a.finish(&world, &mut sink)?);
+    }
     if let Some(path) = &wu.checkpoint_out {
         write(path, &checkpoint::encode(&world))?;
     }

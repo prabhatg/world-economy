@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compute a world · ManyWorlds</title>
+    <meta name="description" content="Lend this browser tab to ManyWorlds: it simulates one possible history of Southwest Asia, checked against another computer's." />
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;500&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" />
+  </head>
+  <body>
+    <main class="volunteer">
+      <header class="intro">
+        <p class="eyebrow"><a href="https://prabhatg.github.io/world-economy/">ManyWorlds</a> · closed alpha</p>
+        <h1>Lend this tab to simulate one possible history</h1>
+        <p class="summary">
+          Your browser runs one world: Southwest Asia from 12,000 to 3,000 BCE, as people forage, settle
+          and start to farm. A second computer runs the same world. When the two match exactly, yours helps
+          test which histories fit the archaeological record.
+        </p>
+        <div class="action">
+          <button id="toggle" class="btn-primary" type="button">Start computing</button>
+          <p class="cost">While running, it uses one processor core. About 25 MB to download the first time.</p>
+        </div>
+      </header>
+
+      <section class="now" aria-labelledby="now-headline">
+        <h2 id="now-headline">Ready when you are</h2>
+        <progress id="progress" max="1" aria-labelledby="now-headline" hidden></progress>
+        <p class="detail" id="now-detail">Nothing runs until you press Start.</p>
+        <button id="battery" class="btn-text" type="button" hidden>Run on battery anyway</button>
+        <p class="visually-hidden" id="now-announce" role="status"></p>
+      </section>
+
+      <section class="yours" id="yours" aria-labelledby="yours-headline" hidden>
+        <h2 id="yours-headline">Your last world</h2>
+        <figure class="chart">
+          <figcaption id="yours-caption">People in your world.</figcaption>
+          <svg id="yours-chart" role="img"></svg>
+        </figure>
+        <p class="verdict" id="verdict" aria-live="polite"></p>
+      </section>
+
+      <section class="tally" aria-labelledby="tally-headline">
+        <h2 id="tally-headline" class="visually-hidden">What this browser has done</h2>
+        <dl class="stats">
+          <div><dt>Worlds computed</dt><dd id="worlds">0</dd></div>
+          <div><dt>Years simulated</dt><dd id="years">0</dd></div>
+        </dl>
+        <p class="note">Counted in this browser only.</p>
+      </section>
+
+      <details class="provenance">
+        <summary>How this works</summary>
+        <div>
+          <p>
+            The page runs the same simulation engine as every other computer in the project, compiled to
+            WebAssembly, so the same world gives the same result to the last bit on any device. It runs in
+            your browser's sandbox and cannot read your files.
+          </p>
+          <p>
+            It downloads the world's land, climate and settings from the project's server, checks each file
+            against its fingerprint, and sends back the record of the world it simulated. Nothing about you
+            is sent: this browser is known only by a random name, <span id="host" class="mono"></span>.
+          </p>
+          <p>Close the tab or press Stop at any time. A world left unfinished is given to another computer.</p>
+        </div>
+      </details>
+    </main>
+    <script type="module" src="/src/volunteer/main.ts"></script>
+  </body>
+</html>

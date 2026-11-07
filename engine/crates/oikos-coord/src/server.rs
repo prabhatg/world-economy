@@ -19,6 +19,8 @@
 //!   `{"host", "error"}` when the run failed.
 //! - `GET /units/<id>`: status and the accepted report; `GET /archives/<unit>/<host>.tar`.
 //! - `GET /packs/<id>`: a pack's or zone file's bytes. `GET /status`: counts.
+//! - `GET /client/<path>`: the browser client (#22), when `serve --client DIR` names its
+//!   build, so its page talks to the coordinator from the same origin.
 
 use crate::{Coordinator, Policy, Status};
 use serde_json::{Value, json};
@@ -30,6 +32,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct Server {
     dir: PathBuf,
     state: Mutex<Coordinator>,
+    client: Option<PathBuf>,
 }
 
 fn now() -> u64 {
@@ -66,7 +69,42 @@ impl Server {
             Ok(b) => serde_json::from_slice(&b).map_err(|e| format!("state.json: {e}"))?,
             Err(_) => Coordinator::new(policy),
         };
-        Ok(Server { dir: dir.to_path_buf(), state: Mutex::new(state) })
+        Ok(Server { dir: dir.to_path_buf(), state: Mutex::new(state), client: None })
+    }
+
+    /// Serves the browser client (#22) built in `dir` at `/client/`, so its page reaches
+    /// the coordinator from the same origin.
+    pub fn with_client(self, dir: PathBuf) -> Server {
+        Server { client: Some(dir), ..self }
+    }
+
+    /// A file of the browser client, by path components each [`safe`].
+    fn client_file(&self, parts: &[&str]) -> Result<Reply, String> {
+        let Some(dir) = &self.client else {
+            return Ok(json_reply(404, json!({ "error": "this coordinator serves no browser client" })));
+        };
+        let mut path = dir.clone();
+        for p in parts {
+            path.push(safe(p)?);
+        }
+        let kind = match path.extension().and_then(|e| e.to_str()) {
+            Some("html") => "text/html; charset=utf-8",
+            Some("js") => "text/javascript",
+            Some("css") => "text/css",
+            Some("wasm") => "application/wasm",
+            Some("json") => "application/json",
+            Some("svg") => "image/svg+xml",
+            _ => "application/octet-stream",
+        };
+        // Links are followed only to files inside the client directory.
+        let inside = match (path.canonicalize(), dir.canonicalize()) {
+            (Ok(p), Ok(d)) => p.starts_with(d),
+            _ => false,
+        };
+        match std::fs::read(&path) {
+            Ok(bytes) if inside => Ok((200, bytes, kind)),
+            _ => Ok(json_reply(404, json!({ "error": format!("no client file {}", parts.join("/")) }))),
+        }
     }
 
     fn save(&self, c: &Coordinator) -> Result<(), String> {
@@ -172,6 +210,7 @@ impl Server {
                 let bytes = std::fs::read(self.pack_path(id)?).map_err(|_| format!("no pack {id}"))?;
                 Ok((200, bytes, "application/octet-stream"))
             }
+            ("GET", ["client", rest @ ..]) if !rest.is_empty() => self.client_file(rest),
             _ => Ok(json_reply(404, json!({ "error": format!("no route {method} {path}") }))),
         }
     }

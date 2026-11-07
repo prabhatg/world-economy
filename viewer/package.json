@@ -10,18 +10,20 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/engine.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "preview": "vite preview",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs && node scripts/volunteer-smoke.mjs"
   },
   "dependencies": {
+    "@bjorn3/browser_wasi_shim": "0.4.2",
     "@deck.gl/core": "9.4.0",
     "@deck.gl/layers": "9.4.0",
     "@loaders.gl/core": "4.5.4",
     "@luma.gl/core": "9.4.2",
     "@luma.gl/engine": "9.4.2",
+    "@noble/hashes": "2.4.0",
     "h3-js": "4.5.0"
   },
   "devDependencies": {

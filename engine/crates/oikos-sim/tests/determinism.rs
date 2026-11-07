@@ -2,7 +2,7 @@
 
 use oikos_sim::checkpoint;
 use oikos_sim::workunit::Start;
-use oikos_sim::{Params, WorkUnit, World, WorldConfig, run_work_unit};
+use oikos_sim::{Params, WorkUnit, World, WorldConfig, run_work_unit, run_work_unit_with};
 
 const GOLDEN: &str = include_str!("../../../golden/m0-toy.json");
 
@@ -85,6 +85,19 @@ fn golden_result() {
     let expected: oikos_sim::WorkResult = serde_json::from_str(GOLDEN).unwrap();
     assert_eq!(result.state_hash, expected.state_hash);
     assert_eq!(result.summaries, expected.summaries);
+}
+
+/// Hosts show how far a long run has come (the browser client, #22); reporting it
+/// must not change the run.
+#[test]
+fn a_run_reports_each_year_done_without_changing_its_result() {
+    let wu = golden_unit();
+    let mut years = Vec::new();
+    let result =
+        run_work_unit_with(&wu, |p| Err(p.to_string()), |_, _| Ok(()), &mut |y| years.push(y)).unwrap();
+    assert_eq!(years, (1..=wu.years).collect::<Vec<_>>());
+    let plain = run_work_unit(&wu, |p| Err(p.to_string()), |_, _| Ok(())).unwrap();
+    assert_eq!(result, plain);
 }
 
 #[test]

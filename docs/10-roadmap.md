@@ -166,6 +166,11 @@ Work items are GitHub issues under the M1 milestone.
   operators read, 1.7 MB instead of 91 MB, small enough for volunteers to upload
   (`--reduced`). Next: spot VMs as hosts.
 - **Browser client v0**: closed alpha, runs M1 work units and shows "your world".
+  Client done (ADR-0100, #22): `viewer/volunteer.html`, served by the coordinator
+  (`oikos-coord serve --client viewer/dist`), runs units in a Web Worker on the wasm
+  engine the gate checks, with results bit-identical to native hosts, and shows the
+  simulated year, the world it computed and whether a second computer confirmed it.
+  Next: a coordinator volunteers can reach (TLS, accounts), then the alpha.
 - **Exit:** plausible emergence of farming and villages in the right windows across
   ensembles, with quantified fit; competing domestication hypotheses compared;
   first calibration wave computed partly by alpha volunteers.

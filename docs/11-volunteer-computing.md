@@ -133,6 +133,16 @@ Shared Rust engine everywhere; thin platform shells.
 | **Mobile** (Android, iOS) | native Rust engine + UI shell | Android: while charging + Wi-Fi (WorkManager). iOS: limited by background rules — mainly explore/visualize, short compute windows |
 | **Headless** | CLI / Docker / Apptainer | servers, university clusters, data-center and cloud-credit donors |
 
+*Implemented (browser v0, ADR-0100, #22):* `viewer/volunteer.html`. The tab runs the
+same wasm32-wasip1 `oikos` CLI the gate checks, under a JavaScript WASI shim in a Web
+Worker with an in-memory file system, so its results equal native ones bit for bit and
+join the same quorum. It speaks the headless host's protocol over `fetch`, checks units
+and packs as that host does, keeps packs in the browser's cache, and is served by the
+coordinator itself (`serve --client`). Nothing runs until the volunteer presses Start;
+it waits while on battery; Stop leaves the unit to its lease. An M1 calibration unit
+takes about 3 minutes of one core in Chromium and 120 MB of memory, plus a one-time
+25 MB download.
+
 Native client architecture (thin Flutter shell over a Rust daemon that is also the
 headless client, sandboxed engine workers, embedded web globe) is in
 [doc 13](13-native-clients.md).

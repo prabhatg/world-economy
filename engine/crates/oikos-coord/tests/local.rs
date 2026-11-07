@@ -226,3 +226,41 @@ fn failed_runs_are_reported_and_a_unit_failing_everywhere_is_given_up() {
     assert_eq!(unit["status"], "failed", "max_replicas 3: {unit}");
     assert_eq!(unit["failures"][0]["error"], "engine exploded");
 }
+
+#[test]
+fn the_coordinator_serves_the_browser_client_from_its_own_origin() {
+    let dir = scratch("client");
+    let client = dir.join("client-files");
+    std::fs::create_dir_all(client.join("assets")).unwrap();
+    std::fs::write(client.join("volunteer.html"), "<!doctype html>").unwrap();
+    std::fs::write(client.join("assets").join("volunteer-a1.js"), "export {}").unwrap();
+    std::fs::write(client.join("oikos.wasm"), b"\0asm").unwrap();
+    let server = Server::open(&dir.join("state"), Policy::default()).unwrap().with_client(client.clone());
+    let get = |url: &str| server.handle("GET", url, b"");
+    let (status, bytes, kind) = get("/client/volunteer.html").unwrap();
+    assert_eq!(
+        (status, bytes.as_slice(), kind),
+        (200, b"<!doctype html>".as_slice(), "text/html; charset=utf-8")
+    );
+    assert_eq!(get("/client/assets/volunteer-a1.js").unwrap().2, "text/javascript");
+    assert_eq!(get("/client/oikos.wasm").unwrap().2, "application/wasm", "for WebAssembly.compileStreaming");
+    assert_eq!(get("/client/missing.html").unwrap().0, 404);
+    assert!(get("/client/../state/state.json").is_err(), "no way out of the client directory");
+    assert!(get("/client/.hidden").is_err());
+    #[cfg(unix)]
+    {
+        // A link inside the client directory must not reach files outside it.
+        std::fs::write(dir.join("secret.json"), "{}").unwrap();
+        std::os::unix::fs::symlink(&dir, client.join("link")).unwrap();
+        assert!(
+            !matches!(get("/client/link/secret.json"), Ok((200, _, _))),
+            "followed a link out of the client"
+        );
+    }
+    let none = Server::open(&dir.join("other"), Policy::default()).unwrap();
+    assert_eq!(
+        none.handle("GET", "/client/volunteer.html", b"").unwrap().0,
+        404,
+        "no client unless one is given"
+    );
+}

@@ -27,7 +27,7 @@ pub mod workunit;
 pub mod world;
 
 pub use params::Params;
-pub use workunit::{WorkResult, WorkUnit, run_work_unit};
+pub use workunit::{WorkResult, WorkUnit, run_work_unit, run_work_unit_with};
 pub use world::{StepStats, Summary, World, WorldConfig};
 
 /// Engine identity recorded in every result.

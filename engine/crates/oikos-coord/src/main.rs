@@ -1,6 +1,6 @@
 //! `oikos-coord`: Coordinator v0 (docs/11 §11.3, ADR-0097).
 //!
-//!   oikos-coord serve --dir DIR [--addr 127.0.0.1:8650]
+//!   oikos-coord serve --dir DIR [--addr 127.0.0.1:8650] [--client DIR]
 //!   oikos-coord work --coordinator URL --host NAME [--oikos PATH] [--cache DIR]
 //!                    [--scratch DIR] [--n 1] [--until-idle] [--poll SECS]
 
@@ -31,7 +31,10 @@ fn run(args: &[String]) -> Result<(), String> {
         Some("serve") => {
             let dir = PathBuf::from(opt(args, "--dir").ok_or("serve: --dir")?);
             let addr = opt(args, "--addr").unwrap_or("127.0.0.1:8650");
-            let server = Server::open(&dir, Policy::default())?;
+            let mut server = Server::open(&dir, Policy::default())?;
+            if let Some(client) = opt(args, "--client") {
+                server = server.with_client(PathBuf::from(client));
+            }
             let http = tiny_http::Server::http(addr).map_err(|e| format!("{addr}: {e}"))?;
             let bound = http.server_addr().to_ip().ok_or("serve: not an IP address")?;
             eprintln!("oikos-coord: serving {} on http://{bound}", dir.display());
@@ -63,6 +66,6 @@ fn run(args: &[String]) -> Result<(), String> {
                 }
             }
         }
-        _ => Err("usage: oikos-coord serve --dir DIR [--addr HOST:PORT] | oikos-coord work --coordinator URL --host NAME [--oikos PATH] [--n N] [--until-idle]".into()),
+        _ => Err("usage: oikos-coord serve --dir DIR [--addr HOST:PORT] [--client DIR] | oikos-coord work --coordinator URL --host NAME [--oikos PATH] [--n N] [--until-idle]".into()),
     }
 }
