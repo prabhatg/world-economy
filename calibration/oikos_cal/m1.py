@@ -87,7 +87,8 @@ from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
 from oikos_data.hydrology import FLOWING
 
-from . import domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets, villages
+from . import (domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets,
+               villages, zones)
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "pack_refs", "work_unit", "Problem", "evaluate"]
 
@@ -285,6 +286,16 @@ class Problem:
                        self.eras[4].group(first[4]), self.eras[5].group(first[5]), self.eras[6].group(first[6]),
                        self.eras[7].group(first[7]), self.eras[9].group(first[9])]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
+
+    def zones(self):
+        """The reduced record's zones (#47): every cell set the operators read, the radiocarbon
+        blocks weighted by visibility, and every cell (the population diagnostic)."""
+        ops = [self.domestication, self.sites, self.villages, self.obsidian, self.onset, self.lesions, self.herds]
+        if self.inequality is not None:
+            ops.append(self.inequality)
+        sets = [np.arange(len(self.cells))] + [s for op in ops for s in op.cells()]
+        rc = self.radiocarbon
+        return zones.Zones(self.cells, rc.settings.true, sets, rc.cells(), rc.visibility)
 
     def outputs(self, activity):
         """Summaries then diagnostics of a recorded world, in `names` order."""

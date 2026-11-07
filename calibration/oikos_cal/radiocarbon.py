@@ -254,8 +254,17 @@ class Operator:
         pos = np.searchsorted(self.obs.blocks, parents).clip(max=len(self.obs.blocks) - 1)
         self.cell_block = np.where(self.obs.blocks[pos] == parents, pos, -1)
 
-    def _shares(self, activity, taphonomy):
-        """q[b, k, s]: the share of block b's class-k mass expected in century s."""
+    def cells(self):
+        """The cell sets it reads (`zones`, #47): each block's cells, weighted by their
+        visibility when the operator has one."""
+        return [np.nonzero(self.cell_block == b)[0] for b in range(len(self.obs.blocks))]
+
+    def _blocks(self, activity):
+        """[block, century] activity, seen through `visibility`."""
+        if hasattr(activity, "weighted"):  # a reduced record (`zones.Zoned`)
+            sets = self.cells()
+            return activity.weighted(sets) if self.visibility is not None else np.concatenate(
+                [activity[s] for s in sets])
         activity = np.asarray(activity, dtype=float)
         if activity.shape != (len(self.cell_block), self.settings.true.centuries):
             raise ValueError(f"activity must be [cells, centuries] = "
@@ -265,6 +274,11 @@ class Operator:
         used = self.cell_block >= 0
         a = np.zeros((len(self.obs.blocks), activity.shape[1]))
         np.add.at(a, self.cell_block[used], activity[used])
+        return a
+
+    def _shares(self, activity, taphonomy):
+        """q[b, k, s]: the share of block b's class-k mass expected in century s."""
+        a = self._blocks(activity)
         a *= taphonomy.survival(self.settings.true.midpoints())
         q = np.einsum("bt,kts->bks", a, self.kernel)
         total = q.sum(axis=2, keepdims=True)

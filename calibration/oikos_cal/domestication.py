@@ -66,6 +66,10 @@ class Operator:
             self.near.append(pos[cells[pos] == disk])
             self.when.append(slice(max(c - half_window, 0), min(c + half_window + 1, window.centuries)))
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return list(self.near)
+
     def shares(self, activity):
         """Model domestic share of the crop at each assemblage."""
         if activity.window != self.window:

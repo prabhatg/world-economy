@@ -53,6 +53,10 @@ class Operator:
             spread = _overlap(periods[:, 0], periods[:, 1], self.edges) / (periods[:, 1] - periods[:, 0])[:, None]
             self.transfer[name] = spread.T @ dated  # [era, century]
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return [self.footprint[n] for n in self.windows]
+
     def expected(self, activity):
         """Per survey window, the aoristic era sums the surveys would find in a world with
         settled `activity` [cell, century] (up to the scale of site finding)."""

@@ -77,6 +77,10 @@ class Operator:
             self.names.append(table["phase"][i])
         self.k, self.n, self.mid = (np.array(x) for x in (self.k, self.n, self.mid))
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return list(self.near)
+
     def effort(self, activity):
         """People-weighted cultivation effort at each phase, and whether anyone was there."""
         if activity.window != self.window:

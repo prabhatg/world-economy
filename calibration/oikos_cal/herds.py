@@ -85,6 +85,10 @@ class Operator:
         q = np.clip((mw - self.observed) / (mw - md), 0.0, 1.0)
         self.covariance = np.outer(1 - q, 1 - q) * sw**2 + np.outer(q, q) * sdd**2 + np.diag(sampling)
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return list(self.near)
+
     def domestic_share(self, activity):
         """The domestic share of each assemblage's bones in the world (NaN where nobody
         near it herds or hunts in its centuries)."""

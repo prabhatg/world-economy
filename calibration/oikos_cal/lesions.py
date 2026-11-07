@@ -55,6 +55,10 @@ class Operator:
         self.observed = affected[1] / self.lesioned
         self.sampling_variance = self.observed * (1 - self.observed) / self.lesioned
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return [cells for near in self.sites for cells, _ in near]
+
     def prevalence(self, activity):
         """Each period's prevalence of infection around its sites, weighted by their
         skeletons (sites without people in the world are left out; NaN if all are)."""

@@ -110,6 +110,10 @@ class Operator:
             self.near.append(pos[cells[pos] == disk])
             self.weight.append(w)
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return list(self.near)
+
     def _check(self, activity):
         if activity.window != self.window:
             raise ValueError(f"activity covers {activity.window}, the operator {self.window}")

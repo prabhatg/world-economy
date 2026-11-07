@@ -54,6 +54,10 @@ class Operator:
         total = weight.sum(axis=0)
         return np.divide(log_area.sum(axis=0), total, out=np.full(total.shape, np.nan), where=total > 0)
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return [self.dating.footprint[n] for n in self.windows]
+
     def expected(self, activity):
         """Per survey window, the mean log people of the settlements the survey would date
         to each era in a world with `activity.settlements` and `activity.village_size`

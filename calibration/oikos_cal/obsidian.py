@@ -104,6 +104,10 @@ class Operator:
         self.k, self.n, self.delta, self.mid = (np.array(x) for x in (self.k, self.n, self.delta, self.mid))
         self.weight = np.array(self.weight)
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return list(self.near)
+
     def shares(self, activity):
         """Model share of the first group's obsidian at each context, and whether the
         model's people there held any obsidian at all."""

@@ -94,6 +94,10 @@ class Operator:
             self.weight.append(w)
             self.samples.append(by_houses[n])
 
+    def cells(self):
+        """The cell sets it reads (`zones`, #47)."""
+        return list(self.near)
+
     def settled_variance(self, activity):
         """Mean variance of log wealth of the settled people around each site in its
         centuries (NaN where nobody farmed)."""
