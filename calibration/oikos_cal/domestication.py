@@ -10,6 +10,12 @@ the century of the phase's median date and `half_window` centuries either side (
 medians carry a few centuries of uncertainty). Where nobody cultivates nearby, the
 model's ears are from wild stands, domestic only at the wild mutant frequency.
 
+Cultivators kept gathering from wild stands, and foragers beside them did too, bolstering
+their stores with wild cereal (Allaby et al. 2017): each people-year of foraging effort
+(neither sowing nor herding) nearby brings `gathered` times the ears of a people-year
+sown, all wild. So a camp that sows a little among wide wild stands reads wild, while a
+village that sows most of its effort reads as its fields (ADR-0103).
+
 Assemblages vary far more than binomial sampling: mixtures of gathered wild and sown
 cereal, of contexts and phases, and of identification criteria. Counts are therefore
 beta-binomial around the model share, with `concentration` φ (variance
@@ -20,9 +26,9 @@ Each crop is judged by its own record against its own share (#38): barley agains
 crop's, emmer and einkorn against the wheats bands sow with it (`record.Activity`'s
 `emmer_domestic`, `einkorn_domestic`), under the same effort.
 
-What it does not yet model: the share of the harvest gathered from wild stands by
-cultivators, where each crop's wild ancestor grew, and the dating uncertainty of each
-phase beyond the window.
+What it does not yet model: where each crop's wild ancestor grew (foragers gather
+wild cereal anywhere, at one rate), and the dating uncertainty of each phase beyond the
+window.
 """
 
 import math
@@ -61,8 +67,10 @@ class Operator:
     """Scores domestication histories against a rachis table of one crop (columns as
     `oikos_data.rachis`: crop, h3, median_year, k_nonshattering, n_rachis)."""
 
-    def __init__(self, table, cells, window: Window, rings=1, half_window=1, concentration=2.0, wild=0.001):
-        """`cells`: H3 ids of the world's cells (ascending, the order activity arrays use)."""
+    def __init__(self, table, cells, window: Window, rings=1, half_window=1, concentration=2.0, wild=0.001,
+                 gathered=0.0):
+        """`cells`: H3 ids of the world's cells (ascending, the order activity arrays use);
+        `gathered`: ears gathered wild per people-year of foraging effort, against one sown."""
         crops = sorted(set(table["crop"]))
         if len(crops) > 1:
             raise ValueError(f"the table holds {crops}: judge one crop at a time (`crop`)")
@@ -70,7 +78,7 @@ class Operator:
         if self.crop not in CROPS:
             raise ValueError(f"no model share for {self.crop}; the model sows {sorted(CROPS)}")
         self.field = CROPS[self.crop]
-        self.window, self.concentration, self.wild = window, concentration, wild
+        self.window, self.concentration, self.wild, self.gathered = window, concentration, wild, gathered
         cells = np.asarray(cells, dtype=np.uint64)
         self.k = np.asarray(table["k_nonshattering"], dtype=float)
         self.n = np.asarray(table["n_rachis"], dtype=float)
@@ -98,8 +106,15 @@ class Operator:
         out = np.empty(len(self.near))
         for i, (cells, when) in enumerate(zip(self.near, self.when)):
             sown = activity.cultivators[cells, when].sum()
-            out[i] = domestic[cells, when].sum() / sown if sown > 0 else self.wild
+            wild = self.gathered * self._foraging(activity, cells, when) if self.gathered else 0.0
+            out[i] = (domestic[cells, when].sum() + self.wild * wild) / (sown + wild) if sown + wild > 0 else self.wild
         return out
+
+    @staticmethod
+    def _foraging(activity, cells, when):
+        """People-years times foraging effort: neither sown nor herded."""
+        herded = activity.herders[cells, when].sum() if activity.herders is not None else 0.0
+        return max(activity.people[cells, when].sum() - activity.cultivators[cells, when].sum() - herded, 0.0)
 
     def log_likelihood(self, activity):
         p = self.shares(activity).clip(self.wild, 1 - self.wild)

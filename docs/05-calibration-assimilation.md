@@ -45,6 +45,8 @@ et al. 2017 (`data/oikos_data/rachis.py`) against its rachis counts, beta-binomi
 In M1 it separates the competing domestication hypotheses: protracted selection scores
 -92.8, rapid selection -157.5. One operator judges each crop (ADR-0101): barley against
 the crop's share, emmer and einkorn against the shares of the wheats sown with it.
+An assemblage holds wild ears gathered nearby as well as sown ones (ADR-0103): each
+people-year of foraging effort adds 0.03 times the ears of one sown, all wild.
 
 **Implemented (site-count operator, ADR-0059):** `sites.Operator` counts the survey site
 phases of Palmisano et al. 2021 (`data/oikos_data/sites.py`) in each era aoristically,

@@ -145,6 +145,10 @@ WHEATS = ("emmer", "einkorn")
 # rounds up to 13 judged them, among some ten sites an era.
 OASES = ("El Kowm 2",)
 WHEAT_EDGES = {"emmer": (-9_000, -8_000, -7_000), "einkorn": (-9_000, -8_000)}  # each era holding an assemblage
+# Wild ears gathered per people-year of foraging effort, against one sown (ADR-0103):
+# calibrated against the rachis assemblages at the defaults over three seeds (0.03 scores
+# them best or within 0.2 log-units of best, with seed exchange off or at 0.1).
+GATHERED = 0.03
 RICH_STANDS = 0.95  # wild-cereal suitability of a phase's cells and centuries: nearly full
 CONTRAST_MIN_PHASES = 5
 OPTIONAL = ("inequality",)  # records a round may leave out; the diagnostics need the others
@@ -252,8 +256,10 @@ class Problem:
                                                 visibility=visibility(self.cells, radiocarbon.Settings().true))
         if self.radiocarbon.settings.true.end != END:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
-        self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true)
-        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true) for c in WHEATS]
+        self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true,
+                                                    gathered=GATHERED)
+        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true, gathered=GATHERED)
+                       for c in WHEATS]
         self.sites = sites.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.villages = villages.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach,

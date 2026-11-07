@@ -57,6 +57,27 @@ def test_the_model_share_is_the_domestic_share_of_the_crop_near_the_site_around_
     assert op.shares(a)[0] == pytest.approx(op.wild), "nobody cultivates nearby: only wild stands"
 
 
+def test_wild_cereal_gathered_by_foragers_dilutes_the_sown_harvest():
+    # Cultivators gather wild cereal too, as do foragers (Allaby et al. 2017): each
+    # people-year of foraging effort brings `gathered` times the ears of one sown.
+    a = logistic_world(0.0)  # half domestic, a quarter of the effort sown, the rest foraged
+    a.cultivators *= 0.25
+    a.domestic *= 0.25
+    a.herders = a.people * 0.25  # herding gathers no cereal
+    op = dom.Operator(assemblages([-7_950], [0], [10]), CELLS, WINDOW, gathered=0.1)
+    sown, wild = 0.25, 0.1 * 0.5
+    assert op.shares(a)[0] == pytest.approx((0.5 * sown + op.wild * wild) / (sown + wild))
+    assert dom.Operator(assemblages([-7_950], [0], [10]), CELLS, WINDOW).shares(a)[0] == pytest.approx(0.5), \
+        "gathered 0: only sown fields"
+    a.cultivators[:] = 0
+    a.domestic[:] = 0
+    assert op.shares(a)[0] == pytest.approx(op.wild), "foragers alone: only wild stands"
+    a.herders = None
+    a.cultivators = a.people.copy()
+    a.domestic = a.people * 0.5
+    assert op.shares(a)[0] == pytest.approx(0.5), "everyone sowing: nobody gathers"
+
+
 def test_each_crop_is_judged_by_its_own_share():
     # Emmer and einkorn are sown with the crop (#38): the same cultivators, their own shares.
     a = logistic_world(0.0)

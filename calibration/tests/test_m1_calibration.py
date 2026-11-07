@@ -91,6 +91,14 @@ def test_the_wheats_leave_out_the_villages_the_model_cannot_farm(problem):
     assert len([t for t in problem.targets if t.name.startswith("domestic barley")]) == 4, "barley's eras keep it"
 
 
+def test_every_crop_counts_the_wild_cereal_its_foragers_gather(problem):
+    from oikos_cal import m1
+
+    # ADR-0103: calibrated against the rachis assemblages at the defaults, three seeds
+    assert 0 < m1.GATHERED < 1
+    assert [op.gathered for op in (problem.domestication, *problem.wheats)] == [m1.GATHERED] * 3
+
+
 def test_worlds_are_run_in_parallel_and_reproducibly(problem):
     from oikos_cal import m1
 
