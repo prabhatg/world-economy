@@ -272,10 +272,10 @@
     judged: its 10% point is about 700 years early at the defaults (implausibility about
     2), less at a stronger Humid Period. Open still: whether the Nile valley held fewer
     foragers during the Humid Period, when floods were high and the desert drew people
-    away (Kuper and Kropelin 2006), which burial can hide but not tell apart; and lakes
-    the model counts from 12,000 BCE that are young or man-made (the Bitter Lakes,
-    filled by the Suez canal; the Delta's lagoons), whose shores give foragers the
-    aquatic bonus.
+    away (Kuper and Kropelin 2006), which burial can hide but not tell apart. Since
+    ADR-0098 the lakes a modern work filled (the Bitter Lakes, by the Suez Canal) are
+    out of the hydrology pack; the Delta's lagoons stay, natural if Holocene, and their
+    shores still give foragers the aquatic bonus from 12,000 BCE.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
