@@ -166,7 +166,11 @@ summaries are flat (ADR-0094).
 Round 13 starts after dates out of sight and northeast Africa's judging (ADR-0095) in
 `runs/m1/round13/`: `profile-humid-period-scale.json` takes the scale over 0-10 with the
 subregion judged; 0 and 2 are inconsistent with it, 4 to 10 consistent and nearly flat,
-and the default stays 4, nearest the sites' rain estimates. `profile-einkorn-selection-ratio.json` takes einkorn's selection over 0.14 to 1.5 once the wheats are judged (ADR-0101): 0.5 to 1.1 are consistent and 0.9 fits best, so it replaces the literature's 0.14, which leaves einkorn wild. The onset record's tables are downloaded by hand (`data/README.md`); without
+and the default stays 4, nearest the sites' rain estimates. `screening.json` screens the 57 free
+parameters; `wave1.json` to `wave6.json` emulate 24 factors (wave 3 was sampled from wave 2's
+emulators alone, by mistake; later waves chain every earlier one), and `best.json` over
+waves 2-6 finds no world nearer the record than the calibrated defaults, which stay
+(ADR-0104). `profile-einkorn-selection-ratio.json` takes einkorn's selection over 0.14 to 1.5 once the wheats are judged (ADR-0101): 0.5 to 1.1 are consistent and 0.9 fits best, so it replaces the literature's 0.14, which leaves einkorn wild. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

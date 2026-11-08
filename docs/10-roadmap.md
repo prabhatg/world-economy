@@ -135,7 +135,8 @@ Bands herd sheep and goats (ADR-0087, #37), a second practice within one effort 
 and the size of sheep in dated faunal assemblages is a record (ADR-0088). Round 11
 (ADR-0090), judged on every record, keeps the calibrated defaults and calibrates the
 herding parameters: herds turn domestic at 0.035 per period at full effort, and the
-effort aimed at herds is 0.12 of the land's herding potential.
+effort aimed at herds is 0.12 of the land's herding potential. Round 13 (ADR-0104), with
+northeast Africa judged, keeps them again.
 Bands sow emmer and einkorn with their crop (ADR-0101, #38), each selected at its own
 fraction of the crop's selection, and the wheats' rachis records join barley's; einkorn's
 selection is calibrated by profile. Seed exchange along kinship and exchange ties is in as

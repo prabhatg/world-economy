@@ -284,6 +284,12 @@ land's herding potential, and with that selection 0.12, the old value, fits best
 Profiles of herd wealth's transmission and shock (ADR-0091) at those defaults are flat:
 herding is too small a share of M1's effort, and its dated houses too much farmers', for
 the record to see how unequal herders were, so the literature values stay.
+Round 13 (ADR-0104), after dates out of sight and northeast Africa's judging (ADR-0095),
+screens the 57 free parameters and runs six waves of 300 (24 factors emulated): they leave
+0.03% of the prior and 5 consistent worlds, all from the last two waves, as the regional
+arrival dates bind. The one that stays consistent at every seed with the other parameters
+at their defaults scores the summaries worse than the calibrated defaults (-94.5 against
+-87.5), which stay.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.
