@@ -53,7 +53,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   (2022), Scientific Data 9: 351; river reaches from HydroRIVERS (Lehner & Grill 2013,
   Hydrological Processes 27: 2171–2186) and lakes from HydroLAKES (Messager et al. 2016,
   Nature Communications 7: 13603); inundation from GIEMS-D15 (Fluet-Chouinard et al.
-  2015). CC BY 4.0, www.hydrosheds.org.
+  2015). CC BY 4.0, www.hydrosheds.org. Lakes a modern work filled, left out: the
+  Bitter Lakes (Por, F.D. (1978), Lessepsian Migration, Springer, Ecological Studies 23)
+  and the Toshka lakes (Chipman, J.W. & Lillesand, T.M. (2007), International Journal of
+  Remote Sensing 28, 4365–4379).
 - **SoilGrids 2.0** (soils pack): ISRIC – World Soil Information; Poggio, L. et al. (2021),
   SOIL 7, 217–240, doi:10.5194/soil-7-217-2021. CC BY 4.0.
 - **p3k14c** (radiocarbon observations): Bird, D. et al. (2022), Scientific Data 9: 27,
