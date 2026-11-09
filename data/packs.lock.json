@@ -1,4 +1,48 @@
 {
+  "m1-swasia-r6/bedrock": {
+    "bytes": 312192,
+    "id": "0699d6dac9096ce826de953de7e9d130719305371110c3c08975a600502b461e"
+  },
+  "m1-swasia-r6/caprines": {
+    "bytes": 311936,
+    "id": "bc4678004fa9b71365958544e01602e1735f798936c48a1f8d1e6092846dc647"
+  },
+  "m1-swasia-r6/climate": {
+    "bytes": 114341944,
+    "id": "6ff401fa212ce1fbf53c9ab90411b94cf5d4a5d4216117af79a9698afdb14721"
+  },
+  "m1-swasia-r6/climate_anomaly": {
+    "bytes": 6096,
+    "id": "53736fc00ed078ad533a6c655daabcb3b15b1770ad42c0fb4c235cfcc4970bec"
+  },
+  "m1-swasia-r6/coastline": {
+    "bytes": 28586648,
+    "id": "9a5fe615a0bd2aa098466b622ec8c64bf5a5325205aefa0611ffd07d1d85e4ed"
+  },
+  "m1-swasia-r6/geometry": {
+    "bytes": 3108272,
+    "id": "420bf9ebfb09b009e28e71536c875a45572691f6b540d97c397b26c4e09b1e50"
+  },
+  "m1-swasia-r6/humid_period": {
+    "bytes": 312488,
+    "id": "ba9db8d8eef6d5fa79f3a66704bde92f638ef594a80a80d552c06ddebfb201b2"
+  },
+  "m1-swasia-r6/hydrology": {
+    "bytes": 2022592,
+    "id": "1eae7ce14b41fb99053ef0929367c7c630d0353aededee10fd8c436cfc45b49f"
+  },
+  "m1-swasia-r6/obsidian": {
+    "bytes": 312048,
+    "id": "b7d1e68dd6e36ec55dc04880cde4764214871b8557b5b68fb9379d64753d2a6b"
+  },
+  "m1-swasia-r6/terrain": {
+    "bytes": 1866536,
+    "id": "7154c31d6ae728237e13ab2d4928a058f6cb7c3b15d9b53b50b9baa5b60a8a75"
+  },
+  "m1-swasia-r6/wild_wheats": {
+    "bytes": 630776,
+    "id": "04e3483ede90a50a26ebb343954886169b9de5530b56f498628ed14725b1a7cd"
+  },
   "m1-swasia/bedrock": {
     "bytes": 45876,
     "id": "60b2391709cbc25470a691ea3209ce63e084fc4189d4e479ba18ff6ee4d35111"
@@ -69,6 +113,6 @@
   },
   "m1-swasia/wild_wheats": {
     "bytes": 98156,
-    "id": "8ae89e9e3f298bafd073c5c3640fc263be5cf61c5ca54ada989fa45a0aee8226"
+    "id": "3f0949660947452aff0ffaf7bc50a74f05643f7a37b05e125b29f06188608800"
   }
 }

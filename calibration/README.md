@@ -100,7 +100,10 @@ for bit.
 `profile` varies one parameter with every other at its default and chooses the
 consistent value whose summaries sit nearest (files before ADR-0066 chose by the item
 log-likelihoods): for a parameter a new record
-constrains but that leaves the world's history alone (ADR-0061).
+constrains but that leaves the world's history alone (ADR-0061). `--set name=value` holds
+other parameters elsewhere; `--region` and `--rings` run and judge the worlds on another
+region's cells (built packs required), each operator reading `rings` cells around its
+sites (#40).
 
 Round 1 (ADR-0052) is in `runs/m1/`, round 2 (ten radiocarbon eras judged one by one
 and together, 27 free parameters; ADR-0056) in `runs/m1/round2/`, with `best.json`, the
@@ -184,7 +187,10 @@ about 2 log-units against the anomaly, so the literature values stay;
 best at 2, which it becomes. `runs/m1/ranges/` profiles the wheats' selection ratios with
 the wild_wheats pack (ADR-0108): emmer's literature 0.74 and einkorn's calibrated 0.9
 stay best (summaries -81.6), their halves and doubles inconsistent for emmer and worse
-for einkorn. The onset record's tables are downloaded by hand (`data/README.md`); without
+for einkorn. `runs/m1/f8/` judges the record at H3 resolution 6 (ADR-0111):
+`profile-r6-rings3.json` takes dispersal as calibrated and rescaled to keep its reach in km,
+obsidian loss rescaled, operators reading three rings; `profile-r6-rings1.json` the rescaled
+world read at one ring. None is consistent; resolution 5 fits better. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

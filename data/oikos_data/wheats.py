@@ -101,8 +101,9 @@ def build(region, manifest, manifest_sha256, snap):
                  attribution=f"Contains occurrence records from {cite}" if by else None)
     names = {"emmer": "wild emmer (Triticum turgidum subsp. dicoccoides)",
              "einkorn": "wild einkorn (Triticum monococcum subsp. aegilopoides)"}
-    for crop, values in ranges(region, rows, a["rings"]).items():
-        b.field(crop, "1", f"Range share of {names[crop]}: 1 within {a['rings']} cells of an occurrence record "
+    rings = reach(a["rings"], region.resolution)
+    for crop, values in ranges(region, rows, rings).items():
+        b.field(crop, "1", f"Range share of {names[crop]}: 1 within {rings} cells of an occurrence record "
                 f"(GBIF, modern), else 0", values, scale=SCALE)
     return b.build()
 
@@ -120,8 +121,16 @@ def _get(url, params):
         return json.load(r)
 
 
+def reach(rings, resolution):
+    """The manifest's `rings`, counted at resolution 5, at `resolution`: each finer level's
+    cells are sqrt(7) times closer, so a range reaches as far."""
+    return round(rings * 7 ** ((resolution - 5) / 2))
+
+
 def snapshot_path(region, manifest):
-    return DATA / "snapshots" / f"{manifest['dataset']}.{region.name}.json.gz"
+    """One snapshot per box searched, whatever the regions' resolutions."""
+    s, n, w, e = region.bbox
+    return DATA / "snapshots" / f"{manifest['dataset']}.box{s:g}_{n:g}_{w:g}_{e:g}.json.gz"
 
 
 def fetch(region, manifest, offline=False):

@@ -264,3 +264,39 @@ def test_reports_refuse_waves_of_different_records(tmp_path):
     b.write_text(json.dumps({"command": "wave", "wave": 2, "left_out": ["inequality"]}))
     with pytest.raises(SystemExit, match="left out"):
         cli.main(["report", str(a), str(b)])
+
+
+def test_a_profile_can_run_on_another_grid_with_other_parameters_held(tmp_path, monkeypatch):
+    # F8 (#40): the record at resolution 6, its spatial parameters rescaled and held.
+    seen = {}
+    ts = [history.Target("a", 0.0, 1.0, 0.0)]
+
+    def run(jobs, workers, leave_out=(), coordinator=None, reduced=False, region="m1-swasia", rings=1):
+        seen.update(jobs=jobs, region=region, rings=rings)
+        return np.zeros((len(jobs), 2))
+
+    def targets(leave_out=(), region="m1-swasia", rings=1):
+        seen.update(targets=(region, rings))
+        return ts, ["a", "log-likelihood x"], []
+
+    monkeypatch.setattr(cli, "_run", run)
+    monkeypatch.setattr(cli, "_problem_targets", targets)
+    out = tmp_path / "p.json"
+    cli.main(["profile", "dispersal_probability", "0.17", "--seeds", "2", "--region", "m1-swasia-r6", "--rings", "3",
+              "--set", "obsidian_loss=0.0036", "--out", str(out)])
+    assert seen["region"] == "m1-swasia-r6" and seen["rings"] == 3 and seen["targets"] == ("m1-swasia-r6", 3)
+    assert seen["jobs"] == [({"obsidian_loss": 0.0036, "dispersal_probability": 0.17}, s) for s in (1, 2)]
+    doc = json.loads(out.read_text())
+    assert doc["region"] == "m1-swasia-r6" and doc["rings"] == 3 and doc["held"] == {"obsidian_loss": 0.0036}
+
+
+def test_a_profile_refuses_the_parameters_that_split_the_onset_record(tmp_path, monkeypatch):
+    # The onset contrasts split their sites by the registry's wild-cereal suitability.
+    def never(*args, **kwargs):
+        raise AssertionError("no world should run")
+
+    monkeypatch.setattr(cli, "_run", never)
+    monkeypatch.setattr(cli, "_problem_targets", never)
+    for argv in (["profile", "cereal_precip_full", "800"], ["profile", "seed_exchange", "0.3", "--set", "cereal_temp_min=2"]):
+        with pytest.raises(SystemExit, match="cereal"):
+            cli.main(argv + ["--out", str(tmp_path / "p.json")])

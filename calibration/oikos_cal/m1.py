@@ -80,8 +80,9 @@ import h3
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, fauna, lesions as lesions_record, pack, rachis, region, wheats as wild_wheats
+from oikos_data import DATA, archaeobotany, fauna, lesions as lesions_record, pack, rachis, wheats as wild_wheats
 from oikos_data import inequality as inequality_pipeline
+from oikos_data import region as regions
 from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
@@ -92,6 +93,7 @@ from . import (domestication, herds, inequality, lesions, obsidian, onset, radio
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "pack_refs", "work_unit", "Problem", "evaluate"]
 
+REGION = "m1-swasia"  # resolution 5 (ADR-0040); m1-swasia-r6 is the same box at resolution 6 (#40)
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period", "caprines", "bedrock",
          "climate_anomaly", "wild_wheats")
 END = -3_000
@@ -129,7 +131,7 @@ SUBREGIONS = {"southern Levant": (29.0, 34.5, 34.0, 39.0),
 LOWLAND_SLOPE = 0.2  # degrees, a cell's mean
 LOWLAND_ELEVATION = 100.0  # m above sea level, a cell's mean
 FLOODED = 0.02  # floodplain fraction (GIEMS-D15)
-RIVER_RINGS = 2  # cells from a perennial river
+RIVER_RINGS = 2  # cells from a perennial river, at resolution 5 (`river_reach`)
 BURIED = (-7_500, -5_500)  # calendar years: all buried before, all in sight after
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 HERD_EDGES = (-8_500, -7_500, -7_000, -6_500, -6_000)  # sheep size eras: wild, the size falls, domestic
@@ -157,18 +159,27 @@ DIAGNOSTICS = ["log-likelihood radiocarbon", "log-likelihood domestication", "lo
                "people 3000 BCE"]
 
 
-def packs():
-    paths = [DATA / "build" / f"m1-swasia.{k}.oikospack" for k in PACKS]
+def river_reach(resolution):
+    """`RIVER_RINGS` at `resolution`: each finer level's cells are sqrt(7) times closer."""
+    return round(RIVER_RINGS * 7 ** ((resolution - 5) / 2))
+
+
+def _built(region, kind):
+    return DATA / "build" / f"{region}.{kind}.oikospack"
+
+
+def packs(region=REGION):
+    paths = [_built(region, k) for k in PACKS]
     missing = [p.name for p in paths if not p.exists()]
     if missing:
-        raise FileNotFoundError(f"M1 packs not built: {missing}; run python -m oikos_data build <pack> m1-swasia")
+        raise FileNotFoundError(f"M1 packs not built: {missing}; run python -m oikos_data build <pack> {region}")
     return [str(p) for p in paths]
 
 
-def pack_refs():
+def pack_refs(region=REGION):
     """The M1 packs as a work unit's inputs: [{kind, id, path}], paths absolute."""
     out = []
-    for path in packs():
+    for path in packs(region):
         p = pack.read(Path(path).read_bytes())
         out.append({"kind": p.header["kind"], "id": p.id, "path": str(Path(path).resolve())})
     return out
@@ -190,15 +201,15 @@ def work_unit(params, seed, out, end=END, every=10, partitions=4, refs=None, zon
             "inputs": [{"id": r["id"], "path": r["path"]} for r in refs]}
 
 
-def habitable(cells):
+def habitable(cells, region=REGION):
     """The `cells` with dry land in some century (land minus lake fraction, as the
     engine; ADR-0043), from the built coastline and hydrology packs."""
-    read = {k: pack.read((DATA / "build" / f"m1-swasia.{k}.oikospack").read_bytes()) for k in ("coastline", "hydrology")}
+    read = {k: pack.read(_built(region, k).read_bytes()) for k in ("coastline", "hydrology")}
     dry = read["coastline"].values("land_fraction").max(axis=0) - read["hydrology"].values("lake_fraction")
     return np.asarray(cells)[dry > 0]
 
 
-def stands(op):
+def stands(op, region=REGION):
     """The wild-cereal suitability of each onset phase (`onset.suitability`) at the
     registry's cereal parameters, which must be fixed: the record is split by them."""
     import oikos
@@ -207,17 +218,16 @@ def stands(op):
     free = [k for k in onset.CEREAL if reg[k]["prior"]["dist"] != "fixed"]
     if free:
         raise ValueError(f"{free} have priors: the onset contrasts split the record by them, so they must be fixed")
-    climate = pack.read((DATA / "build" / "m1-swasia.climate.oikospack").read_bytes())
+    climate = pack.read(_built(region, "climate").read_bytes())
     return onset.suitability(op, climate.values("temp_mean"), climate.values("precip"),
                              climate.header["time"]["calendar_year"], {k: reg[k]["default"] for k in onset.CEREAL})
 
 
-def visibility(cells, window):
+def visibility(cells, window, region=REGION):
     """The share of activity in each of `cells` and `window`'s centuries that could have
     left dates (`radiocarbon.drowned` times `radiocarbon.buried`), from the built
     coastline, terrain and hydrology packs."""
-    read = {k: pack.read((DATA / "build" / f"m1-swasia.{k}.oikospack").read_bytes())
-            for k in ("coastline", "terrain", "hydrology")}
+    read = {k: pack.read(_built(region, k).read_bytes()) for k in ("coastline", "terrain", "hydrology")}
     want = pack.cells_hash(cells)
     if any(p.header["region"]["cells_hash"] != want for p in read.values()):
         raise ValueError("the coastline, terrain and hydrology packs must be built for these cells, in this order")
@@ -227,8 +237,9 @@ def visibility(cells, window):
     ids = [h3.int_to_str(int(c)) for c in cells]
     index = {c: i for i, c in enumerate(ids)}
     river = np.zeros(len(ids), dtype=bool)
+    reach = river_reach(h3.get_resolution(ids[0]))
     for i in np.nonzero(field("hydrology", "river_discharge", 0.0) >= FLOWING)[0]:
-        river[[index[n] for n in h3.grid_disk(ids[i], RIVER_RINGS) if n in index]] = True
+        river[[index[n] for n in h3.grid_disk(ids[i], reach) if n in index]] = True
     lowland = ((field("terrain", "slope_mean", np.inf) < LOWLAND_SLOPE)
                & (field("terrain", "elev_mean", np.inf) < LOWLAND_ELEVATION)
                & ((field("hydrology", "floodplain_fraction", 0.0) > FLOODED) | river))
@@ -236,13 +247,15 @@ def visibility(cells, window):
 
 
 class Problem:
-    """Operators, targets and the simulator of M1; build once per process."""
+    """Operators, targets and the simulator of M1 on `region`'s cells, every operator reading
+    the cells within `rings` of its sites; build once per process."""
 
-    def __init__(self, leave_out=()):
+    def __init__(self, leave_out=(), region=REGION, rings=1):
         unknown = sorted(set(leave_out) - set(OPTIONAL))
         if unknown:
             raise ValueError(f"cannot leave out {unknown}: only {list(OPTIONAL)} can be")
-        r = region.load("m1-swasia")
+        self.region, self.rings = region, rings
+        r = regions.load(region)
         self.cells = r.cells()
         sources = dates_pipeline.inputs(offline=True)
         dates = pq.read_table(io.BytesIO(dates_pipeline.build(r, *sources)[0])).to_pydict()
@@ -254,30 +267,32 @@ class Problem:
         sources_pack = pack.read(obsidian_pipeline.build_obsidian_pack(r, offline=True))
         reach = {g: self.cells[sources_pack.raw(g) > 0] for g in obsidian.GROUPS}
         self.radiocarbon = radiocarbon.Operator(dates, sources[2], self.cells,
-                                                visibility=visibility(self.cells, radiocarbon.Settings().true))
+                                                visibility=visibility(self.cells, radiocarbon.Settings().true, region))
         if self.radiocarbon.settings.true.end != END:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
-        self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true,
+        self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true, rings=rings,
                                                     gathered=GATHERED)
         ranges = pack.read(wild_wheats.build_pack(r, offline=True))
-        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true, gathered=GATHERED,
+        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true, rings=rings,
+                                              gathered=GATHERED,
                                               stands=ranges.values(c)) for c in WHEATS]
         self.sites = sites.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.villages = villages.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
-        self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach,
+        self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach, rings=rings,
                                           min_artefacts=OBSIDIAN_MIN_ARTEFACTS,
-                                          joined=obsidian.joined(habitable(self.cells), reach))
+                                          joined=obsidian.joined(habitable(self.cells, region), reach))
         phases = pq.read_table(io.BytesIO(archaeobotany.build_crop_table(r))).to_pydict()
-        self.onset = onset.Operator(phases, self.cells, self.radiocarbon.settings.true, min_items=ONSET_MIN_ITEMS)
-        self.stands = stands(self.onset)
+        self.onset = onset.Operator(phases, self.cells, self.radiocarbon.settings.true, rings=rings,
+                                    min_items=ONSET_MIN_ITEMS)
+        self.stands = stands(self.onset, region)
         periods, skeletons, _ = lesions_record.load()
-        self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true)
+        self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true, rings=rings)
         assemblages = pq.read_table(io.BytesIO(fauna.build_table(r, offline=True))).to_pydict()
-        self.herds = herds.Operator(assemblages, self.cells, self.radiocarbon.settings.true, HERD_EDGES)
+        self.herds = herds.Operator(assemblages, self.cells, self.radiocarbon.settings.true, HERD_EDGES, rings=rings)
         self.inequality = None
         if "inequality" not in leave_out:
             houses = pq.read_table(io.BytesIO(inequality_pipeline.build_table(r, offline=True))).to_pydict()
-            self.inequality = inequality.Operator(houses, self.cells, self.radiocarbon.settings.true)
+            self.inequality = inequality.Operator(houses, self.cells, self.radiocarbon.settings.true, rings=rings)
         self.eras = [targets.RadiocarbonEras(self.radiocarbon, eras=RADIOCARBON_ERAS,
                                              discrepancy_sd=DISCREPANCY["radiocarbon"], rng=np.random.default_rng(0)),
                      targets.DomesticationEras(self.domestication, barley,
@@ -337,16 +352,16 @@ class Problem:
         """Outputs of the world with parameter overrides `params` (values, not u)."""
         import oikos
 
-        w = oikos.World.from_packs(packs(), seed=seed, params=params)
+        w = oikos.World.from_packs(packs(self.region), seed=seed, params=params)
         return self.outputs(record.activity(w, end=END, parts=1))
 
 
 _problem = None
 
 
-def _start(leave_out):
+def _start(leave_out, region=REGION, rings=1):
     global _problem
-    _problem = Problem(leave_out)
+    _problem = Problem(leave_out, region, rings)
 
 
 def _run(job):
@@ -368,15 +383,19 @@ def _zone_file(directory):
     return {"id": z.id, "path": str(path)}
 
 
-def evaluate(jobs, workers, leave_out=(), coordinator=None, poll=30, reduced=False):
+def evaluate(jobs, workers, leave_out=(), coordinator=None, poll=30, reduced=False, region=REGION, rings=1):
     """Outputs [job, name] of (params, seed) jobs, run in `workers` processes, judged
     without the records `leave_out`. With `coordinator` (an `oikos-coord serve` URL),
     the worlds run on the hosts working for it and are scored here in `workers`
     processes (ADR-0097): the same outputs, bit for bit. `reduced`: hosts record only
     the sums over `Problem.zones` (#47), 1.7 MB to upload instead of 91 MB, and the
-    outputs agree to rounding."""
+    outputs agree to rounding. `region` and `rings`: as `Problem`'s; the coordinator's
+    work units carry the default region's packs only."""
+    if coordinator is not None and region != REGION:
+        raise ValueError(f"the coordinator runs {REGION} worlds only, not {region}")
     ctx = multiprocessing.get_context("spawn")  # never fork a process whose rayon pool is running
-    with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_start, initargs=(tuple(leave_out),)) as ex:
+    with ProcessPoolExecutor(workers, mp_context=ctx, initializer=_start,
+                             initargs=(tuple(leave_out), region, rings)) as ex:
         if coordinator is None:
             return np.array(list(ex.map(_run, jobs)))
         from . import coord

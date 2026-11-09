@@ -14,7 +14,7 @@ Living specimens (garden and genebank plants) are dropped at the query, coordina
 rounded to a whole degree at the build. Each record keeps its GBIF key and dataset, and
 every contributing dataset is credited in the pack's sources. The search's results
 change as publishers update their data, so the snapshot of the records the pack is built
-from is kept in the repository (data/snapshots/gbif-wild-wheats.m1-swasia.json.gz, 38 kB:
+from is kept in the repository (data/snapshots/gbif-wild-wheats.box24_42_26_58.json.gz, 38 kB, one per box searched:
 CC0 and CC BY 4.0 records, credited as above) and fingerprinted in
 data/locks/gbif-wild-wheats.json. To refresh it, delete the snapshot and rebuild with
 --update-lock, which queries the search again: a deliberate act like any lock update.
@@ -40,7 +40,7 @@ taxa = { emmer = [4932502, 7387585], einkorn = [4154355] }
 licenses = ["CC0_1_0", "CC_BY_4_0"]
 excluded_basis = ["LIVING_SPECIMEN"]
 margin_deg = 1.0
-# Cells (about 15 km a ring at resolution 5) a record's range reaches: a day's
+# Cells at resolution 5 (about 15 km a ring; scaled by sqrt(7) a level finer) a record's range reaches: a day's
 # gathering walk, and the gaps between collecting missions, which follow roads.
 rings = 2
 

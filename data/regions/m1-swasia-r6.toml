@@ -1,0 +1,13 @@
+# M1 region at H3 resolution 6 (#40, fidelity plan F8): the box of m1-swasia
+# (ADR-0040), with cells of about 36 km2 instead of 252 km2, so a village's
+# catchment is closer to a cell. Changing this file changes every pack built for it.
+
+name = "m1-swasia-r6"
+resolution = 6
+rule = "cell centers inside bbox"
+
+[bbox]
+south = 24.0
+north = 42.0
+west = 26.0
+east = 58.0

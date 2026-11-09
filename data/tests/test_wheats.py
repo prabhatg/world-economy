@@ -88,3 +88,21 @@ def test_a_snapshot_is_saved_byte_for_byte_and_read_back(tmp_path):
     wheats.save(s, b)
     assert a.read_bytes() == b.read_bytes()
     assert wheats.load(a) == s and wheats.fingerprint(wheats.load(a)) == wheats.fingerprint(s)
+
+
+def test_a_range_reaches_as_far_at_a_finer_resolution():
+    # Rings are counted at resolution 5; each finer level has cells sqrt(7) times closer.
+    assert wheats.reach(2, 5) == 2 and wheats.reach(2, 6) == 5 and wheats.reach(1, 6) == 3
+    fine = region.Region(name="test-box-r6", resolution=6, bbox=BOX.bbox, sha256="0" * 64)
+    p = pack.read(wheats.build(fine, MANIFEST, SHA, snap(record("emmer", 36.51, 38.71))))
+    at = h3.latlng_to_cell(36.51, 38.71, 6)
+    far = np.array([h3.grid_distance(at, h3.int_to_str(int(c))) for c in fine.cells()])
+    emmer = p.values("emmer")
+    assert np.all(emmer[far <= 5] == 1.0) and np.all(emmer[far > 5] == 0.0)
+
+
+def test_regions_over_one_box_share_a_snapshot():
+    fine = region.Region(name="test-box-r6", resolution=6, bbox=BOX.bbox, sha256="0" * 64)
+    other = region.Region(name="other", resolution=5, bbox=(30.0, 37.0, 38.0, 39.5), sha256="0" * 64)
+    assert wheats.snapshot_path(fine, MANIFEST) == wheats.snapshot_path(BOX, MANIFEST)
+    assert wheats.snapshot_path(other, MANIFEST) != wheats.snapshot_path(BOX, MANIFEST)

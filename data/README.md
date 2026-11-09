@@ -7,7 +7,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 
 | Path | What it is |
 |---|---|
-| `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
+| `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040; the same box at resolution 6, [m1-swasia-r6](regions/m1-swasia-r6.toml), ADR-0111) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
 | `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid`, `lesions`, `fauna`, `caprines`, `bedrock` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |

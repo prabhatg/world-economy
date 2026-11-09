@@ -58,19 +58,19 @@ def _groups(js):
     return [history.Group(g["indices"], g["covariance"], g["dof"]) for g in js or []]
 
 
-def _run(jobs, workers, leave_out=(), coordinator=None, reduced=False):
+def _run(jobs, workers, leave_out=(), coordinator=None, reduced=False, region="m1-swasia", rings=1):
     from . import m1
 
     start = time.time()
-    out = m1.evaluate(jobs, workers, leave_out, coordinator, reduced=reduced)
+    out = m1.evaluate(jobs, workers, leave_out, coordinator, reduced=reduced, region=region, rings=rings)
     print(f"{len(jobs)} runs in {time.time() - start:.0f} s ({workers} workers)", file=sys.stderr)
     return out
 
 
-def _problem_targets(leave_out=()):
+def _problem_targets(leave_out=(), region="m1-swasia", rings=1):
     from . import m1
 
-    p = m1.Problem(leave_out)
+    p = m1.Problem(leave_out, region, rings)
     return p.targets, p.names, p.groups
 
 
@@ -384,16 +384,33 @@ def profile_choice(doc):
     return max((i for i in range(len(ok)) if ok[i]), key=lambda i: score[i], default=None)
 
 
+def _assignment(text):
+    name, _, value = text.partition("=")
+    if not name or not value:
+        raise SystemExit(f"--set takes name=value, got {text!r}")
+    return name, float(value)
+
+
 def profile(args):
-    """One parameter over `values`, every other at its registry default: for a parameter a
-    new record constrains but which leaves the rest of the world alone (a tracer, as
-    obsidian; ADR-0061), so the calibrated world stays the same world."""
+    """One parameter over `values`, every other at its registry default or held where
+    `--set` says: for a parameter a new record constrains but which leaves the rest of the
+    world alone (a tracer, as obsidian; ADR-0061), so the calibrated world stays the same
+    world. `--region` and `--rings` judge the worlds on another grid (#40)."""
     leave = left_out(args.leave_out, [])
-    ts, names, groups = _problem_targets(leave)
+    held = dict(_assignment(a) for a in args.set or [])
+    from .onset import CEREAL
+
+    fixed = sorted({args.parameter, *held} & set(CEREAL))
+    if fixed:
+        raise SystemExit(f"{fixed}: the onset contrasts split the record by the wild-cereal parameters' "
+                         "registry values, so a profile cannot change them")
+    ts, names, groups = _problem_targets(leave, args.region, args.rings)
     seeds = list(range(1, args.seeds + 1))
-    out = _run([({args.parameter: v}, s) for v in args.values for s in seeds], args.workers, leave, args.coordinator, args.reduced)
+    out = _run([({**held, args.parameter: v}, s) for v in args.values for s in seeds], args.workers, leave,
+               args.coordinator, args.reduced, args.region, args.rings)
     doc = {"command": "profile", "revision": _revision(), "sites": SITES, "left_out": leave, "parameter": args.parameter,
-           "values": args.values,
+           "values": args.values, **({"region": args.region, "rings": args.rings, "held": held}
+                                     if (args.region, args.rings, held) != ("m1-swasia", 1, {}) else {}),
            "seeds": seeds, "names": names, "outputs": out.reshape(len(args.values), len(seeds), -1).tolist(),
            "targets": _targets_json(ts), "groups": _groups_json(groups)}
     doc["chosen"] = profile_choice(doc)
@@ -533,6 +550,9 @@ def main(argv=None):
     pr.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
     pr.add_argument("--coordinator", help=COORDINATOR)
     pr.add_argument("--reduced", action="store_true", help=REDUCED)
+    pr.add_argument("--set", nargs="*", metavar="NAME=VALUE", help="other parameters held at these values, not their defaults")
+    pr.add_argument("--region", default="m1-swasia", help="the region whose packs and cells the worlds run on (#40)")
+    pr.add_argument("--rings", type=int, default=1, help="cells around each site the operators read (#40)")
     pr.add_argument("--out", required=True)
     e = sub.add_parser("ensemble", help="run plausible worlds with outputs for the viewer")
     e.add_argument("best", help="a best file: its consistent candidates join the calibrated defaults")

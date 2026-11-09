@@ -194,3 +194,23 @@ def test_m1_worlds_carry_decadal_climate_anomalies():
     from oikos_cal import m1
 
     assert "climate_anomaly" in m1.PACKS
+
+
+def test_a_problem_can_be_judged_on_the_finer_grid():
+    # F8 (#40): the same record on resolution-6 cells, each operator reading `rings` around
+    # its sites (3 at resolution 6 cover about the area 1 does at resolution 5).
+    pytest.importorskip("oikos", reason="build the bindings: maturin develop -m engine/crates/oikos-py/Cargo.toml")
+    import h3
+
+    from oikos_cal import m1
+
+    try:
+        paths = m1.packs("m1-swasia-r6")
+        fine = m1.Problem(region="m1-swasia-r6", rings=3)
+    except (raster.MissingInputs, FileNotFoundError) as e:
+        pytest.skip(str(e))
+    assert all("m1-swasia-r6." in p for p in paths)
+    assert len(fine.cells) == 155_352 and h3.get_resolution(h3.int_to_str(int(fine.cells[0]))) == 6
+    assert max(len(n) for n in fine.domestication.near) == 37
+    assert fine.names[: len(fine.targets)] == [t.name for t in fine.targets]
+    assert m1.river_reach(5) == m1.RIVER_RINGS and m1.river_reach(6) == 5
