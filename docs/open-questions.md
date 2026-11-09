@@ -331,7 +331,7 @@
     costs 2.3 times as much but fits worse at its resolution-5 calibration: villages gather
     and infection persists only within a cell, so both shrink with the cell. Defining
     settlement and contact by distance would make the mechanisms resolution-free; until
-    then a finer or nested grid needs its own calibration.
+    then a finer or nested grid needs its own calibration (#50).
 12. Checkpoint storage budget; prefix-sharing strategy.
 13. Reproducibility guarantee across CPU↔GPU: bitwise or tolerance-bounded?
 14. ~~License~~ — Apache-2.0 / CC-BY 4.0 (ADR-0025).
