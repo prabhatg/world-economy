@@ -149,7 +149,9 @@ Work items are GitHub issues under the M1 milestone.
 
 - Region: Levant, Anatolia, Zagros, Mesopotamia (res 5 H3): res-5 cells with centers
   in 24–42°N, 26–58°E, 22,198 cells incl. Cyprus, the paleo-Gulf basin and the Nile valley (ADR-0040).
-- Forcing: CHELSA-TraCE21k climate, sea level, terrain, hydrology, soils.
+- Forcing: CHELSA-TraCE21k climate, sea level, terrain, hydrology, soils, depth to bedrock
+  (ADR-0106: thin soils erode first; no M1 field wears below the critical share before
+  3000 BCE at the calibrated defaults).
 - Mechanisms: foraging ecology; cultivation & domestication co-evolution; sedentism and
   storage; Neolithic demographic transition; band/village formation and fission;
   exchange networks (obsidian as tracer!); emerging inequality; simple disease;

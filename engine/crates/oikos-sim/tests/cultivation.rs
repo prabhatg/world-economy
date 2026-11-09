@@ -704,17 +704,19 @@ fn soil_erodes_under_fields_and_forms_slowly() {
         ..Params::default()
     };
     // Erosion takes depth at a steady rate under fields; formation refills toward full.
-    assert!((erode(0.5, 1.0, 10.0, &p) - (0.5 - 0.004 + 0.0005)).abs() < 1e-15);
-    assert!((erode(0.5, 0.0, 10.0, &p) - 0.5005).abs() < 1e-15, "fallow land re-forms slowly");
-    assert_eq!(erode(0.001, 1.0, 10.0, &p), 0.0, "never below bare rock");
-    assert_eq!(erode(1.0, 0.0, 10.0, &p), 1.0);
+    assert!((erode(0.5, 1.0, 10.0, 1.0, &p) - (0.5 - 0.004 + 0.0005)).abs() < 1e-15);
+    assert!((erode(0.5, 0.0, 10.0, 1.0, &p) - 0.5005).abs() < 1e-15, "fallow land re-forms slowly");
+    assert_eq!(erode(0.001, 1.0, 10.0, 1.0, &p), 0.0, "never below bare rock");
+    assert_eq!(erode(1.0, 0.0, 10.0, 1.0, &p), 1.0);
+    // The same depth is a larger share of a thin soil (#24): half as deep, twice the share.
+    assert!((erode(0.5, 1.0, 10.0, 0.5, &p) - (0.5 - 0.008 + 0.0005)).abs() < 1e-15);
     // Yields hold while roots have enough soil, then fall linearly to nothing.
     assert_eq!(soil_yield(0.8, &p), 1.0);
     assert_eq!(soil_yield(0.5, &p), 1.0);
     assert!((soil_yield(0.25, &p) - 0.5).abs() < 1e-15);
     assert_eq!(soil_yield(0.0, &p), 0.0);
     // Rate zero switches the hypothesis off: full soil stays full.
-    assert_eq!(erode(1.0, 1.0, 10.0, &Params { soil_erosion_rate: 0.0, ..p }), 1.0);
+    assert_eq!(erode(1.0, 1.0, 10.0, 0.5, &Params { soil_erosion_rate: 0.0, ..p }), 1.0);
 }
 
 /// A cereal-country world that ratchets into farming (as in the ratchet test).
@@ -748,6 +750,50 @@ fn eroding_fields_turn_a_farming_boom_into_a_bust() {
     let peak = *lasting.iter().max().unwrap();
     assert!(*lasting.last().unwrap() > peak * 95 / 100, "without erosion farming lasts: {lasting:?}");
     assert_eq!(soil, 1.0);
+}
+
+/// Depth to bedrock as a share of 2 m (#24): `depth(c)`, or no data where `None`.
+fn bedrock_pack(h3: &[u64], depth: impl Fn(usize) -> Option<f64>) -> Vec<u8> {
+    let mut b = PackBuilder::new("bedrock", region(h3));
+    let v = (0..h3.len()).map(|c| depth(c).map_or(u16::MAX, |d| (d * 1e4).round() as u16)).collect();
+    b.field(
+        FieldSpec { nodata: Some(u16::MAX as i64), ..spec("depth_share", Dims::Cell, 1e-4) },
+        Data::U16(v),
+    )
+    .unwrap();
+    b.build()
+}
+
+#[test]
+fn thin_soils_wear_down_to_rock_first() {
+    // Fields take the same depth everywhere, so a soil a quarter as deep loses its share
+    // four times as fast (Montgomery 2007); cells without data are deep.
+    let (_, g, c) = farming_world(5, |p| p);
+    let b = bedrock_pack(&h3_cells(), |c| match c % 3 {
+        0 => Some(0.25),
+        1 => Some(1.0),
+        _ => None,
+    });
+    let p = Params {
+        selection_coefficient: 0.02,
+        initial_occupancy: 0.5,
+        soil_erosion_rate: 0.0002,
+        ..only(0.8, 0.0, 0.2)
+    };
+    let mut w = world(&[&g, &c, &b], 5, p);
+    w.run_years(2000, 3, 2000);
+    let soil = w.soil();
+    let mean = |k: usize| {
+        let v: Vec<f64> = soil.iter().enumerate().filter(|(c, _)| c % 3 == k).map(|(_, &s)| s).collect();
+        v.iter().sum::<f64>() / v.len() as f64
+    };
+    let (thin, deep, unknown) = (mean(0), mean(1), mean(2));
+    assert!(deep < 1.0, "the test must exercise erosion: {deep}");
+    assert!(1.0 - thin > 2.5 * (1.0 - deep), "thin soils lose more of their share: {thin} against {deep}");
+    assert!(
+        (1.0 - unknown) < 1.5 * (1.0 - deep) && (1.0 - deep) < 1.5 * (1.0 - unknown),
+        "no data reads as deep"
+    );
 }
 
 #[test]

@@ -1025,7 +1025,7 @@ sources = [
 [params.soil_erosion_rate]
 group = "cultivation"
 unit = "soil share per year at full effort"
-description = "Land-degradation hypothesis: share of a cell's erodible soil lost per year under full cultivation effort (in proportion to effort)."
+description = "Land-degradation hypothesis: share of a cell's erodible soil lost per year under full cultivation effort (in proportion to effort), for a soil 2 m deep or more; a soil d times as deep loses 1/d times the share, the same depth (bedrock pack, #24)."
 kind = { type = "real", min = 0.0, max = 0.01 }
 default = 0.0003396
 prior = { dist = "uniform", lo = 0.0, hi = 0.001 }

@@ -166,3 +166,10 @@ def test_a_reduced_record_scores_as_the_full_one(problem):
     z = problem.zones()
     np.testing.assert_allclose(problem.outputs(z.reduce(full)), problem.outputs(full), rtol=1e-9)
     assert len(z.zones) < 400 and len(z.encode()) < 4e6, "a zone file small enough to fetch once per experiment"
+
+
+def test_m1_worlds_wear_thin_soils_down_first():
+    # Erosion reads each cell's depth to bedrock (#24): M1's worlds carry the pack.
+    from oikos_cal import m1
+
+    assert "bedrock" in m1.PACKS

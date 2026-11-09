@@ -479,10 +479,11 @@ impl World {
     }
 
     /// One capacity period of erosion and soil formation, from each cell's effort at the
-    /// last commit.
+    /// last commit. Without a bedrock pack, or data for a cell, its soil is deep.
     fn erode_soil(&mut self) {
         let years = self.params.capacity_period_ticks as f64 / TICKS_PER_YEAR as f64;
         let one = SHARE_ONE as f64;
+        let bedrock = self.inputs.field(environment::BEDROCK.0, environment::BEDROCK.1).ok();
         for c in 0..self.grid.len() {
             let effort = match self.population[c] {
                 0 => 0.0,
@@ -490,8 +491,12 @@ impl World {
             };
             let s = self.soil[c];
             if effort > 0.0 || s < SHARE_ONE {
+                let depth = bedrock
+                    .as_ref()
+                    .and_then(|f| f.get(0, c))
+                    .map_or(1.0, |d| d.clamp(environment::MIN_DEPTH, 1.0));
                 self.soil[c] =
-                    Traits::toward(s, environment::erode(s as f64 / one, effort, years, &self.params));
+                    Traits::toward(s, environment::erode(s as f64 / one, effort, years, depth, &self.params));
             }
         }
     }

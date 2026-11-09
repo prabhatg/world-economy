@@ -22,7 +22,9 @@ enters the model, and the starting mechanisms.
   (ADR-0044).
 - **Soils & terrain:** fertility, erosion, salinization (feedback from irrigation).
   *Implemented (M1):* static terrain and `soils` packs (topsoil texture, organic carbon,
-  pH, coarse fragments; modern proxy, ADR-0045).
+  pH, coarse fragments; modern proxy, ADR-0045), and a `bedrock` pack of depth to bedrock
+  within 2 m (SoilGrids250m 2017): fields wear the same depth from every soil, so a thin
+  soil over rock loses its share faster (ADR-0106, #24).
 - **Coupling (later):** land use → regional climate/erosion; industrial emissions →
   global temperature via a reduced-complexity climate emulator (FaIR-like) post-1750.
 

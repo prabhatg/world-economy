@@ -16,7 +16,7 @@
 //! climate variability: how much its suitability has swung per century over that window.
 //! A cell's carrying capacity then blends foraging and cultivation by its bands' effort
 //! ([`farmed_capacity`]), with fields yielding less where they have worn the soil down
-//! ([`erode`], [`soil_yield`]). Everything here is computed from the packs, the year, the
+//! ([`erode`], [`soil_yield`]), thin soils over rock soonest. Everything here is computed from the packs, the year, the
 //! parameters and agent totals, with `oikos_math` functions, so every host gets the same
 //! integers.
 
@@ -39,6 +39,12 @@ pub const AREA: (&str, &str) = ("geometry", "area_km2");
 /// Pack kind and field holding the rain the African Humid Period adds at its height
 /// (mm/year; ADR-0084).
 pub const HUMID: (&str, &str) = ("humid_period", "precip_anomaly");
+/// Pack kind and field holding each cell's depth to bedrock within 2 m, as a share of
+/// 2 m (#24).
+pub const BEDROCK: (&str, &str) = ("bedrock", "depth_share");
+/// Shallowest depth share [`erode`] is given (2 cm), so a cell mapped as bare rock does
+/// not divide by zero; SoilGrids' shallowest is 10 cm.
+pub const MIN_DEPTH: f64 = 0.01;
 
 /// Net primary productivity (g dry matter m-2 yr-1) from annual mean temperature (degC)
 /// and annual precipitation (mm), by the Miami model.
@@ -132,9 +138,11 @@ pub fn capacity_at(land: &Land, practice: &Practice, (w, h): (f64, f64)) -> u64 
 /// A cell's soil share (1 = its original erodible soil) after `years` with its people
 /// spending `effort` cultivating: fields erode it at `soil_erosion_rate` times effort, a
 /// steady loss of depth (Montgomery 2007), while soil re-forms at `soil_formation_rate`
-/// times what is missing. Between 0 (bare rock) and 1.
-pub fn erode(soil: f64, effort: f64, years: f64, p: &Params) -> f64 {
-    let loss = p.soil_erosion_rate * effort * years;
+/// times what is missing. The rate is the share of a soil 2 m deep or more; the same
+/// depth is a larger share of a soil `depth` times as deep (in (0, 1]; #24). Between 0
+/// (bare rock) and 1.
+pub fn erode(soil: f64, effort: f64, years: f64, depth: f64, p: &Params) -> f64 {
+    let loss = p.soil_erosion_rate * effort * years / depth;
     let gain = p.soil_formation_rate * (1.0 - soil) * years;
     oikos_math::finite(soil - loss + gain).clamp(0.0, 1.0)
 }
