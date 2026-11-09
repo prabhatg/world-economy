@@ -310,8 +310,11 @@
     foragers gather beside them (ADR-0103) are too few to outweigh it. Mobile people who
     harvested wild stands where they found them, without keeping plots, may not have
     taken up the seed of sedentary farmers at all; or the assemblage records one camp,
-    not the 1,760 km2 the operator pools (a finer grid, F8, would narrow it). Which of
-    these it is, and whether seed exchange should depend on sedentism, is open.
+    not the 1,760 km2 the operator pools (a finer grid, F8, would narrow it). The model
+    cannot yet tell the two places apart: the people near El Kowm and near Jilat put the
+    same share of their effort into sowing (0.18 and 0.19 of people-years, seeds 1-3), so
+    no rule keyed to sedentism, which the model measures by that effort, would separate
+    them. What did was most likely El Kowm's water, which brings back springs (ADR-0110).
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
