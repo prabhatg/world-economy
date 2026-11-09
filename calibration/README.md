@@ -181,7 +181,10 @@ exchange at those defaults: all consistent, rising to a plateau from 0.3, which 
 calibrated defaults with the climate_anomaly pack (ADR-0107): all consistent, leaning
 about 2 log-units against the anomaly, so the literature values stay;
 `profile-variability-weight.json` takes the stable-climate weight with the anomalies,
-best at 2, which it becomes. The onset record's tables are downloaded by hand (`data/README.md`); without
+best at 2, which it becomes. `runs/m1/ranges/` profiles the wheats' selection ratios with
+the wild_wheats pack (ADR-0108): emmer's literature 0.74 and einkorn's calibrated 0.9
+stay best (summaries -81.6), their halves and doubles inconsistent for emmer and worse
+for einkorn. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

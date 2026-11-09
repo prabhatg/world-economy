@@ -168,6 +168,20 @@ def test_a_reduced_record_scores_as_the_full_one(problem):
     assert len(z.zones) < 400 and len(z.encode()) < 4e6, "a zone file small enough to fetch once per experiment"
 
 
+def test_the_wheats_are_gathered_wild_only_within_their_ancestors_ranges(problem):
+    # Wild emmer and einkorn ranges (#38): none on the central Anatolian plateau for emmer,
+    # so Aşıklı Höyük's emmer reads as sown; barley's wild stands are where it grows.
+    from oikos_cal import m1
+
+    assert "wild_wheats" in m1.PACKS
+    emmer, einkorn = problem.wheats
+    assert problem.domestication.stands is None
+    asikli = list(emmer.sites).index("Asikli Hoyuk")
+    assert emmer.gather[asikli].size == 0 and emmer.near[asikli].size == 7
+    nevali = list(einkorn.sites).index("Nevalı Çori")
+    assert np.array_equal(einkorn.gather[nevali], einkorn.near[nevali])
+
+
 def test_m1_worlds_wear_thin_soils_down_first():
     # Erosion reads each cell's depth to bedrock (#24): M1's worlds carry the pack.
     from oikos_cal import m1

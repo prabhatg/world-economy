@@ -35,6 +35,7 @@ python -m oikos_data build fauna m1-swasia                 # Arbuckle et al. 201
 python -m oikos_data build caprines m1-swasia              # wild sheep and goats' uplands, from terrain -> pack
 python -m oikos_data build bedrock m1-swasia               # SoilGrids250m 2017 depth to bedrock overview (~6 MB) once -> pack
 python -m oikos_data build climate_anomaly m1-swasia       # NGRIP 20-year d18O (60 kB) -> decadal anomaly pack
+python -m oikos_data build wild_wheats m1-swasia           # GBIF wild emmer and einkorn records (~7k, API) -> range pack
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -73,6 +74,7 @@ decision (2026-11-04, #42); the article itself is not stored (`oikos_data.lesion
 | `caprines` | `upland` (0-1): the share of a cell's land that is upland where wild sheep and goats lived, the larger of ramps of mean elevation (300-900 m) and mean slope (1-4 degrees), 0 in Africa; the engine takes out land too dry for grazing each year (#37) | the terrain pack (Copernicus DEM GLO-90); habitat after Uerpmann 1987 and Yeomans et al. 2017 |
 | `bedrock` | `depth_share` (0-1): the cell's mean depth to bedrock within 2 m, as a share of 2 m (1 at 2 m or deeper); the engine's fields wear a thin soil's share down faster (#24) | SoilGrids250m 2017 BDRICM (Shangguan et al. 2017; ODbL v1.0, so the pack is shared under ODbL v1.0) at its 1/16 overview (~3.7 km); water and unmapped land nodata; modern soils as a proxy |
 | `climate_anomaly` | `index` (permil, a time series for the whole region, dims `["time"]`): NGRIP's 20-year d18O less the line through the means within 500 years of each, from 11,600 BP; 0 outside; the engine shifts temperature by `climate_anomaly_temp` and scales rain by `climate_anomaly_precip` per unit each decade (ADR-0107) | NGRIP GICC05 20-year means (Andersen et al. 2007, PANGAEA, CC BY 3.0) |
+| `wild_wheats` | `emmer`, `einkorn` (0-1): 1 within two cells (about 30 km) of an occurrence record of the wheat's wild ancestor, else 0; gene flow from wild stands pulls each wheat back only there, and the rachis operator counts wild ears gathered only there (#38, ADR-0108) | GBIF occurrence records (CC0 and CC BY 4.0; living specimens and whole-degree coordinates dropped), chiefly the crop-wild-relatives database (Castañeda-Álvarez et al. 2016) and genebank passport data; the snapshot is fingerprinted in `locks/gbif-wild-wheats.json`; modern ranges as a proxy |
 | `soils` | `clay`, `sand`, `silt` (%), `organic_carbon` (g/kg), `ph`, `coarse_fragments` (vol %), 0–30 cm depth-weighted | SoilGrids 2.0 1 km aggregates (CC BY 4.0), Homolosine samples located per cell; built-up, water and glaciers unmapped (nodata); modern soils as a proxy |
 
 Observation tables (Parquet, locked like packs; docs/05 §5.1):

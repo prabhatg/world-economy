@@ -153,7 +153,8 @@ Work items are GitHub issues under the M1 milestone.
   (ADR-0106: thin soils erode first; no M1 field wears below the critical share before
   3000 BCE at the calibrated defaults), decadal climate anomalies from NGRIP (ADR-0107:
   the 8.2 ka event; against real century-to-century swings the stable-climate
-  hypothesis' weight falls from 7.2 to 2, and the fit is as good as before).
+  hypothesis' weight falls from 7.2 to 2, and the fit is as good as before), and where
+  wild emmer and einkorn grow, from GBIF's records (ADR-0108).
 - Mechanisms: foraging ecology; cultivation & domestication co-evolution; sedentism and
   storage; Neolithic demographic transition; band/village formation and fission;
   exchange networks (obsidian as tracer!); emerging inequality; simple disease;

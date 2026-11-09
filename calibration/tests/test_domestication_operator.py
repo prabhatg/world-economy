@@ -78,6 +78,46 @@ def test_wild_cereal_gathered_by_foragers_dilutes_the_sown_harvest():
     assert op.shares(a)[0] == pytest.approx(0.5), "everyone sowing: nobody gathers"
 
 
+def test_foragers_gather_a_wheat_only_where_it_grows_wild():
+    # Wild emmer and einkorn grow in narrower ranges than wild barley (#38): foragers
+    # gather each only from the cells its wild stands reach.
+    a = logistic_world(0.0)
+    a.cultivators *= 0.25
+    a.domestic *= 0.25
+    a.emmer_domestic = a.domestic.copy()
+    emmer = lambda stands: dom.Operator(assemblages([-7_950], [0], [10], crop="emmer"), CELLS, WINDOW,
+                                        gathered=0.1, stands=stands).shares(a)[0]
+    near = np.isin(CELLS, [h3.str_to_int(c) for c in h3.grid_disk(SITE, 1)])
+    sown, foraged = 0.25, 0.1 * 0.75
+    assert emmer(None) == emmer(np.ones(len(CELLS))) == pytest.approx((0.5 * sown + 1e-3 * foraged) / (sown + foraged))
+    assert emmer(np.zeros(len(CELLS))) == pytest.approx(0.5), "beyond its range only the sown wheat"
+    only_site = (CELLS == h3.str_to_int(SITE)).astype(float)
+    wild = foraged / near.sum()
+    assert emmer(only_site) == pytest.approx((0.5 * sown + 1e-3 * wild) / (sown + wild))
+    with pytest.raises(ValueError, match="one per cell"):
+        emmer(np.ones(3))
+    with pytest.raises(ValueError, match="0 or 1"):
+        emmer(np.full(len(CELLS), 0.5))
+
+
+def test_a_reduced_record_reads_the_same_gathering_as_the_full_one():
+    # The cells a wheat is gathered from are a zone of their own (#47): summing every
+    # near cell and weighting afterwards would count the zone once per cell.
+    from oikos_cal import record, zones
+
+    a = logistic_world(0.0)
+    a.cultivators *= 0.25
+    a.domestic *= 0.25
+    for field in record.FIELDS:
+        if getattr(a, field) is None:
+            setattr(a, field, np.zeros_like(a.people))
+    a.emmer_domestic = a.domestic.copy()
+    for stands in (np.ones(len(CELLS)), (CELLS == h3.str_to_int(SITE)).astype(float), np.zeros(len(CELLS))):
+        op = dom.Operator(assemblages([-7_950], [0], [10], crop="emmer"), CELLS, WINDOW, gathered=0.1, stands=stands)
+        reduced = zones.Zones(CELLS, WINDOW, op.cells()).reduce(a)
+        assert op.shares(reduced) == pytest.approx(op.shares(a))
+
+
 def test_each_crop_is_judged_by_its_own_share():
     # Emmer and einkorn are sown with the crop (#38): the same cultivators, their own shares.
     a = logistic_world(0.0)

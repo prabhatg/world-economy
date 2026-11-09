@@ -289,6 +289,16 @@
     since they meet a bad decade only by cultivating more under stress, moving and
     passing seed along ties, without storage, sharing or diversifying (Halstead and
     O'Shea 1989).
+42. Where did wild emmer and wild einkorn grow in the early Holocene (ADR-0108)? The
+    `wild_wheats` pack takes today's ranges from GBIF's occurrence records, which follow
+    collecting missions and roads, miss what grazing and ploughing have cleared since,
+    and know nothing of the Younger Dryas, when the stands likely retreated to refugia
+    (Willcox 2005). A climate envelope fitted to the records and projected onto
+    CHELSA-TraCE21k's centuries would give ranges that move with the climate, at the
+    cost of over-predicting where dispersal, not climate, limits the wheats (wild emmer
+    is absent from much land that suits it). Whether early cultivation beyond the ranges
+    (Tell Aswad, Aşıklı Höyük) sped domestication by isolating sown stands from wild ones,
+    as Willcox argues, is what the ranges let calibration weigh.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

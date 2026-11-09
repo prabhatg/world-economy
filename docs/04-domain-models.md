@@ -92,8 +92,13 @@ enters the model, and the starting mechanisms.
   marriage and exchange ties, so a band replaces a share of its seed stock, in
   proportion to its effort, with seed at the domestic shares sown by those it learns
   from; villages where few farm can then sow crops bred elsewhere.
+  Where wild emmer and wild einkorn grow (ADR-0108, #38) comes from GBIF's occurrence
+  records, a `wild_wheats` pack: gene flow from wild stands pulls each wheat back only
+  within its ancestor's range, so seed sown beyond it, as on the Damascus basin's plain or
+  the central Anatolian plateau, keeps its traits (Willcox 2005), and the rachis record
+  counts wild ears gathered only there.
   Wild-cereal suitability comes from temperature and precipitation, one for every crop;
-  where each crop's ancestor grew, pulses, soils and irrigation are not yet included.
+  pulses, soils and irrigation are not yet included.
 - Minerals and energy: obsidian, flint, copper, tin, iron, salt, timber, later coal,
   oil, gas, uranium, renewables potential.
 

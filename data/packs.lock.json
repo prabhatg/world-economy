@@ -66,5 +66,9 @@
   "m1-swasia/terrain": {
     "bytes": 268692,
     "id": "28da728051d501cbc33253c628ba3ba0a7ee7e4fbb2d622f2d17644143bb8d3f"
+  },
+  "m1-swasia/wild_wheats": {
+    "bytes": 98156,
+    "id": "8ae89e9e3f298bafd073c5c3640fc263be5cf61c5ca54ada989fa45a0aee8226"
   }
 }

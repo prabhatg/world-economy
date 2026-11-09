@@ -219,7 +219,7 @@ fn each_wheat_domesticates_at_its_own_pace() {
     let (mut barley, mut emmer, mut einkorn) = (0.0, 0.0, 0.0);
     for _ in 0..1500 {
         barley = c.domesticate(barley, 1.0);
-        [emmer, einkorn] = c.domesticate_wheats([emmer, einkorn], 1.0);
+        [emmer, einkorn] = c.domesticate_wheats([emmer, einkorn], 1.0, [1.0, 1.0]);
     }
     assert!(barley > 0.99 && emmer > 0.2 && emmer < barley / 2.0, "{barley} {emmer}");
     assert_eq!(einkorn, 0.0, "without selection the wild type stays");
@@ -230,7 +230,80 @@ fn each_wheat_domesticates_at_its_own_pace() {
         ..only(0.0, 0.0, 0.0)
     });
     let d = same.domesticate(0.3, 0.4);
-    assert_eq!(same.domesticate_wheats([0.3, 0.3], 0.4), [d, d]);
+    assert_eq!(same.domesticate_wheats([0.3, 0.3], 0.4, [1.0, 1.0]), [d, d]);
+}
+
+#[test]
+fn wheats_sown_beyond_their_wild_range_lose_nothing_to_wild_stands() {
+    // Villages that sowed the wheats beyond their ancestors' ranges sowed seed brought from
+    // elsewhere, with no wild stands nearby to mix back into it (Willcox 2005).
+    let c = Cultivation::from_params(&Params {
+        emmer_selection_ratio: 1.0,
+        einkorn_selection_ratio: 1.0,
+        ..only(0.0, 0.0, 0.0)
+    });
+    let [beyond, within] = c.domesticate_wheats([0.6, 0.6], 0.0, [0.0, 1.0]);
+    assert_eq!(beyond, 0.6, "nothing pulls it back where none grow wild");
+    assert_eq!(within, c.domesticate(0.6, 0.0));
+    assert!(within < 0.6);
+    let [half, _] = c.domesticate_wheats([0.6, 0.6], 0.0, [0.5, 1.0]);
+    assert!(within < half && half < beyond, "{within} {half} {beyond}");
+    // Sown wild seed carries its domestic mutants wherever it is sown.
+    let from_wild = c.domesticate_wheats([0.0, 0.0], 0.7, [0.0, 1.0]);
+    assert_eq!(from_wild[0], from_wild[1]);
+    assert!(from_wild[0] > 0.0);
+}
+
+/// Where wild emmer and wild einkorn grow, as range shares per cell.
+fn wild_wheats_pack(h3: &[u64], range: impl Fn(usize) -> (f64, f64)) -> Vec<u8> {
+    let mut b = PackBuilder::new("wild_wheats", region(h3));
+    let (emmer, einkorn): (Vec<u16>, Vec<u16>) =
+        (0..h3.len()).map(&range).map(|(a, b)| ((a * 1e4) as u16, (b * 1e4) as u16)).unzip();
+    b.field(spec("emmer", Dims::Cell, 1e-4), Data::U16(emmer)).unwrap();
+    b.field(spec("einkorn", Dims::Cell, 1e-4), Data::U16(einkorn)).unwrap();
+    b.build()
+}
+
+#[test]
+fn a_wheat_beyond_its_wild_range_stays_as_domestic_as_its_sowing_made_it() {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    // Weak selection on both wheats, so wild gene flow holds them below fully domestic.
+    let p = Params {
+        selection_coefficient: 0.02,
+        emmer_selection_ratio: 0.2,
+        einkorn_selection_ratio: 0.2,
+        seed_exchange: 0.0,
+        ..only(0.8, 0.0, 0.2)
+    };
+    let run = |packs: &[&[u8]]| {
+        let mut w = world(packs, 5, p.clone());
+        w.run_years(3000, 3, 3000);
+        w
+    };
+    let everywhere = wild_wheats_pack(&h3, |_| (1.0, 1.0));
+    let (unknown, both) = (run(&[&g, &c]), run(&[&g, &c, &everywhere]));
+    assert_eq!(both.emmer_domestication(), unknown.emmer_domestication(), "no pack: wild wheats everywhere");
+    assert_eq!(both.einkorn_domestication(), unknown.einkorn_domestication());
+    let no_emmer = wild_wheats_pack(&h3, |_| (0.0, 1.0));
+    let beyond = run(&[&g, &c, &no_emmer]);
+    assert_eq!(beyond.population, both.population, "the wheats do not feed back");
+    let (emmer, einkorn, effort) =
+        (beyond.emmer_domestication(), beyond.einkorn_domestication(), beyond.cultivation());
+    let farmed: Vec<usize> = (0..h3.len()).filter(|&c| effort[c] > 0.3).collect();
+    assert!(!farmed.is_empty());
+    assert!(farmed.iter().all(|&c| emmer[c] >= einkorn[c]), "{emmer:?} {einkorn:?}");
+    assert!(farmed.iter().any(|&c| emmer[c] > einkorn[c] + 0.01), "{emmer:?} {einkorn:?}");
+}
+
+#[test]
+fn a_wild_wheats_pack_must_hold_both_wheats() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let mut b = PackBuilder::new("wild_wheats", region(&h3));
+    b.field(spec("emmer", Dims::Cell, 1e-4), Data::U16(vec![0; h3.len()])).unwrap();
+    let packs = vec![Pack::parse(g).unwrap(), Pack::parse(b.build()).unwrap()];
+    assert!(Inputs::from_packs(packs).unwrap_err().contains("einkorn"));
 }
 
 #[test]

@@ -92,6 +92,12 @@ impl Inputs {
         if inputs.pack(anomaly).is_ok() && inputs.field(anomaly, index)?.def.dims != Dims::Time {
             return Err(format!("the {anomaly} pack's {index} must be a time series (dims [\"time\"])"));
         }
+        let (wheats, names) = crate::environment::WILD_WHEATS;
+        if inputs.pack(wheats).is_ok() {
+            for name in names {
+                inputs.field(wheats, name)?;
+            }
+        }
         for (kind, field) in [crate::environment::CAPRINES, crate::environment::BEDROCK] {
             if inputs.pack(kind).is_ok() {
                 inputs.field(kind, field)?;

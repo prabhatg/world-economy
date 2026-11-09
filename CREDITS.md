@@ -67,6 +67,13 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   PANGAEA, doi:10.1594/PANGAEA.586838; time scale Vinther, B.M. et al. (2006), Journal of
   Geophysical Research 111, D13102, and Rasmussen, S.O. et al. (2006), Journal of
   Geophysical Research 111, D06102. CC BY 3.0.
+- **GBIF occurrence records of wild emmer and wild einkorn** (wild_wheats pack): GBIF.org
+  occurrence search (CC0 1.0 and CC BY 4.0 records, retrieved 2026-11-09), chiefly the
+  Crop Wild Relatives Occurrence data consortia (2024), A global database for the
+  distributions of crop wild relatives, version 1.13, CIAT, doi:10.15468/jyrthk
+  (Castañeda-Álvarez, N.P. et al. 2016, Nature Plants 2: 16022,
+  doi:10.1038/nplants.2016.22), with genebank passport data (USDA NPGS, SINGER,
+  EURISCO) and herbaria; each contributing dataset is credited in the pack's sources.
 - **p3k14c** (radiocarbon observations): Bird, D. et al. (2022), Scientific Data 9: 27,
   doi:10.1038/s41597-022-01118-7; data doi:10.5281/zenodo.5597795 (MIT), and the
   databases it compiles (in M1 mostly CalPal, CONTEXT, Flohr et al. 2016, Vermeersch

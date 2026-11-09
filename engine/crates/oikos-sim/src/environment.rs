@@ -45,6 +45,9 @@ pub const HUMID: (&str, &str) = ("humid_period", "precip_anomaly");
 /// Pack kind and field holding each cell's depth to bedrock within 2 m, as a share of
 /// 2 m (#24).
 pub const BEDROCK: (&str, &str) = ("bedrock", "depth_share");
+/// Pack kind and fields holding the share of each cell in the range of wild emmer and of
+/// wild einkorn, in [`crate::agents::EMMER`], [`crate::agents::EINKORN`] order (#38).
+pub const WILD_WHEATS: (&str, [&str; 2]) = ("wild_wheats", ["emmer", "einkorn"]);
 /// Pack kind and field holding a regional climate index over time (#41): decadal
 /// anomalies from proxy records with their century-scale signal removed, so the climate
 /// pack's century means stand.

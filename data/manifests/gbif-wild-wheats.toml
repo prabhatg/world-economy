@@ -1,0 +1,54 @@
+# Occurrence records of wild emmer and wild einkorn: where the wheats' ancestors grow (#38).
+dataset = "gbif-wild-wheats"
+title = "Occurrence records of wild emmer (Triticum turgidum subsp. dicoccoides) and wild einkorn (Triticum monococcum subsp. aegilopoides) in Southwest Asia, from GBIF"
+version = "2026-11-09"
+homepage = "https://www.gbif.org/occurrence/search?taxon_key=4932502&taxon_key=7387585&taxon_key=4154355"
+citation = "GBIF.org (2026). Occurrence search for Triticum turgidum subsp. dicoccoides, T. dicoccoides and T. monococcum subsp. aegilopoides, CC0 and CC BY 4.0 records, retrieved 2026-11-09, https://www.gbif.org. Chiefly: Crop Wild Relatives Occurrence data consortia (2024). A global database for the distributions of crop wild relatives. Version 1.13. CIAT. https://doi.org/10.15468/jyrthk (Castañeda-Álvarez, N.P., et al. 2016. Global conservation priorities for crop wild relatives. Nature Plants 2: 16022, https://doi.org/10.1038/nplants.2016.22)."
+notes = """
+GBIF's occurrence search API (no account needed), queried once over the region's box
+widened by `margin_deg`, for the accepted taxa and their synonyms (taxonKey includes
+synonyms: T. boeoticum under 4154355). Only records licensed CC0 1.0 or CC BY 4.0 are
+requested; CC BY-NC records (a quarter of wild emmer's, mostly Israeli observations) are
+left out, which thins the southern Levant's records but not its range at two rings.
+Living specimens (garden and genebank plants) are dropped at the query, coordinates
+rounded to a whole degree at the build. Each record keeps its GBIF key and dataset, and
+every contributing dataset is credited in the pack's sources. The search's results
+change as publishers update their data, so the snapshot of the records the pack is built
+from is kept in the repository (data/snapshots/gbif-wild-wheats.m1-swasia.json.gz, 38 kB:
+CC0 and CC BY 4.0 records, credited as above) and fingerprinted in
+data/locks/gbif-wild-wheats.json. To refresh it, delete the snapshot and rebuild with
+--update-lock, which queries the search again: a deliberate act like any lock update.
+Records are modern: the wheats' ranges in the early Holocene are taken to be today's
+(open question in docs/open-questions.md).
+"""
+
+[license]
+# The records requested are CC0 1.0 or CC BY 4.0 (GBIF's record-level license); CC BY
+# needs attribution, given per dataset in the pack's sources. GBIF's terms of use:
+# https://www.gbif.org/terms (data use under each record's license).
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains occurrence records from GBIF.org (CC0 1.0 and CC BY 4.0), chiefly the Crop Wild Relatives Occurrence data consortia (2024), A global database for the distributions of crop wild relatives, https://doi.org/10.15468/jyrthk; each contributing dataset is credited in the pack's sources."
+verified = "2026-11-09"
+
+[access]
+kind = "gbif_search"
+url = "https://api.gbif.org/v1/occurrence/search"
+dataset_url = "https://api.gbif.org/v1/dataset"
+taxa = { emmer = [4932502, 7387585], einkorn = [4154355] }
+licenses = ["CC0_1_0", "CC_BY_4_0"]
+excluded_basis = ["LIVING_SPECIMEN"]
+margin_deg = 1.0
+# Cells (about 15 km a ring at resolution 5) a record's range reaches: a day's
+# gathering walk, and the gaps between collecting missions, which follow roads.
+rings = 2
+
+[coverage]
+spatial = "Southwest Asia and its margins (the M1 box widened by 1 degree)"
+temporal = "modern (collections and observations of the last century)"
+
+[[variables]]
+name = "occurrence"
+unit = "1"
+description = "A georeferenced record of the wild wheat growing there."

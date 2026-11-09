@@ -1063,7 +1063,10 @@ impl Mechanism for Inundation {
 ///   Bands sow emmer and einkorn with the crop (#38), in the same fields under the same
 ///   effort, and each wheat is selected at its own fraction of the crop's selection, as
 ///   the founder crops were domesticated at different paces (Allaby et al. 2017; Fuller
-///   et al. 2014). Selection is what the harvest does: reaping ripe ears with sickles
+///   et al. 2014). Gene flow pulls a wheat back only where its wild ancestor grows (the
+///   `wild_wheats` pack; everywhere without it): wild emmer and einkorn range far less
+///   widely than wild barley, and villages beyond their ranges sowed seed brought from
+///   them, with no wild stands nearby to mix back in (Willcox 2005). Selection is what the harvest does: reaping ripe ears with sickles
 ///   selects strongly, beating or uprooting them weakly (Hillman and Davies 1990), so the
 ///   rates stand for how people harvested each crop, a practice learned with cultivation
 ///   itself. The crop's own share is barley's, which stands for the package in carrying
@@ -1376,17 +1379,25 @@ impl Cultivation {
         self.select(d, effort, self.selection)
     }
 
-    /// Domestic shares of emmer and einkorn after one period at `effort` (#38).
-    pub fn domesticate_wheats(&self, d: [f64; 2], effort: f64) -> [f64; 2] {
+    /// Domestic shares of emmer and einkorn after one period at `effort` (#38), in a cell
+    /// that is `wild` in each one's wild range: gene flow from wild stands pulls a wheat
+    /// back only there, so seed sown beyond the range keeps its traits (Willcox 2005).
+    pub fn domesticate_wheats(&self, d: [f64; 2], effort: f64, wild: [f64; 2]) -> [f64; 2] {
         [
-            self.select(d[0], effort, self.wheat_selection[0]),
-            self.select(d[1], effort, self.wheat_selection[1]),
+            self.select_within(d[0], effort, self.wheat_selection[0], wild[0]),
+            self.select_within(d[1], effort, self.wheat_selection[1], wild[1]),
         ]
     }
 
     fn select(&self, d: f64, effort: f64, selection: f64) -> f64 {
+        self.select_within(d, effort, selection, 1.0)
+    }
+
+    /// [`Cultivation::select`] where a share `wild` of the land holds the crop's wild
+    /// stands. Sown wild seed carries its domestic mutants wherever it is sown.
+    fn select_within(&self, d: f64, effort: f64, selection: f64, wild: f64) -> f64 {
         let gain = selection * effort * d.max(self.wild_frequency) * (1.0 - d);
-        let loss = self.introgression * (1.0 - effort) * d;
+        let loss = self.introgression * (1.0 - effort) * d * wild;
         oikos_math::finite(d + gain - loss).clamp(0.0, 1.0)
     }
 }
@@ -1412,6 +1423,9 @@ impl Mechanism for Cultivation {
             return;
         }
         let agents = &mut *part.agents;
+        // Without a wild-wheats pack the wheats grow wild wherever they are sown.
+        let (kind, names) = crate::environment::WILD_WHEATS;
+        let wild_wheats = names.map(|name| sense.inputs.field(kind, name).ok());
         // Learning from the own cell by how many plant (ADR-0065) is computed as it was.
         let own_cell_only = self.own_cell_only();
         let mut example: Option<(usize, Option<f64>)> = None; // per cell, only where needed
@@ -1476,7 +1490,10 @@ impl Mechanism for Cultivation {
             let cultivation = Traits::toward(traits.cultivation, next_e);
             // Rounding toward each change may overshoot the budget by a unit or two.
             let herding = Traits::toward(traits.herding, next_h).min(SHARE_ONE - cultivation);
-            let mut wheats = self.domesticate_wheats(traits.wheat_domestication.map(Traits::share), e);
+            let wild = [EMMER, EINKORN].map(|w| {
+                wild_wheats[w].as_ref().map_or(1.0, |f| f.get(0, cell).unwrap_or(0.0).clamp(0.0, 1.0))
+            });
+            let mut wheats = self.domesticate_wheats(traits.wheat_domestication.map(Traits::share), e, wild);
             let mut domestic = self.domesticate(d, e);
             if self.seed_exchange != 0.0 && e > 0.0 {
                 let seen = match seeds {

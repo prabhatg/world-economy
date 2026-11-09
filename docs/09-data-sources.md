@@ -33,6 +33,12 @@ Decadal climate anomalies come from the NGRIP 20-year δ18O means on GICC05 (And
 al. 2007), PANGAEA's export, whose record states CC BY 3.0 (checked 2026-11-09;
 ADR-0107). The same speleothems on NOAA's paleo archive carry no licence; SISALv3's are
 CC BY 4.0, for regional records later (open question 41).
+Where wild emmer and wild einkorn grow comes from GBIF's occurrence records (ADR-0108),
+requested through its search API under CC0 1.0 and CC BY 4.0 only (a record's own
+license governs it, which may be looser than its dataset's: iNaturalist's CC0 records sit
+in a CC BY-NC dataset); CC BY-NC records are left out. Every contributing dataset is
+credited in the pack's sources. The search's results change as publishers update them,
+so the snapshot is fingerprinted in a lock like the raster tiles.
 The African Humid Period, which CHELSA-TraCE21k's climate model misses, comes from the
 mid-Holocene precipitation reconstructions of Bartlein et al. (2011; NOAA WDS-Paleo,
 CC0, checked 2026-11-04; ADR-0084), fitted together with published estimates for

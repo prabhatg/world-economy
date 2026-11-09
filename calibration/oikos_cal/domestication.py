@@ -26,9 +26,12 @@ Each crop is judged by its own record against its own share (#38): barley agains
 crop's, emmer and einkorn against the wheats bands sow with it (`record.Activity`'s
 `emmer_domestic`, `einkorn_domestic`), under the same effort.
 
-What it does not yet model: where each crop's wild ancestor grew (foragers gather
-wild cereal anywhere, at one rate), and the dating uncertainty of each phase beyond the
-window.
+Foragers gather each wheat only where its wild ancestor grows (`stands`, from the
+`wild_wheats` pack, #38): wild emmer and einkorn range far less widely than wild barley,
+which they gather wherever they forage. So a village beyond a wheat's range, as Aşıklı
+Höyük for emmer, reads as its fields.
+
+What it does not yet model: the dating uncertainty of each phase beyond the window.
 """
 
 import math
@@ -68,9 +71,11 @@ class Operator:
     `oikos_data.rachis`: crop, h3, median_year, k_nonshattering, n_rachis)."""
 
     def __init__(self, table, cells, window: Window, rings=1, half_window=1, concentration=2.0, wild=0.001,
-                 gathered=0.0):
+                 gathered=0.0, stands=None):
         """`cells`: H3 ids of the world's cells (ascending, the order activity arrays use);
-        `gathered`: ears gathered wild per people-year of foraging effort, against one sown."""
+        `gathered`: ears gathered wild per people-year of foraging effort, against one sown;
+        `stands`: whether each cell is in the crop's wild range (1) or not (0), one per cell
+        (None: every cell is)."""
         crops = sorted(set(table["crop"]))
         if len(crops) > 1:
             raise ValueError(f"the table holds {crops}: judge one crop at a time (`crop`)")
@@ -80,6 +85,12 @@ class Operator:
         self.field = CROPS[self.crop]
         self.window, self.concentration, self.wild, self.gathered = window, concentration, wild, gathered
         cells = np.asarray(cells, dtype=np.uint64)
+        if stands is not None and len(stands) != len(cells):
+            raise ValueError(f"stands holds {len(stands)} shares, the world {len(cells)} cells: give one per cell")
+        if stands is not None and not np.isin(stands, (0.0, 1.0)).all():
+            raise ValueError("stands must be 0 or 1 per cell: the cells gathered from are a zone of the reduced record")
+        self.stands = None if stands is None else np.asarray(stands, dtype=float)
+        self.sites = list(table["site"])
         self.k = np.asarray(table["k_nonshattering"], dtype=float)
         self.n = np.asarray(table["n_rachis"], dtype=float)
         self.near, self.when = [], []
@@ -93,10 +104,12 @@ class Operator:
                 raise ValueError(f"{site}: cell {h3.int_to_str(int(h))} is not in the world")
             self.near.append(pos[cells[pos] == disk])
             self.when.append(slice(max(c - half_window, 0), min(c + half_window + 1, window.centuries)))
+        # The near cells where the crop's wild stands grow: foragers gather from these.
+        self.gather = [n if self.stands is None else n[self.stands[n] > 0] for n in self.near]
 
     def cells(self):
         """The cell sets it reads (`zones`, #47)."""
-        return list(self.near)
+        return list(self.near) + [g for g in self.gather if g.size]
 
     def shares(self, activity):
         """Model domestic share of the crop at each assemblage."""
@@ -104,9 +117,9 @@ class Operator:
             raise ValueError(f"activity covers {activity.window}, the operator {self.window}")
         domestic = getattr(activity, self.field)
         out = np.empty(len(self.near))
-        for i, (cells, when) in enumerate(zip(self.near, self.when)):
+        for i, (cells, gather, when) in enumerate(zip(self.near, self.gather, self.when)):
             sown = activity.cultivators[cells, when].sum()
-            wild = self.gathered * self._foraging(activity, cells, when) if self.gathered else 0.0
+            wild = self.gathered * self._foraging(activity, gather, when) if self.gathered and gather.size else 0.0
             out[i] = (domestic[cells, when].sum() + self.wild * wild) / (sown + wild) if sown + wild > 0 else self.wild
         return out
 

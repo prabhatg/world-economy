@@ -80,7 +80,7 @@ import h3
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, fauna, lesions as lesions_record, pack, rachis, region
+from oikos_data import DATA, archaeobotany, fauna, lesions as lesions_record, pack, rachis, region, wheats as wild_wheats
 from oikos_data import inequality as inequality_pipeline
 from oikos_data import obsidian as obsidian_pipeline
 from oikos_data import radiocarbon as dates_pipeline
@@ -93,7 +93,7 @@ from . import (domestication, herds, inequality, lesions, obsidian, onset, radio
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "pack_refs", "work_unit", "Problem", "evaluate"]
 
 PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period", "caprines", "bedrock",
-         "climate_anomaly")
+         "climate_anomaly", "wild_wheats")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
                "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1, "herds": 0.015}
@@ -259,8 +259,9 @@ class Problem:
             raise ValueError(f"the radiocarbon window ends at {self.radiocarbon.settings.true.end}, runs at {END}")
         self.domestication = domestication.Operator(barley, self.cells, self.radiocarbon.settings.true,
                                                     gathered=GATHERED)
-        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true, gathered=GATHERED)
-                       for c in WHEATS]
+        ranges = pack.read(wild_wheats.build_pack(r, offline=True))
+        self.wheats = [domestication.Operator(wheats[c], self.cells, self.radiocarbon.settings.true, gathered=GATHERED,
+                                              stands=ranges.values(c)) for c in WHEATS]
         self.sites = sites.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.villages = villages.Operator(surveys, self.radiocarbon.settings.true, SITE_EDGES)
         self.obsidian = obsidian.Operator(contexts, self.cells, self.radiocarbon.settings.true, reach,
