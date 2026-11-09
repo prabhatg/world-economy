@@ -59,6 +59,10 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Remote Sensing 28, 4365–4379).
 - **SoilGrids 2.0** (soils pack): ISRIC – World Soil Information; Poggio, L. et al. (2021),
   SOIL 7, 217–240, doi:10.5194/soil-7-217-2021. CC BY 4.0.
+- **SoilGrids250m 2017 depth to bedrock** (bedrock pack): ISRIC – World Soil Information;
+  Shangguan, W. et al. (2017), Journal of Advances in Modeling Earth Systems 9, 65–88,
+  doi:10.1002/2016MS000686; Hengl, T. et al. (2017), PLoS ONE 12(2): e0169748,
+  doi:10.1371/journal.pone.0169748. ODbL v1.0; the derived pack is shared under ODbL v1.0.
 - **p3k14c** (radiocarbon observations): Bird, D. et al. (2022), Scientific Data 9: 27,
   doi:10.1038/s41597-022-01118-7; data doi:10.5281/zenodo.5597795 (MIT), and the
   databases it compiles (in M1 mostly CalPal, CONTEXT, Flohr et al. 2016, Vermeersch

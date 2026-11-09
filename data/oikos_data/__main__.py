@@ -16,7 +16,7 @@ from pathlib import Path
 
 import blake3
 
-from . import (DATA, caprines, climate, coastline, fauna, geometry, humid, hydrology, obsidian, rachis, radiocarbon, raster, region, sites,
+from . import (DATA, bedrock, caprines, climate, coastline, fauna, geometry, humid, hydrology, obsidian, rachis, radiocarbon, raster, region, sites,
                soils, terrain)
 
 LOCK = DATA / "packs.lock.json"
@@ -36,6 +36,7 @@ BUILDERS = {
     "humid_period": humid.build_humid_pack,
     "fauna": fauna.build_table,
     "caprines": caprines.build_caprine_pack,
+    "bedrock": bedrock.build_pack,
 }
 # Outputs that are tables rather than forcing packs; ids are the BLAKE3 of the bytes either way.
 EXTENSIONS = {"radiocarbon_dates": "parquet", "radiocarbon_density": "parquet", "rachis": "parquet", "sites": "parquet",

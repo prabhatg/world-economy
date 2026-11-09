@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid`, `lesions`, `fauna`, `caprines` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid`, `lesions`, `fauna`, `caprines`, `bedrock` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -33,6 +33,7 @@ python -m oikos_data build obsidian_assemblages m1-swasia  # DObsiSS sourced art
 python -m oikos_data build humid_period m1-swasia          # Bartlein et al. 2011 6 ka rain -> pack
 python -m oikos_data build fauna m1-swasia                 # Arbuckle et al. 2014 caprine size and age -> table
 python -m oikos_data build caprines m1-swasia              # wild sheep and goats' uplands, from terrain -> pack
+python -m oikos_data build bedrock m1-swasia               # SoilGrids250m 2017 depth to bedrock overview (~6 MB) once -> pack
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -69,6 +70,7 @@ decision (2026-11-04, #42); the article itself is not stored (`oikos_data.lesion
 | `obsidian` | one field per traced source group (`cappadocia`, `eastern_anatolia`): 1 in cells within one step (a day's walk) of one of its volcanoes | DObsiSS 2.0 source table (CC BY-SA 4.0; shared under the same license) |
 | `humid_period` | `precip_anomaly` (mm/year): the rain the African Humid Period adds at its height, per cell (0 outside Africa); the engine adds `humid_period_scale` times it along the time course of the `humid_period_*` parameters (ADR-0084) | Bartlein et al. 2011 6 ka mean annual precipitation anomalies (NOAA WDS-Paleo, CC0) and estimates for Egypt's Western Desert from its sites' charcoal and fauna (`humid.SITES`, ADR-0093): an exponential in latitude fitted to the two Eastern Saharan grid cells (19 N, 21 N) and the estimates (22.5 N, 25 N); Africa west of the Suez isthmus and the Red Sea |
 | `caprines` | `upland` (0-1): the share of a cell's land that is upland where wild sheep and goats lived, the larger of ramps of mean elevation (300-900 m) and mean slope (1-4 degrees), 0 in Africa; the engine takes out land too dry for grazing each year (#37) | the terrain pack (Copernicus DEM GLO-90); habitat after Uerpmann 1987 and Yeomans et al. 2017 |
+| `bedrock` | `depth_share` (0-1): the cell's mean depth to bedrock within 2 m, as a share of 2 m (1 at 2 m or deeper); the engine's fields wear a thin soil's share down faster (#24) | SoilGrids250m 2017 BDRICM (Shangguan et al. 2017; ODbL v1.0, so the pack is shared under ODbL v1.0) at its 1/16 overview (~3.7 km); water and unmapped land nodata; modern soils as a proxy |
 | `soils` | `clay`, `sand`, `silt` (%), `organic_carbon` (g/kg), `ph`, `coarse_fragments` (vol %), 0–30 cm depth-weighted | SoilGrids 2.0 1 km aggregates (CC BY 4.0), Homolosine samples located per cell; built-up, water and glaciers unmapped (nodata); modern soils as a proxy |
 
 Observation tables (Parquet, locked like packs; docs/05 §5.1):

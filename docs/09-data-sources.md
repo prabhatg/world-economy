@@ -25,6 +25,10 @@ known gap. Hydrology uses RiverATLAS and LakeATLAS (HydroATLAS, CC BY 4.0, check
 end-user agreements and forbids stand-alone redistribution; they are fetched through
 the figshare API and checked against its published MD5. Soils come from SoilGrids 2.0
 (ADR-0045; CC BY 4.0 per Poggio et al. 2021, checked 2026-10-28), 1 km aggregates.
+SoilGrids 2.0 has no depth layer, so depth to bedrock within 2 m comes from SoilGrids250m
+2017 (BDRICM; Shangguan et al. 2017), whose layers are under the Open Database License
+v1.0 (ISRIC's metadata record and Hengl et al. 2017, checked 2026-11-09): its share-alike
+clause covers the derived bedrock pack, which is shared under ODbL v1.0 (ADR-0106).
 The African Humid Period, which CHELSA-TraCE21k's climate model misses, comes from the
 mid-Holocene precipitation reconstructions of Bartlein et al. (2011; NOAA WDS-Paleo,
 CC0, checked 2026-11-04; ADR-0084), fitted together with published estimates for

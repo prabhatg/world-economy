@@ -1,0 +1,46 @@
+# SoilGrids250m 2017 (ISRIC): depth to bedrock within 2 m (BDRICM), for soil depth (#24).
+dataset = "soilgrids2017-bedrock"
+title = "SoilGrids250m 2017-03: depth to bedrock (R horizon) up to 200 cm"
+version = "2017-03-10"
+homepage = "https://www.isric.org/explore/soilgrids"
+citation = "Shangguan, W., Hengl, T., Mendes de Jesus, J., Yuan, H., Dai, Y. (2017). Mapping the global depth to bedrock for land surface modeling. Journal of Advances in Modeling Earth Systems 9, 65-88. https://doi.org/10.1002/2016MS000686. Hengl, T. et al. (2017). SoilGrids250m: Global gridded soil information based on machine learning. PLoS ONE 12(2): e0169748. https://doi.org/10.1371/journal.pone.0169748"
+doi = "10.1002/2016MS000686"
+notes = """
+Predicted depth to the R horizon (bedrock) within 200 cm, in cm (200 where none is found
+above it), from soil profiles and boreholes by machine learning (Shangguan et al. 2017),
+released with SoilGrids250m 2017. A global int32 GeoTIFF (172800 x 67200, WGS84,
+deflate, stored in strips) with internal overviews 2-128; nodata 255 (water, unmapped
+land). Read at the 1/16 overview (1/30 degree, ~3.7 km) for resolution-5 cells.
+SoilGrids 2.0 (the soils pack) has no depth layer. Modern soils as a proxy for Holocene
+soils. The absolute depth to bedrock (BDTICM, up to tens of metres of regolith) is not
+used: fields are worn down through the soil roots reach, not the regolith below it.
+"""
+
+[license]
+# ISRIC's metadata record for the SoilGrids250m 2017 layers
+# (data.isric.org, record f36117ea-9be5-4afd-bb7d-7a3e77bf392a) and Hengl et al. 2017
+# ("available for download ... under the Open Database License (ODbL)"). The record's
+# link points to the DbCL page; we follow its stated ODbL v1.0. ODbL allows producing and
+# sharing adapted databases, which must be shared under ODbL too (share-alike), so the
+# bedrock pack is distributed under ODbL v1.0, apart from the other packs.
+id = "ODbL-1.0"
+url = "https://opendatacommons.org/licenses/odbl/1-0/"
+derived_redistribution = true
+attribution = "Contains data derived from SoilGrids250m 2017 depth to bedrock (ISRIC - World Soil Information; Shangguan et al. 2017, https://doi.org/10.1002/2016MS000686; Hengl et al. 2017, https://doi.org/10.1371/journal.pone.0169748), licensed under the Open Database License (ODbL) v1.0; averaged per H3 cell by ManyWorlds. The derived pack is shared under ODbL v1.0."
+verified = "2026-11-09"
+
+[access]
+kind = "geotiff_overview"
+url = "https://files.isric.org/soilgrids/former/2017-03-10/data/BDRICM_M_250m_ll.tif"
+overview_factor = 16
+nodata = 255
+cap_cm = 200
+
+[coverage]
+spatial = "global land, 250 m (read at ~3.7 km)"
+temporal = "modern (profiles and boreholes mostly 1950-2015)"
+
+[[variables]]
+name = "BDRICM_M"
+unit = "cm"
+description = "Depth to bedrock (R horizon) up to 200 cm."
