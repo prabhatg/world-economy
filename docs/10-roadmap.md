@@ -151,7 +151,9 @@ Work items are GitHub issues under the M1 milestone.
   in 24–42°N, 26–58°E, 22,198 cells incl. Cyprus, the paleo-Gulf basin and the Nile valley (ADR-0040).
 - Forcing: CHELSA-TraCE21k climate, sea level, terrain, hydrology, soils, depth to bedrock
   (ADR-0106: thin soils erode first; no M1 field wears below the critical share before
-  3000 BCE at the calibrated defaults).
+  3000 BCE at the calibrated defaults), decadal climate anomalies from NGRIP (ADR-0107:
+  the 8.2 ka event; against real century-to-century swings the stable-climate
+  hypothesis' weight falls from 7.2 to 2, and the fit is as good as before).
 - Mechanisms: foraging ecology; cultivation & domestication co-evolution; sedentism and
   storage; Neolithic demographic transition; band/village formation and fission;
   exchange networks (obsidian as tracer!); emerging inequality; simple disease;

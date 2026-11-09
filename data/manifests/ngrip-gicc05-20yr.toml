@@ -1,0 +1,49 @@
+# NGRIP 20-year mean d18O on the GICC05 time scale, for decadal climate anomalies such as
+# the 8.2 ka event (#41).
+dataset = "ngrip-gicc05-20yr"
+title = "Greenland Ice Core Chronology 2005 (GICC05) and 20 year means of oxygen isotope data from ice core NGRIP"
+version = "PANGAEA.586838"
+homepage = "https://doi.pangaea.de/10.1594/PANGAEA.586838"
+citation = "Andersen, K.K., Bigler, M., Buchardt, S.L., et al. (2007). Greenland Ice Core Chronology 2005 (GICC05) and 20 year means of oxygen isotope data from ice core NGRIP [dataset]. PANGAEA, https://doi.org/10.1594/PANGAEA.586838. Holocene time scale: Vinther, B.M., et al. (2006). A synchronized dating of three Greenland ice cores throughout the Holocene. Journal of Geophysical Research 111, D13102, https://doi.org/10.1029/2005JD006921; Rasmussen, S.O., et al. (2006). A new Greenland ice core chronology for the last glacial termination. Journal of Geophysical Research 111, D06102, https://doi.org/10.1029/2005JD006079."
+doi = "10.1594/PANGAEA.586838"
+notes = """
+PANGAEA's tab-separated export: a header between /* and */, then one row per 20-year
+mean with age (ka BP, before 1950), depth (m), age error (ka; the maximum counting error,
+47 years at 8.2 ka) and d18O (permil SMOW). The 8.2 ka event is the 20-year means from
+8,250 to 8,110 BP, about 1 permil below its background (Morrill et al. 2013, Table 3:
+-1.0 permil mean, -1.9 maximum, 140 years), as in Rasmussen et al. (2007, 8,300-8,140
+b2k). Greenland is far from Southwest Asia: the record is used for the timing and shape
+of North Atlantic anomalies that reached the eastern Mediterranean through winter
+storms and the Siberian High (Rohling and Paelike 2005; Marino et al. 2009), with their
+size there set by parameters. Its decadal noise is mostly Greenland's own. PANGAEA
+lists no checksum; `md5` is the export's at retrieval (the same on two downloads).
+"""
+
+[license]
+# The dataset's PANGAEA record: "License: Creative Commons Attribution 3.0 Unported
+# (CC-BY-3.0)", which allows sharing adapted material with attribution.
+id = "CC-BY-3.0"
+url = "https://creativecommons.org/licenses/by/3.0/"
+derived_redistribution = true
+attribution = "Contains data derived from the NGRIP 20-year d18O means on the GICC05 time scale (Andersen et al. 2007, PANGAEA, https://doi.org/10.1594/PANGAEA.586838), licensed under CC BY 3.0; high-passed over 1,000 years by ManyWorlds."
+verified = "2026-11-09"
+
+[access]
+kind = "file"
+url = "https://doi.pangaea.de/10.1594/PANGAEA.586838?format=textfile"
+file = "PANGAEA.586838.tab"
+md5 = "4dd77cafc709ec6f5cfc19f512954642"
+# The Holocene after the Younger Dryas, which the climate pack's model (TraCE-21ka)
+# already simulates: its end in Greenland at 11,700 BP (Rasmussen et al. 2006) would
+# otherwise read as an anomaly where the forcing has one of its own.
+start_bp = 11600
+window_years = 1000
+
+[coverage]
+spatial = "NGRIP, 75.10 N 42.32 W (central Greenland)"
+temporal = "0-123,000 years BP in 20-year means (used: 0-11,600 BP)"
+
+[[variables]]
+name = "d18O"
+unit = "permil SMOW"
+description = "20-year mean oxygen isotope ratio of the ice"

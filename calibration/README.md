@@ -177,7 +177,11 @@ factors, seed_exchange added from wave 2 (waves 5 and 6 ran 250 and 70 worlds, a
 draws found in what was left), and `best.json` over waves 2-6 finds the one consistent world
 inconsistent on its rerun, so the calibrated defaults stay (ADR-0105).
 `profile-seed-exchange.json` (0 to 0.3) and `profile-seed-exchange-0.5.json` take seed
-exchange at those defaults: all consistent, rising to a plateau from 0.3, which it becomes. The onset record's tables are downloaded by hand (`data/README.md`); without
+exchange at those defaults: all consistent, rising to a plateau from 0.3, which it becomes. `runs/m1/anomaly/` profiles the decadal anomalies' rain and temperature scales at the
+calibrated defaults with the climate_anomaly pack (ADR-0107): all consistent, leaning
+about 2 log-units against the anomaly, so the literature values stay;
+`profile-variability-weight.json` takes the stable-climate weight with the anomalies,
+best at 2, which it becomes. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

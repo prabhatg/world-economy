@@ -173,3 +173,10 @@ def test_m1_worlds_wear_thin_soils_down_first():
     from oikos_cal import m1
 
     assert "bedrock" in m1.PACKS
+
+
+def test_m1_worlds_carry_decadal_climate_anomalies():
+    # The 8.2 ka event and the Holocene's other abrupt anomalies (#41).
+    from oikos_cal import m1
+
+    assert "climate_anomaly" in m1.PACKS

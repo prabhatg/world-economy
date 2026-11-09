@@ -276,6 +276,19 @@
     ADR-0098 the lakes a modern work filled (the Bitter Lakes, by the Suez Canal) are
     out of the hydrology pack; the Delta's lagoons stay, natural if Holocene, and their
     shores still give foragers the aquatic bonus from 12,000 BCE.
+41. Did the 8.2 ka event shape Southwest Asia's Neolithic, and how did people ride it out
+    (ADR-0107)? The model takes its decadal anomalies from Greenland (NGRIP), which
+    dates the event but gives one index for the whole region, with decadal noise mostly
+    Greenland's own; regional speleothems (Soreq, Jeita, Sofular in SISALv3) would give
+    the Levant's and Anatolia's own decades (#49). At literature sizes (-1 degC, -15%
+    rain) the event moves Anatolia's site counts toward the record's fall in
+    6500-6000 BCE but not its rebound after; with the stable-climate hypothesis' weight
+    recalibrated to the real swings (7.2 to 2) the fit is as good as without the
+    anomalies, so the record neither asks for the event nor rules it out. Flohr et al. (2016, doi:10.1016/j.quascirev.2015.06.022) find no
+    region-wide abandonment, only local change: resilience the model's people may lack,
+    since they meet a bad decade only by cultivating more under stress, moving and
+    passing seed along ties, without storage, sharing or diversifying (Halstead and
+    O'Shea 1989).
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

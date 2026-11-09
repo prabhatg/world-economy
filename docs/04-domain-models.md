@@ -9,6 +9,11 @@ enters the model, and the starting mechanisms.
 - **Climate:** temperature, precipitation, seasonality, variability from paleoclimate
   reconstructions / transient simulations, downscaled to the grid. Holocene events
   (Younger Dryas, 8.2 ka, 4.2 ka events, Little Ice Age) come from data, not scripts.
+  *Implemented (M1):* CHELSA-TraCE21k century means (ADR-0042), with the African Humid
+  Period's rain (ADR-0084) and decadal anomalies from a `climate_anomaly` pack: NGRIP's
+  δ18O with its century-scale signal removed, one index for the region that shifts
+  temperature and scales rain each decade, so the 8.2 ka event stresses foragers and
+  farmers (ADR-0107, #41).
 - **Sea level & coastlines:** glacial isostatic adjustment reconstructions
   (Doggerland, Sunda shelf, Persian Gulf flooding).
   *Implemented (M1):* a `coastline` pack gives each cell's land fraction per century;

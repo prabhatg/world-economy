@@ -1353,3 +1353,92 @@ fn village_sizes_weigh_each_settlement_by_the_log_of_its_people() {
     four.run_years(600, 4, 600);
     assert_eq!(four.village_sizes(), got, "the same at any partition count");
 }
+
+/// A climate_anomaly pack (#41): the regional index at `years`.
+fn anomaly_pack(h3: &[u64], years: &[i64], index: &[f64]) -> Vec<u8> {
+    let mut b = PackBuilder::new("climate_anomaly", region(h3));
+    b.time(years.to_vec(), TimeRule::Linear);
+    let stored = index.iter().map(|i| (i * 1000.0).round() as i16).collect();
+    b.field(spec("index", Dims::Time, 0.001), Data::I16(stored)).unwrap();
+    b.build()
+}
+
+#[test]
+fn the_anomaly_index_warms_and_wets_by_its_scales() {
+    use oikos_sim::environment::anomalous;
+    let p = Params { climate_anomaly_temp: 1.5, climate_anomaly_precip: 0.25, ..Params::default() };
+    assert_eq!(anomalous(15.0, 400.0, 0.0, &p), (15.0, 400.0));
+    assert_eq!(anomalous(15.0, 400.0, -2.0, &p), (12.0, 200.0));
+    assert_eq!(anomalous(15.0, 400.0, -8.0, &p).1, 0.0, "never less than no rain");
+    let off = Params { climate_anomaly_temp: 0.0, climate_anomaly_precip: 0.0, ..p };
+    assert_eq!(anomalous(15.0, 400.0, -2.0, &off), (15.0, 400.0));
+}
+
+/// A drought of 150 years in a steady wild-cereal country: the index falls to -1 from
+/// 10,990 to 10,850 BCE (rain 40% lower at the default test scale).
+fn drought(h3: &[u64]) -> Vec<u8> {
+    anomaly_pack(
+        h3,
+        &[-12_000, -11_000, -10_990, -10_850, -10_840, -9_000],
+        &[0.0, 0.0, -1.0, -1.0, 0.0, 0.0],
+    )
+}
+
+#[test]
+fn a_decadal_drought_stresses_foragers_into_cultivating() {
+    // The climate pack's century means never change; only the index does.
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let climate = climate_pack(&h3, &[-12_000, -9_000], cereal_country);
+    let event = drought(&h3);
+    let p = Params { climate_anomaly_temp: 0.0, climate_anomaly_precip: 0.4, ..only(0.0, 3.0, 0.0) };
+    let run = |packs: &[&[u8]], p: Params| {
+        let mut w = world(packs, 3, p);
+        w.run_years(1100, 2, 1100); // 10,900 BCE
+        let stress = w.farmland.stress.iter().sum::<f64>() / w.farmland.stress.len() as f64;
+        w.run_years(50, 2, 50); // 10,850 BCE
+        (stress, mean_effort(&w), w.population.clone())
+    };
+    let (stress, effort, _) = run(&[&g, &climate, &event], p.clone());
+    let (calm, never, steady) = run(&[&g, &climate], p.clone());
+    assert!(stress > 0.1 && calm == 0.0, "{stress} {calm}");
+    assert!(effort > 0.05 && never == 0.0, "{effort} {never}");
+    let off = Params { climate_anomaly_precip: 0.0, ..p };
+    assert_eq!(
+        run(&[&g, &climate, &event], off),
+        (calm, never, steady),
+        "at zero scales the index changes nothing"
+    );
+}
+
+#[test]
+fn variability_sees_century_means_of_the_index_not_decadal_swings() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let climate = climate_pack(&h3, &[-12_000, -9_000], cereal_country);
+    let p = Params {
+        stress_window_years: 300,
+        climate_anomaly_temp: 0.0,
+        climate_anomaly_precip: 0.4,
+        ..Params::default()
+    };
+    let years: Vec<i64> = (0..=300).map(|i| -12_000 + 10 * i).collect();
+    let swings: Vec<f64> = (0..=300).map(|i| if i % 2 == 0 { 1.0 } else { -1.0 }).collect();
+    let dip: Vec<f64> =
+        years.iter().map(|&y| if (-11_690..=-11_600).contains(&y) { -1.0 } else { 0.0 }).collect();
+    let variability = |packs: &[&[u8]]| Farmland::new(&inputs(packs), -11_500, &p, h3.len()).variability;
+    let steady = variability(&[&g, &climate]);
+    assert_eq!(variability(&[&g, &climate, &anomaly_pack(&h3, &years, &swings)]), steady);
+    let dipped = variability(&[&g, &climate, &anomaly_pack(&h3, &years, &dip)]);
+    assert!(dipped.iter().zip(&steady).all(|(d, s)| d > s), "{:?} {:?}", &dipped[..2], &steady[..2]);
+}
+
+#[test]
+fn an_anomaly_index_must_be_a_time_series() {
+    let h3 = h3_cells();
+    let g = geometry_pack(&h3);
+    let mut b = PackBuilder::new("climate_anomaly", region(&h3));
+    b.field(spec("index", Dims::Cell, 1.0), Data::U8(vec![0; h3.len()])).unwrap();
+    let packs = vec![Pack::parse(g).unwrap(), Pack::parse(b.build()).unwrap()];
+    assert!(Inputs::from_packs(packs).unwrap_err().contains("time series"));
+}

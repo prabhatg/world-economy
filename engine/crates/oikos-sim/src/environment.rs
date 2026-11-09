@@ -8,7 +8,10 @@
 //! lake shore or a sea coast is at hand. The aquatic part does not depend on local
 //! rain, so river valleys in deserts (the Nile) can feed people (ADR-0047). A
 //! `humid_period` pack adds the rain of the African Humid Period that the climate pack's
-//! model misses, along a time course its parameters set ([`humid_share`], ADR-0084).
+//! model misses, along a time course its parameters set ([`humid_share`], ADR-0084). A
+//! `climate_anomaly` pack adds what century means smooth away: a regional index of
+//! decadal anomalies from proxy records, such as the 8.2 ka event, which shifts every
+//! cell's temperature and scales its rain by parameters ([`anomalous`], #41).
 //!
 //! For cultivation (ADR-0049), each cell also has a wild-cereal suitability from its
 //! climate, the people its dry land would feed under full cultivation of domestic crops,
@@ -42,6 +45,13 @@ pub const HUMID: (&str, &str) = ("humid_period", "precip_anomaly");
 /// Pack kind and field holding each cell's depth to bedrock within 2 m, as a share of
 /// 2 m (#24).
 pub const BEDROCK: (&str, &str) = ("bedrock", "depth_share");
+/// Pack kind and field holding a regional climate index over time (#41): decadal
+/// anomalies from proxy records with their century-scale signal removed, so the climate
+/// pack's century means stand.
+pub const ANOMALY: (&str, &str) = ("climate_anomaly", "index");
+/// Years between the samples of the anomaly index that variability averages over a
+/// century: the period capacity is recomputed at.
+const DECADE: i64 = 10;
 /// Shallowest depth share [`erode`] is given (2 cm), so a cell mapped as bare rock does
 /// not divide by zero; SoilGrids' shallowest is 10 cm.
 pub const MIN_DEPTH: f64 = 0.01;
@@ -69,6 +79,33 @@ pub fn humid_share(calendar_year: i64, p: &Params) -> f64 {
     let bp = (1950 - calendar_year) as f64;
     let ramp = |x: f64| (x / p.humid_period_transition_years as f64 + 0.5).clamp(0.0, 1.0);
     ramp(p.humid_period_onset_bp as f64 - bp) * ramp(bp - p.humid_period_end_bp as f64)
+}
+
+/// The climate_anomaly index in `calendar_year`; 0 without the pack or where it has no
+/// data.
+pub fn anomaly_index(inputs: &Inputs, calendar_year: i64) -> f64 {
+    let Ok(pack) = inputs.pack(ANOMALY.0) else {
+        return 0.0;
+    };
+    let index = pack.field(ANOMALY.1).expect("validated in from_packs");
+    index.at(pack.slice_at(calendar_year), 0).unwrap_or(0.0)
+}
+
+/// Mean anomaly index over the century ending at `calendar_year`: its ten decades after
+/// `calendar_year` - 100, up to and including the year itself, as the climate there is.
+fn century_index(inputs: &Inputs, calendar_year: i64) -> f64 {
+    (1..=10).map(|k| anomaly_index(inputs, calendar_year - 100 + DECADE * k)).sum::<f64>() / 10.0
+}
+
+/// Temperature (degC) and precipitation (mm) at anomaly index `index`: warmer by
+/// `climate_anomaly_temp` per unit, rain times 1 + `climate_anomaly_precip` per unit, at
+/// least none. Index 0 leaves both exactly as they are.
+pub fn anomalous(temp_c: f64, precip_mm: f64, index: f64, p: &Params) -> (f64, f64) {
+    shifted(temp_c, precip_mm, index, (p.climate_anomaly_temp, p.climate_anomaly_precip))
+}
+
+fn shifted(temp_c: f64, precip_mm: f64, index: f64, (warmer, wetter): (f64, f64)) -> (f64, f64) {
+    (temp_c + warmer * index, precip_mm * (1.0 + wetter * index).max(0.0))
 }
 
 /// Wild-cereal suitability in [0, 1] (the founder crops' wild progenitors: einkorn,
@@ -200,6 +237,9 @@ struct Year<'a> {
     precip: FieldView<'a>,
     /// The Humid Period's anomaly and the multiple of it this year, if it adds rain.
     humid: Option<(FieldView<'a>, f64)>,
+    /// The climate_anomaly index this year and the parameters scaling it.
+    index: f64,
+    scales: (f64, f64),
     slice: Slice,
     area: FieldView<'a>,
     rivers: Option<FieldView<'a>>,
@@ -211,12 +251,19 @@ struct Year<'a> {
 impl Year<'_> {
     /// None without a climate pack.
     fn new<'a>(inputs: &'a Inputs, calendar_year: i64, p: &Params) -> Option<Year<'a>> {
+        Year::with_index(inputs, calendar_year, anomaly_index(inputs, calendar_year), p)
+    }
+
+    /// [`Year::new`] at anomaly index `index`.
+    fn with_index<'a>(inputs: &'a Inputs, calendar_year: i64, index: f64, p: &Params) -> Option<Year<'a>> {
         let climate = inputs.pack(CLIMATE.0).ok()?;
         let wet = p.humid_period_scale * humid_share(calendar_year, p);
         Some(Year {
             temp: climate.field(CLIMATE.1).expect("validated in from_packs"),
             precip: climate.field(CLIMATE.2).expect("validated in from_packs"),
             humid: inputs.field(HUMID.0, HUMID.1).ok().filter(|_| wet > 0.0).map(|f| (f, wet)),
+            index,
+            scales: (p.climate_anomaly_temp, p.climate_anomaly_precip),
             slice: climate.slice_at(calendar_year),
             area: inputs.field(AREA.0, AREA.1).expect("validated in from_packs"),
             rivers: inputs.field(RIVERS.0, RIVERS.1).ok(),
@@ -226,12 +273,12 @@ impl Year<'_> {
         })
     }
 
-    /// Temperature (degC) and precipitation (mm, the Humid Period's included), if the
-    /// cell has climate data.
+    /// Temperature (degC) and precipitation (mm, the Humid Period's included), shifted by
+    /// the anomaly index, if the cell has climate data.
     fn climate(&self, c: usize) -> Option<(f64, f64)> {
         let precip = self.precip.at(self.slice, c)?;
         let humid = self.humid.as_ref().and_then(|(f, wet)| Some(wet * f.get(0, c)?)).unwrap_or(0.0);
-        Some((self.temp.at(self.slice, c)?, precip + humid))
+        Some(shifted(self.temp.at(self.slice, c)?, precip + humid, self.index, self.scales))
     }
 
     /// Dry-land area (km2).
@@ -342,6 +389,7 @@ struct VariabilityKey {
     centuries: i64,
     suitability: [u64; 6],
     humid: [u64; 4],
+    anomaly: [u64; 2],
 }
 
 impl Farmland {
@@ -394,9 +442,11 @@ impl Farmland {
     }
 
     /// Variability is measured between century boundaries (the climate packs' native
-    /// step): between them the climate is interpolated, which would hide swings. So it
-    /// is recomputed only when the century, the window, the suitability or the Humid Period's
-    /// parameters change.
+    /// step): between them the climate is interpolated, which would hide swings. The
+    /// anomaly index enters as its mean over the century before each boundary, so an
+    /// event that lasts a century or more counts and decadal swings that cancel do not.
+    /// So it is recomputed only when the century, the window, the suitability, the Humid
+    /// Period's or the anomaly's parameters change.
     fn update_variability(&mut self, inputs: &Inputs, calendar_year: i64, p: &Params, cells: usize) {
         let key = VariabilityKey {
             anchor: calendar_year.div_euclid(100) * 100,
@@ -416,11 +466,16 @@ impl Farmland {
                 p.humid_period_end_bp,
                 p.humid_period_transition_years,
             ],
+            anomaly: [p.climate_anomaly_temp.to_bits(), p.climate_anomaly_precip.to_bits()],
         };
         if self.variability_key.as_ref() == Some(&key) && self.variability.len() == cells {
             return;
         }
-        let at = |i: i64| Year::new(inputs, key.anchor - 100 * i, p).expect("the climate pack is present");
+        let at = |i: i64| {
+            let year = key.anchor - 100 * i;
+            Year::with_index(inputs, year, century_index(inputs, year), p)
+                .expect("the climate pack is present")
+        };
         let years: Vec<Year<'_>> = (0..=key.centuries).map(at).collect();
         self.variability.resize(cells, 0.0);
         for c in 0..cells {

@@ -10,7 +10,7 @@
 //! that year minus the `hydrology` pack's `lake_fraction` (ADR-0043); without either
 //! pack, every cell is.
 
-use oikos_io::pack::{FieldView, Pack};
+use oikos_io::pack::{Dims, FieldView, Pack};
 use serde::{Deserialize, Serialize};
 
 /// Pack kind and field holding each cell's land fraction over time.
@@ -87,6 +87,10 @@ impl Inputs {
         let (humid, anomaly) = crate::environment::HUMID;
         if inputs.pack(humid).is_ok() {
             inputs.field(humid, anomaly)?;
+        }
+        let (anomaly, index) = crate::environment::ANOMALY;
+        if inputs.pack(anomaly).is_ok() && inputs.field(anomaly, index)?.def.dims != Dims::Time {
+            return Err(format!("the {anomaly} pack's {index} must be a time series (dims [\"time\"])"));
         }
         for (kind, field) in [crate::environment::CAPRINES, crate::environment::BEDROCK] {
             if inputs.pack(kind).is_ok() {

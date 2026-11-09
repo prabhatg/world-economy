@@ -80,6 +80,8 @@ pub struct Params {
     pub humid_period_onset_bp: u64,
     pub humid_period_end_bp: u64,
     pub humid_period_transition_years: u64,
+    pub climate_anomaly_temp: f64,
+    pub climate_anomaly_precip: f64,
     pub dispersal_crowding: f64,
     pub dispersal_probability: f64,
     pub dispersal_fraction: f64,
@@ -190,6 +192,8 @@ impl Params {
             humid_period_onset_bp: int("humid_period_onset_bp")?,
             humid_period_end_bp: int("humid_period_end_bp")?,
             humid_period_transition_years: int("humid_period_transition_years")?,
+            climate_anomaly_temp: real("climate_anomaly_temp")?,
+            climate_anomaly_precip: real("climate_anomaly_precip")?,
             dispersal_crowding: real("dispersal_crowding")?,
             dispersal_probability: real("dispersal_probability")?,
             dispersal_fraction: real("dispersal_fraction")?,
@@ -413,6 +417,9 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("einkorn_selection_ratio", Restore::Value(1.0)),
     // #48: a band's seed came from its own fields alone.
     ("seed_exchange", Restore::Value(0.0)),
+    // #41: the forcing's century means alone (no climate_anomaly pack was read before it).
+    ("climate_anomaly_temp", Restore::Value(0.0)),
+    ("climate_anomaly_precip", Restore::Value(0.0)),
 ];
 
 impl Params {

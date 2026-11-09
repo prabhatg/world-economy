@@ -762,6 +762,37 @@ sources = [
   { citation = "Shanahan, T.M., McKay, N.P., Hughen, K.A., et al. (2015). The time-transgressive termination of the African Humid Period. Nature Geoscience 8, 140-144.", doi = "10.1038/ngeo2329" },
 ]
 
+[params.climate_anomaly_temp]
+group = "environment"
+unit = "degC per permil"
+description = "Warming per unit of the climate_anomaly pack's index (#41): decadal anomalies with their century-scale signal removed (NGRIP d18O, permil), added to the climate pack's annual mean temperature. 0: the century means alone."
+kind = { type = "real", min = -10.0, max = 10.0 }
+default = 1.0
+prior = { dist = "uniform", lo = 0.0, hi = 3.0 }
+status = "literature"
+note = "The 8.2 ka event is about -1 permil in NGRIP (Morrill et al. 2013a, Table 3: -1.0 mean over 140 years; the M1 pack's century ending 6,200 BCE: -1.0) and cooled mean annual temperature by about 1 degC or less at most sites outside Greenland (Morrill et al. 2013a); in the northern Aegean winters cooled by 2.8 degC on average (error 2.5; Tenaghi Philippon pollen, Pross et al. 2009). So 1 degC per permil, and a prior from none to 3 degC. Climate models give about half the proxies' cooling (Morrill et al. 2013b). Decadal swings outside the events are mostly Greenland's own noise (sd 0.4 permil), so they shift M1 by about 0.4 degC, unrelated to its real decades."
+sources = [
+  { citation = "Morrill, C., Anderson, D.M., Bauer, B.A., et al. (2013a). Proxy benchmarks for intercomparison of 8.2 ka simulations. Climate of the Past 9, 423-432.", doi = "10.5194/cp-9-423-2013" },
+  { citation = "Pross, J., Kotthoff, U., Mueller, U.C., et al. (2009). Massive perturbation in terrestrial ecosystems of the Eastern Mediterranean region associated with the 8.2 kyr B.P. climatic event. Geology 37, 887-890.", doi = "10.1130/G25739A.1" },
+  { citation = "Morrill, C., LeGrande, A.N., Renssen, H., Bakker, P., Otto-Bliesner, B.L. (2013b). Model sensitivity to North Atlantic freshwater forcing at 8.2 ka. Climate of the Past 9, 955-968.", doi = "10.5194/cp-9-955-2013" },
+]
+
+[params.climate_anomaly_precip]
+group = "environment"
+unit = "1 per permil"
+description = "Relative change of precipitation per unit of the climate_anomaly pack's index (#41): rain is multiplied by 1 + this x index, at least 0. 0: the century means alone."
+kind = { type = "real", min = -2.0, max = 2.0 }
+default = 0.15
+prior = { dist = "uniform", lo = 0.0, hi = 0.3 }
+status = "literature"
+note = "In the 8.2 ka event (about -1 permil in NGRIP; Morrill et al. 2013a) the northern Aegean's precipitation fell by 17% on average (error 14%) and 27% at most (Tenaghi Philippon pollen, Pross et al. 2009), and an Aegean core's by 13% (error 35%); Europe's by about 20%. In the Levant and Anatolia speleothems turn dry (Soreq, Jeita, Sofular; Burstyn et al. 2019) and the Dead Sea falls (Migowski et al. 2006). No record there gives an amount. So 15% per permil, and a prior from none to 30%; the records of what people did judge it."
+sources = [
+  { citation = "Morrill, C., Anderson, D.M., Bauer, B.A., et al. (2013a). Proxy benchmarks for intercomparison of 8.2 ka simulations. Climate of the Past 9, 423-432.", doi = "10.5194/cp-9-423-2013" },
+  { citation = "Pross, J., Kotthoff, U., Mueller, U.C., et al. (2009). Massive perturbation in terrestrial ecosystems of the Eastern Mediterranean region associated with the 8.2 kyr B.P. climatic event. Geology 37, 887-890.", doi = "10.1130/G25739A.1" },
+  { citation = "Burstyn, Y., Martrat, B., Lopez, J.F., et al. (2019). Speleothems from the Middle East: an example of water limited environments in the SISAL database. Quaternary 2, 16.", doi = "10.3390/quat2020016" },
+  { citation = "Migowski, C., Stein, M., Prasad, S., Negendank, J.F.W., Agnon, A. (2006). Holocene climate variability and cultural evolution in the Near East from the Dead Sea sedimentary record. Quaternary Research 66, 421-431.", doi = "10.1016/j.yqres.2006.06.010" },
+]
+
 [params.cultivation_crowding]
 group = "cultivation"
 unit = "N/K"
@@ -826,14 +857,15 @@ group = "cultivation"
 unit = "1/suitability per century"
 description = "Stable-climate hypothesis: cultivation targets are multiplied by 1 - weight x climate variability (the mean change of wild-cereal suitability per century over the stress window), at least 0."
 kind = { type = "real", min = 0.0, max = 50.0 }
-default = 7.202
+default = 2.0
 prior = { dist = "uniform", lo = 0.0, hi = 20.0 }
 status = "calibrated"
-note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 6.6 to 19 (10-90%). Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after."
+note = "Calibrated on M1 (ADR-0081): one world consistent with the radiocarbon (region-wide and by subregion), rachis, site-count, village-size, obsidian, cultivation-onset (and by wild-cereal stands) and house-size records; consistent worlds span 6.6 to 19 (10-90%). Zero switches the hypothesis off. Late-glacial climates swung too fast for sowing to pay; the Holocene made it possible. In the M1 forcing suitability changes about 0.08 per century before 9,000 BCE and 0.03 after. With decadal anomalies in the forcing (ADR-0107) the climate also swings from century to century as the record says it did (the Preboreal oscillation, the 9.3 and 8.2 ka events), and at 7.202 farming at sites like Abu Hureyra falls back to a third from 9,500 to 8,000 BCE; a profile at the calibrated defaults with the anomalies (calibration/runs/m1/anomaly/profile-variability-weight.json, three seeds each, every one consistent) fits the summaries best at 2 (-81.5, against -82.0 at 0, -83.5 at 4 and -83.2 at 7.202; -81.1 without the anomalies at 7.202), and the items better than before (-4,293.7 against -4,297.7), so it became 2: against real swings, the hypothesis needs a quarter of the weight."
 sources = [
   { citation = "ManyWorlds M1 calibration, round 10 (ADR-0081): the consistent world whose summaries of the radiocarbon (region-wide and by subregion), barley rachis, survey site-count, village-size, obsidian sourcing, cultivation-onset (and by wild-cereal stands) and house-size records sit nearest the record, calibration/runs/m1/round10/best-wave6.json (wave 6, run 216).", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/round10/best-wave6.json" },
   { citation = "Richerson, P.J., Boyd, R., Bettinger, R.L. (2001). Was agriculture impossible during the Pleistocene but mandatory during the Holocene? A climate change hypothesis. American Antiquity 66, 387-411.", doi = "10.2307/2694241" },
   { citation = "Bettinger, R., Richerson, P., Boyd, R. (2009). Constraints on the development of agriculture. Current Anthropology 50, 627-631.", doi = "10.1086/605359" },
+  { citation = "ManyWorlds M1 profile with decadal climate anomalies (ADR-0107): calibration/runs/m1/anomaly/profile-variability-weight.json.", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/anomaly/profile-variability-weight.json" },
 ]
 
 [params.stress_window_years]

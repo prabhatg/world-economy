@@ -92,7 +92,8 @@ from . import (domestication, herds, inequality, lesions, obsidian, onset, radio
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "pack_refs", "work_unit", "Problem", "evaluate"]
 
-PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period", "caprines", "bedrock")
+PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_period", "caprines", "bedrock",
+         "climate_anomaly")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
                "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1, "herds": 0.015}
