@@ -110,6 +110,39 @@ fn nodata_in_either_slice_gives_nodata_when_interpolating() {
 }
 
 #[test]
+fn time_series_hold_one_value_per_slice_for_every_cell() {
+    let mut b = PackBuilder::new("climate_anomaly", region());
+    b.time(vec![0, 10, 30], TimeRule::Linear);
+    b.field(
+        FieldSpec { scale: 0.5, nodata: Some(0), ..field("index", Dims::Time) },
+        Data::I16(vec![2, -4, 0]),
+    )
+    .unwrap();
+    b.field(field("weight", Dims::Cell), Data::U8(vec![1, 2, 3])).unwrap();
+    assert!(
+        b.field(field("long", Dims::Time), Data::I16(vec![1, 2, 3, 4])).unwrap_err().contains("3 values")
+    );
+    let p = Pack::parse(b.build()).unwrap();
+    let index = p.field("index").unwrap();
+    assert_eq!(index.def.dims, Dims::Time);
+    assert_eq!(
+        (index.times(), index.get(1, 0), index.get(1, 2), index.get(2, 1)),
+        (3, Some(-2.0), Some(-2.0), None)
+    );
+    assert_eq!(index.at(p.slice_at(5), 2), Some(-0.5));
+    assert_eq!(index.at(p.slice_at(20), 0), None);
+    assert_eq!(p.field("weight").unwrap().get(0, 2), Some(3.0));
+    assert_eq!(
+        (p.summary()["fields"][0]["nodata"].clone(), p.summary()["fields"][0]["min"].clone()),
+        (1.into(), (-2.0).into())
+    );
+    assert_eq!(header_of(&b.build())["fields"][0]["dims"], serde_json::json!(["time"]));
+
+    let mut b = PackBuilder::new("climate_anomaly", region());
+    assert!(b.field(field("index", Dims::Time), Data::I16(vec![1])).unwrap_err().contains("time"));
+}
+
+#[test]
 fn geometry_packs_must_match_their_cell_hash() {
     let mut b = PackBuilder::new("geometry", region());
     b.field(FieldSpec { unit: "h3 index".into(), ..field("h3", Dims::Cell) }, Data::U64(H3.to_vec()))

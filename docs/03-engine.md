@@ -208,7 +208,8 @@ host (ADR-0041):
   license requires, if any) and `builder` (tool, format).
   Keys are sorted, without insignificant whitespace, so a header has one encoding.
 - **Fields:** `name`, `unit`, `description`, `dtype` (`u8`…`u64`, `i16`…`i64`, `f32`,
-  `f64`), `dims` (`["cell"]` or `["time", "cell"]`, time-major), `scale_factor` and
+  `f64`), `dims` (`["cell"]`, `["time", "cell"]` time-major, or `["time"]`: one value per
+  slice for the whole region, such as a climate index), `scale_factor` and
   `add_offset` (physical = stored × scale_factor + add_offset, in `f64`, as in the CF
   conventions), optional integer `nodata`, and the array's byte `offset` and `len`
   (8-byte aligned, after the header). A `geometry` pack must contain `h3`.

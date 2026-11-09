@@ -50,12 +50,14 @@ pub struct Time {
     pub rule: TimeRule,
 }
 
-/// Array dimensions, written as `["cell"]` or `["time", "cell"]` (time-major).
+/// Array dimensions, written as `["cell"]`, `["time", "cell"]` (time-major) or `["time"]`
+/// (one value per slice for the whole region, such as a climate index).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "Vec<String>", into = "Vec<String>")]
 pub enum Dims {
     Cell,
     TimeCell,
+    Time,
 }
 
 impl TryFrom<Vec<String>> for Dims {
@@ -64,7 +66,8 @@ impl TryFrom<Vec<String>> for Dims {
         match v.iter().map(String::as_str).collect::<Vec<_>>()[..] {
             ["cell"] => Ok(Dims::Cell),
             ["time", "cell"] => Ok(Dims::TimeCell),
-            _ => Err(format!("dims must be [\"cell\"] or [\"time\", \"cell\"], got {v:?}")),
+            ["time"] => Ok(Dims::Time),
+            _ => Err(format!("dims must be [\"cell\"], [\"time\", \"cell\"] or [\"time\"], got {v:?}")),
         }
     }
 }
@@ -74,6 +77,7 @@ impl From<Dims> for Vec<String> {
         match d {
             Dims::Cell => vec!["cell".into()],
             Dims::TimeCell => vec!["time".into(), "cell".into()],
+            Dims::Time => vec!["time".into()],
         }
     }
 }
@@ -231,13 +235,13 @@ impl PackBuilder {
         }
         let times = match spec.dims {
             Dims::Cell => 1,
-            Dims::TimeCell => match &self.time {
+            Dims::TimeCell | Dims::Time => match &self.time {
                 Some(t) => t.calendar_year.len(),
                 None => return Err(format!("field {}: set the pack's time slices first", spec.name)),
             },
         };
         let (dtype, n, bytes) = data.dtype_and_bytes();
-        let want = times * self.region.cells as usize;
+        let want = if spec.dims == Dims::Time { times } else { times * self.region.cells as usize };
         if n != want {
             return Err(format!("field {}: expected {want} values, got {n}", spec.name));
         }
@@ -357,10 +361,11 @@ impl Pack {
                 dtype_size(&f.dtype).ok_or_else(|| format!("field {}: unknown dtype {}", f.name, f.dtype))?;
             let n = match f.dims {
                 Dims::Cell => cells,
-                Dims::TimeCell if times == 0 => {
+                Dims::TimeCell | Dims::Time if times == 0 => {
                     return Err(format!("field {} is time-sliced but the pack has no time", f.name));
                 }
                 Dims::TimeCell => times as u64 * cells,
+                Dims::Time => times as u64,
             };
             if f.len != n * size as u64 {
                 return Err(format!("field {}: {} bytes, expected {}", f.name, f.len, n * size as u64));
@@ -416,7 +421,7 @@ impl Pack {
         let span: Range<usize> = def.offset as usize..(def.offset + def.len) as usize;
         let times = match def.dims {
             Dims::Cell => 1,
-            Dims::TimeCell => self.header.time.as_ref().map_or(1, |t| t.calendar_year.len()),
+            Dims::TimeCell | Dims::Time => self.header.time.as_ref().map_or(1, |t| t.calendar_year.len()),
         };
         Ok(FieldView { def, raw: &self.bytes[span], cells: self.header.region.cells as usize, times })
     }
@@ -431,8 +436,9 @@ impl Pack {
             .map(|def| {
                 let f = self.field(&def.name).expect("header field exists");
                 let (mut lo, mut hi, mut nodata) = (f64::INFINITY, f64::NEG_INFINITY, 0u64);
+                let cells = if def.dims == Dims::Time { 1 } else { f.cells };
                 for t in 0..f.times() {
-                    for c in 0..f.cells {
+                    for c in 0..cells {
                         match f.get(t, c) {
                             Some(v) => (lo, hi) = (lo.min(v), hi.max(v)),
                             None => nodata += 1,
@@ -486,7 +492,7 @@ impl FieldView<'_> {
     }
 
     /// Stored value at (time slice, cell) as `f64` with scale/offset applied; `None` for
-    /// nodata. Static fields ignore `time`.
+    /// nodata. Static fields ignore `time`, time series `cell`.
     pub fn get(&self, time: usize, cell: usize) -> Option<f64> {
         let t = if self.def.dims == Dims::Cell { 0 } else { time };
         assert!(
@@ -494,7 +500,7 @@ impl FieldView<'_> {
             "field {}: ({time}, {cell}) out of range",
             self.def.name
         );
-        let i = t * self.cells + cell;
+        let i = if self.def.dims == Dims::Time { t } else { t * self.cells + cell };
         let (stored, int) = self.stored(i);
         if let (Some(nd), Some(v)) = (self.def.nodata, int)
             && v == nd

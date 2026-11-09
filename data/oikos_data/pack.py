@@ -52,7 +52,9 @@ class Builder:
         self.sources.append(s)
         return self
 
-    def field(self, name, unit, description, values, *, scale=1.0, offset=0.0, nodata=None):
+    def field(self, name, unit, description, values, *, scale=1.0, offset=0.0, nodata=None, series=False):
+        """A field of (cell,) or (time, cell) values, or with `series` one value per time
+        slice for the whole region."""
         values = np.asarray(values)
         if any(f[0]["name"] == name for f in self.fields):
             raise ValueError(f"duplicate field {name}")
@@ -60,7 +62,13 @@ class Builder:
         if dtype is None or values.dtype.kind not in "uif" or dtype == "u8" and values.dtype.kind != "u":
             raise ValueError(f"field {name}: unsupported dtype {values.dtype} (use {', '.join(DTYPES)})")
         cells = self.region["cells"]
-        if values.ndim == 1:
+        if series:
+            dims = ["time"]
+            if self.time_ is None:
+                raise ValueError(f"field {name}: set the pack's time slices first")
+            if values.shape != (len(self.time_["calendar_year"]),):
+                raise ValueError(f"field {name}: expected {len(self.time_['calendar_year'])} slices, got shape {values.shape}")
+        elif values.ndim == 1:
             dims = ["cell"]
             if len(values) != cells:
                 raise ValueError(f"field {name}: expected {cells} cells, got {len(values)}")
@@ -122,7 +130,7 @@ class Pack:
         raise ValueError(f"pack has no field {name}")
 
     def raw(self, name):
-        """Stored values: (cell,) or (time, cell)."""
+        """Stored values: (cell,), (time, cell) or (time,)."""
         f = self._def(name)
         a = np.frombuffer(self._data, dtype=DTYPES[f["dtype"]], count=f["len"] // np.dtype(DTYPES[f["dtype"]]).itemsize, offset=f["offset"])
         return a.reshape(-1, self.header["region"]["cells"]) if f["dims"] == ["time", "cell"] else a

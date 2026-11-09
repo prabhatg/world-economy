@@ -93,3 +93,33 @@ def test_the_engine_checks_geometry_cells_against_the_region(tmp_path):
     f.write_bytes(bad.build())
     r = subprocess.run([str(OIKOS), "pack", str(f)], capture_output=True, text=True)
     assert r.returncode != 0 and "cells_hash" in r.stderr
+
+
+def series():
+    b = pack.Builder("climate_anomaly", pack.region("test", 5, H3))
+    b.time([0, 10, 30], "linear")
+    b.field("index", "1", "test index", np.array([2, -4, 0], dtype=np.int16), scale=0.5, nodata=0, series=True)
+    b.field("weight", "1", "test weight", np.array([1, 2, 3], dtype=np.uint8))
+    return b.build()
+
+
+def test_time_series_hold_one_value_per_slice():
+    p = pack.read(series())
+    assert p.header["fields"][0]["dims"] == ["time"]
+    assert np.array_equal(p.values("index"), [1.0, -2.0, np.nan], equal_nan=True)
+    assert p.values("weight").shape == (3,)
+    b = pack.Builder("climate_anomaly", pack.region("test", 5, H3))
+    with pytest.raises(ValueError, match="time"):
+        b.field("i", "1", "i", np.array([1, 2, 3], dtype=np.int16), series=True)
+    b.time([0, 10], "linear")
+    with pytest.raises(ValueError, match="2 slices"):
+        b.field("i", "1", "i", np.array([1, 2, 3], dtype=np.int16), series=True)
+
+
+@pytest.mark.skipif(not OIKOS.exists(), reason="build the CLI first: cargo build --release -p oikos-cli")
+def test_the_engine_reads_python_time_series(tmp_path):
+    f = tmp_path / "series.oikospack"
+    f.write_bytes(series())
+    summary = json.loads(subprocess.run([str(OIKOS), "pack", str(f)], check=True, capture_output=True, text=True).stdout)
+    index = summary["fields"][0]
+    assert (index["dims"], index["min"], index["max"], index["nodata"]) == (["time"], -2.0, 1.0, 1)
