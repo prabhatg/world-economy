@@ -301,6 +301,17 @@
     is absent from much land that suits it). Whether early cultivation beyond the ranges
     (Tell Aswad, Aşıklı Höyük) sped domestication by isolating sown stands from wild ones,
     as Willcox argues, is what the ranges let calibration weigh.
+43. Why were the Jilat camps' cereals wild while the model reads them domestic (ADR-0110)?
+    Jilat 7 (7775 BCE, 0 of 85 barley ears domestic) and Jilat 13 (6815 BCE, 1 of 23) were
+    camps in the eastern Jordanian desert (Allaby et al. 2017's tables), while El Kowm 2, an
+    oasis village of about the same age, grew wholly domestic barley and einkorn. In the
+    model, seed exchange along ties (ADR-0102) gives the few groups sowing near Jilat
+    their neighbours' domestic seed (0.65 and 0.83 at the defaults), and the wild ears
+    foragers gather beside them (ADR-0103) are too few to outweigh it. Mobile people who
+    harvested wild stands where they found them, without keeping plots, may not have
+    taken up the seed of sedentary farmers at all; or the assemblage records one camp,
+    not the 1,760 km2 the operator pools (a finer grid, F8, would narrow it). Which of
+    these it is, and whether seed exchange should depend on sedentism, is open.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
