@@ -279,8 +279,10 @@
 41. Did the 8.2 ka event shape Southwest Asia's Neolithic, and how did people ride it out
     (ADR-0107)? The model takes its decadal anomalies from Greenland (NGRIP), which
     dates the event but gives one index for the whole region, with decadal noise mostly
-    Greenland's own; regional speleothems (Soreq, Jeita, Sofular in SISALv3) would give
-    the Levant's and Anatolia's own decades (#49). At literature sizes (-1 degC, -15%
+    Greenland's own. The region's speleothems (Soreq, Jeita, Sofular, Katalekhor in
+    SISALv3) do not give the Levant's and Anatolia's own decades instead: below a few
+    centuries they agree neither with each other nor on the event, their dating
+    uncertainty larger than the swings (ADR-0109). At literature sizes (-1 degC, -15%
     rain) the event moves Anatolia's site counts toward the record's fall in
     6500-6000 BCE but not its rebound after; with the stable-climate hypothesis' weight
     recalibrated to the real swings (7.2 to 2) the fit is as good as without the

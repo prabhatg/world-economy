@@ -31,8 +31,8 @@ v1.0 (ISRIC's metadata record and Hengl et al. 2017, checked 2026-11-09): its sh
 clause covers the derived bedrock pack, which is shared under ODbL v1.0 (ADR-0106).
 Decadal climate anomalies come from the NGRIP 20-year δ18O means on GICC05 (Andersen et
 al. 2007), PANGAEA's export, whose record states CC BY 3.0 (checked 2026-11-09;
-ADR-0107). The same speleothems on NOAA's paleo archive carry no licence; SISALv3's are
-CC BY 4.0, for regional records later (open question 41).
+ADR-0107). The region's speleothems on NOAA's paleo archive carry no licence; SISALv3's
+are CC BY 4.0, but at sub-century scales they share no signal, so none is used (ADR-0109).
 Where wild emmer and wild einkorn grow comes from GBIF's occurrence records (ADR-0108),
 requested through its search API under CC0 1.0 and CC BY 4.0 only (a record's own
 license governs it, which may be looser than its dataset's: iNaturalist's CC0 records sit
