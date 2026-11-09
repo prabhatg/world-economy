@@ -170,7 +170,14 @@ and the default stays 4, nearest the sites' rain estimates. `screening.json` scr
 parameters; `wave1.json` to `wave6.json` emulate 24 factors (wave 3 was sampled from wave 2's
 emulators alone, by mistake; later waves chain every earlier one), and `best.json` over
 waves 2-6 finds no world nearer the record than the calibrated defaults, which stay
-(ADR-0104). `profile-einkorn-selection-ratio.json` takes einkorn's selection over 0.14 to 1.5 once the wheats are judged (ADR-0101): 0.5 to 1.1 are consistent and 0.9 fits best, so it replaces the literature's 0.14, which leaves einkorn wild. The onset record's tables are downloaded by hand (`data/README.md`); without
+(ADR-0104). `profile-einkorn-selection-ratio.json` takes einkorn's selection over 0.14 to 1.5 once the wheats are judged (ADR-0101): 0.5 to 1.1 are consistent and 0.9 fits best, so it replaces the literature's 0.14, which leaves einkorn wild.
+Round 14 judges the wheats, seed exchange and wild gathering in `runs/m1/round14/`:
+`screening.json` screens the 60 free parameters; `wave1.json` to `wave6.json` emulate 24
+factors, seed_exchange added from wave 2 (waves 5 and 6 ran 250 and 70 worlds, all a million
+draws found in what was left), and `best.json` over waves 2-6 finds the one consistent world
+inconsistent on its rerun, so the calibrated defaults stay (ADR-0105).
+`profile-seed-exchange.json` (0 to 0.3) and `profile-seed-exchange-0.5.json` take seed
+exchange at those defaults: all consistent, rising to a plateau from 0.3, which it becomes. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

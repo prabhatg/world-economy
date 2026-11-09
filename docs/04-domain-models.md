@@ -81,7 +81,7 @@ enters the model, and the starting mechanisms.
   rates' 0.14 leaves it wild where the record has it domestic), standing
   for how each was harvested; the crop's share is barley's, which stands for the package
   in carrying capacity, and the wheats' are judged against their own rachis records.
-  Seed exchange (ADR-0102, #48), a hypothesis off by default: seed moves along kinship,
+  Seed exchange (ADR-0102, #48; 0.3 per period, calibrated by round 14, ADR-0105): seed moves along kinship,
   marriage and exchange ties, so a band replaces a share of its seed stock, in
   proportion to its effort, with seed at the domestic shares sown by those it learns
   from; villages where few farm can then sow crops bred elsewhere.

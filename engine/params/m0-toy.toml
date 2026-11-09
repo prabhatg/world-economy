@@ -984,11 +984,12 @@ group = "cultivation"
 unit = "1/period"
 description = "Share of a band's seed stock replaced each period at full cultivation effort by seed from the people it exchanges with: its cell's and, by neighbor_learning, the cells around it, as sown there (#48)."
 kind = { type = "probability" }
-default = 0.0
+default = 0.3
 prior = { dist = "log_uniform", lo = 0.001, hi = 0.5 }
-status = "placeholder"
-note = "A hypothesis, off by default until a calibration round weighs it (ADR-0102, #48). Farmers renew, replace and gift seed along kinship, marriage and exchange ties (seed networks: Pautasso et al. 2013), so villages where few farm can sow crops domesticated elsewhere. At the calibrated defaults (one seed, the crop alone), the rachis assemblages favour it (item log-likelihood -86.5 off, -77.5 at 0.3: El Kowm 2 and Wadi Fidan turn domestic) while the era summaries are flat (the wild Jilat camps turn domestic too), so the summaries do not identify it."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0105): with every other parameter at its calibrated default, every value from 0 to 0.5 is consistent with every record for three seeds, and the summaries rise with it to a plateau (log-likelihood -82.9 off, -81.8 at 0.1, -81.1 at 0.3, -81.2 at 0.5), as do the rachis assemblages (item log-likelihood -86.7 off, -73.9 at 0.3): the barley and einkorn eras turn domestic nearer when the record does. The record identifies it weakly (under 2 log-units across the prior), and round 14's waves, which emulated it, found no world nearer the record than these defaults. Farmers renew, replace and gift seed along kinship, marriage and exchange ties (seed networks: Pautasso et al. 2013), so villages where few farm can sow crops domesticated elsewhere. It was off as a hypothesis until a round weighed it (ADR-0102)."
 sources = [
+  { citation = "ManyWorlds M1 calibration, round 14 (ADR-0105): seed_exchange from 0 to 0.5 with the other parameters at their calibrated defaults, three seeds each, calibration/runs/m1/round14/profile-seed-exchange.json and profile-seed-exchange-0.5.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/round14" },
   { citation = "Pautasso, M. et al. (2013). Seed exchange networks for agrobiodiversity conservation. A review. Agronomy for Sustainable Development 33, 151-175.", doi = "10.1007/s13593-012-0089-6" },
 ]
 

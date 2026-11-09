@@ -290,6 +290,11 @@ screens the 57 free parameters and runs six waves of 300 (24 factors emulated): 
 arrival dates bind. The one that stays consistent at every seed with the other parameters
 at their defaults scores the summaries worse than the calibrated defaults (-94.5 against
 -87.5), which stay.
+Round 14 (ADR-0105) judges the wheats, seed exchange and wild gathering: its six waves leave
+under 0.005% of the prior and one consistent world, which its rerun no longer finds
+consistent, so the defaults stay again. A profile of seed exchange at the defaults is
+consistent everywhere and rises to a plateau from 0.3 (summaries -82.9 off, -81.1 at 0.3),
+mostly through the domestication record, so seed exchange is calibrated at 0.3.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

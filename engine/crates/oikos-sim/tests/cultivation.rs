@@ -286,8 +286,9 @@ fn seed_exchange_moves_a_bands_seed_toward_what_is_sown_around_it() {
     assert_eq!(c.exchange_seed(0.1, 0.5, 0.9), 0.1 + 0.2 * 0.5 * (0.9 - 0.1));
     assert_eq!(c.exchange_seed(0.1, 0.0, 0.9), 0.1, "a band that sows nothing takes no seed");
     assert_eq!(c.exchange_seed(0.9, 1.0, 0.1), 0.9 - 0.2 * 0.8, "wild seed comes too");
-    let off = Cultivation::from_params(&only(0.0, 0.0, 0.0));
-    assert_eq!(off.exchange_seed(0.1, 1.0, 0.9), 0.1, "off by default (#48)");
+    let off = Cultivation::from_params(&Params { seed_exchange: 0.0, ..only(0.0, 0.0, 0.0) });
+    assert_eq!(off.exchange_seed(0.1, 1.0, 0.9), 0.1, "off at zero");
+    assert_eq!(Params::default().seed_exchange, 0.3, "calibrated by profile on M1 (ADR-0105)");
     let all = Cultivation::from_params(&Params { seed_exchange: 1.0, ..only(0.0, 0.0, 0.0) });
     assert_eq!(all.exchange_seed(0.1, 1.0, 0.9), 0.9, "never past what it sees");
 }
