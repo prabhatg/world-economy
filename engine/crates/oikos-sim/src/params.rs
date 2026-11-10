@@ -73,6 +73,7 @@ pub struct Params {
     pub herd_selection: f64,
     pub herd_introgression: f64,
     pub herd_exchange: f64,
+    pub herd_reserve: f64,
     pub emmer_selection_ratio: f64,
     pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
@@ -188,6 +189,7 @@ impl Params {
             herd_selection: real("herd_selection")?,
             herd_introgression: real("herd_introgression")?,
             herd_exchange: real("herd_exchange")?,
+            herd_reserve: real("herd_reserve")?,
             emmer_selection_ratio: real("emmer_selection_ratio")?,
             einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
@@ -432,6 +434,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("herd_exchange", Restore::Value(0.0)),
     // #51: rain alone grew grazing.
     ("floodplain_grazing", Restore::Value(0.0)),
+    // #51: herds were kept for what the land repays alone.
+    ("herd_reserve", Restore::Value(0.0)),
 ];
 
 impl Params {

@@ -58,7 +58,11 @@ enters the model, and the starting mechanisms.
   does, gifts and loans that pool the risk of losing a herd, so bands beside herders
   can start herds of their own where no wild animals lived; and floods water grazing on
   the land a river floods. Egypt's first domestic animals, among the desert hunters of
-  the 6th millennium BCE, are the record that weighs them.
+  the 6th millennium BCE, are the record that weighs them. A third keeps a few
+  domestic animals as a reserve of food wherever any grazing allows, tended at once
+  rather than learned (ADR-0114): it brings herds to the Nile in the 5th millennium
+  without moving the Levant's records, but not yet to the desert's 6th-millennium
+  hunters.
 - Domestication as a co-evolutionary process (selection intensity × cultivation
   effort × time), not a switch.
   *Implemented (M1):* bands carry cultivation effort and the domestic share of their

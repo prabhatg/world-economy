@@ -196,7 +196,11 @@ defaults and three rings, beside resolution 5's row: every world consistent, -85
 `runs/m1/f51/profile-need-with-exchange.json` profiles need (herd_pressure_weight 0, 0.4,
 0.8) with stock exchange 0.2, floodplain grazing 1 and wadis at the top of their prior
 (ADR-0113): all consistent, -81.2 to -88.4; herds reach Egypt's 5th-millennium sites only
-at 0.8, which turns the Levant's sheep domestic a millennium early. The onset record's tables are downloaded by hand (`data/README.md`); without
+at 0.8, which turns the Levant's sheep domestic a millennium early. `profile-reserve.json`
+takes the reserve of animals (0 to 0.2) with exchange 0.2 and floodplain grazing 1, and
+`profile-exchange.json` exchange at 0.05 and 0.5 with the reserve at 0.2 (ADR-0114): all
+consistent but exchange 0.5; the reserve brings herds to the Nile in the 5th millennium
+at almost no cost, not to the desert in the 6th. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

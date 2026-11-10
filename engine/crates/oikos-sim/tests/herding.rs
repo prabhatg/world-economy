@@ -390,6 +390,80 @@ fn domestic_animals_pass_to_neighbors_where_no_wild_ones_lived() {
 }
 
 #[test]
+fn bands_keep_a_few_domestic_animals_as_a_reserve_wherever_they_can_graze_any() {
+    // Animals are food that keeps: hunters kept a few goats as a reserve against lean
+    // times, a handful of bones among their game, where the land fed few herds (Linseele
+    // et al. 2014; #51). The reserve is the least a band with domestic stock keeps, in
+    // proportion to its share; where the land repays more herding, the land sets it.
+    let c = Cultivation::from_params(&Params { herding_weight: 0.5, herd_reserve: 0.1, ..Params::default() });
+    assert!((c.herding_target(0.0, 0.02, 1.0, 0.0) - 0.1).abs() < 1e-12, "the reserve, not 0.5 x 0.02");
+    assert!((c.herding_target(0.0, 0.02, 0.5, 0.0) - 0.05).abs() < 1e-12, "half domestic: half the reserve");
+    assert_eq!(c.herding_target(0.0, 1.0, 1.0, 0.0), 0.5, "rich pasture: the land's target");
+    assert_eq!(c.herding_target(0.0, 0.0, 1.0, 0.0), 0.0, "nothing to graze: no herd");
+    assert_eq!(c.herding_target(0.0, 1.0, 0.0, 0.0), 0.0, "no domestic animals: no reserve");
+    let wild = c.herding_target(0.1, 0.1, 0.0, 0.0);
+    assert!((wild - 0.05).abs() < 1e-12, "wild herds are no reserve: {wild}");
+    assert_eq!(Params::default().herd_reserve, 0.0, "off until a profile weighs it");
+    // Animals a band holds are tended at once, not learned from others first: the
+    // reserve is the least effort a band with domestic stock keeps on it.
+    assert!((c.kept(0.0, 0.02, 0.6) - 0.06).abs() < 1e-12);
+    assert_eq!(c.kept(0.0, 0.0, 0.6), 0.0, "nothing to graze: nothing kept");
+    assert_eq!(c.kept(0.3, 0.3, 0.0), 0.0, "wild herds: nothing kept");
+}
+
+fn keeping(w: &World, which: impl Fn(u32) -> bool, least: f64) -> u64 {
+    let least = (least * SHARE_ONE as f64) as u32;
+    let mut people = 0;
+    for a in w.agent_slices() {
+        for i in 0..a.len() {
+            if which(a.cell[i]) && a.herding[i] >= least {
+                people += a.weight[i];
+            }
+        }
+    }
+    people
+}
+
+#[test]
+fn hunters_beside_herders_keep_a_reserve_of_animals_on_poor_grazing() {
+    // Wild herds range over a core of cells; around it lies dry land (160 mm) whose
+    // grass feeds few herds. Nobody moves, and animals pass between neighbors (#51):
+    // with a reserve, bands around the core keep a few domestic animals; without one,
+    // they herd only what the poor grazing repays.
+    let h3 = h3_cells();
+    let g = Grid::from_base_cell(22, 3).unwrap();
+    let core = |c: usize| g.neighbors(0).contains(&(c as u32)) || c == 0;
+    let mut b = PackBuilder::new("climate", region(&h3));
+    b.time(vec![-12_000], TimeRule::Linear);
+    b.field(spec("temp_mean", Dims::TimeCell, 0.01), Data::I16(vec![1500; h3.len()])).unwrap();
+    let precip = (0..h3.len()).map(|c| if core(c) { 250 } else { 160 }).collect();
+    b.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(precip)).unwrap();
+    let (geo, c, k) = (geometry_pack(&h3), b.build(), caprines_pack(&h3, core));
+    let id = blake3::hash(&geo).to_hex().to_string();
+    let beyond = |cell: u32| !core(cell as usize);
+    let run = |herd_reserve: f64| {
+        let p = Params {
+            initial_occupancy: 1.0,
+            fission_probability: 0.0,
+            dispersal_probability: 0.0,
+            neighbor_learning: 1.0,
+            herd_selection: 0.1,
+            herd_exchange: 0.2,
+            wadi_share: 0.0,
+            herding_weight: 0.12,
+            herd_reserve,
+            ..herders()
+        };
+        let mut w = World::with_inputs(WorldConfig::geometry(&id), 2, p, inputs(&[&geo, &c, &k])).unwrap();
+        w.run_years(2_000, 2, 2_000);
+        keeping(&w, beyond, 0.02)
+    };
+    let (without, with) = (run(0.0), run(0.05));
+    assert!(with > 1_000, "{with} keep a reserve beyond the core");
+    assert!(with > 10 * without.max(10), "{with} with a reserve, {without} without");
+}
+
+#[test]
 fn herding_is_partition_independent_and_restores() {
     let h3 = h3_cells();
     let (g, c, k) = (geometry_pack(&h3), climate_pack(&h3), caprines_pack(&h3, |i| i % 3 != 0));

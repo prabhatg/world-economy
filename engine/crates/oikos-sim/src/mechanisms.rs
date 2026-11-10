@@ -1209,6 +1209,12 @@ impl Mechanism for Inundation {
 ///   with domestic ones it can graze pasture where no wild herds lived, so hunters beside
 ///   herders may start to keep a few, as Egypt's desert hunters did before anyone farmed
 ///   there (Linseele et al. 2014). Off by default, a hypothesis for calibration to weigh.
+/// - **A reserve of animals** (#51, ADR-0114). Animals are food that keeps, so a band with
+///   domestic stock keeps at least `herd_reserve` times its domestic share of effort on
+///   it wherever its land grazes any, against lean times, as hunters kept a handful of
+///   goats among their game (Linseele et al. 2014; Dahl and Hjort 1976). It is a floor
+///   tended at once ([`Cultivation::kept`]), not a target approached by copying others:
+///   animals a band holds are its own. Off by default.
 ///
 /// Cultivation and herding feed back through carrying capacity
 /// ([`crate::environment::capacity_of`]): domestic crops and herds feed more people per
@@ -1239,6 +1245,7 @@ pub struct Cultivation {
     pub herd_wild_frequency: f64,
     pub herd_introgression: f64,
     pub herd_exchange: f64,
+    pub herd_reserve: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -1270,6 +1277,7 @@ impl Cultivation {
             herd_wild_frequency: p.herd_wild_frequency,
             herd_introgression: p.herd_introgression,
             herd_exchange: p.herd_exchange,
+            herd_reserve: p.herd_reserve,
             after: vec!["aggregation"],
         }
     }
@@ -1417,14 +1425,29 @@ impl Cultivation {
     /// `herding_weight` times the land it can herd on, the wild herds' `range` and, with
     /// domestic animals, the `pasture` beyond it in proportion to their share; and, on any
     /// such land, `herd_pressure_weight` times the cell's population `pressure` times that
-    /// share (#44): wild herds cannot be worked harder to feed more people. At most 1.
+    /// share (#44): wild herds cannot be worked harder to feed more people. On any such
+    /// land a band keeps at least `herd_reserve` times that share (#51): domestic animals
+    /// are food that keeps, a reserve against lean times however little the land repays
+    /// them. At most 1.
     pub fn herding_target(&self, range: f64, pasture: f64, domestic: f64, pressure: f64) -> f64 {
         let land = (range + (pasture - range).max(0.0) * domestic).min(1.0);
         if land <= 0.0 {
             return 0.0;
         }
         let need = self.herd_pressure_weight * pressure * domestic;
-        oikos_math::finite(self.herding_weight * land + need).clamp(0.0, 1.0)
+        let reserve = self.herd_reserve * domestic;
+        oikos_math::finite((self.herding_weight * land + need).max(reserve)).clamp(0.0, 1.0)
+    }
+
+    /// The least effort a band keeps on a herd `domestic` (#51): `herd_reserve` times that
+    /// share wherever its land grazes any. Animals it holds are tended at once, not learned
+    /// from others first, as the reserve is food it owns.
+    pub fn kept(&self, range: f64, pasture: f64, domestic: f64) -> f64 {
+        let land = (range + (pasture - range).max(0.0) * domestic).min(1.0);
+        if land <= 0.0 || self.herd_reserve == 0.0 {
+            return 0.0;
+        }
+        oikos_math::finite(self.herd_reserve * domestic).clamp(0.0, 1.0)
     }
 
     /// Cultivation and herding effort within one effort budget: proportionally less of
@@ -1636,7 +1659,11 @@ impl Mechanism for Cultivation {
                     _ => self.herding_seen(sense, cell as u32),
                 };
                 herders = Some((cell, seen));
-                self.adopt(h, herd_target, seen.unwrap_or(h))
+                self.adopt(h, herd_target, seen.unwrap_or(h)).max(self.kept(
+                    sense.range[cell],
+                    sense.pasture[cell],
+                    Traits::share(traits.herd_domestication),
+                ))
             };
             let (next_e, next_h) = Self::share_effort(self.adopt(e, target, seen), next_h);
             let cultivation = Traits::toward(traits.cultivation, next_e);

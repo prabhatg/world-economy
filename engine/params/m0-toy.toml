@@ -662,6 +662,20 @@ sources = [
   { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
 ]
 
+[params.herd_reserve]
+group = "cultivation"
+unit = "1"
+description = "Least share of effort a band with a fully domestic herd keeps on it wherever its land grazes any, in proportion to the herd's domestic share: a reserve of food that keeps, however little the land repays herding (#51). Where the land repays more (herding_weight, herd_pressure_weight), the land sets the effort. 0: herds kept for what the land repays alone."
+kind = { type = "probability" }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 0.2 }
+status = "placeholder"
+note = "Off until a profile weighs it against the M1 record (#51). Egypt's first herders were mobile hunters of the 6th millennium BCE who kept a handful of sheep and goats among their game, as 'a kind of food reserve on the hoof' whose value lay in its predictable availability (Linseele et al. 2014); keeping stock as insurance against lean years is how herders themselves explain herd sizes beyond present need (Dahl and Hjort 1976). The prior's top is a fifth of effort, more than the handful of bones the desert sites hold."
+sources = [
+  { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
+  { citation = "Dahl, G., Hjort, A. (1976). Having Herds: Pastoral Herd Growth and Household Economy. Stockholm Studies in Social Anthropology 2. University of Stockholm." },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"

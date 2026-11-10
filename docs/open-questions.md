@@ -280,12 +280,19 @@
     of the 6th and 5th millennia BCE holds some, and no world at the calibrated defaults
     brings any to Africa. Animals passed along social ties and grazing on floodplains
     do not either; with need at 0.8 as well, herds reach the Nile and the Fayum in the
-    5th millennium, but the Levant's sheep turn domestic a millennium early. How did
+    5th millennium, but the Levant's sheep turn domestic a millennium early. A reserve of
+    animals kept wherever any grazing allows (ADR-0114) brings them there without that
+    cost (0.79 of the 5th millennium's assemblages at 0.2), but the 6th millennium's
+    desert assemblages still show them at 0.19 at most. How did
     the 6th millennium's desert hunters come to keep a few goats, a food reserve on the
     hoof, and why does the model's herding, which follows land and need, never start
     there? And the crops: the model's Mediterranean coast of Egypt domesticates its own
-    wild barley from about 8,000 BCE, where GBIF records wild barley in Egypt only near
-    Mersa Matruh and Egypt's crops came from Southwest Asia (#51).
+    wild barley from about 8,000 BCE, while Egypt's earliest crops (Merimde, the Fayum,
+    the 5th millennium BCE) came from Southwest Asia with emmer, which never grew wild
+    there. Wild barley is native to Egypt's coast (Euro+Med; Boulos's checklist), though
+    GBIF's open records place it only near Mersa Matruh, so its range is not cut there;
+    the coast's early fields lie on land since drowned or under the Delta's silt, which
+    no record sees (#51).
 41. Did the 8.2 ka event shape Southwest Asia's Neolithic, and how did people ride it out
     (ADR-0107)? The model takes its decadal anomalies from Greenland (NGRIP), which
     dates the event but gives one index for the whole region, with decadal noise mostly
