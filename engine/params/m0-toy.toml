@@ -224,6 +224,20 @@ sources = [
   { citation = "Johnson, G. A. (1982). Organizational structure and scalar stress. In C. Renfrew, M. Rowlands and B. A. Segraves (eds.), Theory and Explanation in Archaeology, 389-421. Academic Press." },
 ]
 
+[params.catchment_radius_km]
+group = "social"
+unit = "km"
+description = "Radius of the land a group works and of the people it lives among, around where it lives (#50). A catchment is the block of cells whose land and people mechanisms count together: the cell of the coarser H3 resolution that holds them, at the resolution whose cells come nearest a circle of this radius in area (each coarser level seven times the area). Farmers join the largest settlement of their catchment, and groups that leave found their new home in a neighboring one. Where the grid's own cells come nearest, every cell is its own catchment, as before #50 (0 also)."
+kind = { type = "real", min = 0.0, max = 200.0 }
+default = 8.0
+prior = { dist = "uniform", lo = 5.0, hi = 10.0 }
+status = "literature"
+note = "Site catchment analysis puts farmers' fields within about an hour's walk of home (5 km) and foragers' range within about two (10 km; Vita-Finzi et al. 1970), and fields beyond 3-4 km were rarely worked (Chisholm 1968). 8 km is a circle of 201 km2: the resolution-5 cells of M1 (217-304 km2, mean 268) come nearest it, so each is its own catchment and the calibrated worlds are unchanged; at resolution 6, a catchment is the resolution-5 cell holding seven of them."
+sources = [
+  { citation = "Vita-Finzi, C., Higgs, E. S., Sturdy, D., Harriss, J., Legge, A. J., Tippett, H. (1970). Prehistoric economy in the Mount Carmel area of Palestine: site catchment analysis. Proceedings of the Prehistoric Society 36, 1-37.", doi = "10.1017/S0079497X00013074" },
+  { citation = "Chisholm, M. (1968). Rural Settlement and Land Use: An Essay in Location, 2nd ed. Hutchinson, London." },
+]
+
 [params.wealth_transmission]
 group = "social"
 unit = "per generation"

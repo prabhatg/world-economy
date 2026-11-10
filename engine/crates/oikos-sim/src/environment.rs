@@ -23,6 +23,7 @@
 //! parameters and agent totals, with `oikos_math` functions, so every host gets the same
 //! integers.
 
+use crate::catchment::Catchments;
 use crate::inputs::{Inputs, LAKES};
 use crate::params::Params;
 use oikos_io::pack::{FieldView, Slice};
@@ -310,13 +311,19 @@ impl Year<'_> {
         (upland * pasture, pasture)
     }
 
-    /// Foragers the cell feeds (before rounding).
-    fn foragers(&self, c: usize, p: &Params) -> f64 {
-        let npp = self.climate(c).map_or(0.0, |(t, w)| npp_miami(t, w, p));
+    /// Whether the cell holds water to fish and gather from: a perennial river, a lake shore
+    /// or a sea coast.
+    fn water(&self, c: usize, p: &Params) -> bool {
         let river =
             self.rivers.as_ref().and_then(|f| f.get(0, c)).is_some_and(|q| q >= p.perennial_discharge);
-        let aquatic =
-            if river || self.surface.shore(c) { p.aquatic_bonus * p.forager_density_ref } else { 0.0 };
+        river || self.surface.shore(c)
+    }
+
+    /// Foragers the cell feeds (before rounding), `water` of its land within reach of
+    /// water ([`Year::water`]): 1 or 0.
+    fn foragers(&self, c: usize, water: f64, p: &Params) -> f64 {
+        let npp = self.climate(c).map_or(0.0, |(t, w)| npp_miami(t, w, p));
+        let aquatic = water * (p.aquatic_bonus * p.forager_density_ref);
         oikos_math::finite(self.dry_area(c) * (forager_density(npp, p) + aquatic))
     }
 }
@@ -343,11 +350,37 @@ pub fn pasture_share(precip_mm: f64, p: &Params) -> f64 {
 /// one person, so growth stays defined). Returns false, leaving `out` alone, without a
 /// climate pack.
 pub fn capacity_into(inputs: &Inputs, calendar_year: i64, p: &Params, out: &mut [u64]) -> bool {
+    forage_into(inputs, calendar_year, p, &Catchments::default(), None, out)
+}
+
+/// [`capacity_into`] with water at hand wherever it lies in a cell's catchment (#50), as it
+/// was wherever it lay in a cell. Also writes each cell's forager capacity before rounding
+/// into `exact`.
+pub fn forage_into(
+    inputs: &Inputs,
+    calendar_year: i64,
+    p: &Params,
+    reach: &Catchments,
+    mut exact: Option<&mut [f64]>,
+    out: &mut [u64],
+) -> bool {
     let Some(year) = Year::new(inputs, calendar_year, p) else {
         return false;
     };
+    // Whether each catchment holds water anywhere.
+    let mut water = vec![false; reach.len()];
+    if !reach.is_trivial() {
+        for c in 0..out.len() {
+            water[reach.of(c)] |= year.water(c, p);
+        }
+    }
     for (c, k) in out.iter_mut().enumerate() {
-        *k = (year.foragers(c, p) as u64).max(1);
+        let wet = if reach.is_trivial() { year.water(c, p) } else { water[reach.of(c)] };
+        let f = year.foragers(c, if wet { 1.0 } else { 0.0 }, p);
+        if let Some(e) = exact.as_deref_mut() {
+            e[c] = f;
+        }
+        *k = (f as u64).max(1);
     }
     true
 }
@@ -439,7 +472,8 @@ impl Farmland {
             self.pasture[c] = pasture;
             self.herd_range[c] = oikos_math::finite(now.dry_area(c) * range * p.herd_density);
             self.herd_pasture[c] = oikos_math::finite(now.dry_area(c) * pasture * p.herd_density);
-            let (k, k0) = (now.foragers(c, p), before.foragers(c, p));
+            let own = |y: &Year<'_>| y.foragers(c, if y.water(c, p) { 1.0 } else { 0.0 }, p);
+            let (k, k0) = (own(&now), own(&before));
             self.stress[c] = if k0 > 0.0 { (1.0 - k / k0).clamp(0.0, 1.0) } else { 0.0 };
         }
     }

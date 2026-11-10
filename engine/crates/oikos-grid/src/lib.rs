@@ -124,6 +124,13 @@ impl Grid {
         &self.neighbor_targets[a..b]
     }
 
+    /// The H3 index of `cell`'s ancestor at `resolution` (at most the grid's): which cell
+    /// of a coarser grid holds it.
+    pub fn parent(&self, cell: u32, resolution: u8) -> u64 {
+        let res = Resolution::try_from(resolution).expect("an H3 resolution");
+        u64::from(self.cells[cell as usize].parent(res).expect("a resolution at most the grid's"))
+    }
+
     /// Splits cells into `parts` contiguous ranges of near-equal size.
     pub fn partition(&self, parts: usize) -> Vec<Range<u32>> {
         partition_ranges(self.len() as u32, parts)
@@ -197,6 +204,20 @@ mod tests {
         assert!(matches!(Grid::from_h3(4, &ids), Err(GridError::WrongResolution { .. })));
         assert!(matches!(Grid::from_h3(3, &[ids[1], ids[0]]), Err(GridError::NotAscending)));
         assert!(matches!(Grid::from_h3(3, &[0]), Err(GridError::InvalidCell(0))));
+    }
+
+    #[test]
+    fn a_cells_parent_holds_it_and_its_siblings() {
+        let g = Grid::from_base_cell(22, 3).unwrap();
+        let parents: Vec<u64> = (0..g.len() as u32).map(|c| g.parent(c, 2)).collect();
+        let mut distinct = parents.clone();
+        distinct.dedup();
+        assert_eq!(distinct.len(), 49, "base cell 22 has 49 cells at resolution 2");
+        for (c, &p) in parents.iter().enumerate() {
+            let p = CellIndex::try_from(p).unwrap();
+            assert!(p.children(Resolution::Three).any(|k| u64::from(k) == g.h3(c as u32)));
+        }
+        assert_eq!(g.parent(5, 3), g.h3(5));
     }
 
     #[test]

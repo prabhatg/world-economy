@@ -181,6 +181,15 @@ Not brain simulation. Agents implement validated regularities:
   daughter stays in her settlement while it has room (foragers' daughters camp alone), a settlement over its limit sheds its
   smallest group, and the endemic infection (ADR-0075) persists in a settlement as in
   one group of all its people. Surveys count settlements, not groups.
+  Land and settlement are counted per catchment, not per cell (#50, ADR-0112): farmers
+  worked fields within about an hour's walk of home and foragers ranged within about two
+  (Vita-Finzi et al. 1970), so what a place feeds, how crowded it is and which village a
+  farmer joins are reckoned over the land within `catchment_radius_km` (8 km): a block
+  of cells, the coarser H3 cell nearest that circle in area. A village draws its farmers
+  from its whole catchment, groups that leave found new homes in a neighboring one, and
+  water at hand anywhere in it feeds fishers on all its land. At resolution 5 each cell
+  is its own catchment; on a finer grid the same parameters give villages and
+  populations of about the same size, and the grid adds where in a catchment people live.
 - Wealth inequality. *Implemented (M1):* each group carries the spread of its households'
   wealth (the variance of log wealth; `mechanisms::Inequality`, ADR-0074), after the
   intergenerational model of Borgerhoff Mulder et al. (2009): a share of wealth passes

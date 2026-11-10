@@ -190,7 +190,9 @@ stay best (summaries -81.6), their halves and doubles inconsistent for emmer and
 for einkorn. `runs/m1/f8/` judges the record at H3 resolution 6 (ADR-0111):
 `profile-r6-rings3.json` takes dispersal as calibrated and rescaled to keep its reach in km,
 obsidian loss rescaled, operators reading three rings; `profile-r6-rings1.json` the rescaled
-world read at one ring. None is consistent; resolution 5 fits better. The onset record's tables are downloaded by hand (`data/README.md`); without
+world read at one ring. None is consistent; resolution 5 fits better. `runs/m1/f50/compare-r6.json`
+rejudges resolution 6 with land and settlement counted per catchment (ADR-0112), at the
+defaults and three rings, beside resolution 5's row: every world consistent, -85.2 against -80.9. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

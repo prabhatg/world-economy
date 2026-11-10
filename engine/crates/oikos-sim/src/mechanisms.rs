@@ -13,6 +13,7 @@
 //! the tile they are given (reading anything else only through [`Sense`]).
 
 use crate::agents::{ALONE, Agents, EINKORN, EMMER, SHARE_ONE, Settlement, Traits};
+use crate::catchment::Catchments;
 use crate::params::Params;
 use crate::schedule::{Component, MechanismSpec};
 use crate::world::StepStats;
@@ -31,6 +32,11 @@ pub trait Mechanism: Send + Sync {
 }
 
 /// Read-only world state for the decide phase (the halo in a distributed run).
+///
+/// Where catchments reach beyond cells (#50, [`crate::catchment`]), the people per cell,
+/// their practice sums and what the land feeds (`population`, the `_sum` fields,
+/// `capacity`, `forage_capacity`, `farm`, `flood`, `range_feeds`, `pasture_feeds`) are
+/// counted over each cell's catchment: its own and its share of each cell around it.
 pub struct Sense<'a> {
     pub grid: &'a Grid,
     /// Forcing-pack fields (declare [`Component::Forcing`] to read them).
@@ -90,6 +96,14 @@ pub struct Sense<'a> {
     /// from the own cell's effort only ([`Cultivation::own_cell_only`]).
     pub models: &'a [(f64, f64)],
     pub models_for: (f64, f64),
+    /// Each cell's catchment (#50).
+    pub catchments: &'a Catchments,
+    /// Each cell's own people after the previous step's commit (`population` where every
+    /// cell is its own catchment).
+    pub cell_population: &'a [u64],
+    /// Each cell's largest settlement after the previous step's commit, where catchments
+    /// reach beyond cells (empty where every cell is its own).
+    pub largest: &'a [Settlement],
     /// Whether any group lived with others when the step began (ADR-0082); if not, every
     /// group of every tile lives alone until one makes a settlement label in its own tile.
     pub towns: bool,
@@ -148,6 +162,19 @@ impl PartitionView<'_> {
     /// placed in `dest`. Ids come from the birth cell's counter, so they never depend on
     /// partitioning. Agents placed in another cell count as migrants.
     pub fn spawn(&mut self, birth_cell: u32, dest: u32, weight: u64, traits: Traits) -> EntityId {
+        self.spawn_settled(birth_cell, dest, weight, traits, ALONE)
+    }
+
+    /// [`PartitionView::spawn`] into the settlement labeled `settlement` of `dest` (a group
+    /// moving to a village of another cell, #50; [`ALONE`] to live by itself).
+    pub fn spawn_settled(
+        &mut self,
+        birth_cell: u32,
+        dest: u32,
+        weight: u64,
+        traits: Traits,
+        settlement: u32,
+    ) -> EntityId {
         let counter = &mut self.counters[(birth_cell - self.cells.start) as usize];
         let id = EntityId::new(birth_cell, *counter);
         *counter += 1;
@@ -155,10 +182,10 @@ impl PartitionView<'_> {
             self.stats.migrants += weight;
         }
         if self.cells.contains(&dest) {
-            self.agents.push_with(id, dest, weight, traits);
+            self.agents.push_in(id, dest, weight, traits, settlement);
         } else {
             let owner = self.ranges.partition_point(|r| r.end <= dest);
-            self.outbox[owner].push_with(id, dest, weight, traits);
+            self.outbox[owner].push_in(id, dest, weight, traits, settlement);
         }
         id
     }
@@ -246,6 +273,12 @@ fn least_crowded_by(
 
 fn habitable_neighbors<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u32> + Clone + 'a {
     sense.grid.neighbors(cell).iter().copied().filter(|&c| sense.habitable[c as usize])
+}
+
+/// The habitable cells a group leaving `cell` may found its new home in, beyond its
+/// catchment ([`Catchments::away`], #50): its neighbors where every cell is its own.
+fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u32> + Clone + 'a {
+    sense.catchments.away(sense.grid, cell as usize).iter().copied().filter(|&c| sense.habitable[c as usize])
 }
 
 /// Logistic growth toward each cell's carrying capacity, dw = r w (1 - N/K), as gross
@@ -575,7 +608,8 @@ impl Fission {
     /// Where a daughter group of `weight` people and practice `t` goes from its full
     /// `cell`: a random habitable neighbor if it explores, else the least crowded of the
     /// cell and its habitable neighbors, each neighbor judged by what its land would feed
-    /// with her there ([`Sense::capacity_joined`]).
+    /// with her there ([`Sense::capacity_joined`]). Where catchments reach beyond cells,
+    /// the cells she may go to lie beyond hers ([`Catchments::away`], #50).
     fn destination(
         &self,
         sense: &Sense<'_>,
@@ -585,7 +619,7 @@ impl Fission {
         cell: u32,
         (weight, t): (u64, &Traits),
     ) -> u32 {
-        let ns = habitable_neighbors(sense, cell);
+        let ns = habitable_away(sense, cell);
         let open = ns.clone().count();
         if open == 0 {
             return cell;
@@ -731,7 +765,10 @@ impl Mechanism for Fission {
 /// forage nor pasture can feed them. A res-5 cell is about one band's territory. Repeated, this is
 /// the wave of advance by which foragers fill a landscape (Fisher-KPP; Ammerman and
 /// Cavalli-Sforza 1984), and it works where a cell holds a single band, so fission by
-/// group size never fires (res-5 cells feed ~20-50 foragers).
+/// group size never fires (res-5 cells feed ~20-50 foragers). Where catchments are not
+/// cells (#50), crowding is the catchment's, the group goes to a neighboring catchment
+/// ([`Catchments::away`]), and each cell buds with `probability` times its share of the
+/// catchment's people, so a catchment buds as often as a cell did.
 #[derive(Clone, Debug)]
 pub struct Dispersal {
     pub period_ticks: u64,
@@ -744,17 +781,31 @@ pub struct Dispersal {
 }
 
 impl Dispersal {
+    /// The chance per period that a crowded cell of `own` people in a catchment of
+    /// `catchment` buds off a group (#50): `probability` times its share of the catchment's
+    /// people, so a catchment buds as often as a cell did.
+    pub fn chance(&self, own: u64, catchment: u64) -> f64 {
+        if own == 0 {
+            return 0.0;
+        }
+        if own >= catchment {
+            return self.probability;
+        }
+        self.probability * (own as f64 / catchment as f64)
+    }
+
     /// A habitable cell at least `crowding` full (last step).
     fn crowded(&self, sense: &Sense<'_>, cell: u32) -> bool {
         let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
         sense.habitable[cell as usize] && n as f64 >= self.crowding * k as f64
     }
 
-    /// The least crowded habitable neighbor of `cell` by the capacities `capacity(c)`, if
-    /// it is less crowded than `cell`, and its capacity.
+    /// The least crowded habitable neighbor of `cell` (beyond its catchment where they reach
+    /// beyond cells, [`Catchments::away`]) by the capacities `capacity(c)`, if it is less
+    /// crowded than `cell`, and its capacity.
     fn target(&self, sense: &Sense<'_>, cell: u32, capacity: impl Fn(u32) -> u64) -> Option<(u32, u64)> {
         let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
-        let (dest, kd) = least_crowded_by(sense, habitable_neighbors(sense, cell), capacity)?;
+        let (dest, kd) = least_crowded_by(sense, habitable_away(sense, cell), capacity)?;
         let nd = sense.population[dest as usize];
         (nd as u128 * (k as u128) < n as u128 * kd as u128).then_some((dest, kd))
     }
@@ -796,6 +847,12 @@ impl Mechanism for Dispersal {
         while i < tile.end {
             let cell = part.agents.cell[i];
             let end = i + part.agents.cell[i..tile.end].iter().take_while(|&&c| c == cell).count();
+            let go = if sense.catchments.is_trivial() {
+                go
+            } else {
+                let c = cell as usize;
+                Probability::from_f64(self.chance(sense.cell_population[c], sense.population[c]))
+            };
             if self.crowded(sense, cell) && go.hit(rng.u32(cell as u64, t, 0, 0)) {
                 // Without farming a neighbor's capacity is its residents' whoever joins them,
                 // so the target is the same for every band.
@@ -845,6 +902,15 @@ impl Mechanism for Dispersal {
 /// the largest of its groups at least its own size that it fits (as above), and otherwise
 /// living beside them as a group of its own, if the settlement stays below its limit
 /// ([`Fission::settlement_limit`]) with it. Settlements of one group are groups, as before.
+///
+/// Where catchments reach beyond cells (#50), the largest settlement of another cell in the
+/// group's catchment that is larger than its own and than any it could join in its cell,
+/// and has room for it, draws the group there, to live in it as a group of its own (beside
+/// it, where it is a lone group, to join it as the groups of a cell do):
+/// farmers walked to fields an hour from home, so a village drew its people from the land
+/// around it, more than a cell smaller than that land could feed. Each cell's largest
+/// settlement is the last commit's, so several groups may join one in a step, which then
+/// sheds groups as any settlement past its limit does.
 #[derive(Clone, Debug)]
 pub struct Aggregation {
     pub period_ticks: u64,
@@ -872,6 +938,31 @@ impl Aggregation {
         ((s.people + w) as f64) < self.fission.settlement_limit(Traits::share(cultivation), inequality)
     }
 
+    /// The largest settlement of another cell in `cell`'s catchment with more people than
+    /// `than` that has room for a group of `w` people with practice `t` (the first on ties),
+    /// and its cell.
+    fn beyond(
+        &self,
+        sense: &Sense<'_>,
+        cell: u32,
+        than: u64,
+        w: u64,
+        t: Traits,
+    ) -> Option<(u32, Settlement)> {
+        let mut best: Option<(u32, Settlement)> = None;
+        for c in sense.catchments.mates(cell as usize) {
+            let s = sense.largest[c];
+            if s.people > than
+                && best.is_none_or(|(_, b)| s.people > b.people)
+                && sense.habitable[c]
+                && self.settles(&s, w, t)
+            {
+                best = Some((c as u32, s));
+            }
+        }
+        best
+    }
+
     pub fn from_params(p: &Params) -> Aggregation {
         Aggregation {
             period_ticks: p.period_ticks,
@@ -887,8 +978,13 @@ impl Mechanism for Aggregation {
         MechanismSpec {
             name: "aggregation",
             period_ticks: self.period_ticks,
-            reads: vec![Component::AgentTraits],
-            writes: vec![Component::AgentWeight, Component::AgentTraits, Component::AgentSettlement],
+            reads: vec![Component::AgentTraits, Component::Forcing],
+            writes: vec![
+                Component::AgentWeight,
+                Component::AgentTraits,
+                Component::AgentSettlement,
+                Component::AgentSpawn,
+            ],
             after: self.after.clone(),
         }
     }
@@ -945,6 +1041,12 @@ impl Mechanism for Aggregation {
                     target = Some((*s, group));
                 }
             });
+            let here = target.map_or(own.people, |(s, _)| s.people.max(own.people));
+            if let Some((dest, s)) = self.beyond(sense, cell, here, w, ta) {
+                part.agents.weight[a] = 0;
+                part.spawn_settled(cell, dest, w, ta, s.label);
+                continue;
+            }
             let Some((s, group)) = target else { continue };
             let Some(b) = group else {
                 part.agents.settlement[a] = part.label_of(s.first);
@@ -1273,7 +1375,8 @@ impl Cultivation {
         (all > 0.0).then(|| oikos_math::finite(farming / all))
     }
 
-    /// [`Cultivation::example`] for a band in `cell`: its cell and its neighbors.
+    /// [`Cultivation::example`] for a band in `cell`: its cell and its neighbors (its
+    /// catchment and the neighboring ones where cells are not their own, #50).
     fn example_at(&self, sense: &Sense<'_>, cell: u32) -> Option<f64> {
         let cached = sense.models.len() == sense.population.len()
             && sense.models_for == (self.success_bias, self.wild_yield_ratio);
@@ -1293,7 +1396,8 @@ impl Cultivation {
             };
             (contact, models)
         };
-        let neighbors = sense.grid.neighbors(cell).iter().map(|&c| at(c, self.neighbor_learning));
+        let neighbors =
+            sense.catchments.away(sense.grid, cell as usize).iter().map(|&c| at(c, self.neighbor_learning));
         Self::example_of(std::iter::once(at(cell, 1.0)).chain(neighbors))
     }
 
@@ -1329,15 +1433,15 @@ impl Cultivation {
     }
 
     /// The share of herding effort among the people a band in `cell` learns from: its
-    /// cell's and, by `neighbor_learning`, the cells around it (#37). None if it sees
-    /// nobody.
+    /// cell's and, by `neighbor_learning`, the cells around it (#37; catchments where cells
+    /// are not their own, #50). None if it sees nobody.
     fn herding_seen(&self, sense: &Sense<'_>, cell: u32) -> Option<f64> {
         let at = |c: u32| {
             (sense.herd_sum[c as usize] as f64, sense.population[c as usize] as f64 * SHARE_ONE as f64)
         };
         let (mut herd, mut people) = at(cell);
         if self.neighbor_learning != 0.0 {
-            for &c in sense.grid.neighbors(cell) {
+            for &c in sense.catchments.away(sense.grid, cell as usize) {
                 let (h, n) = at(c);
                 herd += self.neighbor_learning * h;
                 people += self.neighbor_learning * n;
@@ -1348,8 +1452,8 @@ impl Cultivation {
 
     /// The domestic shares of the crop, emmer and einkorn sown by the people a band in
     /// `cell` exchanges seed with (#48): its cell's and, by `neighbor_learning`, the cells
-    /// around it, kin and marriage partners as for learning, by the effort each sows. None
-    /// if nobody sows there.
+    /// around it (catchments, #50), kin and marriage partners as for learning, by the effort
+    /// each sows. None if nobody sows there.
     fn seed_seen(&self, sense: &Sense<'_>, cell: u32) -> Option<[f64; 3]> {
         let at = |c: u32| {
             let (c, [em, ek]) = (c as usize, sense.wheat_sum[c as usize]);
@@ -1357,7 +1461,7 @@ impl Cultivation {
         };
         let mut sums = at(cell);
         if self.neighbor_learning != 0.0 {
-            for &c in sense.grid.neighbors(cell) {
+            for &c in sense.catchments.away(sense.grid, cell as usize) {
                 for (s, x) in sums.iter_mut().zip(at(c)) {
                     *s += self.neighbor_learning * x;
                 }
@@ -1672,7 +1776,7 @@ impl Inequality {
     }
 
     fn closure_of(sense: &Sense<'_>, cell: u32) -> f64 {
-        Self::closure(sense.grid.neighbors(cell).iter().map(|&c| {
+        Self::closure(sense.catchments.away(sense.grid, cell as usize).iter().map(|&c| {
             let c = c as usize;
             let effort = match sense.population[c] {
                 0 => 0.0,
@@ -1846,6 +1950,9 @@ mod tests {
             wheat_sum: &wheat_sum,
             models: &[],
             models_for: (0.0, 0.0),
+            catchments: &Catchments::default(),
+            cell_population: &population,
+            largest: &[],
             towns: true,
             tick: Tick(1),
             seed: 7,
@@ -2053,5 +2160,15 @@ mod tests {
         let daughter = a.len() - 1;
         assert_eq!(a.weight[daughter], 65);
         assert_ne!(a.cell[daughter], 0, "she leaves her full cell");
+    }
+
+    #[test]
+    fn a_catchment_buds_as_often_as_a_cell_did() {
+        let d = Dispersal { probability: 0.3, ..dispersal().0 };
+        // Its cells' chances sum to the cell's, and a catchment of one cell has the cell's.
+        let total: f64 = [10, 0, 25, 65].iter().map(|&own| d.chance(own, 100)).sum();
+        assert!((total - 0.3).abs() < 1e-12);
+        assert_eq!(d.chance(40, 40), 0.3);
+        assert_eq!(d.chance(0, 0), 0.0);
     }
 }

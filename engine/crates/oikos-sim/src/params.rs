@@ -34,6 +34,7 @@ pub struct Params {
     pub aggregation_rate: f64,
     pub settlement_integration: f64,
     pub settlement_hierarchy: f64,
+    pub catchment_radius_km: f64,
     pub wealth_transmission: f64,
     pub wealth_shock: f64,
     pub landed_wealth_transmission: f64,
@@ -146,6 +147,7 @@ impl Params {
             aggregation_rate: real("aggregation_rate")?,
             settlement_integration: real("settlement_integration")?,
             settlement_hierarchy: real("settlement_hierarchy")?,
+            catchment_radius_km: real("catchment_radius_km")?,
             wealth_transmission: real("wealth_transmission")?,
             wealth_shock: real("wealth_shock")?,
             landed_wealth_transmission: real("landed_wealth_transmission")?,
@@ -420,6 +422,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     // #41: the forcing's century means alone (no climate_anomaly pack was read before it).
     ("climate_anomaly_temp", Restore::Value(0.0)),
     ("climate_anomaly_precip", Restore::Value(0.0)),
+    // #50: every cell is its own catchment.
+    ("catchment_radius_km", Restore::Value(0.0)),
 ];
 
 impl Params {

@@ -82,6 +82,12 @@ read everything else through the read-only `Sense` snapshot. New agents are crea
 through `PartitionView::spawn`, which assigns birth-cell ids and routes them to the
 owning partition.
 
+Where the grid is finer than the land people work (catchments, #50, ADR-0112), the
+people, practice sums and land that `Sense` gives per cell are those of the cell's
+catchment, a block of cells summed before decide from the last commit; the world's own
+per-cell fields, and every output, stay the cells'. Where each cell is its own catchment
+(M1 at resolution 5) `Sense` reads the per-cell fields as before.
+
 ## 3.5 Determinism & reproducibility
 
 Volunteer computing (doc 11) validates results by comparing hashes from independent

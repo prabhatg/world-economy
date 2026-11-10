@@ -126,6 +126,10 @@ pub struct Settlement {
 }
 
 impl Settlement {
+    /// Where nobody lives.
+    pub const NONE: Settlement =
+        Settlement { label: ALONE, first: 0, groups: 0, people: 0, cultivation: 0, inequality: 0 };
+
     fn of(label: u32, first: usize) -> Settlement {
         Settlement { label, first, groups: 0, people: 0, cultivation: 0, inequality: 0 }
     }
@@ -427,6 +431,25 @@ impl Agents {
             if s.people > 0 {
                 f(&s);
             }
+        }
+    }
+
+    /// The largest settlement of each cell of `cells` (the first on ties; [`Settlement::NONE`]
+    /// where nobody lives) into `out`, indexed by cell from `cells.start`. Agents in
+    /// canonical order, all in `cells`.
+    pub fn largest_settlements(&self, cells: Range<u32>, out: &mut [Settlement]) {
+        out.fill(Settlement::NONE);
+        let mut i = 0;
+        while i < self.len() {
+            let cell = self.cell[i];
+            let end = i + self.cell[i..].iter().take_while(|&&c| c == cell).count();
+            let best = &mut out[(cell - cells.start) as usize];
+            self.for_each_settlement(i..end, |s| {
+                if s.people > best.people {
+                    *best = *s;
+                }
+            });
+            i = end;
         }
     }
 

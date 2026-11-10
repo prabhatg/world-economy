@@ -9,12 +9,14 @@
 //! - [`workunit`]: backend-neutral work units and results (docs/11 §11.2).
 //! - [`inputs`]: the forcing packs a run reads, verified by id (docs/03 §3.8a).
 //! - [`exchange`]: down-the-line exchange of obsidian, a tracer of contact (ADR-0060).
+//! - [`catchment`]: the land and people within reach of each cell (#50).
 //!
 //! The M0 mechanism is a toy (logistic growth + band fission and migration); it
 //! exists to exercise the engine, not to model history.
 
 pub mod activity;
 pub mod agents;
+pub mod catchment;
 pub mod checkpoint;
 pub mod environment;
 pub mod exchange;

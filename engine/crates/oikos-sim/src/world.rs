@@ -20,7 +20,8 @@
 //! drifted more than [`IMBALANCE_TOLERANCE_PCT`] above the mean. Results never depend
 //! on the partitioning, so these are performance settings, not model parameters.
 
-use crate::agents::{Agents, EINKORN, EMMER, SHARE_ONE, Traits};
+use crate::agents::{Agents, EINKORN, EMMER, SHARE_ONE, Settlement, Traits};
+use crate::catchment::Catchments;
 use crate::environment::{self, Farmland};
 use crate::exchange::Obsidian;
 use crate::inputs::Inputs;
@@ -191,6 +192,38 @@ pub struct World {
     /// Reused buffers for re-partitioning (per-cell cost, all agents in order).
     cell_costs: Vec<u64>,
     gathered: Agents,
+    /// Each cell's catchment (#50), from the grid, the geometry pack and the parameters.
+    catchments: Arc<Catchments>,
+    /// What mechanisms see over catchments ([`Reach`]).
+    reach: Reach,
+}
+
+/// What mechanisms see over catchments where they reach beyond cells (#50, [`Sense`]):
+/// derived from the forcing, the per-cell sums and the agents, so never checkpointed.
+/// Empty while every cell is its own catchment.
+#[derive(Default)]
+struct Reach {
+    /// Each cell's own forager capacity before rounding.
+    forage_exact: Vec<f64>,
+    /// Over each catchment, what its land feeds by use (with the land's period)...
+    forage: Vec<u64>,
+    farm: Vec<f64>,
+    flood: Vec<f64>,
+    herd_range: Vec<f64>,
+    herd_pasture: Vec<f64>,
+    /// ...and its people, their practice sums and the capacity they farm (every step).
+    population: Vec<u64>,
+    effort_sum: Vec<u64>,
+    crop_sum: Vec<u64>,
+    herd_sum: Vec<u64>,
+    herd_crop_sum: Vec<u64>,
+    wheat_sum: Vec<[u64; 2]>,
+    capacity: Vec<u64>,
+    /// Each cell's largest settlement.
+    largest: Vec<Settlement>,
+    /// Per catchment: its people, practice and wheat sums, and capacity (reused buffers).
+    sums: Vec<[u64; 7]>,
+    block_capacity: Vec<u64>,
 }
 
 /// Relative step cost of one agent and of one cell (empty or not: sorting and recounting
@@ -252,8 +285,9 @@ impl World {
         let n = grid.len();
         // Forager capacity from the climate if there is a climate pack, else the toy draw.
         let mut capacity = vec![0; n];
-        let climate =
-            environment::capacity_into(&inputs, Tick::EPOCH.calendar_year(), &params, &mut capacity);
+        let reach = Catchments::of_inputs(&grid, &inputs, params.catchment_radius_km);
+        let start = Tick::EPOCH.calendar_year();
+        let climate = environment::forage_into(&inputs, start, &params, &reach, None, &mut capacity);
         if !climate {
             let env = Philox4x32::new(seed, Stream::Environment);
             let span = params.capacity_max - params.capacity_min + 1;
@@ -421,11 +455,149 @@ impl World {
             towns: false,
             cell_costs: Vec::new(),
             gathered: Agents::default(),
+            catchments: Arc::new(Catchments::default()),
+            reach: Reach::default(),
         };
         let towns = w.agent_slices().any(|a| !a.alone(0..a.len()));
         w.towns = towns;
+        w.set_catchments();
         w.farm_all();
         w
+    }
+
+    /// Builds the catchments for the parameters and, where they reach beyond cells, the
+    /// land over them.
+    fn set_catchments(&mut self) {
+        self.catchments =
+            Arc::new(Catchments::of_inputs(&self.grid, &self.inputs, self.params.catchment_radius_km));
+        self.reach = Reach::default();
+        if self.catchments.is_trivial() {
+            return;
+        }
+        // Each cell's own forager capacity before rounding, leaving the world's (restored
+        // from a checkpoint, perhaps of the period before) as it is.
+        let n = self.grid.len();
+        let (year, mut rounded) = (land_year(self.tick, &self.params), vec![0; n]);
+        self.reach.forage_exact.resize(n, 0.0);
+        let exact = Some(&mut self.reach.forage_exact[..]);
+        if !environment::forage_into(&self.inputs, year, &self.params, &self.catchments, exact, &mut rounded)
+        {
+            let toy = self.forage_capacity.iter().map(|&k| k as f64);
+            self.reach.forage_exact.splice(.., toy);
+        }
+        self.reach_land();
+    }
+
+    /// Recomputes forager capacity for the year of the last capacity period start, with
+    /// water within each catchment, and before rounding where catchments reach beyond cells.
+    /// Without a climate pack it stays as it is.
+    fn forage(&mut self) {
+        let year = land_year(self.tick, &self.params);
+        let n = self.grid.len();
+        let exact = if self.catchments.is_trivial() {
+            None
+        } else {
+            self.reach.forage_exact.resize(n, 0.0);
+            Some(&mut self.reach.forage_exact[..])
+        };
+        let (inputs, p) = (&self.inputs, &self.params);
+        let climate =
+            environment::forage_into(inputs, year, p, &self.catchments, exact, &mut self.forage_capacity);
+        if !climate && !self.catchments.is_trivial() {
+            let toy = self.forage_capacity.iter().map(|&k| k as f64);
+            self.reach.forage_exact.splice(.., toy);
+        }
+    }
+
+    /// What the land of each catchment feeds, by use: its cells' sums, seen by each of them.
+    fn reach_land(&mut self) {
+        let c = &*self.catchments;
+        let over = |x: &[f64]| -> Vec<f64> {
+            if x.is_empty() {
+                return Vec::new();
+            }
+            let sums: Vec<f64> =
+                (0..c.len()).map(|b| c.members(b).iter().map(|&m| x[m as usize]).sum()).collect();
+            (0..x.len()).map(|i| sums[c.of(i)]).collect()
+        };
+        let (r, f) = (&mut self.reach, &self.farmland);
+        r.forage = over(&r.forage_exact).into_iter().map(|k| (k as u64).max(1)).collect();
+        (r.farm, r.flood, r.herd_range, r.herd_pasture) =
+            (over(&f.farm), over(&f.flood), over(&f.herd_range), over(&f.herd_pasture));
+    }
+
+    /// The people of each catchment, their practice sums and the capacity they farm, seen
+    /// by each of its cells, and each cell's largest settlement, from the last commit.
+    fn reach_people(&mut self, ranges: &[Range<u32>]) {
+        let (n, c) = (self.grid.len(), &*self.catchments);
+        let r = &mut self.reach;
+        // People, effort, crop, herding, herd crop and the two wheats per catchment.
+        r.sums.clear();
+        r.sums.resize(c.len(), [0; 7]);
+        for cell in 0..n {
+            let s = &mut r.sums[c.of(cell)];
+            let [emmer, einkorn] = self.wheat_sum[cell];
+            let own = [
+                self.population[cell],
+                self.effort_sum[cell],
+                self.crop_sum[cell],
+                self.herd_sum[cell],
+                self.herd_crop_sum[cell],
+                emmer,
+                einkorn,
+            ];
+            for (a, x) in s.iter_mut().zip(own) {
+                *a += x;
+            }
+        }
+        let one = SHARE_ONE as f64;
+        let farming = self.farmland.active();
+        r.block_capacity.clear();
+        r.block_capacity.extend((0..c.len()).map(|b| {
+            let [people, effort, crop, herd, herd_crop, ..] = r.sums[b];
+            let at = c.members(b)[0] as usize; // the catchment's land, as each cell sees it
+            if !farming || (effort == 0 && herd == 0) {
+                return r.forage[at];
+            }
+            let people = people as f64 * one;
+            let land = environment::Land {
+                forage: r.forage[at],
+                farm: r.farm[at],
+                flood: r.flood[at],
+                herd_range: r.herd_range[at],
+                herd_pasture: r.herd_pasture[at],
+            };
+            let practice = environment::Practice {
+                effort: effort as f64 / people,
+                crop: crop as f64 / people,
+                herding: herd as f64 / people,
+                herd_crop: herd_crop as f64 / people,
+            };
+            environment::capacity_of(&land, &practice, &self.params)
+        }));
+        for v in
+            [&mut r.population, &mut r.effort_sum, &mut r.crop_sum, &mut r.herd_sum, &mut r.herd_crop_sum]
+        {
+            v.resize(n, 0);
+        }
+        r.wheat_sum.resize(n, [0; 2]);
+        r.capacity.resize(n, 0);
+        for cell in 0..n {
+            let b = c.of(cell);
+            let [people, effort, crop, herd, herd_crop, emmer, einkorn] = r.sums[b];
+            (
+                r.population[cell],
+                r.effort_sum[cell],
+                r.crop_sum[cell],
+                r.herd_sum[cell],
+                r.herd_crop_sum[cell],
+            ) = (people, effort, crop, herd, herd_crop);
+            r.wheat_sum[cell] = [emmer, einkorn];
+            r.capacity[cell] = r.block_capacity[b];
+        }
+        r.largest.resize(n, Settlement::NONE);
+        let items: Vec<_> = self.parts.iter().zip(split_by_ranges(&mut r.largest, ranges)).collect();
+        par_for_each(items, |(part, largest)| part.agents.largest_settlements(part.cells.clone(), largest));
     }
 
     /// Each cell's people as models of cultivation, once per step rather than once for
@@ -438,13 +610,18 @@ impl World {
         }
         self.models.resize(self.grid.len(), (0.0, 0.0));
         self.models_for = (learning.success_bias, learning.wild_yield_ratio);
-        let sums = self.effort_sum.iter().zip(&self.crop_sum).zip(&self.population);
-        for (c, ((&effort, &crop), &people)) in sums.enumerate() {
-            self.models[c] = if effort == 0 {
-                (0.0, people as f64) // foragers only: no payoff to compute
+        // Per catchment where cells are not their own, as mechanisms see them.
+        let (r, f) = (&self.reach, &self.farmland);
+        let (forage, people, effort, crop, farm, flood) = if self.catchments.is_trivial() {
+            (&self.forage_capacity, &self.population, &self.effort_sum, &self.crop_sum, &f.farm, &f.flood)
+        } else {
+            (&r.forage, &r.population, &r.effort_sum, &r.crop_sum, &r.farm, &r.flood)
+        };
+        for (c, m) in self.models.iter_mut().enumerate() {
+            *m = if effort[c] == 0 {
+                (0.0, people[c] as f64) // foragers only: no payoff to compute
             } else {
-                let land = (self.farmland.farm[c], self.farmland.flood[c]);
-                learning.cell_models(land, self.forage_capacity[c], people, effort, crop)
+                learning.cell_models((farm[c], flood[c]), forage[c], people[c], effort[c], crop[c])
             };
         }
     }
@@ -466,7 +643,7 @@ impl World {
     /// start, then every cell's capacity.
     fn refresh_land(&mut self) {
         let year = land_year(self.tick, &self.params);
-        environment::capacity_into(&self.inputs, year, &self.params, &mut self.forage_capacity);
+        self.forage();
         self.farmland.update(&self.inputs, year, &self.params, self.grid.len());
         if self.farmland.active() {
             for (farm, &s) in self.farmland.farm.iter_mut().zip(&self.soil) {
@@ -474,6 +651,9 @@ impl World {
                     *farm *= environment::soil_yield(s as f64 / SHARE_ONE as f64, &self.params);
                 }
             }
+        }
+        if !self.catchments.is_trivial() {
+            self.reach_land();
         }
         self.farm_all();
     }
@@ -726,7 +906,8 @@ impl World {
         params.validate()?;
         self.set_mechanisms(mechanisms::defaults(&params))?;
         self.params = params;
-        // Capacity derived from forcing follows the new parameters at once.
+        // Catchments and capacity derived from forcing follow the new parameters at once.
+        self.set_catchments();
         self.refresh_land();
         Ok(())
     }
@@ -845,38 +1026,46 @@ impl World {
             self.refresh_land();
         }
         if self.obsidian.active() {
-            self.obsidian.exchange(&self.grid, &self.population, self.params.obsidian_loss);
+            self.obsidian.exchange(&self.grid, &self.catchments, &self.population, self.params.obsidian_loss);
+        }
+        let reach = !self.catchments.is_trivial();
+        if reach {
+            self.reach_people(&ranges);
         }
         self.update_models();
 
         // Sense + decide (parallel over partitions), running due mechanisms in order.
         {
+            let (r, f) = (&self.reach, &self.farmland);
             let sense = Sense {
                 grid: &self.grid,
                 inputs: &self.inputs,
                 habitable: &self.habitable,
                 restricted: self.restricted,
-                capacity: &self.capacity,
-                forage_capacity: &self.forage_capacity,
-                farming: self.farmland.active(),
-                suitability: &self.farmland.suitability,
-                climate_stress: &self.farmland.stress,
-                climate_variability: &self.farmland.variability,
-                population: &self.population,
-                effort_sum: &self.effort_sum,
-                farm: &self.farmland.farm,
-                floodplain: &self.farmland.floodplain,
-                flood: &self.farmland.flood,
-                range: &self.farmland.range,
-                pasture: &self.farmland.pasture,
-                range_feeds: &self.farmland.herd_range,
-                pasture_feeds: &self.farmland.herd_pasture,
-                herd_sum: &self.herd_sum,
-                herd_crop_sum: &self.herd_crop_sum,
-                crop_sum: &self.crop_sum,
-                wheat_sum: &self.wheat_sum,
+                capacity: if reach { &r.capacity } else { &self.capacity },
+                forage_capacity: if reach { &r.forage } else { &self.forage_capacity },
+                farming: f.active(),
+                suitability: &f.suitability,
+                climate_stress: &f.stress,
+                climate_variability: &f.variability,
+                population: if reach { &r.population } else { &self.population },
+                effort_sum: if reach { &r.effort_sum } else { &self.effort_sum },
+                farm: if reach { &r.farm } else { &f.farm },
+                floodplain: &f.floodplain,
+                flood: if reach { &r.flood } else { &f.flood },
+                range: &f.range,
+                pasture: &f.pasture,
+                range_feeds: if reach { &r.herd_range } else { &f.herd_range },
+                pasture_feeds: if reach { &r.herd_pasture } else { &f.herd_pasture },
+                herd_sum: if reach { &r.herd_sum } else { &self.herd_sum },
+                herd_crop_sum: if reach { &r.herd_crop_sum } else { &self.herd_crop_sum },
+                crop_sum: if reach { &r.crop_sum } else { &self.crop_sum },
+                wheat_sum: if reach { &r.wheat_sum } else { &self.wheat_sum },
                 models: &self.models,
                 models_for: self.models_for,
+                catchments: &self.catchments,
+                cell_population: &self.population,
+                largest: &r.largest,
                 towns: self.towns,
                 tick: self.tick,
                 seed: self.seed,

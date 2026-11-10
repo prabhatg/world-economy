@@ -12,10 +12,12 @@
 //! the mean over the cell and its occupied neighbors in the previous step, less the
 //! share `loss` used up or kept along the way. Availability therefore falls off about
 //! exponentially along chains of settled cells, and never crosses empty land. Empty
-//! cells hold none. It is a tracer: nothing else reads it, so it never changes what
+//! cells hold none. Where catchments are not cells (#50), it passes between catchments
+//! instead. It is a tracer: nothing else reads it, so it never changes what
 //! people do. The `obsidian` forcing pack says which cells reach which source group.
 
 use crate::agents::{SHARE_ONE, Traits};
+use crate::catchment::Catchments;
 use crate::inputs::Inputs;
 use oikos_grid::Grid;
 
@@ -57,11 +59,12 @@ impl Obsidian {
         !self.sources.is_empty()
     }
 
-    /// One exchange step for every source group, from the cells' populations.
-    pub fn exchange(&mut self, grid: &Grid, population: &[u64], loss: f64) {
+    /// One exchange step for every source group, from the cells' populations, between
+    /// `catchments` ([`pass_between_catchments`]).
+    pub fn exchange(&mut self, grid: &Grid, catchments: &Catchments, population: &[u64], loss: f64) {
         for (x, supplied) in self.available.iter_mut().zip(&self.supplied) {
             self.next.resize(x.len(), 0);
-            pass_down_the_line(grid, population, supplied, loss, x, &mut self.next);
+            pass_between_catchments(grid, catchments, population, supplied, loss, x, &mut self.next);
             std::mem::swap(x, &mut self.next);
         }
     }
@@ -76,6 +79,52 @@ impl Obsidian {
                     *held = 0;
                 }
             }
+        }
+    }
+}
+
+/// [`pass_down_the_line`] between catchments where they are not cells (#50): each
+/// catchment holds what its cells hold (the most any of them does, as cells left empty
+/// hold none), is occupied while any of its cells is, reaches a source while any of its
+/// cells does, and passes to and from its neighboring catchments as a cell to and from
+/// its neighbors; every cell of it then holds its availability. So obsidian falls off
+/// with distance as it did between cells of the catchments' size, whatever the grid.
+pub fn pass_between_catchments(
+    grid: &Grid,
+    catchments: &Catchments,
+    population: &[u64],
+    supplied: &[bool],
+    loss: f64,
+    old: &[u32],
+    new: &mut [u32],
+) {
+    if catchments.is_trivial() {
+        return pass_down_the_line(grid, population, supplied, loss, old, new);
+    }
+    let keep = 1.0 - loss;
+    let blocks = catchments.len();
+    let members = |b: usize| catchments.members(b).iter().map(|&m| m as usize);
+    let held: Vec<u32> = (0..blocks).map(|b| members(b).map(|m| old[m]).max().unwrap_or(0)).collect();
+    let occupied: Vec<bool> = (0..blocks).map(|b| members(b).any(|m| population[m] > 0)).collect();
+    for b in 0..blocks {
+        let value = if !occupied[b] {
+            0
+        } else if members(b).any(|m| supplied[m]) {
+            SHARE_ONE
+        } else {
+            let (mut sum, mut k) = (held[b] as u64, 1u64);
+            let first = catchments.members(b)[0] as usize;
+            for &n in catchments.away(grid, first) {
+                let nb = catchments.of(n as usize);
+                if occupied[nb] {
+                    sum += held[nb] as u64;
+                    k += 1;
+                }
+            }
+            Traits::from_share(keep * (sum as f64 / k as f64) / SHARE_ONE as f64)
+        };
+        for m in members(b) {
+            new[m] = value;
         }
     }
 }
