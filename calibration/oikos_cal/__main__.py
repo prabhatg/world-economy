@@ -550,7 +550,8 @@ def main(argv=None):
     pr.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
     pr.add_argument("--coordinator", help=COORDINATOR)
     pr.add_argument("--reduced", action="store_true", help=REDUCED)
-    pr.add_argument("--set", nargs="*", metavar="NAME=VALUE", help="other parameters held at these values, not their defaults")
+    pr.add_argument("--set", nargs="*", action="extend", metavar="NAME=VALUE",
+                    help="other parameters held at these values, not their defaults (repeat or list them)")
     pr.add_argument("--region", default="m1-swasia", help="the region whose packs and cells the worlds run on (#40)")
     pr.add_argument("--rings", type=int, default=1, help="cells around each site the operators read (#40)")
     pr.add_argument("--out", required=True)

@@ -74,8 +74,14 @@ def test_the_record_summaries(problem):
     assert ss[0].observed > 0.04 and all(t.observed < -0.03 for t in ss[3:]), "wild, then domestic sizes"
     first = problem.names.index(ss[0].name)
     assert problem.groups[-1].indices == list(range(first, first + 6)) and problem.groups[-1].dof == 6
-    assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
-                                  "log-likelihood obsidian", "people 3000 BCE"]
+    assert problem.names[-6:-2] == ["log-likelihood radiocarbon", "log-likelihood domestication",
+                                    "log-likelihood obsidian", "people 3000 BCE"]
+    # Egypt's domestic animals (#51, ADR-0113) are recorded with every run but not judged.
+    assert problem.names[-2:] == ["Egypt domestic animals 6200-5000 BCE share of assemblages, not judged",
+                                  "Egypt domestic animals 5000-3900 BCE share of assemblages, not judged"]
+    assert not any(t.name.startswith("Egypt") for t in problem.targets)
+    np.testing.assert_allclose(problem.stock.observed, [1.0, 1.0])
+    assert list(problem.stock.counts) == [5, 10]
 
 
 def test_the_wheats_leave_out_the_villages_the_model_cannot_farm(problem):
@@ -129,7 +135,7 @@ def test_a_round_can_leave_out_the_house_size_record(problem):
     assert len(kept) < len(problem.targets), "the full problem judges house Ginis"
     assert [t.name for t in without.targets] == kept and without.inequality is None
     assert [g.indices for g in without.groups] == [g.indices for g in problem.groups]
-    assert without.names == kept + m1.DIAGNOSTICS
+    assert without.names == kept + m1.DIAGNOSTICS + problem.names[-2:]
     with pytest.raises(ValueError, match="radiocarbon"):
         m1.Problem(leave_out=("radiocarbon",))
 

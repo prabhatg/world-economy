@@ -59,6 +59,14 @@ the domestic share of the bones the people around each assemblage discarded; jud
 together, discrepancy 0.015 on each (sex ratios, regional sizes, bones measured, hunting
 choices), with the endpoints' shared uncertainty in the observation covariance.
 
+Domestic animals in Egypt (#51) are each era's share of the Egyptian assemblages of
+Linseele et al. (2014) holding bones of domestic animals, eras split at 5,000 BCE (the
+6th millennium's mobile herders, the 5th's farming villages), against the probability
+that each holds some, given its bones and the domestic share of the bones discarded around
+it (`stock.Operator`). Recorded with every run, not judged: no world at the calibrated
+defaults brings domestic animals to Egypt, so judging them would rule out every world
+until a mechanism does.
+
 The house-size Ginis are judged since the maintainer's decision of 2026-11-03 (#43);
 round 10's first waves left them out (ADR-0077).
 
@@ -80,7 +88,7 @@ import h3
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, fauna, lesions as lesions_record, pack, rachis, wheats as wild_wheats
+from oikos_data import DATA, archaeobotany, egypt, fauna, lesions as lesions_record, pack, rachis, wheats as wild_wheats
 from oikos_data import inequality as inequality_pipeline
 from oikos_data import region as regions
 from oikos_data import obsidian as obsidian_pipeline
@@ -88,8 +96,8 @@ from oikos_data import radiocarbon as dates_pipeline
 from oikos_data import sites as sites_pipeline
 from oikos_data.hydrology import FLOWING
 
-from . import (domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, targets,
-               villages, zones)
+from . import (domestication, herds, inequality, lesions, obsidian, onset, radiocarbon, record, sites, stock,
+               targets, villages, zones)
 
 __all__ = ["PACKS", "END", "DISCREPANCY", "OPTIONAL", "packs", "pack_refs", "work_unit", "Problem", "evaluate"]
 
@@ -135,6 +143,7 @@ RIVER_RINGS = 2  # cells from a perennial river, at resolution 5 (`river_reach`)
 BURIED = (-7_500, -5_500)  # calendar years: all buried before, all in sight after
 SITE_EDGES = tuple(range(-6_500, END + 1, 500))
 HERD_EDGES = (-8_500, -7_500, -7_000, -6_500, -6_000)  # sheep size eras: wild, the size falls, domestic
+STOCK_ERAS = ((-6_200, -5_000), (-5_000, -3_900))  # Egypt's domestic animals: the 6th and 5th millennia BCE
 OBSIDIAN_EDGES = (-250.0, 0.0, 250.0)  # km nearer the Cappadocian than the eastern sources
 OBSIDIAN_ERA = -6_900
 OBSIDIAN_MIN_ARTEFACTS = 3
@@ -289,6 +298,8 @@ class Problem:
         self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true, rings=rings)
         assemblages = pq.read_table(io.BytesIO(fauna.build_table(r, offline=True))).to_pydict()
         self.herds = herds.Operator(assemblages, self.cells, self.radiocarbon.settings.true, HERD_EDGES, rings=rings)
+        self.stock = stock.Operator(egypt.load()[0], self.cells, self.radiocarbon.settings.true, STOCK_ERAS,
+                                    rings=rings)
         self.inequality = None
         if "inequality" not in leave_out:
             houses = pq.read_table(io.BytesIO(inequality_pipeline.build_table(r, offline=True))).to_pydict()
@@ -324,7 +335,7 @@ class Problem:
         self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3]),
                        self.eras[4].group(first[4]), self.eras[5].group(first[5]), self.eras[6].group(first[6]),
                        self.eras[7].group(first[7]), self.eras[9].group(first[9])]
-        self.names = [t.name for t in self.targets] + DIAGNOSTICS
+        self.names = [t.name for t in self.targets] + DIAGNOSTICS + [f"{n}, not judged" for n in self.stock.names]
 
     def zones(self):
         """The reduced record's zones (#47): every cell set the operators read, the radiocarbon
@@ -332,7 +343,7 @@ class Problem:
         if getattr(self, "_zones", None) is not None:
             return self._zones
         ops = [self.domestication, self.sites, self.villages, self.obsidian, self.onset, self.lesions, self.herds,
-               *self.wheats]
+               *self.wheats, self.stock]
         if self.inequality is not None:
             ops.append(self.inequality)
         sets = [np.arange(len(self.cells))] + [s for op in ops for s in op.cells()]
@@ -346,7 +357,7 @@ class Problem:
         return np.concatenate([summaries, [self.radiocarbon.log_likelihood(activity.visible(0)),
                                            self.domestication.log_likelihood(activity),
                                            self.obsidian.log_likelihood(activity),
-                                           activity.people[:, -1].sum() / 100]])
+                                           activity.people[:, -1].sum() / 100], self.stock.expected(activity)])
 
     def simulate(self, params, seed):
         """Outputs of the world with parameter overrides `params` (values, not u)."""

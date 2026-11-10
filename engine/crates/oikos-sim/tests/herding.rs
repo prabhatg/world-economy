@@ -339,6 +339,57 @@ fn herders_cross_a_desert_whose_wadis_feed_their_flocks() {
 }
 
 #[test]
+fn herds_move_toward_the_domestic_share_of_the_herds_around_them() {
+    // Animals pass along social ties, as gifts, bridewealth and loans that pool the risk
+    // of losing a herd (Aktipis, Cronk and de Aguiar 2011), so a band's stock takes on
+    // the domestic share of the herds of the people it is tied to (#51).
+    let c = Cultivation::from_params(&Params { herd_exchange: 0.2, ..Params::default() });
+    assert_eq!(c.exchange_stock(0.1, 0.9), 0.1 + 0.2 * (0.9 - 0.1));
+    assert_eq!(c.exchange_stock(0.9, 0.1), 0.9 - 0.2 * 0.8, "wild animals come too");
+    assert_eq!(c.exchange_stock(0.0, 1.0), 0.2, "a band without a herd gets animals to start one");
+    let off = Cultivation::from_params(&Params { herd_exchange: 0.0, ..Params::default() });
+    assert_eq!(off.exchange_stock(0.1, 0.9), 0.1, "off at zero");
+    let all = Cultivation::from_params(&Params { herd_exchange: 1.0, ..Params::default() });
+    assert_eq!(all.exchange_stock(0.1, 0.9), 0.9, "never past what it sees");
+    assert_eq!(Params::default().herd_exchange, 0.0, "off until a profile weighs it");
+}
+
+#[test]
+fn domestic_animals_pass_to_neighbors_where_no_wild_ones_lived() {
+    // Wild herds range over a core of cells; around it lies steppe whose grass would feed
+    // domestic herds but where no wild ones lived. Nobody moves (no fission or
+    // dispersal), so only what passes between people can carry herding beyond the core:
+    // learning alone carries the practice but no animals to practise it on; exchange
+    // carries the animals (#51).
+    let h3 = h3_cells();
+    let g = Grid::from_base_cell(22, 3).unwrap();
+    let core = |c: usize| g.neighbors(0).contains(&(c as u32)) || c == 0;
+    let (geo, c, k) = (geometry_pack(&h3), climate_pack(&h3), caprines_pack(&h3, core));
+    let id = blake3::hash(&geo).to_hex().to_string();
+    let beyond = |cell: u32| !core(cell as usize);
+    let run = |herd_exchange: f64| {
+        let p = Params {
+            initial_occupancy: 1.0,
+            fission_probability: 0.0,
+            dispersal_probability: 0.0,
+            neighbor_learning: 1.0,
+            herd_selection: 0.1,
+            herd_exchange,
+            ..herders()
+        };
+        let mut w = World::with_inputs(WorldConfig::geometry(&id), 2, p, inputs(&[&geo, &c, &k])).unwrap();
+        w.run_years(2_000, 2, 2_000);
+        (herding_in(&w, |c| core(c as usize)), herding_in(&w, beyond))
+    };
+    let ((bred, _), (alone, _)) = run(0.0);
+    assert!(bred > 100, "{bred} herd in the core");
+    assert_eq!(alone, 0, "without exchange nobody beyond the core herds");
+    let (_, (exchanged, domestic)) = run(0.2);
+    assert!(exchanged > 1_000, "{exchanged} herd beyond the core with exchange");
+    assert!(domestic > 0.5, "their herds are domestic: {domestic}");
+}
+
+#[test]
 fn herding_is_partition_independent_and_restores() {
     let h3 = h3_cells();
     let (g, c, k) = (geometry_pack(&h3), climate_pack(&h3), caprines_pack(&h3, |i| i % 3 != 0));

@@ -83,6 +83,38 @@ fn a_rainless_floodplain_feeds_farmers_of_domestic_crops_only() {
 }
 
 #[test]
+fn floods_water_grazing_for_domestic_herds_where_rain_grows_none() {
+    // Grass grows on the land a river floods once the water recedes, so flocks graze a
+    // desert's floodplain (#51), as the Nile's basins were grazed in the dry season
+    // (Butzer 1976). Wild sheep and goats lived in the uplands, not there: the wild
+    // herds' range does not grow.
+    let h3 = h3_cells();
+    let (g, h) = (geometry_pack(&h3), hydrology_pack(&h3, 0.5));
+    let (desert, steppe) = (climate_pack(&h3, |_| 0), climate_pack(&h3, |_| 200));
+    let p = Params {
+        floodplain_grazing: 0.8,
+        pasture_precip_min: 150.0,
+        pasture_precip_full: 250.0,
+        wadi_share: 0.0,
+        ..Params::default()
+    };
+    let dry = Farmland::new(&inputs(&[&g, &desert, &h]), -6_000, &p, h3.len());
+    assert!((dry.pasture[0] - 0.5 * 0.8).abs() < 1e-12, "{}", dry.pasture[0]);
+    assert_eq!(dry.range[0], 0.0);
+    // Rain grows half its grazing already; floods add theirs on the rest.
+    let wet = Farmland::new(&inputs(&[&g, &steppe, &h]), -6_000, &p, h3.len());
+    assert!((wet.pasture[0] - (0.5 + 0.5 * 0.5 * 0.8)).abs() < 1e-12, "{}", wet.pasture[0]);
+    let off = Farmland::new(
+        &inputs(&[&g, &desert, &h]),
+        -6_000,
+        &Params { floodplain_grazing: 0.0, ..p },
+        h3.len(),
+    );
+    assert_eq!(off.pasture[0], 0.0, "off: rain alone, as before");
+    assert_eq!(Params::default().floodplain_grazing, 0.0, "off until a profile weighs it");
+}
+
+#[test]
 fn floodplains_add_only_what_rain_does_not_already_grow() {
     let h3 = h3_cells();
     let (g, c, h) = (geometry_pack(&h3), climate_pack(&h3, |_| 400), hydrology_pack(&h3, 0.5));

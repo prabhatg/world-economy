@@ -275,7 +275,17 @@
     away (Kuper and Kropelin 2006), which burial can hide but not tell apart. Since
     ADR-0098 the lakes a modern work filled (the Bitter Lakes, by the Suez Canal) are
     out of the hydrology pack; the Delta's lagoons stay, natural if Holocene, and their
-    shores still give foragers the aquatic bonus from 12,000 BCE.
+    shores still give foragers the aquatic bonus from 12,000 BCE. Since ADR-0113 (#51)
+    Egypt's first domestic animals are recorded (Linseele et al. 2014): every assemblage
+    of the 6th and 5th millennia BCE holds some, and no world at the calibrated defaults
+    brings any to Africa. Animals passed along social ties and grazing on floodplains
+    do not either; with need at 0.8 as well, herds reach the Nile and the Fayum in the
+    5th millennium, but the Levant's sheep turn domestic a millennium early. How did
+    the 6th millennium's desert hunters come to keep a few goats, a food reserve on the
+    hoof, and why does the model's herding, which follows land and need, never start
+    there? And the crops: the model's Mediterranean coast of Egypt domesticates its own
+    wild barley from about 8,000 BCE, where GBIF records wild barley in Egypt only near
+    Mersa Matruh and Egypt's crops came from Southwest Asia (#51).
 41. Did the 8.2 ka event shape Southwest Asia's Neolithic, and how did people ride it out
     (ADR-0107)? The model takes its decadal anomalies from Greenland (NGRIP), which
     dates the event but gives one index for the whole region, with decadal noise mostly

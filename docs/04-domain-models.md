@@ -53,7 +53,12 @@ enters the model, and the starting mechanisms.
   still feed flocks along their wadis, which collect runoff from the land around them;
   and need can drive herding as it drives cultivation, through domestic stock, so
   crowded herders specialize where nothing else feeds them, though the M1 record keeps
-  that hypothesis off for now (ADR-0092).
+  that hypothesis off for now (ADR-0092). Two more hypotheses wait for a profile, both
+  off (ADR-0113, #51): animals pass along kinship, marriage and friendship ties as seed
+  does, gifts and loans that pool the risk of losing a herd, so bands beside herders
+  can start herds of their own where no wild animals lived; and floods water grazing on
+  the land a river floods. Egypt's first domestic animals, among the desert hunters of
+  the 6th millennium BCE, are the record that weighs them.
 - Domestication as a co-evolutionary process (selection intensity × cultivation
   effort × time), not a switch.
   *Implemented (M1):* bands carry cultivation effort and the domestic share of their

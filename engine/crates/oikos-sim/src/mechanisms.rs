@@ -1199,6 +1199,16 @@ impl Mechanism for Inundation {
 ///   ([`Cultivation::share_effort`]). Management breeds herds domestic, from wild animals
 ///   only where they range, and gene flow pulls them back only there
 ///   ([`Cultivation::domesticate_herd`]).
+/// - **Stock exchange** (#51). Animals pass between people as seed does: herders give,
+///   lend and marry with them along kinship, marriage and friendship ties, which pool the
+///   risk of losing a herd to drought or disease (Aktipis, Cronk and de Aguiar 2011). So
+///   a band replaces `herd_exchange` of its stock each period with animals at the domestic
+///   share of the herds of the people it is tied to: its cell's and, by
+///   `neighbor_learning`, the cells around it, by the effort each herds
+///   ([`Cultivation::exchange_stock`]). A band that herds nothing takes animals too, and
+///   with domestic ones it can graze pasture where no wild herds lived, so hunters beside
+///   herders may start to keep a few, as Egypt's desert hunters did before anyone farmed
+///   there (Linseele et al. 2014). Off by default, a hypothesis for calibration to weigh.
 ///
 /// Cultivation and herding feed back through carrying capacity
 /// ([`crate::environment::capacity_of`]): domestic crops and herds feed more people per
@@ -1228,6 +1238,7 @@ pub struct Cultivation {
     pub herd_selection: f64,
     pub herd_wild_frequency: f64,
     pub herd_introgression: f64,
+    pub herd_exchange: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -1258,6 +1269,7 @@ impl Cultivation {
             herd_selection: p.herd_selection,
             herd_wild_frequency: p.herd_wild_frequency,
             herd_introgression: p.herd_introgression,
+            herd_exchange: p.herd_exchange,
             after: vec!["aggregation"],
         }
     }
@@ -1432,6 +1444,29 @@ impl Cultivation {
         oikos_math::finite(d + gain - loss).clamp(0.0, 1.0)
     }
 
+    /// The domestic share of the herds of the people a band in `cell` is tied to (#51): its
+    /// cell's and, by `neighbor_learning`, the cells around it (catchments, #50), by the
+    /// effort each herds. None if nobody herds there.
+    fn herds_seen(&self, sense: &Sense<'_>, cell: u32) -> Option<f64> {
+        let at = |c: u32| (sense.herd_sum[c as usize] as f64, sense.herd_crop_sum[c as usize] as f64);
+        let (mut herded, mut domestic) = at(cell);
+        if self.neighbor_learning != 0.0 {
+            for &c in sense.catchments.away(sense.grid, cell as usize) {
+                let (h, d) = at(c);
+                herded += self.neighbor_learning * h;
+                domestic += self.neighbor_learning * d;
+            }
+        }
+        (herded > 0.0).then(|| oikos_math::finite(domestic / herded))
+    }
+
+    /// A herd's domestic share after stock exchange (#51): `herd_exchange` of a band's
+    /// stock is replaced by animals at the share `seen` among the herds of those it is tied
+    /// to. A band that herds nothing takes animals too, to start a herd with.
+    pub fn exchange_stock(&self, d: f64, seen: f64) -> f64 {
+        oikos_math::finite(d + self.herd_exchange * (seen - d)).clamp(0.0, 1.0)
+    }
+
     /// The share of herding effort among the people a band in `cell` learns from: its
     /// cell's and, by `neighbor_learning`, the cells around it (#37; catchments where cells
     /// are not their own, #50). None if it sees nobody.
@@ -1535,6 +1570,7 @@ impl Mechanism for Cultivation {
         let mut example: Option<(usize, Option<f64>)> = None; // per cell, only where needed
         let mut herders: Option<(usize, Option<f64>)> = None; // likewise for herding
         let mut seeds: Option<(usize, Option<[f64; 3]>)> = None; // likewise for seed exchange
+        let mut stock: Option<(usize, Option<f64>)> = None; // likewise for stock exchange
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
@@ -1555,6 +1591,17 @@ impl Mechanism for Cultivation {
                 Traits::share(traits.herd_domestication),
                 self.pressure(sense.population[cell], sense.forage_capacity[cell]),
             );
+            // Animals from herders nearby (#51), which may start a herd where none is kept.
+            let traded = if self.herd_exchange == 0.0 {
+                None
+            } else {
+                let seen = match stock {
+                    Some((at, seen)) if at == cell => seen,
+                    _ => self.herds_seen(sense, cell as u32),
+                };
+                stock = Some((cell, seen));
+                seen
+            };
             if target == 0.0
                 && herd_target == 0.0
                 && traits.cultivation == 0
@@ -1562,6 +1609,7 @@ impl Mechanism for Cultivation {
                 && traits.herding == 0
                 && traits.herd_domestication == 0
                 && traits.wheat_domestication == [0; 2]
+                && traded.is_none_or(|seen| seen == 0.0)
             {
                 continue;
             }
@@ -1619,10 +1667,10 @@ impl Mechanism for Cultivation {
                     cultivation,
                     domestication: Traits::toward(traits.domestication, domestic),
                     herding,
-                    herd_domestication: Traits::toward(
-                        traits.herd_domestication,
-                        self.domesticate_herd(dh, h, sense.range[cell]),
-                    ),
+                    herd_domestication: Traits::toward(traits.herd_domestication, {
+                        let bred = self.domesticate_herd(dh, h, sense.range[cell]);
+                        traded.map_or(bred, |seen| self.exchange_stock(bred, seen))
+                    }),
                     wheat_domestication: [EMMER, EINKORN]
                         .map(|c| Traits::toward(traits.wheat_domestication[c], wheats[c])),
                     ..traits

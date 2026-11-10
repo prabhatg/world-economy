@@ -648,6 +648,20 @@ status = "placeholder"
 note = "A judgment, the crop's calibrated introgression; herds kept beyond the wild animals' range keep their domestic traits."
 sources = []
 
+[params.herd_exchange]
+group = "cultivation"
+unit = "1/period"
+description = "Share of a band's stock replaced each period by animals from the herds of the people it is tied to: its cell's and, by neighbor_learning, the cells around it, by the effort each herds (#51). Bands that herd nothing take animals too, to start a herd."
+kind = { type = "probability" }
+default = 0.0
+prior = { dist = "log_uniform", lo = 0.001, hi = 0.5 }
+status = "placeholder"
+note = "Off until a profile weighs it against the M1 record (#51). Herders give, lend and marry with animals along kinship, marriage and friendship ties, which pool the risk of losing a herd to drought or disease (the Maasai's osotua gifts: Aktipis, Cronk and de Aguiar 2011), and hunters took a few animals into their own economy that way: Egypt's first domestic animals, from the 6th millennium BCE, are a handful of bones among the game of mobile desert groups, a 'food reserve on the hoof' without farming (Linseele et al. 2014). Without it, domestic animals reach land where no wild sheep or goats lived only with people who move there."
+sources = [
+  { citation = "Aktipis, C.A., Cronk, L., de Aguiar, R. (2011). Risk-pooling and herd survival: an agent-based model of a Maasai gift-giving system. Human Ecology 39, 131-140.", doi = "10.1007/s10745-010-9364-9" },
+  { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"
@@ -717,6 +731,20 @@ note = "Until calibrated, the same as rain-fed fields at full suitability. Flood
 sources = [
   { citation = "Butzer, K.W. (1976). Early Hydraulic Civilization in Egypt: A Study in Cultural Ecology. University of Chicago Press." },
   { citation = "Adams, R.McC. (1981). Heartland of Cities: Surveys of Ancient Settlement and Land Use on the Central Floodplain of the Euphrates. University of Chicago Press." },
+]
+
+[params.floodplain_grazing]
+group = "cultivation"
+unit = "1"
+description = "Share of the land a river floods (the hydrology pack's floodplain_fraction) that grazes domestic sheep and goats whatever the rain, on the land rain does not already graze (#51). Wild herds' range does not grow: they lived in the uplands. 0: grazing from rain alone."
+kind = { type = "probability" }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Off until a profile weighs it against the M1 record (#51). Grass grows on the flood's silt as the water recedes, and herders grazed the Nile's basins and the Delta's marsh edges in the dry season (Butzer 1976); Egypt's 5th-millennium BCE villages on the Nile and the Fayum kept sheep, goats and cattle in numbers where rain grows no grazing at all (Linseele et al. 2014). Without it, the model's Nile valley grazes no herds."
+sources = [
+  { citation = "Butzer, K.W. (1976). Early Hydraulic Civilization in Egypt: A Study in Cultural Ecology. University of Chicago Press." },
+  { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
 ]
 
 [params.humid_period_scale]

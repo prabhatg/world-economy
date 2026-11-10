@@ -303,12 +303,19 @@ impl Year<'_> {
     }
 
     /// The cell's (range, pasture) for sheep and goats as shares of its dry land (#37):
-    /// pasture where the rain grows enough grazing ([`pasture_share`]), and of it the
-    /// range of wild herds, its upland share.
+    /// pasture where the rain grows enough grazing ([`pasture_share`]) and, on the rest,
+    /// `floodplain_grazing` of the land its rivers flood (#51); the range of wild herds is
+    /// the rain's pasture on its upland share.
     fn grazing(&self, c: usize, precip_mm: f64, p: &Params) -> (f64, f64) {
-        let pasture = pasture_share(precip_mm, p);
+        let rain = pasture_share(precip_mm, p);
         let upland = self.upland.as_ref().and_then(|f| f.get(0, c)).unwrap_or(0.0).clamp(0.0, 1.0);
-        (upland * pasture, pasture)
+        let flooded = match &self.floodplain {
+            Some(f) if p.floodplain_grazing > 0.0 => {
+                f.get(0, c).unwrap_or(0.0).clamp(0.0, 1.0) * p.floodplain_grazing
+            }
+            _ => 0.0,
+        };
+        (upland * rain, oikos_math::finite(rain + (1.0 - rain) * flooded))
     }
 
     /// Whether the cell holds water to fish and gather from: a perennial river, a lake shore

@@ -65,12 +65,14 @@ pub struct Params {
     pub perennial_discharge: f64,
     pub humid_period_scale: f64,
     pub floodplain_yield: f64,
+    pub floodplain_grazing: f64,
     pub herding_weight: f64,
     pub herd_pressure_weight: f64,
     pub herd_density: f64,
     pub wild_herd_ratio: f64,
     pub herd_selection: f64,
     pub herd_introgression: f64,
+    pub herd_exchange: f64,
     pub emmer_selection_ratio: f64,
     pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
@@ -178,12 +180,14 @@ impl Params {
             perennial_discharge: real("perennial_discharge")?,
             humid_period_scale: real("humid_period_scale")?,
             floodplain_yield: real("floodplain_yield")?,
+            floodplain_grazing: real("floodplain_grazing")?,
             herding_weight: real("herding_weight")?,
             herd_pressure_weight: real("herd_pressure_weight")?,
             herd_density: real("herd_density")?,
             wild_herd_ratio: real("wild_herd_ratio")?,
             herd_selection: real("herd_selection")?,
             herd_introgression: real("herd_introgression")?,
+            herd_exchange: real("herd_exchange")?,
             emmer_selection_ratio: real("emmer_selection_ratio")?,
             einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
@@ -424,6 +428,10 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("climate_anomaly_precip", Restore::Value(0.0)),
     // #50: every cell is its own catchment.
     ("catchment_radius_km", Restore::Value(0.0)),
+    // #51: a band's animals came from its own herd alone.
+    ("herd_exchange", Restore::Value(0.0)),
+    // #51: rain alone grew grazing.
+    ("floodplain_grazing", Restore::Value(0.0)),
 ];
 
 impl Params {

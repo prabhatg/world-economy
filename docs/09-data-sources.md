@@ -83,6 +83,11 @@ Anthropology 143: 121-133, doi:10.1002/ajpa.21301; ADR-0086): 2 of 200 Natufian 
 Wiley's copyright and is not stored; its counts and sample by site are facts it reports,
 transcribed with its citation into the manifest by the maintainer's decision
 (2026-11-04, #42).
+Domestic animals in Egypt come from Linseele et al. (2014, PLoS ONE 9: e108517, CC BY 4.0,
+checked 2026-11-10; #51): the domestic and hunted mammal bones of 15 dated assemblages of
+the 6th and 5th millennia BCE in the Western and Eastern Deserts, the Fayum and the Nile
+valley (Tables 3 and 6), transcribed into the manifest; sites are located by their
+radiocarbon samples in p3k14c.
 
 ## Forcing (inputs)
 

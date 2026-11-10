@@ -192,7 +192,11 @@ for einkorn. `runs/m1/f8/` judges the record at H3 resolution 6 (ADR-0111):
 obsidian loss rescaled, operators reading three rings; `profile-r6-rings1.json` the rescaled
 world read at one ring. None is consistent; resolution 5 fits better. `runs/m1/f50/compare-r6.json`
 rejudges resolution 6 with land and settlement counted per catchment (ADR-0112), at the
-defaults and three rings, beside resolution 5's row: every world consistent, -85.2 against -80.9. The onset record's tables are downloaded by hand (`data/README.md`); without
+defaults and three rings, beside resolution 5's row: every world consistent, -85.2 against -80.9.
+`runs/m1/f51/profile-need-with-exchange.json` profiles need (herd_pressure_weight 0, 0.4,
+0.8) with stock exchange 0.2, floodplain grazing 1 and wadis at the top of their prior
+(ADR-0113): all consistent, -81.2 to -88.4; herds reach Egypt's 5th-millennium sites only
+at 0.8, which turns the Levant's sheep domestic a millennium early. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are
