@@ -283,10 +283,13 @@
     5th millennium, but the Levant's sheep turn domestic a millennium early. A reserve of
     animals kept wherever any grazing allows (ADR-0114) brings them there without that
     cost (0.79 of the 5th millennium's assemblages at 0.2), but the 6th millennium's
-    desert assemblages still show them at 0.19 at most. How did
-    the 6th millennium's desert hunters come to keep a few goats, a food reserve on the
-    hoof, and why does the model's herding, which follows land and need, never start
-    there? And the crops: the model's Mediterranean coast of Egypt domesticates its own
+    desert assemblages still show them at 0.19 at most. Herders who find no room next
+    door and travel on to the nearest land that can take them (ADR-0115), as the
+    desert groups moved 150-200 km, bring them to Djara and Sodmein: at 200 km the 6th
+    millennium's assemblages show them at 0.46-0.60 and the 5th's at 0.99, every world
+    consistent; Farafra's Hidden Valley, deepest in the desert, stays without. Is the
+    rest the desert foragers' own wide ties, along which a few animals passed (Hidden
+    Valley's hunters kept a few goats far from any herders' new home)? And the crops: the model's Mediterranean coast of Egypt domesticates its own
     wild barley from about 8,000 BCE, while Egypt's earliest crops (Merimde, the Fayum,
     the 5th millennium BCE) came from Southwest Asia with emmer, which never grew wild
     there. Wild barley is native to Egypt's coast (Euro+Med; Boulos's checklist), though

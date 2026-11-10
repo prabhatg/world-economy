@@ -769,12 +769,22 @@ impl Mechanism for Fission {
 /// cells (#50), crowding is the catchment's, the group goes to a neighboring catchment
 /// ([`Catchments::away`]), and each cell buds with `probability` times its share of the
 /// catchment's people, so a catchment buds as often as a cell did.
+///
+/// Herders travel farther (#51, ADR-0115): a band whose group cannot go to the least
+/// crowded neighbor goes instead, with the chance that it lives by domestic herds (its
+/// herding effort times its herd's domestic share), to the nearest place within `reach_km`
+/// over habitable land, from catchment to neighboring catchment, that is less crowded and
+/// can feed the group and its flocks, the least crowded of the nearest such. People move as short a way
+/// as will do (intervening opportunities, Stouffer 1940), and herders cross land that
+/// feeds them nothing to reach grazing beyond, as Egypt's desert groups moved 150-200 km
+/// between the oases and the Nile (Linseele et al. 2014). `reach_km` 0 switches it off.
 #[derive(Clone, Debug)]
 pub struct Dispersal {
     pub period_ticks: u64,
     pub crowding: f64,
     pub probability: f64,
     pub fraction: f64,
+    pub reach_km: f64,
     /// (wild_yield_ratio, wild_herd_ratio), for [`Sense::capacity_joined`].
     pub yields: (f64, f64),
     pub after: Vec<&'static str>,
@@ -810,16 +820,89 @@ impl Dispersal {
         (nd as u128 * (k as u128) < n as u128 * kd as u128).then_some((dest, kd))
     }
 
+    /// How many steps from catchment to catchment `reach_km` spans (0: off, or where the
+    /// grid's spacing is unknown).
+    pub fn reach(&self, step_km: f64) -> usize {
+        if self.reach_km <= 0.0 || step_km <= 0.0 {
+            return 0;
+        }
+        (self.reach_km / step_km + 0.5) as usize
+    }
+
+    /// Where a group of `take` people leaving `cell` goes within `reach` steps over habitable
+    /// land, from catchment to neighboring catchment: the least crowded, by the capacities
+    /// `capacity(c)`, of the nearest ring's places less crowded than `cell` with room for
+    /// it. `search` holds the catchments seen and the rings, reused between groups.
+    fn farther(
+        &self,
+        sense: &Sense<'_>,
+        (cell, reach, take): (u32, usize, u64),
+        capacity: impl Fn(u32) -> u64,
+        search: &mut Search,
+    ) -> Option<u32> {
+        let (n, k) = (sense.population[cell as usize] as u128, sense.capacity[cell as usize] as u128);
+        let trivial = sense.catchments.is_trivial();
+        let key = |c: u32| if trivial { c } else { sense.catchments.of(c as usize) as u32 };
+        let Search { seen, ring, next } = search;
+        seen.clear();
+        seen.push(key(cell));
+        ring.clear();
+        ring.push(cell);
+        for _ in 0..reach {
+            // Each catchment of the next ring once, at its first cell reached (in order).
+            next.clear();
+            next.extend(ring.iter().flat_map(|&c| habitable_away(sense, c)));
+            next.sort_unstable();
+            next.dedup();
+            let before = seen.len();
+            next.retain(|&c| {
+                let b = key(c);
+                if seen[..before].binary_search(&b).is_ok() || seen[before..].contains(&b) {
+                    return false;
+                }
+                seen.push(b);
+                true
+            });
+            if next.is_empty() {
+                return None;
+            }
+            seen.sort_unstable();
+            std::mem::swap(ring, next);
+            let mut best: Option<(u32, u128, u128)> = None;
+            for &c in ring.iter() {
+                let (nc, kc) = (sense.population[c as usize], capacity(c));
+                let room = take <= kc.saturating_sub(nc);
+                let (nc, kc) = (nc as u128, kc as u128);
+                if room && nc * k < n * kc && best.is_none_or(|(_, bn, bk)| nc * bk < bn * kc) {
+                    best = Some((c, nc, kc));
+                }
+            }
+            if let Some((c, _, _)) = best {
+                return Some(c);
+            }
+        }
+        None
+    }
+
     pub fn from_params(p: &Params) -> Dispersal {
         Dispersal {
             period_ticks: p.period_ticks,
             crowding: p.dispersal_crowding,
             probability: p.dispersal_probability,
             fraction: p.dispersal_fraction,
+            reach_km: p.herder_reach_km,
             yields: (p.wild_yield_ratio, p.wild_herd_ratio),
             after: vec!["fission"],
         }
     }
+}
+
+/// Buffers of [`Dispersal`]'s search beyond the neighbors, reused within a tile.
+#[derive(Default)]
+struct Search {
+    seen: Vec<u32>,
+    ring: Vec<u32>,
+    next: Vec<u32>,
 }
 
 impl Mechanism for Dispersal {
@@ -842,6 +925,8 @@ impl Mechanism for Dispersal {
         let go = Probability::from_f64(self.probability);
         let rng = Philox4x32::new(sense.seed, Stream::Dispersal);
         let t = sense.tick.0;
+        let reach = if sense.farming { self.reach(sense.catchments.step_km()) } else { 0 };
+        let mut search = Search::default();
         // Tiles hold whole cells; agents spawned this step lie past the tile.
         let mut i = tile.start;
         while i < tile.end {
@@ -869,9 +954,24 @@ impl Mechanism for Dispersal {
                         let traits = part.agents.traits(a);
                         self.target(sense, cell, |c| sense.capacity_joined(c, take, &traits, self.yields))
                     });
-                    if let Some((dest, kd)) = target
-                        && take <= kd.saturating_sub(sense.population[dest as usize])
-                    {
+                    let near = target
+                        .filter(|&(dest, kd)| take <= kd.saturating_sub(sense.population[dest as usize]))
+                        .map(|(dest, _)| dest);
+                    let dest = near.or_else(|| {
+                        let herds = Traits::share(part.agents.herding[a])
+                            * Traits::share(part.agents.herd_domestication[a]);
+                        if reach == 0 || herds <= 0.0 {
+                            return None;
+                        }
+                        let id = part.agents.id[a].0;
+                        if !Probability::from_f64(herds).hit(rng.u32(id, t, 1, 0)) {
+                            return None;
+                        }
+                        let traits = part.agents.traits(a);
+                        let capacity = |c: u32| sense.capacity_joined(c, take, &traits, self.yields);
+                        self.farther(sense, (cell, reach, take), capacity, &mut search)
+                    });
+                    if let Some(dest) = dest {
                         part.agents.weight[a] = w - take;
                         let traits = part.agents.traits(a);
                         part.spawn(cell, dest, take, traits);

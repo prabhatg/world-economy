@@ -676,6 +676,21 @@ sources = [
   { citation = "Dahl, G., Hjort, A. (1976). Having Herds: Pastoral Herd Growth and Household Economy. Stockholm Studies in Social Anthropology 2. University of Stockholm." },
 ]
 
+[params.herder_reach_km]
+group = "migration"
+unit = "km"
+description = "How far a group of herders leaving a crowded place travels to find land that can take it and its flocks, when no neighboring place can (#51): over habitable land, from catchment to neighboring catchment, the nearest place with room within this distance, the least crowded of those as near. A band goes so with the chance that it lives by domestic herds (its herding effort times its herd's domestic share). 0: groups go to neighboring places only."
+kind = { type = "real", min = 0.0, max = 400.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 250.0 }
+status = "placeholder"
+note = "Off until a profile weighs it against the M1 record (#51). Egypt's desert groups of the 6th millennium BCE, who kept the first sheep and goats, were highly mobile: Djara's people moved between the plateau and the Nile valley, about 150 km, and the Farafra sites hold things from the valley, about 200 km away (Linseele et al. 2014). People move as short a way as will do, to the nearest opportunity (intervening opportunities, Stouffer 1940), and herders travel far for grazing when the land near them is taken (Dahl and Hjort 1976). The prior's top is a little beyond the 200 km of the record."
+sources = [
+  { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
+  { citation = "Stouffer, S. A. (1940). Intervening opportunities: a theory relating mobility and distance. American Sociological Review 5(6), 845-867.", doi = "10.2307/2084520" },
+  { citation = "Dahl, G., Hjort, A. (1976). Having Herds: Pastoral Herd Growth and Household Economy. Stockholm Studies in Social Anthropology 2. University of Stockholm." },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"

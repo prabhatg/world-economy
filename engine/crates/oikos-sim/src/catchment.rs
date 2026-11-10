@@ -37,6 +37,8 @@ pub struct Catchments {
     /// Per cell, its range in `away` holding the cells of [`Catchments::away`].
     away_offsets: Vec<u32>,
     away: Vec<u32>,
+    /// The spacing of neighboring catchments' centers, km (0 without cell areas).
+    step_km: f64,
 }
 
 impl Catchments {
@@ -45,14 +47,18 @@ impl Catchments {
         let n = grid.len();
         let circle = std::f64::consts::PI * radius_km * radius_km;
         let mean = (0..n).map(&area_km2).sum::<f64>() / n.max(1) as f64;
-        if n == 0 || circle <= 0.0 || mean <= 0.0 {
+        if n == 0 || mean <= 0.0 {
             return Catchments::default();
+        }
+        let own = Catchments { step_km: spacing(mean), ..Catchments::default() };
+        if circle <= 0.0 {
+            return own;
         }
         // Coarser levels whose cells come nearest the circle's area, by ratio.
         let levels = oikos_math::ln(circle / mean) / oikos_math::ln(7.0) + 0.5;
         let levels = if levels < 1.0 { 0 } else { (levels as u8).min(grid.resolution()) };
         if levels == 0 {
-            return Catchments::default();
+            return own;
         }
         let resolution = grid.resolution() - levels;
         let parents: Vec<u64> = (0..n as u32).map(|c| grid.parent(c, resolution)).collect();
@@ -68,7 +74,8 @@ impl Catchments {
             i = end;
         }
         runs.sort_unstable();
-        let mut out = Catchments { block: vec![0; n], ..Catchments::default() };
+        let area = (0..levels).fold(mean, |a, _| a * 7.0);
+        let mut out = Catchments { block: vec![0; n], step_km: spacing(area), ..Catchments::default() };
         for (b, &(_, start, end)) in runs.iter().enumerate() {
             out.member_offsets.push(out.members.len() as u32);
             for &c in &order[start..end] {
@@ -140,6 +147,13 @@ impl Catchments {
         }
     }
 
+    /// How far apart neighboring catchments lie, km: the spacing of hexagons of their mean
+    /// area, so a distance is about this many steps from catchment to catchment (0 where
+    /// the cells' areas are unknown).
+    pub fn step_km(&self) -> f64 {
+        self.step_km
+    }
+
     /// Whether every cell is its own catchment.
     pub fn is_trivial(&self) -> bool {
         self.block.is_empty()
@@ -179,6 +193,11 @@ impl Catchments {
         }
         &self.away[self.away_offsets[cell] as usize..self.away_offsets[cell + 1] as usize]
     }
+}
+
+/// The distance between the centers of neighboring regular hexagons of `area` km2.
+fn spacing(area: f64) -> f64 {
+    (2.0 * area / 3f64.sqrt()).sqrt()
 }
 
 #[cfg(test)]
@@ -224,6 +243,17 @@ mod tests {
             let firsts: Vec<u32> = (0..c.len()).map(|b| c.members(b)[0]).collect();
             assert!(firsts.windows(2).all(|w| w[0] < w[1]));
         }
+    }
+
+    #[test]
+    fn a_step_to_a_neighboring_catchment_is_the_spacing_of_hexagons_of_their_mean_area() {
+        let g = grid();
+        let spacing = |area: f64| (2.0 * area / 3f64.sqrt()).sqrt();
+        let own = Catchments::new(&g, |_| 4_000.0, radius(4_000.0));
+        assert!((own.step_km() - spacing(4_000.0)).abs() < 1e-9, "cells their own: a cell's spacing");
+        let blocks = Catchments::new(&g, |_| 100.0, radius(700.0));
+        assert!((blocks.step_km() - spacing(700.0)).abs() < 1e-9, "seven cells a catchment");
+        assert_eq!(Catchments::default().step_km(), 0.0, "without areas, unknown");
     }
 
     #[test]

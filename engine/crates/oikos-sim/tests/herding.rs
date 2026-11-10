@@ -463,6 +463,85 @@ fn hunters_beside_herders_keep_a_reserve_of_animals_on_poor_grazing() {
     assert!(with > 10 * without.max(10), "{with} with a reserve, {without} without");
 }
 
+/// Herders beyond a desert after 1,000 years, and their herds' domestic share: steppe
+/// where wild herds range, around base cell 22's first resolution-3 cell; then a belt of
+/// barren desert three such cells (some 200 km) wide, whose wadis are dry and whose
+/// foraging feeds about one person a cell; then steppe beyond, with no wild herds. The
+/// land is cut at `res` (4,000 km2 a cell at resolution 3), with catchments of
+/// resolution-3 cells' size.
+fn beyond_a_desert(res: u8, herder_reach_km: f64) -> (u64, f64) {
+    let g3 = Grid::from_base_cell(22, 3).unwrap();
+    let mut ring = vec![u32::MAX; g3.len()];
+    let mut frontier = vec![0u32];
+    ring[0] = 0;
+    while let Some(c) = frontier.pop() {
+        for &n in g3.neighbors(c) {
+            if ring[n as usize] > ring[c as usize] + 1 {
+                ring[n as usize] = ring[c as usize] + 1;
+                frontier.push(n);
+            }
+        }
+    }
+    let index: std::collections::BTreeMap<u64, usize> = (0..g3.len()).map(|c| (g3.h3(c as u32), c)).collect();
+    let g = Grid::from_base_cell(22, res).unwrap();
+    let h3: Vec<u64> = (0..g.len() as u32).map(|c| g.h3(c)).collect();
+    let zone = |c: usize| match ring[index[&g.parent(c as u32, 3)]] {
+        0..=3 => 0,
+        4..=6 => 1,
+        _ => 2,
+    };
+    let region =
+        Region { name: "test".into(), resolution: res, cells: h3.len() as u32, cells_hash: cells_hash(&h3) };
+    let mut b = PackBuilder::new("geometry", region.clone());
+    b.field(spec("h3", Dims::Cell, 1.0), Data::U64(h3.clone())).unwrap();
+    let area = (4_000.0 / 7f64.powi(res as i32 - 3) * 1e6) as u32;
+    b.field(spec("area_km2", Dims::Cell, 1e-6), Data::U32(vec![area; h3.len()])).unwrap();
+    let geo = b.build();
+    let mut b = PackBuilder::new("climate", region.clone());
+    b.time(vec![-12_000], TimeRule::Linear);
+    let temp = (0..h3.len()).map(|c| if zone(c) == 1 { -4000 } else { 1500 }).collect();
+    b.field(spec("temp_mean", Dims::TimeCell, 0.01), Data::I16(temp)).unwrap();
+    let precip = (0..h3.len()).map(|c| if zone(c) == 1 { 60 } else { 250 }).collect();
+    b.field(spec("precip", Dims::TimeCell, 1.0), Data::U16(precip)).unwrap();
+    let climate = b.build();
+    let mut b = PackBuilder::new("caprines", region);
+    let upland = (0..h3.len()).map(|c| if zone(c) == 0 { 10_000 } else { 0 }).collect();
+    b.field(spec("upland", Dims::Cell, 1e-4), Data::U16(upland)).unwrap();
+    let caprines = b.build();
+    let id = blake3::hash(&geo).to_hex().to_string();
+    let catchment_radius_km = (4_000.0 / std::f64::consts::PI).sqrt();
+    let p =
+        Params { wadi_share: 0.0, herd_selection: 0.1, herder_reach_km, catchment_radius_km, ..herders() };
+    let mut w =
+        World::with_inputs(WorldConfig::geometry(&id), 3, p, inputs(&[&geo, &climate, &caprines])).unwrap();
+    w.run_years(1_000, 2, 1_000);
+    herding_in(&w, |c| zone(c as usize) == 2)
+}
+
+#[test]
+fn herders_whose_neighbors_have_no_room_travel_as_far_as_their_reach_to_find_some() {
+    // A group leaving a crowded place goes next door if it can; herders who find no room
+    // there travel on, as far as their reach, to the nearest land that can take them and
+    // their flocks (#51). Without a reach nobody herds beyond the desert.
+    // Cells of 4,000 km2 lie about 68 km apart: a reach of 300 km is four steps.
+    let ((stayed, _), (travelled, domestic)) = (beyond_a_desert(3, 0.0), beyond_a_desert(3, 300.0));
+    assert_eq!(stayed, 0, "without a reach nobody herds beyond the desert");
+    assert!(travelled > 1_000, "{travelled} herd beyond the desert with a reach");
+    assert!(domestic > 0.5, "with the domestic flocks they brought: {domestic}");
+    let (short, _) = beyond_a_desert(3, 150.0);
+    assert_eq!(short, 0, "a reach of two steps does not span three cells of desert");
+    assert_eq!(Params::default().herder_reach_km, 0.0, "off until a profile weighs it");
+}
+
+#[test]
+fn a_reach_spans_as_many_km_however_finely_the_land_is_cut() {
+    // The same land cut seven times finer, with catchments the size of the coarser cells:
+    // a step goes from catchment to neighboring catchment, so the reach is in km.
+    let (travelled, _) = beyond_a_desert(4, 300.0);
+    assert!(travelled > 1_000, "{travelled} herd beyond the desert with a reach");
+    assert_eq!(beyond_a_desert(4, 150.0).0, 0, "two catchments' steps do not span the desert");
+}
+
 #[test]
 fn herding_is_partition_independent_and_restores() {
     let h3 = h3_cells();

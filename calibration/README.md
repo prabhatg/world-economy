@@ -200,7 +200,10 @@ at 0.8, which turns the Levant's sheep domestic a millennium early. `profile-res
 takes the reserve of animals (0 to 0.2) with exchange 0.2 and floodplain grazing 1, and
 `profile-exchange.json` exchange at 0.05 and 0.5 with the reserve at 0.2 (ADR-0114): all
 consistent but exchange 0.5; the reserve brings herds to the Nile in the 5th millennium
-at almost no cost, not to the desert in the 6th. The onset record's tables are downloaded by hand (`data/README.md`); without
+at almost no cost, not to the desert in the 6th. `profile-reach.json` takes herders'
+reach (0 to 250 km) with the reserve 0.2, exchange 0.2 and floodplain grazing 1
+(ADR-0115): all consistent, -81.9 to -82.4; at 200 km the 6th millennium's sites show
+domestic animals at 0.46-0.60 of the record, the 5th's at 0.99. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

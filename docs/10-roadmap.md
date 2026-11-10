@@ -144,7 +144,9 @@ selection is calibrated by profile. Seed exchange along kinship and exchange tie
 (ADR-0105) keeps the calibrated defaults and calibrates seed exchange at 0.3 by profile.
 The oases' springs wait (#48).
 Egypt's first domestic animals are recorded (ADR-0113, #51), not yet judged: no world
-brings herds to Africa at the calibrated defaults.
+brings herds to Africa at the calibrated defaults; with a reserve of animals (ADR-0114)
+and herders' longer moves (ADR-0115), both off, they reach the desert's 6th-millennium
+sites at about half the record.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
