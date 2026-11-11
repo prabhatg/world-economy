@@ -287,7 +287,11 @@
     door and travel on to the nearest land that can take them (ADR-0115), as the
     desert groups moved 150-200 km, bring them to Djara and Sodmein: at 200 km the 6th
     millennium's assemblages show them at 0.46-0.60 and the 5th's at 0.99, every world
-    consistent; Farafra's Hidden Valley, deepest in the desert, stays without. Is the
+    consistent; Farafra's Hidden Valley, deepest in the desert, stays without. Judged
+    since ADR-0116, the record calibrates all four on (reserve 0.2, exchange 0.2,
+    floodplain grazing 0.25, reach 250 km): the 6th millennium's assemblages show
+    domestic animals at 0.60-0.67, the 5th's at 0.999, the reserve and the reach at the
+    tops of their priors, which a round should widen. Is the
     rest the desert foragers' own wide ties, along which a few animals passed (Hidden
     Valley's hunters kept a few goats far from any herders' new home)? And the crops: the model's Mediterranean coast of Egypt domesticates its own
     wild barley from about 8,000 BCE, while Egypt's earliest crops (Merimde, the Fayum,

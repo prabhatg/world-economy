@@ -73,15 +73,19 @@ def test_the_record_summaries(problem):
     assert [t.name for t in ss][0] == "sheep size (LSI) 12000-8500 BCE" and len(ss) == 6
     assert ss[0].observed > 0.04 and all(t.observed < -0.03 for t in ss[3:]), "wild, then domestic sizes"
     first = problem.names.index(ss[0].name)
-    assert problem.groups[-1].indices == list(range(first, first + 6)) and problem.groups[-1].dof == 6
-    assert problem.names[-6:-2] == ["log-likelihood radiocarbon", "log-likelihood domestication",
-                                    "log-likelihood obsidian", "people 3000 BCE"]
-    # Egypt's domestic animals (#51, ADR-0113) are recorded with every run but not judged.
-    assert problem.names[-2:] == ["Egypt domestic animals 6200-5000 BCE share of assemblages, not judged",
-                                  "Egypt domestic animals 5000-3900 BCE share of assemblages, not judged"]
-    assert not any(t.name.startswith("Egypt") for t in problem.targets)
-    np.testing.assert_allclose(problem.stock.observed, [1.0, 1.0])
-    assert list(problem.stock.counts) == [5, 10]
+    assert problem.groups[-2].indices == list(range(first, first + 6)) and problem.groups[-2].dof == 6
+    assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
+                                  "log-likelihood obsidian", "people 3000 BCE"]
+    # Egypt's domestic animals (#51), judged since herds can reach them (ADR-0116), before
+    # the house Ginis a round may leave out.
+    eg = [t for t in problem.targets if t.name.startswith("Egypt")]
+    assert [t.name for t in eg] == ["Egypt domestic animals 6200-5000 BCE share of assemblages",
+                                    "Egypt domestic animals 5000-3900 BCE share of assemblages"]
+    assert [t.observed for t in eg] == [1.0, 1.0] and list(problem.stock.counts) == [5, 10]
+    assert eg[0].variance > eg[1].variance > 0, "five assemblages tell less than ten"
+    first = problem.names.index(eg[0].name)
+    assert problem.groups[-1].indices == [first, first + 1] and problem.groups[-1].dof == 2
+    assert not any(t.name.startswith("house Gini") for t in problem.targets[:first])
 
 
 def test_the_wheats_leave_out_the_villages_the_model_cannot_farm(problem):
@@ -117,7 +121,8 @@ def test_worlds_are_run_in_parallel_and_reproducibly(problem):
 
 def test_the_default_world_is_consistent_with_the_record(problem):
     """The registry defaults are a calibrated M1 world (calibration/runs/m1/round10/best-wave6.json,
-    ADR-0081): with any seed, every target and every group pass history matching."""
+    ADR-0081; Egypt's herding hypotheses by calibration/runs/m1/f51/judged-*.json, ADR-0116):
+    with any seed, every target and every group pass history matching."""
     from oikos_cal import __main__ as cli
     from oikos_cal import m1
 
@@ -135,7 +140,7 @@ def test_a_round_can_leave_out_the_house_size_record(problem):
     assert len(kept) < len(problem.targets), "the full problem judges house Ginis"
     assert [t.name for t in without.targets] == kept and without.inequality is None
     assert [g.indices for g in without.groups] == [g.indices for g in problem.groups]
-    assert without.names == kept + m1.DIAGNOSTICS + problem.names[-2:]
+    assert without.names == kept + m1.DIAGNOSTICS
     with pytest.raises(ValueError, match="radiocarbon"):
         m1.Problem(leave_out=("radiocarbon",))
 

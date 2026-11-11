@@ -4,9 +4,10 @@ emmer and einkorn rachis records (Allaby et al. 2017; the wheats since #38), sur
 Mesopotamia (Palmisano et al. 2021; ADR-0059), sourced obsidian (DObsiSS; ADR-0061),
 crops among charred plant remains (Wallace et al. 2018; ADR-0064), the house-size
 inequality of dated sites (Kohler et al. 2017; ADR-0074), the areas of the survey
-sites (Palmisano et al. 2021; #34) and lesions of infection on Natufian and Neolithic
-skeletons of the southern Levant (Eshed et al. 2010; #42) and the body size of sheep in
-dated faunal assemblages (Arbuckle et al. 2014; #37).
+sites (Palmisano et al. 2021; #34), lesions of infection on Natufian and Neolithic
+skeletons of the southern Levant (Eshed et al. 2010; #42), the body size of sheep in
+dated faunal assemblages (Arbuckle et al. 2014; #37) and domestic animals in Egypt's
+assemblages (Linseele et al. 2014; #51).
 
 A run is a point u of the unit cube of the registry's free parameters (those with a
 prior to sample; `oikos.sample_params` maps u onto the priors), a world built from the
@@ -63,9 +64,9 @@ Domestic animals in Egypt (#51) are each era's share of the Egyptian assemblages
 Linseele et al. (2014) holding bones of domestic animals, eras split at 5,000 BCE (the
 6th millennium's mobile herders, the 5th's farming villages), against the probability
 that each holds some, given its bones and the domestic share of the bones discarded around
-it (`stock.Operator`). Recorded with every run, not judged: no world at the calibrated
-defaults brings domestic animals to Egypt, so judging them would rule out every world
-until a mechanism does.
+it (`stock.Operator`), with the sampling variance of an era's few assemblages; judged
+together, discrepancy 0.1 on each, as on the other shares (ADR-0116). Rounds before it
+recorded them, not judged, while no world brought domestic animals to Egypt.
 
 The house-size Ginis are judged since the maintainer's decision of 2026-11-03 (#43);
 round 10's first waves left them out (ADR-0077).
@@ -106,7 +107,8 @@ PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_per
          "climate_anomaly", "wild_wheats")
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
-               "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1, "herds": 0.015}
+               "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1, "herds": 0.015,
+               "stock": 0.1}
 VILLAGE_DENSITY = 121.0  # people per hectare: geometric mean of 50 and 294
 VILLAGE_DENSITY_SD = 0.45  # log scale: 50-294 as a 95% range
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
@@ -328,14 +330,17 @@ class Problem:
         for op in self.wheats:
             self.eras.append(targets.DomesticationEras(op, wheats[op.crop], edges=WHEAT_EDGES[op.crop],
                                                        discrepancy_sd=DISCREPANCY["domestication"]))
+        self.eras.append(targets.DomesticStock(self.stock, discrepancy_sd=DISCREPANCY["stock"]))
+        egypt_era = len(self.eras) - 1
         if self.inequality is not None:
             self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]
         first = np.cumsum([0] + [len(e.targets) for e in self.eras])
         self.groups = [self.eras[0].group(0), *self.eras[2].groups(first[2]), self.eras[3].group(first[3]),
                        self.eras[4].group(first[4]), self.eras[5].group(first[5]), self.eras[6].group(first[6]),
-                       self.eras[7].group(first[7]), self.eras[9].group(first[9])]
-        self.names = [t.name for t in self.targets] + DIAGNOSTICS + [f"{n}, not judged" for n in self.stock.names]
+                       self.eras[7].group(first[7]), self.eras[9].group(first[9]),
+                       self.eras[egypt_era].group(first[egypt_era])]
+        self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def zones(self):
         """The reduced record's zones (#47): every cell set the operators read, the radiocarbon
@@ -357,7 +362,7 @@ class Problem:
         return np.concatenate([summaries, [self.radiocarbon.log_likelihood(activity.visible(0)),
                                            self.domestication.log_likelihood(activity),
                                            self.obsidian.log_likelihood(activity),
-                                           activity.people[:, -1].sum() / 100], self.stock.expected(activity)])
+                                           activity.people[:, -1].sum() / 100]])
 
     def simulate(self, params, seed):
         """Outputs of the world with parameter overrides `params` (values, not u)."""

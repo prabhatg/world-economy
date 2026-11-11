@@ -266,11 +266,12 @@ Not brain simulation. Agents implement validated regularities:
   full cell, judge a destination by what its land would feed with them there, their
   practice pooled with its residents' (#45): herders look for grazing, so they move onto
   pasture where foragers find nothing, and nobody moves where neither forage nor pasture
-  can feed them. A hypothesis, off (ADR-0115, #51): herders whose neighbors have no room
+  can feed them. Calibrated on (ADR-0115, ADR-0116, #51): herders whose neighbors have no room
   travel on, as far as a reach in km, to the nearest place that can take them and their
   flocks, crossing land that feeds them nothing, as Egypt's desert groups moved 150-200
   km between the oases and the Nile; people move as short a way as will do (intervening
-  opportunities, Stouffer 1940).
+  opportunities, Stouffer 1940). Egypt's record of domestic animals puts the reach at
+  250 km, the top of its prior.
 
 ## 4.10 Modern-era additions (1800 →)
 

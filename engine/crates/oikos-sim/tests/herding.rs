@@ -60,8 +60,15 @@ fn inputs(packs: &[&[u8]]) -> Inputs {
     Inputs::from_packs(packs.iter().map(|b| Pack::parse(b.to_vec()).unwrap()).collect()).unwrap()
 }
 
+/// A world of herders with Egypt's hypotheses off (#51): calibrated on since ADR-0116,
+/// each test turns on the one it tests. Stock exchange alone carries domestic animals
+/// across these tests' deserts, along the one-person bands a cell's capacity keeps there.
 fn herders() -> Params {
     Params {
+        herd_exchange: 0.0,
+        herd_reserve: 0.0,
+        herder_reach_km: 0.0,
+        floodplain_grazing: 0.0,
         initial_occupancy: 0.5,
         herding_weight: 0.6,
         adoption_rate: 0.05,
@@ -90,6 +97,7 @@ fn crowded_bands_aim_to_herd_more_wherever_their_flocks_can_graze() {
         herding_weight: 0.1,
         herd_pressure_weight: 0.6,
         cultivation_crowding: 1.0,
+        herd_reserve: 0.0,
         ..Params::default()
     };
     let c = Cultivation::from_params(&p);
@@ -351,7 +359,7 @@ fn herds_move_toward_the_domestic_share_of_the_herds_around_them() {
     assert_eq!(off.exchange_stock(0.1, 0.9), 0.1, "off at zero");
     let all = Cultivation::from_params(&Params { herd_exchange: 1.0, ..Params::default() });
     assert_eq!(all.exchange_stock(0.1, 0.9), 0.9, "never past what it sees");
-    assert_eq!(Params::default().herd_exchange, 0.0, "off until a profile weighs it");
+    assert_eq!(Params::default().herd_exchange, 0.2, "calibrated on M1 (ADR-0116)");
 }
 
 #[test]
@@ -403,7 +411,7 @@ fn bands_keep_a_few_domestic_animals_as_a_reserve_wherever_they_can_graze_any() 
     assert_eq!(c.herding_target(0.0, 1.0, 0.0, 0.0), 0.0, "no domestic animals: no reserve");
     let wild = c.herding_target(0.1, 0.1, 0.0, 0.0);
     assert!((wild - 0.05).abs() < 1e-12, "wild herds are no reserve: {wild}");
-    assert_eq!(Params::default().herd_reserve, 0.0, "off until a profile weighs it");
+    assert_eq!(Params::default().herd_reserve, 0.2, "calibrated on M1 (ADR-0116)");
     // Animals a band holds are tended at once, not learned from others first: the
     // reserve is the least effort a band with domestic stock keeps on it.
     assert!((c.kept(0.0, 0.02, 0.6) - 0.06).abs() < 1e-12);
@@ -530,7 +538,7 @@ fn herders_whose_neighbors_have_no_room_travel_as_far_as_their_reach_to_find_som
     assert!(domestic > 0.5, "with the domestic flocks they brought: {domestic}");
     let (short, _) = beyond_a_desert(3, 150.0);
     assert_eq!(short, 0, "a reach of two steps does not span three cells of desert");
-    assert_eq!(Params::default().herder_reach_km, 0.0, "off until a profile weighs it");
+    assert_eq!(Params::default().herder_reach_km, 250.0, "calibrated on M1 (ADR-0116)");
 }
 
 #[test]

@@ -86,3 +86,31 @@ def test_herds_arriving_after_an_assemblage_do_not_show_in_it():
 def test_it_reads_the_cells_near_its_sites():
     o = op()
     assert len(o.cells()) == 3 and all(len(c) == 7 for c in o.cells())
+
+
+def test_an_eras_share_is_uncertain_by_how_few_assemblages_it_holds():
+    o = op()
+    # Jeffreys' posterior of the share of such assemblages that held domestic animals,
+    # Beta(k + 1/2, n - k + 1/2): every assemblage held some, yet a few cannot prove all did.
+    beta = lambda a, b: a * b / ((a + b) ** 2 * (a + b + 1))
+    np.testing.assert_allclose(o.sampling_variance, [beta(2.5, 0.5), beta(1.5, 0.5)])
+    assert o.sampling_variance[1] > o.sampling_variance[0], "one assemblage tells less than two"
+
+
+def test_the_eras_are_judged_together():
+    from oikos_cal import history, targets
+
+    o = op()
+    t = targets.DomesticStock(o, discrepancy_sd=0.1)
+    assert [x.name for x in t.targets] == o.names
+    assert [x.observed for x in t.targets] == [1.0, 1.0]
+    np.testing.assert_allclose([x.variance for x in t.targets], o.sampling_variance)
+    assert all(x.discrepancy == 0.1**2 for x in t.targets)
+    g = t.group(7)
+    assert g.indices == [7, 8] and g.dof == 2
+    np.testing.assert_allclose(g.covariance, np.diag(o.sampling_variance))
+    herds = activity(lambda y: 100.0, lambda y: 0.0, lambda y: 50.0, lambda y: 50.0)
+    np.testing.assert_allclose(t.model(herds), o.expected(herds))
+    none = activity(lambda y: 100.0, lambda y: 0.0, lambda y: 0.0, lambda y: 0.0)
+    assert history.implausibility(t.model(none)[None], 0.0, t.targets).max() > history.CUTOFF, \
+        "a world without herds in Egypt is ruled out"

@@ -447,6 +447,23 @@ class SheepSize:
         return self.op.expected(activity)
 
 
+class DomesticStock:
+    def __init__(self, op, discrepancy_sd=0.1):
+        """Eras of `op` (`stock.Operator`): each era's share of assemblages holding domestic
+        animals, with the sampling variance of its few assemblages; judged together, the
+        eras' assemblages independent."""
+        self.op = op
+        self.targets = [_target(n, z, v, discrepancy_sd**2)
+                        for n, z, v in zip(op.names, op.observed, op.sampling_variance)]
+
+    def group(self, first):
+        n = len(self.targets)
+        return Group(list(range(first, first + n)), np.diag(self.op.sampling_variance), dof=n)
+
+    def model(self, activity):
+        return self.op.expected(activity)
+
+
 class HouseGinis:
     def __init__(self, op, discrepancy_sd=0.05):
         """One target per site of `op` (`inequality.Operator`): its house-size Gini, with

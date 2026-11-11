@@ -203,7 +203,14 @@ consistent but exchange 0.5; the reserve brings herds to the Nile in the 5th mil
 at almost no cost, not to the desert in the 6th. `profile-reach.json` takes herders'
 reach (0 to 250 km) with the reserve 0.2, exchange 0.2 and floodplain grazing 1
 (ADR-0115): all consistent, -81.9 to -82.4; at 200 km the 6th millennium's sites show
-domestic animals at 0.46-0.60 of the record, the 5th's at 0.99. The onset record's tables are downloaded by hand (`data/README.md`); without
+domestic animals at 0.46-0.60 of the record, the 5th's at 0.99. The `judged-*.json`
+profiles judge Egypt's domestic animals (ADR-0116) and take each hypothesis over its
+prior with the other three held: `judged-reach.json` (150 to 250 km), `judged-reserve.json`
+(0.1 to 0.2), `judged-exchange.json` (0.05 to 0.3), `judged-floodplain.json` (0.25 to 1)
+and `judged-floodplain-low.json` (0 and 0.1). Their common world, reserve 0.2, exchange
+0.2, floodplain grazing 0.25 and reach 250 km, is consistent for three seeds (summaries
+-83.0) and gives the calibrated defaults; the reserve and the reach only at the tops of
+their priors. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

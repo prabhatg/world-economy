@@ -20,7 +20,10 @@ represent; whether domestic animals were there at all does not. Where nobody liv
 a site in a world, its assemblage shows none.
 
 Eras hold their assemblages by midpoint; an era's summary is the share of its
-assemblages expected to hold domestic animals, against the share that do.
+assemblages expected to hold domestic animals, against the share that do. Its sampling
+variance is that of Jeffreys' posterior of the share of such assemblages that held some,
+Beta(k + 1/2, n - k + 1/2) for k of n: where every assemblage held domestic animals the
+binomial variance would be none, yet a few assemblages cannot show that all did.
 """
 
 import h3
@@ -63,6 +66,9 @@ class Operator:
         self.names = [f"{label} domestic animals {-s}-{-e} BCE share of assemblages" for s, e in self.eras]
         self.observed = np.array([held[self.era_of == k].mean() for k in range(len(self.eras))])
         self.counts = np.array([(self.era_of == k).sum() for k in range(len(self.eras))])
+        a = self.observed * self.counts + 0.5
+        b = self.counts - self.observed * self.counts + 0.5
+        self.sampling_variance = a * b / ((a + b) ** 2 * (a + b + 1))
 
     def cells(self):
         """The cell sets it reads (`zones`, #47)."""

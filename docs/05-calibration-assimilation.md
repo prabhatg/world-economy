@@ -134,6 +134,14 @@ goats hunted on the range at a tenth of that per unit of foraging effort. The wi
 domestic sizes are judgments from the record's earliest and latest assemblages, their
 uncertainty shared by the eras. It sees when herds became domestic, not how many there were.
 
+**Implemented (domestic stock operator, ADR-0113, ADR-0116, #51):** `stock.Operator`
+compares the share of Egypt's dated faunal assemblages that hold bones of domestic
+animals (Linseele et al. 2014), in the 6th and 5th millennia BCE, with the share a world
+expects: an assemblage of n mammal bones shows some with probability 1 - (1 - q)^n, q
+the domestic share of the bones discarded around it. Presence, not the share, is
+judged, as the share depends on how much fishing and hunting the model does not tell
+apart. It sees when herds reached a land with no wild sheep or goats to breed them from.
+
 **Implemented (infection-lesions operator, ADR-0086, #42):** `lesions.Operator` compares
 the lesions of infection on 200 Natufian and 205 Neolithic skeletons of the southern
 Levant (2 and 9 affected; Eshed et al. 2010) with the prevalence of the endemic

@@ -653,11 +653,12 @@ group = "cultivation"
 unit = "1/period"
 description = "Share of a band's stock replaced each period by animals from the herds of the people it is tied to: its cell's and, by neighbor_learning, the cells around it, by the effort each herds (#51). Bands that herd nothing take animals too, to start a herd."
 kind = { type = "probability" }
-default = 0.0
+default = 0.2
 prior = { dist = "log_uniform", lo = 0.001, hi = 0.5 }
-status = "placeholder"
-note = "Off until a profile weighs it against the M1 record (#51). Herders give, lend and marry with animals along kinship, marriage and friendship ties, which pool the risk of losing a herd to drought or disease (the Maasai's osotua gifts: Aktipis, Cronk and de Aguiar 2011), and hunters took a few animals into their own economy that way: Egypt's first domestic animals, from the 6th millennium BCE, are a handful of bones among the game of mobile desert groups, a 'food reserve on the hoof' without farming (Linseele et al. 2014). Without it, domestic animals reach land where no wild sheep or goats lived only with people who move there."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0116): with the reserve at 0.2, reach 250 km and floodplain grazing 0.25, 0.05 to 0.2 are consistent with every record for three seeds and 0.3 is not (exchange with wild-caught stock keeps the Levant's sheep wild-sized after 6,500 BCE); 0.2 fits the summaries best (log-likelihood -83.3, against -83.6 at 0.1 and -84.0 at 0.05), within the spread between seeds. Herders give, lend and marry with animals along kinship, marriage and friendship ties, which pool the risk of losing a herd to drought or disease (the Maasai's osotua gifts: Aktipis, Cronk and de Aguiar 2011), and hunters took a few animals into their own economy that way: Egypt's first domestic animals, from the 6th millennium BCE, are a handful of bones among the game of mobile desert groups, a 'food reserve on the hoof' without farming (Linseele et al. 2014). Without it, domestic animals reach land where no wild sheep or goats lived only with people who move there."
 sources = [
+  { citation = "ManyWorlds M1 calibration, profiles of the four Egypt hypotheses with Egypt's domestic animals judged (ADR-0116): herder_reach_km, herd_reserve, herd_exchange and floodplain_grazing each over its prior with the other three held, the rest at their calibrated defaults, three seeds each, calibration/runs/m1/f51/judged-*.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f51" },
   { citation = "Aktipis, C.A., Cronk, L., de Aguiar, R. (2011). Risk-pooling and herd survival: an agent-based model of a Maasai gift-giving system. Human Ecology 39, 131-140.", doi = "10.1007/s10745-010-9364-9" },
   { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
 ]
@@ -667,11 +668,12 @@ group = "cultivation"
 unit = "1"
 description = "Least share of effort a band with a fully domestic herd keeps on it wherever its land grazes any, in proportion to the herd's domestic share: a reserve of food that keeps, however little the land repays herding (#51). Where the land repays more (herding_weight, herd_pressure_weight), the land sets the effort. 0: herds kept for what the land repays alone."
 kind = { type = "probability" }
-default = 0.0
+default = 0.2
 prior = { dist = "uniform", lo = 0.0, hi = 0.2 }
-status = "placeholder"
-note = "Off until a profile weighs it against the M1 record (#51). Egypt's first herders were mobile hunters of the 6th millennium BCE who kept a handful of sheep and goats among their game, as 'a kind of food reserve on the hoof' whose value lay in its predictable availability (Linseele et al. 2014); keeping stock as insurance against lean years is how herders themselves explain herd sizes beyond present need (Dahl and Hjort 1976). The prior's top is a fifth of effort, more than the handful of bones the desert sites hold."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0116): with exchange 0.2, reach 250 km and floodplain grazing 1, only 0.2, the prior's top, is consistent with Egypt's domestic animals for three seeds (summaries -83.3); at 0.15 and 0.1 too few of the 6th millennium's desert assemblages hold domestic animals (-87.2 and -101.6). A best at the prior's edge: a round should test a wider prior. Egypt's first herders were mobile hunters of the 6th millennium BCE who kept a handful of sheep and goats among their game, as 'a kind of food reserve on the hoof' whose value lay in its predictable availability (Linseele et al. 2014); keeping stock as insurance against lean years is how herders themselves explain herd sizes beyond present need (Dahl and Hjort 1976). The prior's top is a fifth of effort, more than the handful of bones the desert sites hold."
 sources = [
+  { citation = "ManyWorlds M1 calibration, profiles of the four Egypt hypotheses with Egypt's domestic animals judged (ADR-0116): herder_reach_km, herd_reserve, herd_exchange and floodplain_grazing each over its prior with the other three held, the rest at their calibrated defaults, three seeds each, calibration/runs/m1/f51/judged-*.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f51" },
   { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
   { citation = "Dahl, G., Hjort, A. (1976). Having Herds: Pastoral Herd Growth and Household Economy. Stockholm Studies in Social Anthropology 2. University of Stockholm." },
 ]
@@ -681,11 +683,12 @@ group = "migration"
 unit = "km"
 description = "How far a group of herders leaving a crowded place travels to find land that can take it and its flocks, when no neighboring place can (#51): over habitable land, from catchment to neighboring catchment, the nearest place with room within this distance, the least crowded of those as near. A band goes so with the chance that it lives by domestic herds (its herding effort times its herd's domestic share). 0: groups go to neighboring places only."
 kind = { type = "real", min = 0.0, max = 400.0 }
-default = 0.0
+default = 250.0
 prior = { dist = "uniform", lo = 0.0, hi = 250.0 }
-status = "placeholder"
-note = "Off until a profile weighs it against the M1 record (#51). Egypt's desert groups of the 6th millennium BCE, who kept the first sheep and goats, were highly mobile: Djara's people moved between the plateau and the Nile valley, about 150 km, and the Farafra sites hold things from the valley, about 200 km away (Linseele et al. 2014). People move as short a way as will do, to the nearest opportunity (intervening opportunities, Stouffer 1940), and herders travel far for grazing when the land near them is taken (Dahl and Hjort 1976). The prior's top is a little beyond the 200 km of the record."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0116): with the reserve at 0.2, exchange 0.2 and floodplain grazing 1, only 250 km, the prior's top, is consistent with Egypt's domestic animals for three seeds (summaries -83.3); at 200 km the 6th millennium's desert assemblages show domestic animals at 0.46-0.60 against the record's 1, two seeds of three failing (-85.0), and at 150 km at 0.20-0.42 (-91.9). A best at the prior's edge: a round should test a wider prior. Egypt's desert groups of the 6th millennium BCE, who kept the first sheep and goats, were highly mobile: Djara's people moved between the plateau and the Nile valley, about 150 km, and the Farafra sites hold things from the valley, about 200 km away (Linseele et al. 2014). People move as short a way as will do, to the nearest opportunity (intervening opportunities, Stouffer 1940), and herders travel far for grazing when the land near them is taken (Dahl and Hjort 1976). The prior's top is a little beyond the 200 km of the record."
 sources = [
+  { citation = "ManyWorlds M1 calibration, profiles of the four Egypt hypotheses with Egypt's domestic animals judged (ADR-0116): herder_reach_km, herd_reserve, herd_exchange and floodplain_grazing each over its prior with the other three held, the rest at their calibrated defaults, three seeds each, calibration/runs/m1/f51/judged-*.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f51" },
   { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
   { citation = "Stouffer, S. A. (1940). Intervening opportunities: a theory relating mobility and distance. American Sociological Review 5(6), 845-867.", doi = "10.2307/2084520" },
   { citation = "Dahl, G., Hjort, A. (1976). Having Herds: Pastoral Herd Growth and Household Economy. Stockholm Studies in Social Anthropology 2. University of Stockholm." },
@@ -767,11 +770,12 @@ group = "cultivation"
 unit = "1"
 description = "Share of the land a river floods (the hydrology pack's floodplain_fraction) that grazes domestic sheep and goats whatever the rain, on the land rain does not already graze (#51). Wild herds' range does not grow: they lived in the uplands. 0: grazing from rain alone."
 kind = { type = "probability" }
-default = 0.0
+default = 0.25
 prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
-status = "placeholder"
-note = "Off until a profile weighs it against the M1 record (#51). Grass grows on the flood's silt as the water recedes, and herders grazed the Nile's basins and the Delta's marsh edges in the dry season (Butzer 1976); Egypt's 5th-millennium BCE villages on the Nile and the Fayum kept sheep, goats and cattle in numbers where rain grows no grazing at all (Linseele et al. 2014). Without it, the model's Nile valley grazes no herds."
+status = "calibrated"
+note = "Calibrated on M1 (ADR-0116): with the reserve at 0.2, exchange 0.2 and reach 250 km, 0.1 to 1 are consistent with every record for three seeds and flat (summaries -83.0 to -83.3), 0 is not (-84.7: the 5th millennium's Nile villages without herds); 0.25, which the profile chose, is kept. Grass grows on the flood's silt as the water recedes, and herders grazed the Nile's basins and the Delta's marsh edges in the dry season (Butzer 1976); Egypt's 5th-millennium BCE villages on the Nile and the Fayum kept sheep, goats and cattle in numbers where rain grows no grazing at all (Linseele et al. 2014). Without it, the model's Nile valley grazes no herds."
 sources = [
+  { citation = "ManyWorlds M1 calibration, profiles of the four Egypt hypotheses with Egypt's domestic animals judged (ADR-0116): herder_reach_km, herd_reserve, herd_exchange and floodplain_grazing each over its prior with the other three held, the rest at their calibrated defaults, three seeds each, calibration/runs/m1/f51/judged-*.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f51" },
   { citation = "Butzer, K.W. (1976). Early Hydraulic Civilization in Egypt: A Study in Cultural Ecology. University of Chicago Press." },
   { citation = "Linseele, V. et al. (2014). New archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the evidence for early stock keeping in Egypt. PLoS ONE 9(10): e108517.", doi = "10.1371/journal.pone.0108517" },
 ]

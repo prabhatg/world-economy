@@ -111,7 +111,7 @@ fn floods_water_grazing_for_domestic_herds_where_rain_grows_none() {
         h3.len(),
     );
     assert_eq!(off.pasture[0], 0.0, "off: rain alone, as before");
-    assert_eq!(Params::default().floodplain_grazing, 0.0, "off until a profile weighs it");
+    assert_eq!(Params::default().floodplain_grazing, 0.25, "calibrated on M1 (ADR-0116)");
 }
 
 #[test]
