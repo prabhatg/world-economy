@@ -291,7 +291,8 @@
     since ADR-0116, the record calibrates all four on (reserve 0.2, exchange 0.2,
     floodplain grazing 0.25, reach 250 km): the 6th millennium's assemblages show
     domestic animals at 0.60-0.67, the 5th's at 0.999, the reserve and the reach at the
-    tops of their priors, which a round should widen. Their crops, judged since
+    tops of their priors; beyond them the reach is flat and a larger reserve brings
+    crops to the Fayum too early (ADR-0118). Their crops, judged since
     ADR-0117, fit at the defaults: none in the 6th millennium or the deserts, crops in
     the Nile valley and the Fayum in the 5th; without seed exchange the Fayum's
     neighbours farm in the 6th millennium. Is the
