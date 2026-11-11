@@ -292,7 +292,10 @@
     floodplain grazing 0.25, reach 250 km): the 6th millennium's assemblages show
     domestic animals at 0.60-0.67, the 5th's at 0.999, the reserve and the reach at the
     tops of their priors; beyond them the reach is flat and a larger reserve brings
-    crops to the Fayum too early (ADR-0118). Their crops, judged since
+    crops to the Fayum too early (ADR-0118). Hidden Valley's herds stay near 0: the
+    herds' domestic share fades westward from the Nile through the populated desert,
+    to 0.01 there, even once merging keeps it (ADR-0119), as herding follows the
+    herd's domestic share and the desert grazes little. Their crops, judged since
     ADR-0117, fit at the defaults: none in the 6th millennium or the deserts, crops in
     the Nile valley and the Fayum in the 5th; without seed exchange the Fayum's
     neighbours farm in the 6th millennium. Is the

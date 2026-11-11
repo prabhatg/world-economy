@@ -44,8 +44,10 @@ abstraction chosen so that multi-node / multi-GPU is an implementation, not a re
   Cells (not partitions) own the counters, so ids are independent of partitioning.
 - *Implemented (M1, ADR-0049):* agents are `id, cell, weight` plus practice traits
   (`cultivation`, `domestication`) as fixed-point shares (parts per billion);
-  split-off groups copy them and merges take people-weighted integer means, so
-  checkpoints and state hashes stay exact on every host.
+  split-off groups copy them and merges take integer means, people-weighted for
+  effort and inequality and weighted by what each sows or herds for the domestic
+  shares of crops and herds, so merging keeps the domestic crop and animals
+  (ADR-0119), and checkpoints and state hashes stay exact on every host.
 - *Implemented (M1, ADR-0055):* cells keep a soil share (fixed point), worn down by
   fields and re-forming slowly; with obsidian availability per source group (ADR-0060)
   it is the checkpointed cell state besides birth counters and forager capacity

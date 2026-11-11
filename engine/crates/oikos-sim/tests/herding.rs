@@ -339,7 +339,8 @@ fn herders_cross_a_desert_whose_wadis_feed_their_flocks() {
     let (unneeded, sparse) = run(Params { herd_pressure_weight: 0.0, ..crossing });
     assert!(crossed > 1_000, "{crossed} herd beyond the desert");
     assert!(crossed > 10 * dry.max(10), "{crossed} cross with wadis, {dry} without");
-    assert!(crossed > 10 * unneeded.max(10), "{crossed} cross with need, {unneeded} without");
+    // Domestic stock kept through merges (ADR-0119) crosses without need too, less.
+    assert!(crossed > 2 * unneeded.max(10), "{crossed} cross with need, {unneeded} without");
     // A cell's capacity never falls below one person, so a few cross even without wadis,
     // but only herders kept herding by need live in the desert itself.
     assert!(desert > 10 * empty.max(10), "{desert} live in the desert with wadis, {empty} without");
@@ -530,14 +531,17 @@ fn beyond_a_desert(res: u8, herder_reach_km: f64) -> (u64, f64) {
 fn herders_whose_neighbors_have_no_room_travel_as_far_as_their_reach_to_find_some() {
     // A group leaving a crowded place goes next door if it can; herders who find no room
     // there travel on, as far as their reach, to the nearest land that can take them and
-    // their flocks (#51). Without a reach nobody herds beyond the desert.
+    // their flocks (#51). Without a reach herders only creep across, band by band, along
+    // the one-person bands a cell's capacity keeps in the desert (ADR-0119).
     // Cells of 4,000 km2 lie about 68 km apart: a reach of 300 km is four steps.
     let ((stayed, _), (travelled, domestic)) = (beyond_a_desert(3, 0.0), beyond_a_desert(3, 300.0));
-    assert_eq!(stayed, 0, "without a reach nobody herds beyond the desert");
-    assert!(travelled > 1_000, "{travelled} herd beyond the desert with a reach");
+    assert!(
+        travelled > 5 * stayed.max(1_000),
+        "{travelled} herd beyond the desert with a reach, {stayed} without"
+    );
     assert!(domestic > 0.5, "with the domestic flocks they brought: {domestic}");
     let (short, _) = beyond_a_desert(3, 150.0);
-    assert_eq!(short, 0, "a reach of two steps does not span three cells of desert");
+    assert!(travelled > 3 * short, "a reach of two steps does not span three cells of desert: {short}");
     assert_eq!(Params::default().herder_reach_km, 250.0, "calibrated on M1 (ADR-0116)");
 }
 
@@ -546,8 +550,11 @@ fn a_reach_spans_as_many_km_however_finely_the_land_is_cut() {
     // The same land cut seven times finer, with catchments the size of the coarser cells:
     // a step goes from catchment to neighboring catchment, so the reach is in km.
     let (travelled, _) = beyond_a_desert(4, 300.0);
-    assert!(travelled > 1_000, "{travelled} herd beyond the desert with a reach");
-    assert_eq!(beyond_a_desert(4, 150.0).0, 0, "two catchments' steps do not span the desert");
+    let (stayed, short) = (beyond_a_desert(4, 0.0).0, beyond_a_desert(4, 150.0).0);
+    assert!(
+        travelled > 10 * stayed.max(short).max(1_000),
+        "{travelled} with a reach, {short} two steps, {stayed} none"
+    );
 }
 
 #[test]

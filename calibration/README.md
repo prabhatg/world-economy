@@ -213,7 +213,9 @@ and `judged-floodplain-low.json` (0 and 0.1). Their common world, reserve 0.2, e
 their priors. `judged-crops.json` scores those defaults with Egypt's crops judged too
 (ADR-0117): every record consistent, summaries -81.1. `wide-reach.json` (300 to 400 km)
 and `wide-reserve.json` (0.3 and 0.4) take the two beyond their priors (ADR-0118): the
-reach is flat within the seeds' spread, the reserve inconsistent with Egypt's crops. The onset record's tables are downloaded by hand (`data/README.md`); without
+reach is flat within the seeds' spread, the reserve inconsistent with Egypt's crops.
+`merged-defaults.json` scores the defaults once merging bands keep their domestic
+animals and crops (ADR-0119): every record consistent, summaries -81.7. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

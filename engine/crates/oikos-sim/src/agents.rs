@@ -172,9 +172,13 @@ impl Settlement {
     }
 }
 
-/// People-weighted trait sums of the small bands merging into one absorber. In u64:
-/// overflow needs some 18 billion people in small bands of one cell, and u128 is slow
-/// on wasm.
+/// Trait sums of the small bands merging into one absorber. Effort and inequality are
+/// people's, so people weight them; a crop's or a herd's domestic share is its fields' or
+/// its animals', so what each band sows or herds (people x effort) weights it (#51), and
+/// merging keeps the domestic crop sown and the domestic animals herded, to rounding.
+/// Where none of them sows or herds, the shares are of the seed and stock they hold, by
+/// people. People-weighted sums in u64: overflow needs some 18 billion people in small
+/// bands of one cell, and u128 is slow on wasm; the effort-weighted ones need u128.
 #[derive(Default)]
 struct Pool {
     weight: u64,
@@ -185,22 +189,42 @@ struct Pool {
     herding: u64,
     herd_domestication: u64,
     wheat_domestication: [u64; 2],
+    /// Sums of people x effort times each share: the crop, emmer and einkorn sown; the herd.
+    sown: [u128; 3],
+    herded: u128,
+}
+
+/// `sum / by`, or `fallback` where `by` is 0.
+fn share_of(sum: u128, by: u128, fallback: u32) -> u32 {
+    sum.checked_div(by).map_or(fallback, |s| s as u32)
 }
 
 impl Pool {
     fn add(&mut self, w: u64, t: Traits) {
+        let (sown, herded) = (w * t.cultivation as u64, w * t.herding as u64);
         self.weight += w;
-        self.cultivation += w * t.cultivation as u64;
+        self.cultivation += sown;
         self.domestication += w * t.domestication as u64;
         self.inequality += w as u128 * t.inequality as u128;
-        self.herding += w * t.herding as u64;
+        self.herding += herded;
         self.herd_domestication += w * t.herd_domestication as u64;
         for (sum, &d) in self.wheat_domestication.iter_mut().zip(&t.wheat_domestication) {
             *sum += w * d as u64;
         }
+        // Most merging bands are foragers: no u128 products for them (slow on wasm).
+        if sown != 0 {
+            let shares = [t.domestication, t.wheat_domestication[0], t.wheat_domestication[1]];
+            for (sum, d) in self.sown.iter_mut().zip(shares) {
+                *sum += sown as u128 * d as u128;
+            }
+        }
+        if herded != 0 {
+            self.herded += herded as u128 * t.herd_domestication as u128;
+        }
     }
 
-    /// People-weighted mean traits (rounded down).
+    /// Mean traits (rounded down): effort and inequality by people, the domestic shares
+    /// by what is sown and herded.
     fn mean(&self) -> Traits {
         if self.cultivation == 0
             && self.domestication == 0
@@ -212,17 +236,20 @@ impl Pool {
             return Traits::FORAGER;
         }
         let w = self.weight.max(1);
+        let (sown, herded) = (self.cultivation as u128, self.herding as u128);
+        let held = |sum: u64| (sum / w) as u32;
         Traits {
             cultivation: (self.cultivation / w) as u32,
-            domestication: (self.domestication / w) as u32,
+            domestication: share_of(self.sown[0], sown, held(self.domestication)),
             // u128 division is slow on wasm; the sum fits u64 below 4.3 billion people.
             inequality: match u64::try_from(self.inequality) {
                 Ok(sum) => (sum / w) as u32,
                 Err(_) => (self.inequality / w as u128) as u32,
             },
             herding: (self.herding / w) as u32,
-            herd_domestication: (self.herd_domestication / w) as u32,
-            wheat_domestication: self.wheat_domestication.map(|d| (d / w) as u32),
+            herd_domestication: share_of(self.herded, herded, held(self.herd_domestication)),
+            wheat_domestication: [EMMER, EINKORN]
+                .map(|c| share_of(self.sown[c + 1], sown, held(self.wheat_domestication[c]))),
         }
     }
 }
@@ -356,19 +383,25 @@ impl Agents {
                         let s: u128 = small.iter().map(|&k| self.weight[k] as u128 * x[k] as u128).sum();
                         (s / people as u128) as u32
                     };
+                    // A domestic share by what each band sows or herds, else by people.
+                    let by = |effort: &[u32], share: &dyn Fn(usize) -> u32| {
+                        let of = |k: usize| self.weight[k] as u128 * effort[k] as u128;
+                        let total: u128 = small.iter().map(|&k| of(k)).sum();
+                        if total == 0 {
+                            let s: u128 =
+                                small.iter().map(|&k| self.weight[k] as u128 * share(k) as u128).sum();
+                            return (s / people as u128) as u32;
+                        }
+                        (small.iter().map(|&k| of(k) * share(k) as u128).sum::<u128>() / total) as u32
+                    };
                     let t = Traits {
                         cultivation: mean(&self.cultivation),
-                        domestication: mean(&self.domestication),
+                        domestication: by(&self.cultivation, &|k| self.domestication[k]),
                         inequality: mean(&self.inequality),
                         herding: mean(&self.herding),
-                        herd_domestication: mean(&self.herd_domestication),
-                        wheat_domestication: [EMMER, EINKORN].map(|c| {
-                            let s: u128 = small
-                                .iter()
-                                .map(|&k| self.weight[k] as u128 * self.wheat_domestication[k][c] as u128)
-                                .sum();
-                            (s / people as u128) as u32
-                        }),
+                        herd_domestication: by(&self.herding, &|k| self.herd_domestication[k]),
+                        wheat_domestication: [EMMER, EINKORN]
+                            .map(|c| by(&self.cultivation, &|k| self.wheat_domestication[k][c])),
                     };
                     out.push_in(self.id[j], cell, people, t, self.settlement[j]);
                 }
@@ -648,6 +681,9 @@ mod tests {
 
     #[test]
     fn merged_bands_take_the_people_weighted_mean_practice() {
+        // Effort and inequality are people's, so people weight them; a crop's domestic
+        // share is its fields', so what each band sows weights it (#51): merging keeps the
+        // domestic crop sown, people x effort x share, to rounding.
         let mut a = Agents::default();
         let t = |e: f64, d: f64, v: f64| Traits {
             cultivation: Traits::from_share(e),
@@ -661,14 +697,35 @@ mod tests {
         let mut out = Agents::default();
         a.merge_small_into(10, &mut out, 0, &mut [0]);
         assert_eq!(out.len(), 2);
-        assert_eq!(out.traits(0), t(0.75, 0.4, 0.65), "(3 x 1 + 1 x 0) / 4, (3 x 0.5 + 1 x 0.1) / 4, ...");
+        assert_eq!(
+            out.traits(0),
+            t(0.75, 0.5, 0.65),
+            "(3 x 1 + 1 x 0) / 4; 3 x 1 x 0.5 / (3 x 1): foragers sow none"
+        );
         assert_eq!(out.traits(1), t(0.2, 0.2, 0.3), "large bands keep their own");
+        let mut wheats = Agents::default();
+        let w = |e: f64, d: f64| Traits {
+            cultivation: Traits::from_share(e),
+            wheat_domestication: [Traits::from_share(d), Traits::from_share(d / 2.0)],
+            ..Traits::FORAGER
+        };
+        wheats.push_with(EntityId::new(0, 1), 0, 2, w(0.5, 0.8));
+        wheats.push_with(EntityId::new(0, 2), 0, 2, w(0.0, 0.0));
+        wheats.merge_small_into(10, &mut out, 0, &mut [0]);
+        assert_eq!(out.traits(0), w(0.25, 0.8), "the wheats as the crop");
+        let mut seed = Agents::default();
+        seed.push_with(EntityId::new(0, 1), 0, 3, t(0.0, 0.6, 0.0));
+        seed.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.2, 0.0));
+        seed.merge_small_into(10, &mut out, 0, &mut [0]);
+        assert_eq!(out.traits(0), t(0.0, 0.5, 0.0), "nobody sows: the seed they hold, by people");
     }
 
     #[test]
     fn merged_bands_pool_their_herds_too() {
-        // Herding effort and the herd's domestic share (#37) are people-weighted like the
-        // crop's: a proxy, as the model keeps no herd sizes.
+        // A herd's domestic share is its animals', so each band's herd weights it, people
+        // times herding effort (#51): bands that keep no animals bring none, and merging
+        // keeps the domestic animals, people x herding x share, to rounding. People-weighted,
+        // a herder joining foragers would find its stock turned wild.
         let mut a = Agents::default();
         let t = |h: f64, d: f64| Traits {
             herding: Traits::from_share(h),
@@ -677,9 +734,11 @@ mod tests {
         };
         a.push_with(EntityId::new(0, 1), 0, 3, t(0.4, 1.0));
         a.push_with(EntityId::new(0, 2), 0, 1, t(0.0, 0.2));
+        a.push_with(EntityId::new(0, 3), 0, 4, t(0.2, 0.5));
         let mut out = Agents::default();
         a.merge_small_into(10, &mut out, 0, &mut [0]);
-        assert_eq!(out.traits(0), t(0.3, 0.8), "(3 x 0.4 + 1 x 0) / 4, (3 x 1 + 1 x 0.2) / 4");
+        // Herding (3 x 0.4 + 4 x 0.2) / 8; domestic share (1.2 x 1 + 0.8 x 0.5) / 2.
+        assert_eq!(out.traits(0), t(0.25, 0.8));
         let mut reference = a.clone();
         reference.merge_small(10);
         assert_eq!(reference, out);
