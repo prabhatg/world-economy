@@ -63,7 +63,8 @@ paper's counts and sample by site, transcribed into the manifest by the maintain
 decision (2026-11-04, #42); the article itself is not stored (`oikos_data.lesions.load`).
 Domestic animals in Egypt's Neolithic assemblages (Linseele et al. 2014, CC BY,
 `manifests/linseele2014-egypt.toml`; #51) are the counts of domestic and hunted mammal bones
-of its Tables 3 and 6, transcribed into the manifest (`oikos_data.egypt.load`).
+of its Tables 3 and 6, and whether each assemblage's people grew crops by the article's
+statements (ADR-0117), transcribed into the manifest (`oikos_data.egypt.load`).
 
 | Pack | Fields | Source |
 |---|---|---|

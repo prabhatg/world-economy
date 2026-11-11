@@ -141,6 +141,10 @@ expects: an assemblage of n mammal bones shows some with probability 1 - (1 - q)
 the domestic share of the bones discarded around it. Presence, not the share, is
 judged, as the share depends on how much fishing and hunting the model does not tell
 apart. It sees when herds reached a land with no wild sheep or goats to breed them from.
+`crops.Operator` (ADR-0117) does the same for crops: the share of the assemblages whose
+crops the article states that show cultivated crops grown there, against the domestic
+share of the cereals discarded around each, sown or gathered wild, in a sample of ten
+remains. It sees when crops reached Egypt, and that the deserts grew none.
 
 **Implemented (infection-lesions operator, ADR-0086, #42):** `lesions.Operator` compares
 the lesions of infection on 200 Natufian and 205 Neolithic skeletons of the southern

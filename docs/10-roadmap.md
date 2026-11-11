@@ -147,6 +147,8 @@ Egypt's first domestic animals are recorded (ADR-0113, #51) and judged (ADR-0116
 reserve of animals (ADR-0114), stock exchange, floodplain grazing and herders' longer
 moves (ADR-0115) are calibrated on by profile, and herds reach the desert's
 6th-millennium sites and the Nile's 5th-millennium villages, every record consistent.
+Their crops are judged too (ADR-0117): none in the 6th millennium or the deserts, crops in
+the Nile valley, the delta and the Fayum in the 5th, as the defaults have it.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

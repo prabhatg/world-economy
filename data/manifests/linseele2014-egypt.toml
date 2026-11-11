@@ -39,6 +39,17 @@ Nabta Playa's disputed cattle; sheep and goats among mobile groups in the desert
 the Fayum in the 6th, a handful of bones at most sites; crops and pigs from the
 Southwest Asian Neolithic, with herds in numbers, in the Nile valley and the Fayum in the
 5th. No cultivated crops are known in Egypt in the 6th millennium BC.
+
+Crops (#51): whether the assemblage's people grew cultivated crops, from the article's
+statements. None in the 6th millennium ('For the 6th millennium BC, there is no evidence
+for cultivated crops in Egypt'; at Djara 'no cultivated plants have been identified', and
+the desert sites used wild plants intensively). None grown in the deserts: Kharga's KS 43
+holds a few cleaned grains, 'unlikely to be from local agriculture' but brought from the
+Nile valley. Grown at Merimde (emmer, a free-threshing wheat and hulled barley), Kom K
+and Kom W (the Upper K granaries' emmer and barley, and cultivated plants in Kom K's
+hearths), El-Omari (local cultivation of Near Eastern cereals) and Saïs (with Merimde and
+the Fayum, the first evidence of domesticated plants in Egypt; charred cereals). Left out:
+Qasr el-Sagha VII A/81 and Maghar Dendera 2, of whose plants the article says nothing.
 """
 
 [license]
@@ -55,7 +66,8 @@ kind = "transcribed"
 source = "Table 6 (Djara, Hidden Valley, KS 43, Sodmein, Merimde I-V, Saïs, El-Omari, Maghar Dendera 2) and Table 3 (Qasr el-Sagha XI/81, IX/81 and VII A/81, Kom K, Kom W), with their dates from the text and Table 1"
 
 # Each assemblage: name, years [start, end) (negative BC), identified mammals (domestic and
-# hunted, carnivores left out), how many of them domestic, lat and lng, and where located.
+# hunted, carnivores left out), how many of them domestic, lat and lng, where located, and
+# whether cultivated crops were grown there (left out where the article says nothing).
 [[access.assemblages]]
 name = "Djara"
 start_year = -6000
@@ -65,6 +77,7 @@ domestic = 4
 lat = 27.29
 lng = 29.72
 located = "p3k14c (Djara)"
+crops = false
 
 [[access.assemblages]]
 name = "Hidden Valley, Farafra"
@@ -75,6 +88,7 @@ domestic = 15
 lat = 27.25
 lng = 27.75
 located = "described"
+crops = false
 
 [[access.assemblages]]
 name = "Sodmein"
@@ -85,6 +99,7 @@ domestic = 111
 lat = 26.32
 lng = 34.02
 located = "p3k14c (Wadi Sodmein Tree Shelter)"
+crops = false
 
 [[access.assemblages]]
 name = "Qasr el-Sagha XI/81"
@@ -95,6 +110,7 @@ domestic = 8
 lat = 29.59
 lng = 30.68
 located = "p3k14c (Qasr El Sagha)"
+crops = false
 
 [[access.assemblages]]
 name = "Qasr el-Sagha IX/81"
@@ -105,6 +121,7 @@ domestic = 75
 lat = 29.59
 lng = 30.68
 located = "p3k14c (Qasr El Sagha)"
+crops = false
 
 [[access.assemblages]]
 name = "KS 43, Kharga"
@@ -115,6 +132,7 @@ domestic = 2803
 lat = 25.48
 lng = 30.63
 located = "p3k14c (Kharga)"
+crops = false
 
 [[access.assemblages]]
 name = "Merimde I"
@@ -125,6 +143,7 @@ domestic = 1326
 lat = 30.30
 lng = 30.84
 located = "p3k14c (Merimde Beni Salame)"
+crops = true
 
 [[access.assemblages]]
 name = "Merimde II-V"
@@ -135,6 +154,7 @@ domestic = 11302
 lat = 30.30
 lng = 30.84
 located = "p3k14c (Merimde Beni Salame)"
+crops = true
 
 [[access.assemblages]]
 name = "Qasr el-Sagha VII A/81"
@@ -155,6 +175,7 @@ domestic = 1574
 lat = 29.50
 lng = 30.50
 located = "p3k14c (Fayum kom W)"
+crops = true
 
 [[access.assemblages]]
 name = "Kom W"
@@ -165,6 +186,7 @@ domestic = 415
 lat = 29.50
 lng = 30.50
 located = "p3k14c (Fayum kom W)"
+crops = true
 
 [[access.assemblages]]
 name = "El-Omari"
@@ -175,6 +197,7 @@ domestic = 437
 lat = 29.78
 lng = 31.33
 located = "p3k14c (El Omari)"
+crops = true
 
 [[access.assemblages]]
 name = "Saïs I (Middle to Late Neolithic)"
@@ -185,6 +208,7 @@ domestic = 104
 lat = 30.97
 lng = 30.77
 located = "p3k14c (Sais)"
+crops = true
 
 [[access.assemblages]]
 name = "Maghar Dendera 2"
@@ -205,6 +229,7 @@ domestic = 422
 lat = 30.97
 lng = 30.77
 located = "p3k14c (Sais)"
+crops = true
 
 [coverage]
 spatial = "Egypt north of 24 N: the Western Desert (Djara, Farafra, Kharga), the Eastern Desert (Sodmein), the Fayum and the Nile valley and delta"
@@ -219,3 +244,8 @@ description = "Identified mammal bones of the assemblage, domestic and hunted, c
 name = "domestic"
 unit = "bones"
 description = "Bones among them of domestic animals: sheep, goat, cattle and pig"
+
+[[variables]]
+name = "crops"
+unit = "1"
+description = "Whether the assemblage's people grew cultivated crops, by the article's statements (left out where it says nothing)"

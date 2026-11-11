@@ -99,7 +99,7 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   (2014), Data sharing reveals complexity in the westward spread of domestic animals
   across Neolithic Turkey, PLoS ONE 9(6): e99845, doi:10.1371/journal.pone.0099845 (CC BY),
   and the faunal studies and Open Context datasets it compiles.
-- **Domestic animals in Egypt** (domestic-stock record): Linseele, V., Van Neer, W.,
+- **Domestic animals and crops in Egypt** (domestic-stock and crops records): Linseele, V., Van Neer, W.,
   Thys, S., Phillipps, R., Cappers, R., Wendrich, W. & Holdaway, S. (2014), New
   archaeozoological data from the Fayum 'Neolithic' with a critical assessment of the
   evidence for early stock keeping in Egypt, PLoS ONE 9(10): e108517,

@@ -210,7 +210,8 @@ prior with the other three held: `judged-reach.json` (150 to 250 km), `judged-re
 and `judged-floodplain-low.json` (0 and 0.1). Their common world, reserve 0.2, exchange
 0.2, floodplain grazing 0.25 and reach 250 km, is consistent for three seeds (summaries
 -83.0) and gives the calibrated defaults; the reserve and the reach only at the tops of
-their priors. The onset record's tables are downloaded by hand (`data/README.md`); without
+their priors. `judged-crops.json` scores those defaults with Egypt's crops judged too
+(ADR-0117): every record consistent, summaries -81.1. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

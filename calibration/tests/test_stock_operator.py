@@ -101,7 +101,7 @@ def test_the_eras_are_judged_together():
     from oikos_cal import history, targets
 
     o = op()
-    t = targets.DomesticStock(o, discrepancy_sd=0.1)
+    t = targets.AssemblageShares(o, discrepancy_sd=0.1)
     assert [x.name for x in t.targets] == o.names
     assert [x.observed for x in t.targets] == [1.0, 1.0]
     np.testing.assert_allclose([x.variance for x in t.targets], o.sampling_variance)

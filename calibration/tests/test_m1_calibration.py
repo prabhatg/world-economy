@@ -73,19 +73,26 @@ def test_the_record_summaries(problem):
     assert [t.name for t in ss][0] == "sheep size (LSI) 12000-8500 BCE" and len(ss) == 6
     assert ss[0].observed > 0.04 and all(t.observed < -0.03 for t in ss[3:]), "wild, then domestic sizes"
     first = problem.names.index(ss[0].name)
-    assert problem.groups[-2].indices == list(range(first, first + 6)) and problem.groups[-2].dof == 6
+    assert problem.groups[-3].indices == list(range(first, first + 6)) and problem.groups[-3].dof == 6
     assert problem.names[-4:] == ["log-likelihood radiocarbon", "log-likelihood domestication",
                                   "log-likelihood obsidian", "people 3000 BCE"]
     # Egypt's domestic animals (#51), judged since herds can reach them (ADR-0116), before
     # the house Ginis a round may leave out.
-    eg = [t for t in problem.targets if t.name.startswith("Egypt")]
+    eg = [t for t in problem.targets if t.name.startswith("Egypt domestic animals")]
     assert [t.name for t in eg] == ["Egypt domestic animals 6200-5000 BCE share of assemblages",
                                     "Egypt domestic animals 5000-3900 BCE share of assemblages"]
     assert [t.observed for t in eg] == [1.0, 1.0] and list(problem.stock.counts) == [5, 10]
     assert eg[0].variance > eg[1].variance > 0, "five assemblages tell less than ten"
     first = problem.names.index(eg[0].name)
-    assert problem.groups[-1].indices == [first, first + 1] and problem.groups[-1].dof == 2
-    assert not any(t.name.startswith("house Gini") for t in problem.targets[:first])
+    assert problem.groups[-2].indices == [first, first + 1] and problem.groups[-2].dof == 2
+    # And their crops (#51, ADR-0117): none in the 6th millennium, none grown in the
+    # deserts, crops in the Nile valley, the delta and the Fayum in the 5th.
+    cr = [t for t in problem.targets if t.name.startswith("Egypt cultivated crops")]
+    assert [t.name for t in cr] == ["Egypt cultivated crops 6200-5000 BCE share of assemblages",
+                                    "Egypt cultivated crops 5000-3900 BCE share of assemblages"]
+    assert [t.observed for t in cr] == [0.0, 0.875] and list(problem.crops.counts) == [5, 8]
+    assert problem.groups[-1].indices == [first + 2, first + 3] and problem.groups[-1].dof == 2
+    assert not any(t.name.startswith("house Gini") for t in problem.targets[:first + 2])
 
 
 def test_the_wheats_leave_out_the_villages_the_model_cannot_farm(problem):

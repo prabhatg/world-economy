@@ -291,7 +291,10 @@
     since ADR-0116, the record calibrates all four on (reserve 0.2, exchange 0.2,
     floodplain grazing 0.25, reach 250 km): the 6th millennium's assemblages show
     domestic animals at 0.60-0.67, the 5th's at 0.999, the reserve and the reach at the
-    tops of their priors, which a round should widen. Is the
+    tops of their priors, which a round should widen. Their crops, judged since
+    ADR-0117, fit at the defaults: none in the 6th millennium or the deserts, crops in
+    the Nile valley and the Fayum in the 5th; without seed exchange the Fayum's
+    neighbours farm in the 6th millennium. Is the
     rest the desert foragers' own wide ties, along which a few animals passed (Hidden
     Valley's hunters kept a few goats far from any herders' new home)? And the crops: the model's Mediterranean coast of Egypt domesticates its own
     wild barley from about 8,000 BCE, while Egypt's earliest crops (Merimde, the Fayum,

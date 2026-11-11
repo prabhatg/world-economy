@@ -86,8 +86,9 @@ transcribed with its citation into the manifest by the maintainer's decision
 Domestic animals in Egypt come from Linseele et al. (2014, PLoS ONE 9: e108517, CC BY 4.0,
 checked 2026-11-10; #51): the domestic and hunted mammal bones of 15 dated assemblages of
 the 6th and 5th millennia BCE in the Western and Eastern Deserts, the Fayum and the Nile
-valley (Tables 3 and 6), transcribed into the manifest; sites are located by their
-radiocarbon samples in p3k14c.
+valley (Tables 3 and 6), and whether each one's people grew crops by the article's
+statements (13 of them; ADR-0117), transcribed into the manifest; sites are located by
+their radiocarbon samples in p3k14c.
 
 ## Forcing (inputs)
 

@@ -447,11 +447,11 @@ class SheepSize:
         return self.op.expected(activity)
 
 
-class DomesticStock:
+class AssemblageShares:
     def __init__(self, op, discrepancy_sd=0.1):
-        """Eras of `op` (`stock.Operator`): each era's share of assemblages holding domestic
-        animals, with the sampling variance of its few assemblages; judged together, the
-        eras' assemblages independent."""
+        """Eras of `op` (`stock.Operator`, `crops.Operator`): each era's share of
+        assemblages holding domestic animals or cultivated crops, with the sampling variance
+        of its few assemblages; judged together, the eras' assemblages independent."""
         self.op = op
         self.targets = [_target(n, z, v, discrepancy_sd**2)
                         for n, z, v in zip(op.names, op.observed, op.sampling_variance)]

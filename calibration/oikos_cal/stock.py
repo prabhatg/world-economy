@@ -31,9 +31,44 @@ import numpy as np
 
 from .radiocarbon import Window
 
-__all__ = ["Operator", "GAME"]
+__all__ = ["Operator", "GAME", "place", "era_shares"]
 
 GAME = 0.1  # mammal bones per unit of foraging effort, for one of herding (herds.HUNTING)
+
+
+def place(assemblages, cells, window: Window, eras, rings):
+    """The assemblages an operator scores, each with its era, the cells within `rings` of
+    its site (positions in `cells`, H3 ids ascending) and its centuries' weights by
+    overlap: (kept, era_of, near, weight). An assemblage goes to the era holding its
+    midpoint; one in none is left out."""
+    cells = np.asarray(cells, dtype=np.uint64)
+    res = h3.get_resolution(h3.int_to_str(int(cells[0])))
+    lo = window.first + 100 * np.arange(window.centuries)
+    kept, era_of, near, weight = [], [], [], []
+    for a in assemblages:
+        start, end = a["start_year"], a["end_year"]
+        era = next((k for k, (s, e) in enumerate(eras) if s <= (start + end) / 2 < e), None)
+        if era is None:
+            continue
+        cell = h3.latlng_to_cell(a["lat"], a["lng"], res)
+        disk = np.array(sorted(h3.str_to_int(x) for x in h3.grid_disk(cell, rings)), dtype=np.uint64)
+        pos = np.searchsorted(cells, disk).clip(max=len(cells) - 1)
+        kept.append(a)
+        era_of.append(era)
+        near.append(pos[cells[pos] == disk])
+        weight.append(np.clip(np.minimum(end, lo + 100) - np.maximum(start, lo), 0, None) / 100)
+    return kept, np.array(era_of, dtype=int), near, weight
+
+
+def era_shares(era_of, held, eras):
+    """Each era's share of assemblages holding the thing, how many it has, and the
+    sampling variance of Jeffreys' posterior of the share, Beta(k + 1/2, n - k + 1/2)."""
+    if missing := [e for k, e in enumerate(eras) if not (era_of == k).any()]:
+        raise ValueError(f"eras {missing} hold no assemblage")
+    observed = np.array([held[era_of == k].mean() for k in range(len(eras))])
+    counts = np.array([(era_of == k).sum() for k in range(len(eras))])
+    a, b = observed * counts + 0.5, counts - observed * counts + 0.5
+    return observed, counts, a * b / ((a + b) ** 2 * (a + b + 1))
 
 
 class Operator:
@@ -43,32 +78,11 @@ class Operator:
         ascending; `eras`: (start, end) years, each assemblage going to the one holding its
         midpoint (none: left out)."""
         self.window, self.game, self.eras = window, game, list(eras)
-        cells = np.asarray(cells, dtype=np.uint64)
-        res = h3.get_resolution(h3.int_to_str(int(cells[0])))
-        lo = window.first + 100 * np.arange(window.centuries)
-        self.era_of, self.near, self.weight, self.bones, held = [], [], [], [], []
-        for a in assemblages:
-            start, end = a["start_year"], a["end_year"]
-            era = next((k for k, (s, e) in enumerate(self.eras) if s <= (start + end) / 2 < e), None)
-            if era is None:
-                continue
-            cell = h3.latlng_to_cell(a["lat"], a["lng"], res)
-            disk = np.array(sorted(h3.str_to_int(x) for x in h3.grid_disk(cell, rings)), dtype=np.uint64)
-            pos = np.searchsorted(cells, disk).clip(max=len(cells) - 1)
-            self.era_of.append(era)
-            self.near.append(pos[cells[pos] == disk])
-            self.weight.append(np.clip(np.minimum(end, lo + 100) - np.maximum(start, lo), 0, None) / 100)
-            self.bones.append(float(a["mammals"]))
-            held.append(a["domestic"] > 0)
-        self.era_of, self.bones, held = np.array(self.era_of), np.array(self.bones), np.array(held)
-        if missing := [e for k, e in enumerate(self.eras) if not (self.era_of == k).any()]:
-            raise ValueError(f"eras {missing} hold no assemblage")
+        kept, self.era_of, self.near, self.weight = place(assemblages, cells, window, self.eras, rings)
+        self.bones = np.array([float(a["mammals"]) for a in kept])
+        held = np.array([a["domestic"] > 0 for a in kept])
         self.names = [f"{label} domestic animals {-s}-{-e} BCE share of assemblages" for s, e in self.eras]
-        self.observed = np.array([held[self.era_of == k].mean() for k in range(len(self.eras))])
-        self.counts = np.array([(self.era_of == k).sum() for k in range(len(self.eras))])
-        a = self.observed * self.counts + 0.5
-        b = self.counts - self.observed * self.counts + 0.5
-        self.sampling_variance = a * b / ((a + b) ** 2 * (a + b + 1))
+        self.observed, self.counts, self.sampling_variance = era_shares(self.era_of, held, self.eras)
 
     def cells(self):
         """The cell sets it reads (`zones`, #47)."""
