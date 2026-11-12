@@ -215,7 +215,12 @@ their priors. `judged-crops.json` scores those defaults with Egypt's crops judge
 and `wide-reserve.json` (0.3 and 0.4) take the two beyond their priors (ADR-0118): the
 reach is flat within the seeds' spread, the reserve inconsistent with Egypt's crops.
 `merged-defaults.json` scores the defaults once merging bands keep their domestic
-animals and crops (ADR-0119): every record consistent, summaries -81.7. The onset record's tables are downloaded by hand (`data/README.md`); without
+animals and crops (ADR-0119): every record consistent, summaries -81.7.
+Round 15 judges Egypt's animals and crops in `runs/m1/round15/`: `screening.json` screens
+the 67 free parameters, `wave1.json` to `wave6.json` emulate 24 factors (the Egypt
+hypotheses varied as noise; waves 5 and 6 ran 196 and 53 worlds, all a million draws found
+in what was left), and `best.json` over waves 2-6 records that none of their worlds is
+consistent, so the calibrated defaults stay (ADR-0120). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

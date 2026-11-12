@@ -148,7 +148,10 @@ reserve of animals (ADR-0114), stock exchange, floodplain grazing and herders' l
 moves (ADR-0115) are calibrated on by profile, and herds reach the desert's
 6th-millennium sites and the Nile's 5th-millennium villages, every record consistent.
 Their crops are judged too (ADR-0117): none in the 6th millennium or the deserts, crops in
-the Nile valley, the delta and the Fayum in the 5th, as the defaults have it.
+the Nile valley, the delta and the Fayum in the 5th, as the defaults have it. Round 15
+(ADR-0120) judges both and finds no world nearer the record than the calibrated defaults,
+which stay; Egypt's crops now bound the pace of domestication from below. Hidden Valley
+(#52) and the Fayum's farming without seed exchange (#53) remain.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

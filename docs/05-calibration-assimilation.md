@@ -307,6 +307,11 @@ under 0.005% of the prior and one consistent world, which its rerun no longer fi
 consistent, so the defaults stay again. A profile of seed exchange at the defaults is
 consistent everywhere and rises to a plateau from 0.3 (summaries -82.9 off, -81.1 at 0.3),
 mostly through the domestication record, so seed exchange is calibrated at 0.3.
+Round 15 (ADR-0120) judges Egypt's domestic animals and crops: its six waves leave under
+0.005% of the prior and no consistent world among 1,449, so the defaults stay. Egypt's
+5th-millennium crops hold the pace of domestication from below (selection_coefficient
+median 0.0102 where they show, 0.0056 where they do not), as the Levant's early barley
+holds it from above; the default, 0.0091, fits both.
 
 Differentiable subsets (via JAX surrogates or smooth relaxations; cf. GradABM) can
 accelerate step 4 where gradients are meaningful.

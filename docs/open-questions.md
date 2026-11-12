@@ -298,8 +298,10 @@
     herd's domestic share and the desert grazes little. Their crops, judged since
     ADR-0117, fit at the defaults: none in the 6th millennium or the deserts, crops in
     the Nile valley and the Fayum in the 5th; without seed exchange the Fayum's
-    neighbours farm in the 6th millennium. Is the
-    rest the desert foragers' own wide ties, along which a few animals passed (Hidden
+    neighbours farm in the 6th millennium (why, #53). Round 15 keeps the defaults
+    (ADR-0120): in its worlds Egypt's crops reach the Nile by the 5th millennium only
+    where barley is selected fast enough, which the Levant's early barley caps. Is the
+    rest the desert foragers' own wide ties (#52), along which a few animals passed (Hidden
     Valley's hunters kept a few goats far from any herders' new home)? And the crops: the model's Mediterranean coast of Egypt domesticates its own
     wild barley from about 8,000 BCE, while Egypt's earliest crops (Merimde, the Fayum,
     the 5th millennium BCE) came from Southwest Asia with emmer, which never grew wild
