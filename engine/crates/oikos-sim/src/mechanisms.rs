@@ -265,9 +265,22 @@ fn least_crowded_by(
     cells: impl IntoIterator<Item = u32>,
     capacity: impl Fn(u32) -> u64,
 ) -> Option<(u32, u64)> {
+    least_crowded_among(cells.into_iter().map(|c| (c, sense.population[c as usize], capacity(c))), false)
+}
+
+/// The least crowded of `(cell, people, capacity)` by N/K (the first on ties), and its
+/// capacity; `feeding` leaves out places that feed nobody, which compare as no more
+/// crowded than any other and, empty, as no less (#13).
+fn least_crowded_among(
+    cells: impl IntoIterator<Item = (u32, u64, u64)>,
+    feeding: bool,
+) -> Option<(u32, u64)> {
     let mut best: Option<(u32, u128, u128)> = None;
-    for c in cells {
-        let (n, k) = (sense.population[c as usize] as u128, capacity(c) as u128);
+    for (c, n, k) in cells {
+        if feeding && k == 0 {
+            continue;
+        }
+        let (n, k) = (n as u128, k as u128);
         if best.is_none_or(|(_, bn, bk)| n * bk < bn * k) {
             best = Some((c, n, k));
         }
@@ -351,6 +364,15 @@ pub fn harvest_shock(seed: u64, cell: u32, year: u64, correlation: f64) -> f64 {
     correlation.sqrt() * standard(u64::MAX) + (1.0 - correlation).sqrt() * own
 }
 
+/// The share of its cell's capacity a band at `effort` lives on in a year of `shock`, its
+/// cell's harvest spreading by `cell_cv` for a band cultivating fully: 1 + its spread,
+/// moving with its effort from `forage_risk_ratio` of the cell's to all of it, times the
+/// shock, at least 0 (#13).
+pub fn harvest_share(forage_risk_ratio: f64, effort: f64, cell_cv: f64, shock: f64) -> f64 {
+    let cv = cell_cv * (forage_risk_ratio + (1.0 - forage_risk_ratio) * effort);
+    (1.0 + cv * shock).max(0.0)
+}
+
 /// [`harvest_shock`] in the year of `tick`: one harvest a year, however often growth runs.
 pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64) -> f64 {
     harvest_shock(seed, cell, tick.years(), correlation)
@@ -429,8 +451,7 @@ impl Growth {
     /// The share of its cell's capacity a band at `effort` lives on this year: 1 + its
     /// harvest's spread times the cell's `shock`, at least 0 (#13).
     pub fn harvest(&self, effort: f64, cell_cv: f64, shock: f64) -> f64 {
-        let cv = cell_cv * (self.forage_risk_ratio + (1.0 - self.forage_risk_ratio) * effort);
-        (1.0 + cv * shock).max(0.0)
+        harvest_share(self.forage_risk_ratio, effort, cell_cv, shock)
     }
 }
 
@@ -914,6 +935,20 @@ impl Mechanism for Fission {
 /// as will do (intervening opportunities, Stouffer 1940), and herders cross land that
 /// feeds them nothing to reach grazing beyond, as Egypt's desert groups moved 150-200 km
 /// between the oases and the Nile (Linseele et al. 2014). `reach_km` 0 switches it off.
+///
+/// People judge the land by the year they are living (#13): crowding, a neighbor's room
+/// and how crowded it is are reckoned on what the year's harvest feeds
+/// ([`harvest_share`]), as far as `bad_years` weighs ([`Dispersal::this_year`]), so a bad
+/// year crowds a cell and sends a group toward a neighbor the rain favoured. Moving is the
+/// first answer to a bad year (Halstead and O'Shea 1989): foragers leave camps whose
+/// returns have fallen and herders take their flocks to where the rain fell (Kelly 2013),
+/// and people weigh what they have just lived through heavily (Hertwig et al. 2004). The
+/// origin is judged at its people's mean cultivation effort, a neighbor at the group's.
+/// A group with food stored stays through a bad year ([`Dispersal::stays`]): it eats from
+/// its store, and its fields and stores tie it down. `bad_years` 0 judges by the mean,
+/// as the M1 records have it (ADR-0125): judging by the year empties Egypt's deserts of
+/// herds, and with years independent a move takes a group to land the next year treats
+/// as any other. Places that feed nobody are no destination.
 #[derive(Clone, Debug)]
 pub struct Dispersal {
     pub period_ticks: u64,
@@ -923,10 +958,55 @@ pub struct Dispersal {
     pub reach_km: f64,
     /// (wild_yield_ratio, wild_herd_ratio), for [`Sense::capacity_joined`].
     pub yields: (f64, f64),
+    pub bad_years: f64,
+    pub forage_risk_ratio: f64,
+    pub harvest_correlation: f64,
     pub after: Vec<&'static str>,
 }
 
 impl Dispersal {
+    /// What a capacity of `k` feeds as people judge it in a year whose harvest feeds `share`
+    /// of it: `k` moved toward `k * share` as far as `bad_years` weighs.
+    pub fn this_year(&self, k: u64, share: f64) -> u64 {
+        if share == 1.0 || self.bad_years == 0.0 {
+            return k;
+        }
+        (k as f64 * (1.0 + self.bad_years * (share - 1.0))).max(0.0) as u64
+    }
+
+    /// Whether a group holding `store` stays in a year whose harvest feeds `share` of its
+    /// cell's capacity: it does in a bad year while it has food stored.
+    pub fn stays(store: u32, share: f64) -> bool {
+        store > 0 && share < 1.0
+    }
+
+    /// The share of its capacity `cell`'s harvest feeds this year for a band at `effort`
+    /// (1 without harvest risk, or where the year does not weigh).
+    fn share(&self, sense: &Sense<'_>, cell: u32, effort: f64) -> f64 {
+        if self.bad_years == 0.0 || sense.harvest_cv.is_empty() {
+            return 1.0;
+        }
+        let cv = sense.harvest_cv[cell as usize];
+        if cv == 0.0 {
+            return 1.0;
+        }
+        let z = harvest_at(sense.seed, cell, sense.tick, self.harvest_correlation);
+        harvest_share(self.forage_risk_ratio, effort, cv, z)
+    }
+
+    /// `cell`'s capacity as its people judge it this year, at their mean cultivation effort.
+    fn judged(&self, sense: &Sense<'_>, cell: u32) -> u64 {
+        let c = cell as usize;
+        let k = sense.capacity[c];
+        if self.bad_years == 0.0 || sense.harvest_cv.is_empty() {
+            return k;
+        }
+        let effort = match sense.population[c] {
+            0 => 0.0,
+            n => sense.effort_sum[c] as f64 / (n as f64 * SHARE_ONE as f64),
+        };
+        self.this_year(k, self.share(sense, cell, effort))
+    }
     /// The chance per period that a crowded cell of `own` people in a catchment of
     /// `catchment` buds off a group (#50): `probability` times its share of the catchment's
     /// people, so a catchment buds as often as a cell did.
@@ -940,18 +1020,24 @@ impl Dispersal {
         self.probability * (own as f64 / catchment as f64)
     }
 
-    /// A habitable cell at least `crowding` full (last step).
-    fn crowded(&self, sense: &Sense<'_>, cell: u32) -> bool {
-        let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
+    /// A habitable cell at least `crowding` full (people last step, capacity `k`).
+    fn crowded(&self, sense: &Sense<'_>, cell: u32, k: u64) -> bool {
+        let n = sense.population[cell as usize];
         sense.habitable[cell as usize] && n as f64 >= self.crowding * k as f64
     }
 
     /// The least crowded habitable neighbor of `cell` (beyond its catchment where they reach
     /// beyond cells, [`Catchments::away`]) by the capacities `capacity(c)`, if it is less
-    /// crowded than `cell`, and its capacity.
-    fn target(&self, sense: &Sense<'_>, cell: u32, capacity: impl Fn(u32) -> u64) -> Option<(u32, u64)> {
-        let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
-        let (dest, kd) = least_crowded_by(sense, habitable_away(sense, cell), capacity)?;
+    /// crowded than `cell` at capacity `k`, and its capacity.
+    fn target(
+        &self,
+        sense: &Sense<'_>,
+        (cell, k): (u32, u64),
+        capacity: impl Fn(u32) -> u64,
+    ) -> Option<(u32, u64)> {
+        let n = sense.population[cell as usize];
+        let cells = habitable_away(sense, cell).map(|c| (c, sense.population[c as usize], capacity(c)));
+        let (dest, kd) = least_crowded_among(cells, true)?;
         let nd = sense.population[dest as usize];
         (nd as u128 * (k as u128) < n as u128 * kd as u128).then_some((dest, kd))
     }
@@ -965,18 +1051,19 @@ impl Dispersal {
         (self.reach_km / step_km + 0.5) as usize
     }
 
-    /// Where a group of `take` people leaving `cell` goes within `reach` steps over habitable
-    /// land, from catchment to neighboring catchment: the least crowded, by the capacities
-    /// `capacity(c)`, of the nearest ring's places less crowded than `cell` with room for
-    /// it. `search` holds the catchments seen and the rings, reused between groups.
+    /// Where a group of `take` people leaving `cell` (capacity `k`) goes within `reach` steps
+    /// over habitable land, from catchment to neighboring catchment: the least crowded, by
+    /// the capacities `capacity(c)`, of the nearest ring's places less crowded than `cell`
+    /// with room for it. `search` holds the catchments seen and the rings, reused between
+    /// groups.
     fn farther(
         &self,
         sense: &Sense<'_>,
-        (cell, reach, take): (u32, usize, u64),
+        (cell, k, reach, take): (u32, u64, usize, u64),
         capacity: impl Fn(u32) -> u64,
         search: &mut Search,
     ) -> Option<u32> {
-        let (n, k) = (sense.population[cell as usize] as u128, sense.capacity[cell as usize] as u128);
+        let (n, k) = (sense.population[cell as usize] as u128, k as u128);
         let trivial = sense.catchments.is_trivial();
         let key = |c: u32| if trivial { c } else { sense.catchments.of(c as usize) as u32 };
         let Search { seen, ring, next } = search;
@@ -1028,6 +1115,9 @@ impl Dispersal {
             fraction: p.dispersal_fraction,
             reach_km: p.herder_reach_km,
             yields: (p.wild_yield_ratio, p.wild_herd_ratio),
+            bad_years: p.bad_year_moves,
+            forage_risk_ratio: p.forage_risk_ratio,
+            harvest_correlation: p.harvest_correlation,
             after: vec!["fission"],
         }
     }
@@ -1074,11 +1164,12 @@ impl Mechanism for Dispersal {
                 let c = cell as usize;
                 Probability::from_f64(self.chance(sense.cell_population[c], sense.population[c]))
             };
-            if self.crowded(sense, cell) && go.hit(rng.u32(cell as u64, t, 0, 0)) {
+            let k = self.judged(sense, cell);
+            if self.crowded(sense, cell, k) && go.hit(rng.u32(cell as u64, t, 0, 0)) {
                 // Without farming a neighbor's capacity is its residents' whoever joins them,
                 // so the target is the same for every band.
                 let residents =
-                    (!sense.farming).then(|| self.target(sense, cell, |c| sense.capacity[c as usize]));
+                    (!sense.farming).then(|| self.target(sense, (cell, k), |c| sense.capacity[c as usize]));
                 // The first band (canonical order) whose group has somewhere to go buds off.
                 for a in (residents != Some(None)).then_some(i..end).into_iter().flatten() {
                     let w = part.agents.weight[a];
@@ -1086,9 +1177,20 @@ impl Mechanism for Dispersal {
                     if take == 0 {
                         continue;
                     }
+                    let effort = Traits::share(part.agents.cultivation[a]);
+                    let store = part.agents.store[a];
+                    if store > 0
+                        && self.bad_years > 0.0
+                        && Self::stays(store, self.share(sense, cell, effort))
+                    {
+                        continue;
+                    }
+                    let year = |c: u32, kc: u64| self.this_year(kc, self.share(sense, c, effort));
                     let target = residents.unwrap_or_else(|| {
                         let traits = part.agents.traits(a);
-                        self.target(sense, cell, |c| sense.capacity_joined(c, take, &traits, self.yields))
+                        self.target(sense, (cell, k), |c| {
+                            year(c, sense.capacity_joined(c, take, &traits, self.yields))
+                        })
                     });
                     let near = target
                         .filter(|&(dest, kd)| take <= kd.saturating_sub(sense.population[dest as usize]))
@@ -1104,8 +1206,8 @@ impl Mechanism for Dispersal {
                             return None;
                         }
                         let traits = part.agents.traits(a);
-                        let capacity = |c: u32| sense.capacity_joined(c, take, &traits, self.yields);
-                        self.farther(sense, (cell, reach, take), capacity, &mut search)
+                        let capacity = |c: u32| year(c, sense.capacity_joined(c, take, &traits, self.yields));
+                        self.farther(sense, (cell, k, reach, take), capacity, &mut search)
                     });
                     if let Some(dest) = dest {
                         part.agents.weight[a] = w - take;
@@ -2276,6 +2378,17 @@ mod tests {
             m.decide(&sense, &mut part, 0..len);
         }
         agents
+    }
+
+    #[test]
+    fn a_place_that_feeds_nobody_is_no_destination_and_hides_none() {
+        // A failed harvest leaves an empty neighbor feeding nobody (#13): 0 people of 0 is
+        // no less crowded than anywhere, so it must not stand first and hide the rest.
+        let ranked = |c: &[(u32, u64, u64)]| least_crowded_among(c.iter().copied(), true);
+        assert_eq!(ranked(&[(1, 0, 0), (2, 10, 100), (3, 50, 100)]), Some((2, 100)));
+        assert_eq!(ranked(&[(1, 0, 0)]), None, "nowhere to go");
+        assert_eq!(ranked(&[(1, 5, 0), (2, 10, 100)]), Some((2, 100)));
+        assert_eq!(least_crowded_among([(1, 0, 0), (2, 10, 100)], false), Some((1, 0)), "as fission ranks");
     }
 
     #[test]

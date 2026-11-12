@@ -770,6 +770,22 @@ sources = [
   { citation = "FAO (1994). Grain storage techniques: evolution and trends in developing countries, chapter 6: post-harvest losses. FAO Agricultural Services Bulletin 109.", url = "https://www.fao.org/4/W1544E/W1544E05.htm" },
 ]
 
+[params.bad_year_moves]
+group = "foraging"
+unit = "1"
+description = "How far a bad or good year's harvest, rather than the land's long-run mean, decides whether a group leaves its cell and where it goes (#13): 0 judges the land by its mean, 1 by the year's harvest at the group's practice. A group with food stored stays through a bad year."
+kind = { type = "probability" }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "calibrated"
+note = "Calibrated on M1 by profile (ADR-0125): at the calibrated defaults, 0 is consistent for three seeds (summaries -82.6), 0.5 and 1 are not (-83.7 and -90.2), Egypt's 6th-millennium desert assemblages holding domestic animals falling from about 0.62 to 0.48 and 0.30 of them (the record: all), so the land is judged by its mean, as before. Moving is the first answer to a bad year (Halstead and O'Shea 1989): foragers leave camps whose returns have fallen and herders take their flocks to where the rain fell (Kelly 2013), and people weigh what they have just lived through heavily (decisions from experience, Hertwig et al. 2004). In the model years are independent, so a year's move takes a group to land the next year treats as any other, and forage_risk_ratio already stands for moving within the year; the hypothesis stays, switched off, for the data to judge again."
+sources = [
+  { citation = "Halstead, P., O'Shea, J. (eds.) (1989). Bad Year Economics: Cultural Responses to Risk and Uncertainty. Cambridge University Press.", doi = "10.1017/CBO9780511521218" },
+  { citation = "Kelly, R.L. (2013). The Lifeways of Hunter-Gatherers: The Foraging Spectrum. Cambridge University Press.", doi = "10.1017/CBO9781139176132" },
+  { citation = "Hertwig, R., Barron, G., Weber, E.U., Erev, I. (2004). Decisions from experience and the effect of rare events in risky choice. Psychological Science 15, 534-539.", doi = "10.1111/j.0956-7976.2004.00715.x" },
+  { citation = "ManyWorlds M1 profile of bad_year_moves at the calibrated defaults (ADR-0125): calibration/runs/m1/f13/profile-bad-year-moves.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"

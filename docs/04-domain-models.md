@@ -143,8 +143,12 @@ enters the model, and the starting mechanisms.
   year. Storing takes a delayed-return economy and norms that let a household keep its
   store against demands to share (Woodburn 1982; Testart 1982), which settled
   cultivators have, as granaries and household stores show (Kuijt and Finlayson 2009;
-  Bogaard et al. 2009), and mobile foragers mostly do not. Sharing between groups and
-  moving in bad years are still to come.
+  Bogaard et al. 2009), and mobile foragers mostly do not. Moving in bad years is a
+  hypothesis the records reject for now (ADR-0125, `bad_year_moves` 0): judging where
+  to go by the year's harvest rather than the land's mean keeps foragers on a margin
+  bad years would empty, but empties Egypt's 6th-millennium deserts of herds, and with
+  years independent a move buys little that `forage_risk_ratio` does not already stand
+  for. Sharing between groups is still to come.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.
