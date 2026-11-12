@@ -1,6 +1,6 @@
 {
  "command": "profile",
- "revision": "6490581-dirty",
+ "revision": "4381410-dirty",
  "sites": "settlements",
  "left_out": [],
  "parameter": "harvest_sharing",
