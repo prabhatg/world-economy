@@ -76,6 +76,8 @@ fn herders() -> Params {
         herd_selection: 0.02,
         dispersal_probability: 0.3,
         fission_probability: 0.3,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     }
 }
@@ -98,6 +100,8 @@ fn crowded_bands_aim_to_herd_more_wherever_their_flocks_can_graze() {
         herd_pressure_weight: 0.6,
         cultivation_crowding: 1.0,
         herd_reserve: 0.0,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     let c = Cultivation::from_params(&p);
@@ -133,6 +137,8 @@ fn wadis_gather_runoff_into_grazing_where_rain_alone_grows_none() {
         pasture_precip_full: 300.0,
         wadi_share: 0.1,
         runoff_coefficient: 0.2,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     let wadi = |rain: f64| rain * (1.0 + 0.2 * 0.9 / 0.1);
@@ -165,6 +171,8 @@ fn herds_become_domestic_from_wild_animals_only_where_they_range() {
     let c = Cultivation::from_params(&Params {
         herd_selection: 0.1,
         herd_wild_frequency: 0.01,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     });
     let d = c.domesticate_herd(0.0, 1.0, 1.0);

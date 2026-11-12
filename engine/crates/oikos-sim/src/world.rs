@@ -1048,6 +1048,7 @@ impl World {
                 suitability: &f.suitability,
                 climate_stress: &f.stress,
                 climate_variability: &f.variability,
+                harvest_cv: &f.harvest_cv,
                 population: if reach { &r.population } else { &self.population },
                 effort_sum: if reach { &r.effort_sum } else { &self.effort_sum },
                 farm: if reach { &r.farm } else { &f.farm },

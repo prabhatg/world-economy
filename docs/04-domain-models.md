@@ -126,7 +126,18 @@ enters the model, and the starting mechanisms.
   juvenile index of rural cemeteries would test it (#33). Births and deaths are gross
   events (ADR-0068): births at the band's fertility, which moves with cultivation
   effort from `fertility` to `sedentary_fertility` (equal by default), deaths the rest
-  of the logistic change.
+  of the logistic change. Years differ (#13, ADR-0122): each year a band lives on its
+  cell's capacity times 1 + its harvest's spread times the cell's shock, part shared
+  by the whole region so droughts strike many cells at once. The spread is
+  `harvest_cv` where rain no longer limits cereals, growing as rain falls (Golodets et
+  al. 2013), and a band feels a share of it that moves with its cultivation effort
+  from `forage_risk_ratio` to all of it: foragers and herders, with many wild foods
+  and free to move, feel less of a bad year than farmers tied to their fields
+  (Winterhalder 1986; Halstead and O'Shea 1989). A bad year kills at most the people
+  its harvest cannot feed. With `harvest_cv` 0.4 the records are consistent only if
+  foragers and herders feel about a fifth of a farmer's swings (`forage_risk_ratio`
+  0.2), which stands for their moving to where the rain fell; storage, sharing and
+  bad-year moves are to follow (#13).
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.

@@ -176,6 +176,33 @@ pub fn capacity_at(land: &Land, practice: &Practice, (w, h): (f64, f64)) -> u64 
     (oikos_math::finite(foraging + fields + herds) as u64).max(1)
 }
 
+/// Year-to-year spread (coefficient of variation) of a rain-fed harvest at `precip_mm` a
+/// year (#13): `harvest_cv` where rain no longer limits wild cereals (`cereal_precip_full`
+/// and wetter), drier growing as the square root of the shortfall, rain varying more
+/// from year to year where it is scarce (Golodets et al. 2013), to at most the mean.
+pub fn harvest_cv(precip_mm: f64, p: &Params) -> f64 {
+    if p.harvest_cv <= 0.0 {
+        return 0.0;
+    }
+    if precip_mm <= 0.0 {
+        return 1.0;
+    }
+    let drier = (p.cereal_precip_full / precip_mm).max(1.0);
+    oikos_math::finite(p.harvest_cv * drier.sqrt()).min(1.0)
+}
+
+/// The spread of a cell's harvest at `precip_mm` with `farm` people fed by its rain-fed
+/// fields and `flood` by its floodplain fields at full effort: the fields' mean, floods
+/// swinging as a harvest where rain no longer limits it (`harvest_cv`); without fields,
+/// the rain's own.
+pub fn harvest_cv_of(precip_mm: f64, farm: f64, flood: f64, p: &Params) -> f64 {
+    let rain = harvest_cv(precip_mm, p);
+    if farm + flood <= 0.0 {
+        return rain;
+    }
+    oikos_math::finite((farm * rain + flood * p.harvest_cv.max(0.0)) / (farm + flood))
+}
+
 /// A cell's soil share (1 = its original erodible soil) after `years` with its people
 /// spending `effort` cultivating: fields erode it at `soil_erosion_rate` times effort, a
 /// steady loss of depth (Montgomery 2007), while soil re-forms at `soil_formation_rate`
@@ -418,6 +445,8 @@ pub struct Farmland {
     pub herd_pasture: Vec<f64>,
     /// Relative decline of forager capacity since `stress_window_years` earlier, in [0, 1].
     pub stress: Vec<f64>,
+    /// Year-to-year spread of the harvest of a band cultivating fully ([`harvest_cv_of`], #13).
+    pub harvest_cv: Vec<f64>,
     /// Climate variability: the mean absolute change of suitability per century over the
     /// stress window (at least one century), between the century boundaries before the year.
     pub variability: Vec<f64>,
@@ -463,6 +492,7 @@ impl Farmland {
             &mut self.herd_range,
             &mut self.herd_pasture,
             &mut self.stress,
+            &mut self.harvest_cv,
         ] {
             v.resize(cells, 0.0);
         }
@@ -479,6 +509,8 @@ impl Farmland {
             self.pasture[c] = pasture;
             self.herd_range[c] = oikos_math::finite(now.dry_area(c) * range * p.herd_density);
             self.herd_pasture[c] = oikos_math::finite(now.dry_area(c) * pasture * p.herd_density);
+            self.harvest_cv[c] =
+                climate.map_or(0.0, |(_, w)| harvest_cv_of(w, self.farm[c], self.flood[c], p));
             let own = |y: &Year<'_>| y.foragers(c, if y.water(c, p) { 1.0 } else { 0.0 }, p);
             let (k, k0) = (own(&now), own(&before));
             self.stress[c] = if k0 > 0.0 { (1.0 - k / k0).clamp(0.0, 1.0) } else { 0.0 };

@@ -106,6 +106,8 @@ fn foragers(res: u8, density: f64, radius_km: f64, years: u64) -> u64 {
         cultivation_stress_weight: 0.0,
         cultivation_variability_weight: 0.0,
         catchment_radius_km: radius_km,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     let climate = climate_pack_at(&h3, res, precip_for(density));
@@ -185,6 +187,8 @@ fn farming_world(res: u8, radius_km: f64, seed: u64) -> (World, Vec<u8>, Vec<u8>
         settlement_integration: 3.0,
         settlement_hierarchy: 0.0,
         catchment_radius_km: radius_km,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();

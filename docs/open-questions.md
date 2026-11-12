@@ -349,6 +349,12 @@
     same share of their effort into sowing (0.18 and 0.19 of people-years, seeds 1-3), so
     no rule keyed to sedentism, which the model measures by that effort, would separate
     them. What did was most likely El Kowm's water, which brings back springs (ADR-0110).
+44. How did people answer harvest risk (ADR-0122)? Harvests now swing from year to year,
+    more where rain is scarce, and the records are consistent only if foragers and
+    herders feel about a fifth of a farmer's swings, as if they moved to where the rain
+    fell. The answers the literature describes are storage, sharing, moving in bad years
+    and spreading effort over crops and herds (Halstead and O'Shea 1989); which of them
+    a record can tell apart is open. Storage comes first (#13).
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

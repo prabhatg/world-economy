@@ -694,6 +694,51 @@ sources = [
   { citation = "Dahl, G., Hjort, A. (1976). Having Herds: Pastoral Herd Growth and Household Economy. Stockholm Studies in Social Anthropology 2. University of Stockholm." },
 ]
 
+[params.harvest_cv]
+group = "environment"
+unit = "1"
+description = "Year-to-year spread of a rain-fed harvest (coefficient of variation) where rain no longer limits wild cereals (cereal_precip_full and wetter); drier, it grows as the square root of cereal_precip_full over the rain, to at most 1 (#13). Floodplain fields swing at this value. Each year's harvest is the mean times 1 + the spread times a standard shock (harvest_correlation), at least 0. 0: every year alike."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.4
+prior = { dist = "uniform", lo = 0.2, hi = 0.6 }
+status = "literature"
+note = "A judgment from the records of rain and yields in the dry Near East: rain's year-to-year spread falls as rain rises, to about 500 mm (Golodets et al. 2013, on a gradient from 90 to 780 mm in Israel); Jordan's cereal lands have rainfall CVs of 36% at 400 mm and 48% to 80% drier; dry-farmed yields swing further than rain, from nothing to three times the mean (FAO 2008), barley's CV 94% in northeast Iran. So 0.4 where rain no longer limits cereals. The square-root form is a judgment: at the defaults the spread is 0.4 at 350 mm, 0.53 at 200 mm (the dry limit of farming, Wilkinson 1994) and 0.75 at 100 mm. The shock is linear: the threshold below which a dry-farmed crop fails outright is left out. Profiles at the calibrated defaults with forage_risk_ratio 0.2 (ADR-0122; calibration/runs/m1/f13/profile-harvest-cv-ratio-0.2.json, three seeds each) are consistent at 0.2 and 0.4 (summaries -82.2 and -81.1, against -82.1 without harvest risk) and not at 0.6, where too few of Egypt's 6th-millennium desert assemblages hold domestic animals: the records bound it from above, near the literature's value."
+sources = [
+  { citation = "ManyWorlds M1 profiles of harvest risk at the calibrated defaults (ADR-0122): calibration/runs/m1/f13/.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
+  { citation = "Golodets, C., Sternberg, M., Kigel, J., Boeken, B., Henkin, Z., Seligman, N., Ungar, E. (2013). From desert to Mediterranean rangelands: will increasing drought and inter-annual rainfall variability affect herbaceous annual primary productivity? Climatic Change 119, 785-798.", doi = "10.1007/s10584-013-0758-8" },
+  { citation = "FAO (2008). Enhancing cereal production in drylands (I0372E): dryland farming regions receive from about 50% to 200% of their mean rain in a year, and yields range from about 0 to 3 times the mean.", url = "https://www.fao.org/4/i0372e/i0372e03.pdf" },
+  { citation = "Wilkinson, T.J. (1994). The structure and dynamics of dry-farming states in Upper Mesopotamia. Current Anthropology 35(5), 483-520." },
+  { citation = "Halstead, P., O'Shea, J. (eds.) (1989). Bad Year Economics: Cultural Responses to Risk and Uncertainty. Cambridge University Press." },
+]
+
+[params.forage_risk_ratio]
+group = "foraging"
+unit = "1"
+description = "Share of a harvest's year-to-year spread (harvest_cv) a band feels when it forages or herds rather than cultivates (#13): wild foods are many, and foragers and herders move to where the rain fell; a band's spread moves linearly with its cultivation effort from this share to the whole."
+kind = { type = "probability" }
+default = 0.2
+prior = { dist = "uniform", lo = 0.05, hi = 1.0 }
+status = "calibrated"
+note = "Calibrated on M1 by profile (ADR-0122): with harvest_cv 0.4, 0.2 is consistent for three seeds (summaries -81.1), 0.35 and 0.5 are not, too few of Egypt's 6th-millennium desert assemblages holding domestic animals as bad years thin the desert's foragers and herders, and 0.1 fits as well (-81.2) though one seed falls just outside on that record. Foragers buffer risk by widening their diet and by moving (Winterhalder 1986; Kelly 2013), herders by moving their herds to where the rain fell; in the model this share stands for both, until bad-year moves are modelled (#13). Wild grasses and game still fail in drought (Golodets et al. 2013), so the share is above 0; the prior reaches down to 0.05."
+sources = [
+  { citation = "ManyWorlds M1 profile of forage_risk_ratio with harvest_cv 0.4 at the calibrated defaults (ADR-0122): calibration/runs/m1/f13/profile-forage-risk-ratio.json.", url = "https://github.com/prabhatg/world-economy/blob/main/calibration/runs/m1/f13/profile-forage-risk-ratio.json" },
+  { citation = "Winterhalder, B. (1986). Diet choice, risk, and food sharing in a stochastic environment. Journal of Anthropological Archaeology 5, 369-392." },
+  { citation = "Kelly, R.L. (2013). The Lifeways of Hunter-Gatherers: The Foraging Spectrum. Cambridge University Press.", doi = "10.1017/CBO9781139176132" },
+]
+
+[params.harvest_correlation]
+group = "environment"
+unit = "1"
+description = "Share of each year's harvest shock the whole region shares (#13): a cell's shock is the square root of this times the region's plus the square root of the rest times its own, so a drought strikes many cells at once. 0: every cell's year its own."
+kind = { type = "probability" }
+default = 0.3
+prior = { dist = "uniform", lo = 0.0, hi = 0.6 }
+status = "placeholder"
+note = "A judgment: droughts in the eastern Mediterranean span hundreds of kilometres, but the region reaches from the Nile to the Zagros, whose years differ; one regional shock with a cell's own stands for a correlation that in truth falls with distance. Years are drawn independently: multi-year droughts are left out."
+sources = [
+  { citation = "Halstead, P., O'Shea, J. (eds.) (1989). Bad Year Economics: Cultural Responses to Risk and Uncertainty. Cambridge University Press." },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"

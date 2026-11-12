@@ -112,6 +112,8 @@ fn only(pressure: f64, stress: f64, abundance: f64) -> Params {
         success_bias: 0.0,
         settlement_integration: 1.0,
         settlement_hierarchy: 0.0,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     }
 }
@@ -652,6 +654,8 @@ fn births_and_deaths_split_the_logistic_change() {
         sedentary_growth_rate: 0.02,
         fertility: 0.03,
         sedentary_fertility: 0.05,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     let g = mechanisms::Growth::from_params(&p);
@@ -774,6 +778,8 @@ fn soil_erodes_under_fields_and_forms_slowly() {
         soil_erosion_rate: 0.0004,
         soil_formation_rate: 0.0001,
         soil_critical: 0.5,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     // Erosion takes depth at a steady rate under fields; formation refills toward full.
@@ -1210,6 +1216,8 @@ fn the_size_limit_rises_from_camp_to_village_with_cultivation() {
     let f = Fission::from_params(&Params {
         fission_threshold: 60,
         village_fission_size: 127,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     });
     assert_eq!(f.limit(0.0), 60.0);
@@ -1372,6 +1380,8 @@ fn a_joined_village_stays_within_the_limit_of_its_pooled_practice() {
     let agg = Aggregation::from_params(&Params {
         fission_threshold: 60,
         village_fission_size: 127,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     });
     let share = |x: f64| (x * SHARE_ONE as f64) as u32;
@@ -1493,6 +1503,8 @@ fn variability_sees_century_means_of_the_index_not_decadal_swings() {
         stress_window_years: 300,
         climate_anomaly_temp: 0.0,
         climate_anomaly_precip: 0.4,
+        // every year alike, as when the test was written (#13)
+        harvest_cv: 0.0,
         ..Params::default()
     };
     let years: Vec<i64> = (0..=300).map(|i| -12_000 + 10 * i).collect();

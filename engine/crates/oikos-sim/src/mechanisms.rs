@@ -60,6 +60,9 @@ pub struct Sense<'a> {
     pub climate_stress: &'a [f64],
     /// Mean change of suitability per century over the stress window.
     pub climate_variability: &'a [f64],
+    /// Year-to-year spread of each cell's harvest for a band cultivating fully (#13;
+    /// declare [`Component::Forcing`]); empty without a climate pack.
+    pub harvest_cv: &'a [f64],
     /// Population per cell after the previous step's commit.
     pub population: &'a [u64],
     /// People-weighted sum of the agents' cultivation effort per cell (in
@@ -296,6 +299,15 @@ fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u
 /// changes births and deaths, not numbers. Net growth beyond fertility is capped at it.
 /// Fertility 0 (forager and sedentary) is the growth before ADR-0068: the net change
 /// alone, rounded once, which checkpoints from before it restore with (ADR-0069).
+///
+/// Years differ (#13): the capacity a band lives on this year is its cell's times
+/// 1 + its harvest's spread times the cell's shock ([`harvest_shock`]), at least 0. The
+/// spread is the cell's for a band cultivating fully (`Sense::harvest_cv`) times a share
+/// that moves linearly with its cultivation effort from `forage_risk_ratio` to 1:
+/// foragers and herders, with many wild foods and free to move, feel less of a bad year
+/// than farmers tied to their fields (Winterhalder 1986; Halstead and O'Shea 1989). A
+/// bad year kills at most the people its harvest cannot feed (or births' worth, if
+/// more): the logistic would kill everyone in a year that feeds nobody, and beyond.
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -303,6 +315,25 @@ pub struct Growth {
     pub sedentary_rate: f64,
     pub fertility: f64,
     pub sedentary_fertility: f64,
+    pub forage_risk_ratio: f64,
+    pub harvest_correlation: f64,
+}
+
+/// A cell's harvest shock in the year of `tick` (#13): standard (mean 0, variance 1), the
+/// square root of `correlation` times the region's shock that year plus the square root
+/// of the rest times the cell's own, each a sum of four uniform draws scaled to unit
+/// variance (Irwin-Hall), so a drought strikes many cells at once. Years are independent.
+pub fn harvest_shock(seed: u64, cell: u32, tick: u64, correlation: f64) -> f64 {
+    let rng = Philox4x32::new(seed, Stream::Harvest);
+    let standard = |subject: u64| {
+        let sum: f64 = rng.block(subject, tick, 0).iter().map(|&u| (u as f64 + 0.5) / 4_294_967_296.0).sum();
+        (sum - 2.0) * 3f64.sqrt()
+    };
+    let own = standard(cell as u64);
+    if correlation <= 0.0 {
+        return own;
+    }
+    correlation.sqrt() * standard(u64::MAX) + (1.0 - correlation).sqrt() * own
 }
 
 impl Growth {
@@ -313,6 +344,8 @@ impl Growth {
             sedentary_rate: p.sedentary_growth_rate,
             fertility: p.fertility,
             sedentary_fertility: p.sedentary_fertility,
+            forage_risk_ratio: p.forage_risk_ratio,
+            harvest_correlation: p.harvest_correlation,
         }
     }
 
@@ -327,10 +360,22 @@ impl Growth {
     }
 
     /// Births and deaths per person and period of a band at `effort` in a cell of `pop`
-    /// people and capacity `k`.
+    /// people and capacity `k`: deaths at most the share of the people `k` does not feed,
+    /// or births' worth if more.
     pub fn vital_rates(&self, effort: f64, pop: f64, k: f64) -> (f64, f64) {
         let b = self.fertility(effort);
-        (b, (b - self.rate(effort) * (1.0 - pop / k)).max(0.0))
+        if k <= 0.0 {
+            return (b, b.max(1.0));
+        }
+        let d = (b - self.rate(effort) * (1.0 - pop / k)).max(0.0);
+        (b, if pop > k { d.min((1.0 - k / pop).max(b)) } else { d })
+    }
+
+    /// The share of its cell's capacity a band at `effort` lives on this year: 1 + its
+    /// harvest's spread times the cell's `shock`, at least 0 (#13).
+    pub fn harvest(&self, effort: f64, cell_cv: f64, shock: f64) -> f64 {
+        let cv = cell_cv * (self.forage_risk_ratio + (1.0 - self.forage_risk_ratio) * effort);
+        (1.0 + cv * shock).max(0.0)
     }
 }
 
@@ -339,7 +384,12 @@ impl Mechanism for Growth {
         MechanismSpec {
             name: "growth",
             period_ticks: self.period_ticks,
-            reads: vec![Component::Population, Component::Capacity, Component::AgentTraits],
+            reads: vec![
+                Component::Population,
+                Component::Capacity,
+                Component::AgentTraits,
+                Component::Forcing,
+            ],
             writes: vec![Component::AgentWeight],
             after: vec![],
         }
@@ -352,15 +402,33 @@ impl Mechanism for Growth {
         // Count in locals: writing shared stats per agent would cause cache-line traffic.
         let net_only = self.fertility == 0.0 && self.sedentary_fertility == 0.0;
         let (mut births, mut deaths) = (0, 0);
+        // Tiles are runs of whole cells: draw each cell's shock once.
+        let mut shock: Option<(usize, f64)> = None;
+        let risky = !sense.harvest_cv.is_empty();
         for i in tile {
             let cell = agents.cell[i] as usize;
             let w = agents.weight[i];
             let pop = sense.population[cell] as f64;
-            let k = sense.capacity[cell] as f64;
             let effort = Traits::share(agents.cultivation[i]);
+            let cv = if risky { sense.harvest_cv[cell] } else { 0.0 };
+            let k = if cv > 0.0 {
+                let z = match shock {
+                    Some((c, z)) if c == cell => z,
+                    _ => {
+                        let z = harvest_shock(sense.seed, cell as u32, t, self.harvest_correlation);
+                        shock = Some((cell, z));
+                        z
+                    }
+                };
+                sense.capacity[cell] as f64 * self.harvest(effort, cv, z)
+            } else {
+                sense.capacity[cell] as f64
+            };
             let draw = rng.block(agents.id[i].0, t, 0);
             let (born, died) = if net_only {
-                let dw = oikos_math::finite(self.rate(effort) * w as f64 * (1.0 - pop / k));
+                let net = if k > 0.0 { self.rate(effort) * (1.0 - pop / k) } else { -1.0 };
+                let unfed = if pop > k { 1.0 - k.max(0.0) / pop } else { 0.0 };
+                let dw = oikos_math::finite(net.max(-unfed) * w as f64);
                 if dw >= 0.0 {
                     (stochastic_round(dw, draw[0]), 0)
                 } else {
@@ -2110,6 +2178,7 @@ mod tests {
             suitability: &zeros,
             climate_stress: &zeros,
             climate_variability: &zeros,
+            harvest_cv: &zeros,
             population: &population,
             effort_sum: &effort_sum,
             farm: &zeros,

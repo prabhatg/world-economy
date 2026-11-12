@@ -75,6 +75,9 @@ pub struct Params {
     pub herd_exchange: f64,
     pub herd_reserve: f64,
     pub herder_reach_km: f64,
+    pub harvest_cv: f64,
+    pub forage_risk_ratio: f64,
+    pub harvest_correlation: f64,
     pub emmer_selection_ratio: f64,
     pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
@@ -192,6 +195,9 @@ impl Params {
             herd_exchange: real("herd_exchange")?,
             herd_reserve: real("herd_reserve")?,
             herder_reach_km: real("herder_reach_km")?,
+            harvest_cv: real("harvest_cv")?,
+            forage_risk_ratio: real("forage_risk_ratio")?,
+            harvest_correlation: real("harvest_correlation")?,
             emmer_selection_ratio: real("emmer_selection_ratio")?,
             einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
@@ -440,6 +446,10 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("herd_reserve", Restore::Value(0.0)),
     // #51: groups found new homes in neighboring catchments only.
     ("herder_reach_km", Restore::Value(0.0)),
+    // #13: every year alike.
+    ("harvest_cv", Restore::Value(0.0)),
+    ("forage_risk_ratio", Restore::Inert),
+    ("harvest_correlation", Restore::Inert),
 ];
 
 impl Params {
