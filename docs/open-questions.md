@@ -357,8 +357,10 @@
     a record can tell apart is open. Storage is in (ADR-0123). Moving in bad years
     (ADR-0125) is rejected for now: judging where to go by the year's harvest empties
     Egypt's 6th-millennium deserts of herds. Would it hold with droughts that last
-    several years, where a move pays off the next year too? Sharing between groups is
-    not in yet.
+    several years, where a move pays off the next year too? Sharing between groups is in
+    (ADR-0126), alike for everyone; whether stores and herds, which make people lean on
+    reciprocity less (Cashdan 1985), should weaken it, and whether giving builds rank
+    (Halstead and O'Shea 1982), is open.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

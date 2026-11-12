@@ -786,6 +786,23 @@ sources = [
   { citation = "ManyWorlds M1 profile of bad_year_moves at the calibrated defaults (ADR-0125): calibration/runs/m1/f13/profile-bad-year-moves.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
 ]
 
+[params.harvest_sharing]
+group = "foraging"
+unit = "1"
+description = "Share of a year's harvest a group pools with the groups of its neighboring cells (#13): it lives on the rest of its own harvest and that share of the mean of theirs, at its own practice, so it draws on neighbors the year favoured and gives in turn when they are short."
+kind = { type = "probability" }
+default = 0.1
+prior = { dist = "uniform", lo = 0.0, hi = 0.5 }
+status = "calibrated"
+note = "Calibrated on M1 by profile (ADR-0126): at the calibrated defaults 0 and 0.1 are consistent for three seeds (summaries -82.6 and -81.0), 0.25 and 0.5 are not (-83.2 and -83.1): sharing keeps more of Egypt's 6th-millennium desert assemblages holding domestic animals, as the record has them, but past 0.1 brings crops into some of its 6th-millennium assemblages, which held none; the summaries tell 0 and 0.1 apart by less than the seeds' spread. Among foragers, partners in other camps share food and access to land in bad years (hxaro, Wiessner 1982); among early farmers, households and villages exchange food and obligations against future need (social storage, Halstead 1989). Transfers that follow need rather than accounts pool risk best where harvests are volatile (Aktipis et al. 2016), and people with other buffers, stores or herds, lean on reciprocity less (Cashdan 1985). The prior keeps most of a group's harvest its own."
+sources = [
+  { citation = "Wiessner, P. (1982). Risk, reciprocity and social influences on !Kung San economics. In Leacock, E., Lee, R. (eds.), Politics and History in Band Societies, 61-84. Cambridge University Press." },
+  { citation = "Halstead, P. (1989). The economy has a normal surplus: economic stability and social change among early farming communities of Thessaly, Greece. In Halstead, P., O'Shea, J. (eds.), Bad Year Economics, 68-80. Cambridge University Press.", doi = "10.1017/CBO9780511521218.006" },
+  { citation = "Aktipis, A., de Aguiar, R., Flaherty, A., Iyer, P., Sonkoi, D., Cronk, L. (2016). Cooperation in an uncertain world: for the Maasai of East Africa, need-based transfers outperform account-keeping in volatile environments. Human Ecology 44, 353-364.", doi = "10.1007/s10745-016-9823-z" },
+  { citation = "ManyWorlds M1 profile of harvest_sharing at the calibrated defaults (ADR-0126): calibration/runs/m1/f13/profile-harvest-sharing.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
+  { citation = "Cashdan, E. (1985). Coping with risk: reciprocity among the Basarwa of northern Botswana. Man 20, 454-474.", doi = "10.2307/2802441" },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"

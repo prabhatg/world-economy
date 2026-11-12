@@ -154,7 +154,8 @@ which stay; Egypt's crops now bound the pace of domestication from below. Hidden
 (#52) remains; the Fayum's early farming without seed exchange was the merge bug's (ADR-0121).
 Harvests now differ from year to year (ADR-0122, #13), more where rain is scarce and for
 farmers than for foragers and herders, and farmers store food against bad years
-(ADR-0123); moving in bad years is tested and rejected by the records for now (ADR-0125).
+(ADR-0123) and share with their neighbors (ADR-0126); moving in bad years is tested and
+rejected by the records for now (ADR-0125).
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

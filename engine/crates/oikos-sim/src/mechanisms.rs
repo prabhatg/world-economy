@@ -331,6 +331,16 @@ fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u
 /// (Woodburn 1982; Testart 1982), which settled cultivators have, as their granaries and
 /// household stores show (Kuijt and Finlayson 2009; Bogaard et al. 2009), and mobile
 /// foragers mostly do not.
+///
+/// Groups share (#13; [`pooled_harvest`]): a group pools `sharing` of its year's harvest
+/// with the people of its neighboring cells (each cell's own people and harvest, whatever
+/// the catchments), living on the rest of its own and that share of the mean of theirs at
+/// its own practice, so it draws on neighbors the year favoured and gives in turn when
+/// they are short. Among foragers, partners in other camps share food and access to land
+/// in bad years (Wiessner 1982); among early farmers, households and villages exchange
+/// food and obligations against future need (Halstead 1989); transfers that follow need
+/// pool risk best where harvests are volatile (Aktipis et al. 2016). The pooling is in
+/// expectation: what a group draws in a year is not taken from a neighbor's people.
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -342,6 +352,7 @@ pub struct Growth {
     pub harvest_correlation: f64,
     pub storage_years: f64,
     pub storage_loss: f64,
+    pub sharing: f64,
     /// Years per period, and the share of a store kept over one, at `storage_loss` a year.
     pub period_years: f64,
     pub store_kept: f64,
@@ -373,6 +384,18 @@ pub fn harvest_share(forage_risk_ratio: f64, effort: f64, cell_cv: f64, shock: f
     (1.0 + cv * shock).max(0.0)
 }
 
+/// The share of its capacity a group lives on when it pools `sharing` of its year's
+/// harvest `own` with its neighbors', whose shares at its practice are `neighbors` (#13):
+/// the rest of its own and `sharing` of their mean; its own where nobody is near.
+pub fn pooled_harvest(own: f64, neighbors: &[f64], sharing: f64) -> f64 {
+    if sharing == 0.0 || neighbors.is_empty() {
+        return own;
+    }
+    let mean = neighbors.iter().sum::<f64>() / neighbors.len() as f64;
+    // Exactly its own where the neighbors' years are its own.
+    own + sharing * (mean - own)
+}
+
 /// [`harvest_shock`] in the year of `tick`: one harvest a year, however often growth runs.
 pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64) -> f64 {
     harvest_shock(seed, cell, tick.years(), correlation)
@@ -390,6 +413,7 @@ impl Growth {
             harvest_correlation: p.harvest_correlation,
             storage_years: p.storage_years,
             storage_loss: p.storage_loss,
+            sharing: p.harvest_sharing,
             period_years: p.period_ticks as f64 / TICKS_PER_YEAR as f64,
             // Exact at the yearly period; compounded over shorter or longer ones.
             store_kept: if p.period_ticks == TICKS_PER_YEAR {
@@ -478,8 +502,10 @@ impl Mechanism for Growth {
         // Count in locals: writing shared stats per agent would cause cache-line traffic.
         let net_only = self.fertility == 0.0 && self.sedentary_fertility == 0.0;
         let (mut births, mut deaths) = (0, 0);
-        // Tiles are runs of whole cells: draw each cell's shock once.
+        // Tiles are runs of whole cells: draw each cell's shock, and its peopled neighbors'
+        // (spread, shock), once.
         let mut shock: Option<(usize, f64)> = None;
+        let (mut near, mut shares): (Vec<(f64, f64)>, Vec<f64>) = (Vec::new(), Vec::new());
         let risky = !sense.harvest_cv.is_empty();
         for i in tile {
             let cell = agents.cell[i] as usize;
@@ -487,16 +513,36 @@ impl Mechanism for Growth {
             let pop = sense.population[cell] as f64;
             let effort = Traits::share(agents.cultivation[i]);
             let cv = if risky { sense.harvest_cv[cell] } else { 0.0 };
-            let k = if cv > 0.0 {
+            let k = if cv > 0.0 || (risky && self.sharing > 0.0) {
                 let z = match shock {
                     Some((c, z)) if c == cell => z,
                     _ => {
                         let z = harvest_at(sense.seed, cell as u32, sense.tick, self.harvest_correlation);
                         shock = Some((cell, z));
+                        near.clear();
+                        if self.sharing > 0.0 {
+                            near.extend(
+                                habitable_neighbors(sense, cell as u32)
+                                    .filter(|&c| sense.cell_population[c as usize] > 0)
+                                    .map(|c| {
+                                        let zc =
+                                            harvest_at(sense.seed, c, sense.tick, self.harvest_correlation);
+                                        (sense.harvest_cv[c as usize], zc)
+                                    }),
+                            );
+                        }
                         z
                     }
                 };
-                sense.capacity[cell] as f64 * self.harvest(effort, cv, z)
+                let own = self.harvest(effort, cv, z);
+                let share = if near.is_empty() {
+                    own
+                } else {
+                    shares.clear();
+                    shares.extend(near.iter().map(|&(cvc, zc)| self.harvest(effort, cvc, zc)));
+                    pooled_harvest(own, &shares, self.sharing)
+                };
+                if share == 1.0 { sense.capacity[cell] as f64 } else { sense.capacity[cell] as f64 * share }
             } else {
                 sense.capacity[cell] as f64
             };

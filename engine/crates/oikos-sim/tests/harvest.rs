@@ -87,6 +87,7 @@ fn world(seed: u64, farming: bool, precip: u16, cv: f64) -> (World, Vec<u8>, Vec
         forage_risk_ratio: 0.5,
         harvest_correlation: 0.3,
         storage_years: 0.0,
+        harvest_sharing: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();

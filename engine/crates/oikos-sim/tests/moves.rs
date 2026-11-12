@@ -80,6 +80,7 @@ fn world(seed: u64, moves: f64) -> (World, Vec<u8>, Vec<u8>) {
         harvest_correlation: 0.1,
         storage_years: 0.0,
         bad_year_moves: moves,
+        harvest_sharing: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();

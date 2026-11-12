@@ -148,7 +148,11 @@ enters the model, and the starting mechanisms.
   to go by the year's harvest rather than the land's mean keeps foragers on a margin
   bad years would empty, but empties Egypt's 6th-millennium deserts of herds, and with
   years independent a move buys little that `forage_risk_ratio` does not already stand
-  for. Sharing between groups is still to come.
+  for. Groups share (ADR-0126): a group pools `harvest_sharing` (0.1) of its year's
+  harvest with the people of its neighboring cells, drawing on neighbors the year
+  favoured and giving when they are short, as foragers' exchange partners (Wiessner
+  1982) and early farmers' social storage (Halstead 1989) did; who shares with whom,
+  and the obligations and rank giving builds, are left out.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.
