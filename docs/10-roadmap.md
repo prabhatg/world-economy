@@ -151,7 +151,7 @@ Their crops are judged too (ADR-0117): none in the 6th millennium or the deserts
 the Nile valley, the delta and the Fayum in the 5th, as the defaults have it. Round 15
 (ADR-0120) judges both and finds no world nearer the record than the calibrated defaults,
 which stay; Egypt's crops now bound the pace of domestication from below. Hidden Valley
-(#52) and the Fayum's farming without seed exchange (#53) remain.
+(#52) remains; the Fayum's early farming without seed exchange was the merge bug's (ADR-0121).
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

@@ -298,7 +298,8 @@
     herd's domestic share and the desert grazes little. Their crops, judged since
     ADR-0117, fit at the defaults: none in the 6th millennium or the deserts, crops in
     the Nile valley and the Fayum in the 5th; without seed exchange the Fayum's
-    neighbours farm in the 6th millennium (why, #53). Round 15 keeps the defaults
+    neighbours farmed in the 6th millennium, but only before merging kept domestic
+    shares (ADR-0121): now seed exchange brings them crops earlier, not later. Round 15 keeps the defaults
     (ADR-0120): in its worlds Egypt's crops reach the Nile by the 5th millennium only
     where barley is selected fast enough, which the Levant's early barley caps. Is the
     rest the desert foragers' own wide ties (#52), along which a few animals passed (Hidden
