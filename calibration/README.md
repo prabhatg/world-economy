@@ -227,7 +227,7 @@ to 0.6 with forage_risk_ratio 0.5, `profile-forage-risk-ratio.json` the ratio ov
 0.6 with the ratio 0.2. With it: `profile-storage-years.json` takes storage_years over 0
 to 1, `profile-forage-risk-ratio-storage.json` the ratio over 0.1 to 0.5 and
 `profile-harvest-cv-storage.json` harvest_cv over 0.2 to 0.6, which give the defaults
-(harvest_cv 0.4, forage_risk_ratio 0.2, storage_years 0.5). The onset record's tables are downloaded by hand (`data/README.md`); without
+(harvest_cv 0.4, forage_risk_ratio 0.2, storage_years 0.5). The storage profiles were run once groups joining a village keep their domestic crops and herds (ADR-0124); at the defaults every record is consistent, summaries -82.6. The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

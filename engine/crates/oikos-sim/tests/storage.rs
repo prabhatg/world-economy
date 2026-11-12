@@ -140,6 +140,45 @@ fn a_store_fills_in_good_years_and_feeds_in_bad_ones() {
 }
 
 #[test]
+fn births_share_the_store_and_the_dead_leave_theirs() {
+    // The food stays with the group: 100 people holding 0.45 years each who become 105
+    // hold 45 person-years still, and so do 90 who survive a year.
+    let one = SHARE_ONE as f64;
+    let store = (0.45 * one) as u32;
+    let per = |w_new: u64| Growth::shared(store, 100, w_new) as f64 / one;
+    assert!((per(105) * 105.0 - 45.0).abs() < 1e-6, "{}", per(105) * 105.0);
+    assert!((per(90) * 90.0 - 45.0).abs() < 1e-6, "{}", per(90) * 90.0);
+    assert_eq!(Growth::shared(store, 100, 100), store);
+    assert_eq!(Growth::shared(store, 100, 0), 0, "nobody left");
+}
+
+#[test]
+fn a_store_keeps_its_yearly_pace_however_often_growth_runs() {
+    // Growth five times a year: a store at a harvest that just feeds its people loses a
+    // tenth over the year, not five tenths, and a surplus fills it at a year's pace.
+    let p = Params { storage_years: 0.5, storage_loss: 0.1, ..Params::default() };
+    let fifth = Growth::from_params(&Params { period_ticks: 73, ..p.clone() });
+    let year = Growth::from_params(&p);
+    let mut store = 0.5;
+    for _ in 0..5 {
+        store = fifth.stored(1.0, store, 1.0).1;
+    }
+    assert!((store - year.stored(1.0, 0.5, 1.0).1).abs() < 1e-9, "{store}");
+    let (mut a, b) = (0.0, year.stored(1.0, 0.0, 1.2).1);
+    for _ in 0..5 {
+        a = fifth.stored(1.0, a, 1.2).1;
+    }
+    assert!((a - b).abs() < 0.02, "a fifth of the surplus each time: {a} against {b}");
+    let (mut fed, mut left) = (0.0, 0.5);
+    for _ in 0..5 {
+        let (eaten, kept) = fifth.stored(1.0, left, 0.7);
+        fed += eaten / 5.0;
+        left = kept;
+    }
+    assert!((fed - 1.0).abs() < 1e-9, "a year's shortfall, a fifth at a time: {fed}");
+}
+
+#[test]
 fn storage_spares_farmers_the_worst_of_bad_years() {
     let run = |years| {
         let (mut w, ..) = world(3, true, years);
@@ -177,6 +216,10 @@ fn merged_groups_keep_their_stored_food() {
     assert_eq!(a.len(), 1);
     let kept = a.weight[0] as f64 * a.store[0] as f64 / SHARE_ONE as f64;
     assert!((kept - 12.0).abs() < 1e-6, "food stored {kept}, before 12");
+    // Pooled sums that pass u64: five billion people each holding two years.
+    let big = Traits { store: 2 * SHARE_ONE, ..t(0.0) };
+    let t = Traits::pooled((5_000_000_000, big), (5_000_000_000, big));
+    assert_eq!(t.store, 2 * SHARE_ONE);
 }
 
 #[test]

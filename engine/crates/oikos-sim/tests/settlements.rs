@@ -7,7 +7,7 @@
 
 use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
-use oikos_sim::agents::{ALONE, SHARE_ONE};
+use oikos_sim::agents::{ALONE, SHARE_ONE, Traits};
 use oikos_sim::inputs::Inputs;
 use oikos_sim::mechanisms::Disease;
 use oikos_sim::{Params, World, WorldConfig, checkpoint};
@@ -319,4 +319,33 @@ fn checkpoints_from_before_the_wheats_restore_them_as_the_crop() {
             .all(|(w, &d)| *w == [d, d]))
     );
     assert_eq!(checkpoint::encode(&restored), now, "wheats selected as barley lose nothing");
+}
+
+#[test]
+fn groups_joining_a_village_keep_their_domestic_crops_and_herds() {
+    // A share belongs to the fields or the herd, not the people (ADR-0119): foragers who
+    // join a farming group bring people and effort, not wild seed or wild sheep. So the
+    // joined group sows and herds what its farmers did, all of it domestic, and its store
+    // is the food both brought, per person.
+    let one = SHARE_ONE;
+    let farmers = Traits {
+        cultivation: one / 2,
+        domestication: one,
+        inequality: one / 4,
+        herding: one / 4,
+        herd_domestication: one,
+        wheat_domestication: [one, one / 2],
+        store: one / 5,
+    };
+    let t = Traits::pooled((30, farmers), (70, Traits::FORAGER));
+    assert_eq!(t.cultivation, one / 2 * 3 / 10);
+    assert_eq!(t.herding, one / 4 * 3 / 10);
+    assert_eq!((t.domestication, t.herd_domestication), (one, one), "domestic crop and herd kept");
+    assert_eq!(t.wheat_domestication, [one, one / 2]);
+    assert_eq!(t.inequality, one / 4 * 3 / 10, "people's");
+    assert_eq!(t.store, one / 5 * 3 / 10, "the food stored, per person");
+    // Two farming groups: by what each sows.
+    let half = Traits { cultivation: one / 4, domestication: 0, ..farmers };
+    let t = Traits::pooled((50, farmers), (50, half));
+    assert_eq!(t.domestication, (one as u64 * 2 / 3) as u32);
 }

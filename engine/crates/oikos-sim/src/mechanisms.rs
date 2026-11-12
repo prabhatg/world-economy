@@ -18,6 +18,7 @@ use crate::params::Params;
 use crate::schedule::{Component, MechanismSpec};
 use crate::world::StepStats;
 use oikos_core::prob::stochastic_round;
+use oikos_core::time::TICKS_PER_YEAR;
 use oikos_core::{EntityId, Philox4x32, Probability, Stream, Tick};
 use oikos_grid::Grid;
 use std::ops::Range;
@@ -328,6 +329,9 @@ pub struct Growth {
     pub harvest_correlation: f64,
     pub storage_years: f64,
     pub storage_loss: f64,
+    /// Years per period, and the share of a store kept over one, at `storage_loss` a year.
+    pub period_years: f64,
+    pub store_kept: f64,
 }
 
 /// A cell's harvest shock in simulated year `year` (#13): standard (mean 0, variance 1),
@@ -364,6 +368,13 @@ impl Growth {
             harvest_correlation: p.harvest_correlation,
             storage_years: p.storage_years,
             storage_loss: p.storage_loss,
+            period_years: p.period_ticks as f64 / TICKS_PER_YEAR as f64,
+            // Exact at the yearly period; compounded over shorter or longer ones.
+            store_kept: if p.period_ticks == TICKS_PER_YEAR {
+                1.0 - p.storage_loss
+            } else {
+                oikos_math::pow(1.0 - p.storage_loss, p.period_ticks as f64 / TICKS_PER_YEAR as f64)
+            },
         }
     }
 
@@ -389,19 +400,30 @@ impl Growth {
         (b, if pop > k { d.min((1.0 - k / pop).max(b)) } else { d })
     }
 
-    /// A year of a group at `effort` holding `store` years of its people's need, in a year
-    /// whose harvest feeds `fed` times its cell's people: what it eats, as a multiple of
-    /// their need, and its store after the year's losses. A shortfall is made up from the
-    /// store while it lasts; a surplus goes into it up to `storage_years` times `effort`.
+    /// A period of a group at `effort` holding `store` years of its people's need, in a
+    /// year whose harvest feeds `fed` times its cell's people: what it eats, as a multiple
+    /// of their need, and its store after the period's losses. A shortfall is made up from
+    /// the store while it lasts; a surplus goes into it up to `storage_years` times
+    /// `effort`; both at their yearly pace over the period.
     pub fn stored(&self, effort: f64, store: f64, fed: f64) -> (f64, f64) {
+        let y = self.period_years;
         let (eaten, kept) = if fed < 1.0 {
-            let draw = store.min(1.0 - fed);
-            (fed + draw, store - draw)
+            let draw = store.min((1.0 - fed) * y);
+            (fed + draw / y, store - draw)
         } else {
             let room = self.storage_years * effort - store;
-            (fed, if room > 0.0 { store + room.min(fed - 1.0) } else { store })
+            (fed, if room > 0.0 { store + room.min((fed - 1.0) * y) } else { store })
         };
-        (eaten, oikos_math::finite(kept * (1.0 - self.storage_loss)).max(0.0))
+        (eaten, oikos_math::finite(kept * self.store_kept).max(0.0))
+    }
+
+    /// A store of `store` (fixed point, per person) held by `w` people, shared among the
+    /// `w_new` they become: births share it and the dead leave theirs (rounded down).
+    pub fn shared(store: u32, w: u64, w_new: u64) -> u32 {
+        if w_new == 0 {
+            return 0;
+        }
+        (store as u128 * w as u128 / w_new as u128).min(u32::MAX as u128) as u32
     }
 
     /// The share of its cell's capacity a band at `effort` lives on this year: 1 + its
@@ -483,6 +505,9 @@ impl Mechanism for Growth {
                 (born, stochastic_round(oikos_math::finite(d * w as f64), draw[1]).min(w + born))
             };
             agents.weight[i] = w + born - died;
+            if agents.store[i] != 0 {
+                agents.store[i] = Self::shared(agents.store[i], w, w + born - died);
+            }
             births += born;
             deaths += died;
         }
@@ -1266,19 +1291,7 @@ impl Mechanism for Aggregation {
             let agents = &mut *part.agents;
             let wb = agents.weight[b];
             let (tb, ta) = (agents.traits(b), agents.traits(a));
-            agents.set_traits(
-                b,
-                Traits {
-                    cultivation: pooled(wb, tb.cultivation, w, ta.cultivation),
-                    domestication: pooled(wb, tb.domestication, w, ta.domestication),
-                    inequality: pooled(wb, tb.inequality, w, ta.inequality),
-                    herding: pooled(wb, tb.herding, w, ta.herding),
-                    herd_domestication: pooled(wb, tb.herd_domestication, w, ta.herd_domestication),
-                    wheat_domestication: [EMMER, EINKORN]
-                        .map(|c| pooled(wb, tb.wheat_domestication[c], w, ta.wheat_domestication[c])),
-                    store: pooled(wb, tb.store, w, ta.store),
-                },
-            );
+            agents.set_traits(b, Traits::pooled((wb, tb), (w, ta)));
             agents.weight[b] = wb + w;
             agents.weight[a] = 0;
         }

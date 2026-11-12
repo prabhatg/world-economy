@@ -84,6 +84,16 @@ impl Traits {
         (oikos_math::finite(x).clamp(0.0, 1.0) * SHARE_ONE as f64).round() as u32
     }
 
+    /// The traits of groups of `a.0` and `b.0` people joined into one: effort, inequality
+    /// and stores by people, the domestic shares by what each sows and herds (ADR-0119),
+    /// as merging small groups pools them.
+    pub fn pooled(a: (u64, Traits), b: (u64, Traits)) -> Traits {
+        let mut pool = Pool::default();
+        pool.add(a.0, a.1);
+        pool.add(b.0, b.1);
+        pool.mean()
+    }
+
     /// Years of food `x` in [`Traits::store`]'s fixed point, rounded down (so losses
     /// empty a store), at most `u32::MAX`.
     pub fn from_years(x: f64) -> u32 {
@@ -201,8 +211,9 @@ struct Pool {
     herding: u64,
     herd_domestication: u64,
     wheat_domestication: [u64; 2],
-    /// Food stored, people-weighted: a merged group holds what its parts held.
-    store: u64,
+    /// Food stored, people-weighted: a merged group holds what its parts held. In u128:
+    /// stores reach u32::MAX.
+    store: u128,
     /// Sums of people x effort times each share: the crop, emmer and einkorn sown; the herd.
     sown: [u128; 3],
     herded: u128,
@@ -225,7 +236,9 @@ impl Pool {
         for (sum, &d) in self.wheat_domestication.iter_mut().zip(&t.wheat_domestication) {
             *sum += w * d as u64;
         }
-        self.store += w * t.store as u64;
+        if t.store != 0 {
+            self.store += w as u128 * t.store as u128;
+        }
         // Most merging bands are foragers: no u128 products for them (slow on wasm).
         if sown != 0 {
             let shares = [t.domestication, t.wheat_domestication[0], t.wheat_domestication[1]];
@@ -266,7 +279,7 @@ impl Pool {
             herd_domestication: share_of(self.herded, herded, held(self.herd_domestication)),
             wheat_domestication: [EMMER, EINKORN]
                 .map(|c| share_of(self.sown[c + 1], sown, held(self.wheat_domestication[c]))),
-            store: held(self.store),
+            store: (self.store / w as u128) as u32,
         }
     }
 }
