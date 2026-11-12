@@ -355,8 +355,8 @@ def best(args):
     cs = candidates(docs, args.top)
     seeds = list(range(1, args.seeds + 1))
     ts, names, groups = _problem_targets(leave)
-    out = _run([(c["params"], s) for c in cs for s in seeds], args.workers, leave, args.coordinator, args.reduced)
-    out = out.reshape(len(cs), len(seeds), -1)
+    jobs = [(c["params"], s) for c in cs for s in seeds]  # none when no run of the waves is consistent
+    out = _run(jobs, args.workers, leave, args.coordinator, args.reduced).reshape(len(cs), len(seeds), -1) if jobs else []
     check = {"targets": _targets_json(ts), "groups": _groups_json(groups)}
     ll = [j for j, n in enumerate(names) if n.startswith("log-likelihood")]
     for c, o in zip(cs, out):
@@ -439,6 +439,9 @@ def report_best(doc):
             (c["log_likelihood"], c["rerun_log_likelihood"])
         print(f"{c['wave'] + 1:4} {c['run']:4} {fit[0]:9.1f} {fit[1]:9.1f} {c['rerun_log_likelihood']:9.1f}  "
               f"{'yes' if c['consistent'] else 'no'}")
+    if not doc["candidates"]:
+        print("no run of the waves is consistent with every record: nothing to rerun")
+        return
     if doc["chosen"] is None:
         print("no candidate stays consistent with the other parameters at their defaults")
         return
