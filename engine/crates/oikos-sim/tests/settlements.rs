@@ -88,6 +88,9 @@ fn farming_world(seed: u64, integration: f64, hierarchy: f64) -> (World, Vec<u8>
         success_bias: 0.0,
         settlement_integration: integration,
         settlement_hierarchy: hierarchy,
+        // every year alike and nothing stored, as when the tests were written (#13)
+        harvest_cv: 0.0,
+        storage_years: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();
@@ -237,7 +240,7 @@ fn checkpoints_from_before_settlements_restore_every_group_alone() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let n = w.agent_count();
-    let agents_at = now.len() - 52 * n;
+    let agents_at = now.len() - 56 * n;
     let mut old = b"OIKOSCK5".to_vec();
     let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
     old.extend_from_slice(&now[8..at]);
@@ -252,7 +255,7 @@ fn checkpoints_from_before_settlements_restore_every_group_alone() {
     old.extend_from_slice(&json);
     old.extend_from_slice(&now[at + 4 + len..agents_at]);
     for k in 0..n {
-        old.extend_from_slice(&now[agents_at + 52 * k..agents_at + 52 * k + 32]);
+        old.extend_from_slice(&now[agents_at + 56 * k..agents_at + 56 * k + 32]);
     }
     let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
     assert_eq!(checkpoint::encode(&restored), now);
@@ -266,11 +269,11 @@ fn checkpoints_from_before_herding_restore_with_no_herds() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let n = w.agent_count();
-    let agents_at = now.len() - 52 * n;
+    let agents_at = now.len() - 56 * n;
     let mut old = b"OIKOSCK6".to_vec();
     old.extend_from_slice(&now[8..agents_at]);
     for k in 0..n {
-        old.extend_from_slice(&now[agents_at + 52 * k..agents_at + 52 * k + 36]);
+        old.extend_from_slice(&now[agents_at + 56 * k..agents_at + 56 * k + 36]);
     }
     let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
     assert!(restored.agent_slices().all(|a| a.herding.iter().chain(&a.herd_domestication).all(|&x| x == 0)));
@@ -286,7 +289,7 @@ fn checkpoints_from_before_the_wheats_restore_them_as_the_crop() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let n = w.agent_count();
-    let agents_at = now.len() - 52 * n;
+    let agents_at = now.len() - 56 * n;
     let mut old = b"OIKOSCK7".to_vec();
     let at = 8 + 4 + 32 + 4 + 32 * w.inputs.ids().len() + 8 + 8;
     old.extend_from_slice(&now[8..at]);
@@ -301,7 +304,7 @@ fn checkpoints_from_before_the_wheats_restore_them_as_the_crop() {
     old.extend_from_slice(&json);
     old.extend_from_slice(&now[at + 4 + len..agents_at]);
     for k in 0..n {
-        old.extend_from_slice(&now[agents_at + 52 * k..agents_at + 52 * k + 44]);
+        old.extend_from_slice(&now[agents_at + 56 * k..agents_at + 56 * k + 44]);
     }
     let restored = checkpoint::decode_with(&old, inputs(&[&g, &c])).unwrap();
     assert!(

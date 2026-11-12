@@ -78,6 +78,8 @@ pub struct Params {
     pub harvest_cv: f64,
     pub forage_risk_ratio: f64,
     pub harvest_correlation: f64,
+    pub storage_years: f64,
+    pub storage_loss: f64,
     pub emmer_selection_ratio: f64,
     pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
@@ -198,6 +200,8 @@ impl Params {
             harvest_cv: real("harvest_cv")?,
             forage_risk_ratio: real("forage_risk_ratio")?,
             harvest_correlation: real("harvest_correlation")?,
+            storage_years: real("storage_years")?,
+            storage_loss: real("storage_loss")?,
             emmer_selection_ratio: real("emmer_selection_ratio")?,
             einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
@@ -450,6 +454,9 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("harvest_cv", Restore::Value(0.0)),
     ("forage_risk_ratio", Restore::Inert),
     ("harvest_correlation", Restore::Inert),
+    // #13: nobody stored food.
+    ("storage_years", Restore::Value(0.0)),
+    ("storage_loss", Restore::Inert),
 ];
 
 impl Params {

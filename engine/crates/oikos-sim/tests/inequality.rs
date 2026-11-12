@@ -348,10 +348,10 @@ fn checkpoints_from_before_inequality_restore_with_foragers_inequality() {
     w.run_years(300, 2, 300);
     let now = checkpoint::encode(&w);
     let agents = w.agent_count();
-    let at = now.len() - 52 * agents;
+    let at = now.len() - 56 * agents;
     let mut before = now[..at].to_vec();
     before[..8].copy_from_slice(b"OIKOSCK4");
-    for r in now[at..].chunks(52) {
+    for r in now[at..].chunks(56) {
         before.extend_from_slice(&r[..28]);
     }
     let restored = checkpoint::decode_with(&before, inputs(&[&g, &c])).unwrap();

@@ -220,11 +220,14 @@ Round 15 judges Egypt's animals and crops in `runs/m1/round15/`: `screening.json
 the 67 free parameters, `wave1.json` to `wave6.json` emulate 24 factors (the Egypt
 hypotheses varied as noise; waves 5 and 6 ran 196 and 53 worlds, all a million draws found
 in what was left), and `best.json` over waves 2-6 records that none of their worlds is
-consistent, so the calibrated defaults stay (ADR-0120). `runs/m1/f13/` profiles harvest risk at the calibrated defaults
-(ADR-0122): `profile-harvest-cv.json` takes harvest_cv over 0 to 0.6 with
-forage_risk_ratio 0.5, `profile-forage-risk-ratio.json` the ratio over 0.1 to 0.35 with
-harvest_cv 0.4, and `profile-harvest-cv-ratio-0.2.json` harvest_cv over 0.2 to 0.6 with
-the ratio 0.2, which gives the defaults (0.4 and 0.2). The onset record's tables are downloaded by hand (`data/README.md`); without
+consistent, so the calibrated defaults stay (ADR-0120). `runs/m1/f13/` profiles harvest risk and storage at the calibrated defaults
+(ADR-0122, ADR-0123). Without storage: `profile-harvest-cv.json` takes harvest_cv over 0
+to 0.6 with forage_risk_ratio 0.5, `profile-forage-risk-ratio.json` the ratio over 0.1 to
+0.35 with harvest_cv 0.4, and `profile-harvest-cv-ratio-0.2.json` harvest_cv over 0.2 to
+0.6 with the ratio 0.2. With it: `profile-storage-years.json` takes storage_years over 0
+to 1, `profile-forage-risk-ratio-storage.json` the ratio over 0.1 to 0.5 and
+`profile-harvest-cv-storage.json` harvest_cv over 0.2 to 0.6, which give the defaults
+(harvest_cv 0.4, forage_risk_ratio 0.2, storage_years 0.5). The onset record's tables are downloaded by hand (`data/README.md`); without
 them the M1 problem cannot be built.
 
 Operators run on the calibration host, so they use NumPy freely; work-unit results are

@@ -5,11 +5,12 @@
 //! (Winterhalder 1986). A bad year kills where it leaves people beyond what the harvest
 //! feeds, never more than it cannot feed.
 
+use oikos_core::Tick;
 use oikos_grid::Grid;
 use oikos_io::pack::{Data, Dims, FieldSpec, Pack, PackBuilder, Region, TimeRule, cells_hash};
 use oikos_sim::environment::{harvest_cv, harvest_cv_of};
 use oikos_sim::inputs::Inputs;
-use oikos_sim::mechanisms::{Growth, harvest_shock};
+use oikos_sim::mechanisms::{Growth, harvest_at, harvest_shock};
 use oikos_sim::{Params, World, WorldConfig, checkpoint};
 
 fn h3_cells() -> Vec<u64> {
@@ -85,6 +86,7 @@ fn world(seed: u64, farming: bool, precip: u16, cv: f64) -> (World, Vec<u8>, Vec
         harvest_cv: cv,
         forage_risk_ratio: 0.5,
         harvest_correlation: 0.3,
+        storage_years: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();
@@ -152,6 +154,17 @@ fn harvest_shocks_are_standard_and_share_the_regions_part() {
     let alone: Vec<f64> =
         (0..2000).map(|t| harvest_shock(seed, 1, t, 0.0) * harvest_shock(seed, 2, t, 0.0)).collect();
     assert!(mean(&alone).abs() < 0.06, "independent cells");
+}
+
+#[test]
+fn a_year_has_one_harvest_whatever_the_growth_period() {
+    // Growth may run more often than yearly (`period_ticks`): every step of a year sees
+    // the year's harvest.
+    let at = |day| harvest_at(7, 3, Tick(day), 0.3);
+    assert_eq!(at(0), at(364));
+    assert_eq!(at(365), at(729));
+    assert_ne!(at(364), at(365));
+    assert_eq!(at(365 * 40 + 30), harvest_shock(7, 3, 40, 0.3));
 }
 
 #[test]

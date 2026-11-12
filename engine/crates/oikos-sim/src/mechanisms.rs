@@ -308,6 +308,15 @@ fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u
 /// than farmers tied to their fields (Winterhalder 1986; Halstead and O'Shea 1989). A
 /// bad year kills at most the people its harvest cannot feed (or births' worth, if
 /// more): the logistic would kill everyone in a year that feeds nobody, and beyond.
+///
+/// Groups store food (#13; [`Growth::stored`]): in a year whose harvest feeds more than
+/// the cell's people a group puts the surplus by, up to `storage_years` of its people's
+/// need times its cultivation effort, and in one that feeds fewer it eats from its store;
+/// a share `storage_loss` of the store is lost each year. Storing takes a delayed-return
+/// economy and norms that let a household keep its store against demands to share
+/// (Woodburn 1982; Testart 1982), which settled cultivators have, as their granaries and
+/// household stores show (Kuijt and Finlayson 2009; Bogaard et al. 2009), and mobile
+/// foragers mostly do not.
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -317,16 +326,18 @@ pub struct Growth {
     pub sedentary_fertility: f64,
     pub forage_risk_ratio: f64,
     pub harvest_correlation: f64,
+    pub storage_years: f64,
+    pub storage_loss: f64,
 }
 
-/// A cell's harvest shock in the year of `tick` (#13): standard (mean 0, variance 1), the
-/// square root of `correlation` times the region's shock that year plus the square root
-/// of the rest times the cell's own, each a sum of four uniform draws scaled to unit
+/// A cell's harvest shock in simulated year `year` (#13): standard (mean 0, variance 1),
+/// the square root of `correlation` times the region's shock that year plus the square
+/// root of the rest times the cell's own, each a sum of four uniform draws scaled to unit
 /// variance (Irwin-Hall), so a drought strikes many cells at once. Years are independent.
-pub fn harvest_shock(seed: u64, cell: u32, tick: u64, correlation: f64) -> f64 {
+pub fn harvest_shock(seed: u64, cell: u32, year: u64, correlation: f64) -> f64 {
     let rng = Philox4x32::new(seed, Stream::Harvest);
     let standard = |subject: u64| {
-        let sum: f64 = rng.block(subject, tick, 0).iter().map(|&u| (u as f64 + 0.5) / 4_294_967_296.0).sum();
+        let sum: f64 = rng.block(subject, year, 0).iter().map(|&u| (u as f64 + 0.5) / 4_294_967_296.0).sum();
         (sum - 2.0) * 3f64.sqrt()
     };
     let own = standard(cell as u64);
@@ -334,6 +345,11 @@ pub fn harvest_shock(seed: u64, cell: u32, tick: u64, correlation: f64) -> f64 {
         return own;
     }
     correlation.sqrt() * standard(u64::MAX) + (1.0 - correlation).sqrt() * own
+}
+
+/// [`harvest_shock`] in the year of `tick`: one harvest a year, however often growth runs.
+pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64) -> f64 {
+    harvest_shock(seed, cell, tick.years(), correlation)
 }
 
 impl Growth {
@@ -346,6 +362,8 @@ impl Growth {
             sedentary_fertility: p.sedentary_fertility,
             forage_risk_ratio: p.forage_risk_ratio,
             harvest_correlation: p.harvest_correlation,
+            storage_years: p.storage_years,
+            storage_loss: p.storage_loss,
         }
     }
 
@@ -371,6 +389,21 @@ impl Growth {
         (b, if pop > k { d.min((1.0 - k / pop).max(b)) } else { d })
     }
 
+    /// A year of a group at `effort` holding `store` years of its people's need, in a year
+    /// whose harvest feeds `fed` times its cell's people: what it eats, as a multiple of
+    /// their need, and its store after the year's losses. A shortfall is made up from the
+    /// store while it lasts; a surplus goes into it up to `storage_years` times `effort`.
+    pub fn stored(&self, effort: f64, store: f64, fed: f64) -> (f64, f64) {
+        let (eaten, kept) = if fed < 1.0 {
+            let draw = store.min(1.0 - fed);
+            (fed + draw, store - draw)
+        } else {
+            let room = self.storage_years * effort - store;
+            (fed, if room > 0.0 { store + room.min(fed - 1.0) } else { store })
+        };
+        (eaten, oikos_math::finite(kept * (1.0 - self.storage_loss)).max(0.0))
+    }
+
     /// The share of its cell's capacity a band at `effort` lives on this year: 1 + its
     /// harvest's spread times the cell's `shock`, at least 0 (#13).
     pub fn harvest(&self, effort: f64, cell_cv: f64, shock: f64) -> f64 {
@@ -390,7 +423,7 @@ impl Mechanism for Growth {
                 Component::AgentTraits,
                 Component::Forcing,
             ],
-            writes: vec![Component::AgentWeight],
+            writes: vec![Component::AgentWeight, Component::AgentTraits],
             after: vec![],
         }
     }
@@ -415,7 +448,7 @@ impl Mechanism for Growth {
                 let z = match shock {
                     Some((c, z)) if c == cell => z,
                     _ => {
-                        let z = harvest_shock(sense.seed, cell as u32, t, self.harvest_correlation);
+                        let z = harvest_at(sense.seed, cell as u32, sense.tick, self.harvest_correlation);
                         shock = Some((cell, z));
                         z
                     }
@@ -423,6 +456,16 @@ impl Mechanism for Growth {
                 sense.capacity[cell] as f64 * self.harvest(effort, cv, z)
             } else {
                 sense.capacity[cell] as f64
+            };
+            // Foragers with nothing stored have nothing to put by or eat from.
+            let k = if (agents.store[i] != 0 || (self.storage_years > 0.0 && effort > 0.0)) && pop > 0.0 {
+                let fed = k / pop;
+                let (eaten, kept) = self.stored(effort, Traits::share(agents.store[i]), fed);
+                agents.store[i] = Traits::from_years(kept);
+                // The capacity changes only where the store feeds people.
+                if eaten > fed { eaten * pop } else { k }
+            } else {
+                k
             };
             let draw = rng.block(agents.id[i].0, t, 0);
             let (born, died) = if net_only {
@@ -1233,6 +1276,7 @@ impl Mechanism for Aggregation {
                     herd_domestication: pooled(wb, tb.herd_domestication, w, ta.herd_domestication),
                     wheat_domestication: [EMMER, EINKORN]
                         .map(|c| pooled(wb, tb.wheat_domestication[c], w, ta.wheat_domestication[c])),
+                    store: pooled(wb, tb.store, w, ta.store),
                 },
             );
             agents.weight[b] = wb + w;

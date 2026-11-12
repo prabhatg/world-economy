@@ -136,8 +136,15 @@ enters the model, and the starting mechanisms.
   (Winterhalder 1986; Halstead and O'Shea 1989). A bad year kills at most the people
   its harvest cannot feed. With `harvest_cv` 0.4 the records are consistent only if
   foragers and herders feel about a fifth of a farmer's swings (`forage_risk_ratio`
-  0.2), which stands for their moving to where the rain fell; storage, sharing and
-  bad-year moves are to follow (#13).
+  0.2), which stands for their moving to where the rain fell. Groups store food (#13,
+  ADR-0123): in a year whose harvest feeds more than the cell's people a group puts the
+  surplus by, up to `storage_years` of its people's need times its cultivation effort,
+  and in one that feeds fewer it eats from the store, which loses `storage_loss` a
+  year. Storing takes a delayed-return economy and norms that let a household keep its
+  store against demands to share (Woodburn 1982; Testart 1982), which settled
+  cultivators have, as granaries and household stores show (Kuijt and Finlayson 2009;
+  Bogaard et al. 2009), and mobile foragers mostly do not. Sharing between groups and
+  moving in bad years are still to come.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.

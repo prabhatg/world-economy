@@ -354,7 +354,8 @@
     herders feel about a fifth of a farmer's swings, as if they moved to where the rain
     fell. The answers the literature describes are storage, sharing, moving in bad years
     and spreading effort over crops and herds (Halstead and O'Shea 1989); which of them
-    a record can tell apart is open. Storage comes first (#13).
+    a record can tell apart is open. Storage is in (ADR-0123); sharing between groups and
+    moving in bad years are not.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
