@@ -808,12 +808,13 @@ group = "foraging"
 unit = "1"
 description = "Share of its sharing a group withholds when its own buffers insure it (#13): harvest_sharing falls by this times how far its store (up to storage_years of need) and its herds (its herding effort) insure it together."
 kind = { type = "probability" }
-default = 0.0
+default = 0.5
 prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
 status = "placeholder"
-note = "To be calibrated on M1 by profile. People with buffers of their own lean on reciprocity less: Basarwa households with stored crops or livestock took less part in exchange networks than those without (Cashdan 1985), and the household stores of early farmers were kept from demands to share (Testart 1982; Bogaard et al. 2009)."
+note = "A judgment, which the M1 records do not bound (ADR-0127; calibration/runs/m1/f13/profile-sharing-withdrawal.json, three seeds each): 0, 0.5 and 1 are all consistent (summaries -81.0, -81.2 and -81.7), apart by less than the seeds' spread, so the prior's middle stands for a withdrawal the literature finds but does not size. People with buffers of their own lean on reciprocity less: Basarwa households with stored crops or livestock took less part in exchange networks than those without (Cashdan 1985), and the household stores of early farmers were kept from demands to share (Testart 1982; Bogaard et al. 2009)."
 sources = [
   { citation = "Cashdan, E. (1985). Coping with risk: reciprocity among the Basarwa of northern Botswana. Man 20, 454-474.", doi = "10.2307/2802441" },
+  { citation = "ManyWorlds M1 profile of sharing_withdrawal at the calibrated defaults (ADR-0127): calibration/runs/m1/f13/profile-sharing-withdrawal.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
   { citation = "Testart, A. (1982). The significance of food storage among hunter-gatherers: residence patterns, population densities, and social inequalities. Current Anthropology 23(5), 523-537." },
   { citation = "Bogaard, A., Charles, M., Twiss, K.C., Fairbairn, A., Yalman, N., Filipovic, D., Demirergi, G.A., Ertug, F., Russell, N., Henecke, J. (2009). Private pantries and celebrated surplus: storing and sharing food at Neolithic Catalhoyuk, Central Anatolia. Antiquity 83(321), 649-668." },
 ]

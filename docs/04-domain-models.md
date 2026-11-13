@@ -151,8 +151,12 @@ enters the model, and the starting mechanisms.
   for. Groups share (ADR-0126): a group pools `harvest_sharing` (0.1) of its year's
   harvest with the people of its neighboring cells, drawing on neighbors the year
   favoured and giving when they are short, as foragers' exchange partners (Wiessner
-  1982) and early farmers' social storage (Halstead 1989) did; who shares with whom,
-  and the obligations and rank giving builds, are left out.
+  1982) and early farmers' social storage (Halstead 1989) did. People with buffers of
+  their own lean on reciprocity less (Cashdan 1985): a group withholds
+  `sharing_withdrawal` (0.5, a judgment the records do not bound; ADR-0127) of its
+  sharing as far as its store and its herds insure it, so farmers with full stores
+  share less until a bad year empties them. Who shares with whom, and the obligations
+  and rank giving builds, are left out.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.
