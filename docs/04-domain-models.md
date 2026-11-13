@@ -73,7 +73,11 @@ enters the model, and the starting mechanisms.
   more people and the transition can ratchet (`mechanisms::Cultivation`,
   `environment::cereal_suitability`, ADR-0049). A fourth, nested hypothesis scales the
   target by climate reliability (stable-climate hypothesis, ADR-0054; weight 7.2 in the
-  calibrated defaults, ADR-0081). A fifth, nested hypothesis has bands learn cultivation
+  calibrated defaults, ADR-0081). A returns driver (ADR-0132, off by default) adds
+  `cultivation_return_weight` times the share of a band's own fields' return owed to
+  its crop's domestic traits: wild-cereal cultivation repaid an hour's work no better
+  than foraging (Bowles 2011), so what domestic crops add draws work (diet breadth,
+  Winterhalder and Kennett 2006). A fifth, nested hypothesis has bands learn cultivation
   mostly from the people around them (innovation share below 1): it then spreads as an
   innovation does, slowly while few plant and then fast (Bass 1969, Henrich 2001;
   ADR-0065; innovation share 1.6e-5 and adoption rate 0.028 in the calibrated defaults).

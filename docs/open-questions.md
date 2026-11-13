@@ -38,6 +38,14 @@
     BCE, while domestic barley runs ahead in 9000-7000 BCE (0.33 and 0.59 against 0.14
     and 0.34). So selection runs fast for an effort that stays too low: either effort
     should keep rising where cereals pay, or the selection per unit of effort is too high.
+    Both together are now testable (ADR-0132): a returns driver, effort drawn by what a
+    band's domestic crop adds over wild stands, brings late effort to the record (0.67-0.68
+    at weight 1) without moving the onset, and with selection_coefficient 0.006 domestic
+    barley fits every era. But at today's other defaults it moves records the calibration
+    had fit, Egypt's 6th-millennium herds (0.26 against 1) and crops (0.6 against 0) and
+    the Levant's radiocarbon quartiles some 1,400 years late, and the wheats lag
+    (einkorn after 8000 BCE 0.27 against 0.81). Whether any world fits them all is for a
+    calibration round with the driver and the wheats' selection ratios free.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
