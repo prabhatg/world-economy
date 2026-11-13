@@ -174,8 +174,9 @@
     apart; round 10's wave 4, the first judged on the Ginis, keeps that picture (its
     consistent worlds' Ginis 0.25-0.26 at every site, the wealth parameters spread over
     their priors). More sites with measured houses (Kohler and Smith 2018 list others outside the
-    supplement) would. The generation length (28 years, Fenner 2005) is to be checked
-    against the paper.
+    supplement) would. Owned stores (ADR-0128) move every site's Gini toward its record,
+    but by at most 0.01: they explain little of the rise. The generation length (28
+    years, Fenner 2005) is to be checked against the paper.
 35. How heavy was disease in Neolithic villages, and at what size did it persist
     (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
     and the mortality of the infected (0.005 a year) are judgments. The records bound the

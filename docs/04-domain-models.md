@@ -239,7 +239,10 @@ Not brain simulation. Agents implement validated regularities:
   about 0.48; Demsetz 1967, Carneiro 1970, Bowles and Choi 2013). Herds are wealth
   on open land too (#45): animals are owned, inherited and given as bridewealth, and
   drought, epizootics and raids shake herders' fortunes (pastoralists, about 0.42). The
-  three economies mix by a group's effort: foraging, cultivating owned land, herding. It feeds back on
+  three economies mix by a group's effort: foraging, cultivating owned land, herding.
+  Stores are wealth too (#13, ADR-0128): where norms let a household keep its store,
+  what it puts by is its own and inherited (Testart 1982; Bogaard et al. 2009), so a
+  full store makes `stored_wealth` (1) of a farming group's open land count as owned. It feeds back on
   nothing yet: status competition, patronage, inequality's effect on fertility, fission
   and conflict, and the spread between merged groups' mean wealth are left out.
 - **Polities:** chiefdoms → states → empires, with state capacity (taxation,
