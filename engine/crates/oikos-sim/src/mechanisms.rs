@@ -341,6 +341,10 @@ fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u
 /// food and obligations against future need (Halstead 1989); transfers that follow need
 /// pool risk best where harvests are volatile (Aktipis et al. 2016). The pooling is in
 /// expectation: what a group draws in a year is not taken from a neighbor's people.
+/// People with buffers of their own lean on reciprocity less (Cashdan 1985): a group
+/// withholds `sharing_withdrawal` of its sharing as far as its store and herds insure it
+/// ([`Growth::sharing_of`]), and household stores were kept from demands to share
+/// (Testart 1982; Bogaard et al. 2009).
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -353,6 +357,7 @@ pub struct Growth {
     pub storage_years: f64,
     pub storage_loss: f64,
     pub sharing: f64,
+    pub sharing_withdrawal: f64,
     /// Years per period, and the share of a store kept over one, at `storage_loss` a year.
     pub period_years: f64,
     pub store_kept: f64,
@@ -414,6 +419,7 @@ impl Growth {
             storage_years: p.storage_years,
             storage_loss: p.storage_loss,
             sharing: p.harvest_sharing,
+            sharing_withdrawal: p.sharing_withdrawal,
             period_years: p.period_ticks as f64 / TICKS_PER_YEAR as f64,
             // Exact at the yearly period; compounded over shorter or longer ones.
             store_kept: if p.period_ticks == TICKS_PER_YEAR {
@@ -461,6 +467,20 @@ impl Growth {
             (fed, if room > 0.0 { store + room.min((fed - 1.0) * y) } else { store })
         };
         (eaten, oikos_math::finite(kept * self.store_kept).max(0.0))
+    }
+
+    /// The share of its harvest a group holding `store` (years of need, fixed point) and
+    /// spending `herding` of its effort herding pools with its neighbors: `sharing`, less
+    /// `sharing_withdrawal` of it times how far store and herds insure it together. A
+    /// store of `storage_years` insures fully, as does herding with all its effort.
+    pub fn sharing_of(&self, store: u32, herding: u32) -> f64 {
+        if self.sharing_withdrawal == 0.0 || (store == 0 && herding == 0) {
+            return self.sharing;
+        }
+        let stored =
+            if self.storage_years > 0.0 { (Traits::share(store) / self.storage_years).min(1.0) } else { 0.0 };
+        let insured = 1.0 - (1.0 - stored) * (1.0 - Traits::share(herding));
+        self.sharing * (1.0 - self.sharing_withdrawal * insured)
     }
 
     /// A store of `store` (fixed point, per person) held by `w` people, shared among the
@@ -540,7 +560,7 @@ impl Mechanism for Growth {
                 } else {
                     shares.clear();
                     shares.extend(near.iter().map(|&(cvc, zc)| self.harvest(effort, cvc, zc)));
-                    pooled_harvest(own, &shares, self.sharing)
+                    pooled_harvest(own, &shares, self.sharing_of(agents.store[i], agents.herding[i]))
                 };
                 if share == 1.0 { sense.capacity[cell] as f64 } else { sense.capacity[cell] as f64 * share }
             } else {
