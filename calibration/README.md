@@ -220,7 +220,7 @@ Round 15 judges Egypt's animals and crops in `runs/m1/round15/`: `screening.json
 the 67 free parameters, `wave1.json` to `wave6.json` emulate 24 factors (the Egypt
 hypotheses varied as noise; waves 5 and 6 ran 196 and 53 worlds, all a million draws found
 in what was left), and `best.json` over waves 2-6 records that none of their worlds is
-consistent, so the calibrated defaults stay (ADR-0120). `runs/m1/f13/` profiles harvest risk and storage at the calibrated defaults
+consistent, so the calibrated defaults stay (ADR-0120). Round 16 brings harvest risk and storage in `runs/m1/round16/`: a screening of the 72 free parameters, six waves (24 factors; waves 5 and 6 ran 292 and 160 worlds) and `best.json`, which finds none of their 1,652 worlds consistent, so the calibrated defaults stay (ADR-0130). `runs/m1/f13/` profiles harvest risk and storage at the calibrated defaults
 (ADR-0122, ADR-0123). Without storage: `profile-harvest-cv.json` takes harvest_cv over 0
 to 0.6 with forage_risk_ratio 0.5, `profile-forage-risk-ratio.json` the ratio over 0.1 to
 0.35 with harvest_cv 0.4, and `profile-harvest-cv-ratio-0.2.json` harvest_cv over 0.2 to
