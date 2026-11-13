@@ -401,6 +401,13 @@ pub fn pooled_harvest(own: f64, neighbors: &[f64], sharing: f64) -> f64 {
     own + sharing * (mean - own)
 }
 
+/// How full a store of `store` (years of need, fixed point) is, against the
+/// `storage_years` a fully cultivating group can keep: at most 1, and 0 where nobody
+/// stores.
+pub fn store_fill(store: u32, storage_years: f64) -> f64 {
+    if storage_years > 0.0 { (Traits::share(store) / storage_years).min(1.0) } else { 0.0 }
+}
+
 /// [`harvest_shock`] in the year of `tick`: one harvest a year, however often growth runs.
 pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64) -> f64 {
     harvest_shock(seed, cell, tick.years(), correlation)
@@ -477,9 +484,7 @@ impl Growth {
         if self.sharing_withdrawal == 0.0 || (store == 0 && herding == 0) {
             return self.sharing;
         }
-        let stored =
-            if self.storage_years > 0.0 { (Traits::share(store) / self.storage_years).min(1.0) } else { 0.0 };
-        let insured = 1.0 - (1.0 - stored) * (1.0 - Traits::share(herding));
+        let insured = 1.0 - (1.0 - store_fill(store, self.storage_years)) * (1.0 - Traits::share(herding));
         self.sharing * (1.0 - self.sharing_withdrawal * insured)
     }
 
@@ -2146,6 +2151,9 @@ pub struct Inequality {
     /// The stored inequality of foragers that the update keeps exactly (most agents, most
     /// of the time), so they are skipped; None if rounding has no such fixed point.
     pub forager_fixed: Option<u32>,
+    /// Share of a full store owned like closed-in land, and the store that is full.
+    pub stored_wealth: f64,
+    pub storage_years: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -2176,6 +2184,8 @@ impl Inequality {
             beta_lo,
             beta_hi,
             forager_fixed: None,
+            stored_wealth: p.stored_wealth,
+            storage_years: p.storage_years,
             after: vec!["cultivation"],
         };
         let fixed = Self::stored(m.stationary((0.0, 0.0)));
@@ -2231,6 +2241,20 @@ impl Inequality {
         added / (1.0 - kept)
     }
 
+    /// The share of a group's wealth that is owned and inherited, for a group at
+    /// cultivation `effort` on land `closed` in, its store `fill`ed that far: its farmland
+    /// where closed in (ADR-0074), and `stored_wealth` of the open rest as far as its
+    /// store is full (#13), since a store a household may keep is its own. Both are the
+    /// farming economy's: a group that has left farming lives by foragers' levelling
+    /// norms, which share out what it still holds (Woodburn 1982), so its store, which
+    /// rots away, is not owned.
+    pub fn owned(effort: f64, closed: f64, fill: f64, stored_wealth: f64) -> f64 {
+        if fill == 0.0 || stored_wealth == 0.0 {
+            return effort * closed;
+        }
+        effort * (closed + stored_wealth * fill * (1.0 - closed))
+    }
+
     /// How closed in a cell's land is, from its neighbors as (habitable, people's mean
     /// cultivation effort): the mean of their effort, uninhabitable neighbors (sea,
     /// desert) counting as closed. Open forager country is 0, a farmed landscape 1.
@@ -2276,6 +2300,7 @@ impl Mechanism for Inequality {
         let cultivation = &agents.cultivation[tile.clone()];
         let herding = &agents.herding[tile.clone()];
         let cells = &agents.cell[tile.clone()];
+        let stores = &agents.store[tile.clone()];
         let inequality = &mut agents.inequality[tile];
         for (k, v) in inequality.iter_mut().enumerate() {
             let c = cultivation[k];
@@ -2291,7 +2316,9 @@ impl Mechanism for Inequality {
                     _ => Self::closure_of(sense, cell),
                 };
                 closure = Some((cell, closed));
-                Traits::share(c) * closed
+                let fill =
+                    if self.stored_wealth > 0.0 { store_fill(stores[k], self.storage_years) } else { 0.0 };
+                Self::owned(Traits::share(c), closed, fill, self.stored_wealth)
             };
             *v = self.next_stored(*v, (owned, Traits::share(h)));
         }

@@ -83,6 +83,7 @@ pub struct Params {
     pub bad_year_moves: f64,
     pub harvest_sharing: f64,
     pub sharing_withdrawal: f64,
+    pub stored_wealth: f64,
     pub emmer_selection_ratio: f64,
     pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
@@ -208,6 +209,7 @@ impl Params {
             bad_year_moves: real("bad_year_moves")?,
             harvest_sharing: real("harvest_sharing")?,
             sharing_withdrawal: real("sharing_withdrawal")?,
+            stored_wealth: real("stored_wealth")?,
             emmer_selection_ratio: real("emmer_selection_ratio")?,
             einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
@@ -469,6 +471,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("harvest_sharing", Restore::Value(0.0)),
     // #13: groups shared whatever they held.
     ("sharing_withdrawal", Restore::Value(0.0)),
+    // #13: only closed-in land was owned.
+    ("stored_wealth", Restore::Value(0.0)),
 ];
 
 impl Params {

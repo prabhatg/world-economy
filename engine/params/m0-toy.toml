@@ -819,6 +819,22 @@ sources = [
   { citation = "Bogaard, A., Charles, M., Twiss, K.C., Fairbairn, A., Yalman, N., Filipovic, D., Demirergi, G.A., Ertug, F., Russell, N., Henecke, J. (2009). Private pantries and celebrated surplus: storing and sharing food at Neolithic Catalhoyuk, Central Anatolia. Antiquity 83(321), 649-668." },
 ]
 
+[params.stored_wealth]
+group = "social"
+unit = "1"
+description = "Share of a full store owned and inherited like farmland closed in by farms (#13): a group's owned share of wealth, which sets its transmission and shocks (ADR-0074), is its cultivation effort times its land's closure plus this times how full its store is (against storage_years) times the land still open."
+kind = { type = "probability" }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "To be judged on M1 by profile against the house-size Ginis. Where norms let a household keep its store against demands to share, what it puts by is its own and passes to its heirs: storage made sedentary foragers unequal (Testart 1982), and at Catalhoyuk households kept private pantries beside celebrated surplus (Bogaard et al. 2009); the house-size Ginis of early farming sites rise before farmland could have closed in (Kohler et al. 2017). It is the farming economy's: a group that has left farming lives by foragers' levelling norms, which share out what it holds (Woodburn 1982)."
+sources = [
+  { citation = "Woodburn, J. (1982). Egalitarian societies. Man 17, 431-451.", doi = "10.2307/2801707" },
+  { citation = "Testart, A. (1982). The significance of food storage among hunter-gatherers: residence patterns, population densities, and social inequalities. Current Anthropology 23(5), 523-537." },
+  { citation = "Bogaard, A., Charles, M., Twiss, K.C., Fairbairn, A., Yalman, N., Filipovic, D., Demirergi, G.A., Ertug, F., Russell, N., Henecke, J. (2009). Private pantries and celebrated surplus: storing and sharing food at Neolithic Catalhoyuk, Central Anatolia. Antiquity 83(321), 649-668." },
+  { citation = "Kohler, T.A., Smith, M.E., Bogaard, A., et al. (2017). Greater post-Neolithic wealth disparities in Eurasia than in North America and Mesoamerica. Nature 551, 619-622.", doi = "10.1038/nature24646" },
+]
+
 [params.herd_wild_frequency]
 group = "cultivation"
 unit = "1"
