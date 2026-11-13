@@ -734,9 +734,24 @@ kind = { type = "probability" }
 default = 0.3
 prior = { dist = "uniform", lo = 0.0, hi = 0.6 }
 status = "placeholder"
-note = "A judgment: droughts in the eastern Mediterranean span hundreds of kilometres, but the region reaches from the Nile to the Zagros, whose years differ; one regional shock with a cell's own stands for a correlation that in truth falls with distance. Years are drawn independently: multi-year droughts are left out."
+note = "A judgment: droughts in the eastern Mediterranean span hundreds of kilometres, but the region reaches from the Nile to the Zagros, whose years differ; one regional shock with a cell's own stands for a correlation that in truth falls with distance. How a year carries into the next is harvest_persistence."
 sources = [
   { citation = "Halstead, P., O'Shea, J. (eds.) (1989). Bad Year Economics: Cultural Responses to Risk and Uncertainty. Cambridge University Press." },
+]
+
+[params.harvest_persistence]
+group = "environment"
+unit = "1"
+description = "Share of a year's harvest shock carried into the next (#13, open question 44): each cell's shock is a first-order autoregression of its yearly draws, still standard, so dry years come in runs. 0: every year's harvest its own."
+kind = { type = "real", min = 0.0, max = 0.9 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 0.6 }
+status = "placeholder"
+note = "To be judged on M1 by profile. Multi-year droughts recur in the eastern Mediterranean's tree-ring records (Touchan et al. 2005; Cook et al. 2016), and a run of bad years, not one, is what outlasts stores and forces people to move (Halstead and O'Shea 1989). The prior's upper end keeps most of a year's harvest unforeseeable from the last."
+sources = [
+  { citation = "Halstead, P., O'Shea, J. (eds.) (1989). Bad Year Economics: Cultural Responses to Risk and Uncertainty. Cambridge University Press." },
+  { citation = "Touchan, R., Xoplaki, E., Funkhouser, G., Luterbacher, J., Hughes, M.K., Erkan, N., Akkemik, U., Stephan, J. (2005). Reconstructions of spring/summer precipitation for the Eastern Mediterranean from tree-ring widths and its connection to large-scale atmospheric circulation. Climate Dynamics 25, 75-98." },
+  { citation = "Cook, B.I., Anchukaitis, K.J., Touchan, R., Meko, D.M., Cook, E.R. (2016). Spatiotemporal drought variability in the Mediterranean over the last 900 years. Journal of Geophysical Research: Atmospheres 121, 2060-2074.", doi = "10.1002/2015JD023929" },
 ]
 
 [params.storage_years]

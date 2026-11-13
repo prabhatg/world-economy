@@ -354,6 +354,7 @@ pub struct Growth {
     pub sedentary_fertility: f64,
     pub forage_risk_ratio: f64,
     pub harvest_correlation: f64,
+    pub harvest_persistence: f64,
     pub storage_years: f64,
     pub storage_loss: f64,
     pub sharing: f64,
@@ -366,19 +367,42 @@ pub struct Growth {
 /// A cell's harvest shock in simulated year `year` (#13): standard (mean 0, variance 1),
 /// the square root of `correlation` times the region's shock that year plus the square
 /// root of the rest times the cell's own, each a sum of four uniform draws scaled to unit
-/// variance (Irwin-Hall), so a drought strikes many cells at once. Years are independent.
-pub fn harvest_shock(seed: u64, cell: u32, year: u64, correlation: f64) -> f64 {
+/// variance (Irwin-Hall), so a drought strikes many cells at once.
+///
+/// Dry years come in runs (open question 44): with `persistence` above 0 the shock is a
+/// first-order autoregression of those yearly draws, the sum of each past year's times
+/// `persistence` to the power of its age, scaled back to unit variance and cut where the
+/// weights' squares fall below [`PERSISTENCE_TAIL`], so a year carries `persistence` of
+/// its shock into the next. Years before the run's start are drawn like any other.
+pub fn harvest_shock(seed: u64, cell: u32, year: u64, correlation: f64, persistence: f64) -> f64 {
     let rng = Philox4x32::new(seed, Stream::Harvest);
-    let standard = |subject: u64| {
+    let standard = |subject: u64, year: u64| {
         let sum: f64 = rng.block(subject, year, 0).iter().map(|&u| (u as f64 + 0.5) / 4_294_967_296.0).sum();
         (sum - 2.0) * 3f64.sqrt()
     };
-    let own = standard(cell as u64);
-    if correlation <= 0.0 {
-        return own;
+    let drawn = |year: u64| {
+        let own = standard(cell as u64, year);
+        if correlation <= 0.0 {
+            return own;
+        }
+        correlation.sqrt() * standard(u64::MAX, year) + (1.0 - correlation).sqrt() * own
+    };
+    if persistence <= 0.0 {
+        return drawn(year);
     }
-    correlation.sqrt() * standard(u64::MAX) + (1.0 - correlation).sqrt() * own
+    let (mut sum, mut norm, mut weight, mut age) = (0.0, 0.0, 1.0, 0u64);
+    while weight * weight >= PERSISTENCE_TAIL {
+        sum += weight * drawn(year.wrapping_sub(age));
+        norm += weight * weight;
+        weight *= persistence;
+        age += 1;
+    }
+    sum / norm.sqrt()
 }
+
+/// Squared weight below which a past year's draw is left out of a persistent shock: the
+/// years left out carry under a millionth of its variance.
+pub const PERSISTENCE_TAIL: f64 = 1e-6;
 
 /// The share of its cell's capacity a band at `effort` lives on in a year of `shock`, its
 /// cell's harvest spreading by `cell_cv` for a band cultivating fully: 1 + its spread,
@@ -409,8 +433,8 @@ pub fn store_fill(store: u32, storage_years: f64) -> f64 {
 }
 
 /// [`harvest_shock`] in the year of `tick`: one harvest a year, however often growth runs.
-pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64) -> f64 {
-    harvest_shock(seed, cell, tick.years(), correlation)
+pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64, persistence: f64) -> f64 {
+    harvest_shock(seed, cell, tick.years(), correlation, persistence)
 }
 
 impl Growth {
@@ -423,6 +447,7 @@ impl Growth {
             sedentary_fertility: p.sedentary_fertility,
             forage_risk_ratio: p.forage_risk_ratio,
             harvest_correlation: p.harvest_correlation,
+            harvest_persistence: p.harvest_persistence,
             storage_years: p.storage_years,
             storage_loss: p.storage_loss,
             sharing: p.harvest_sharing,
@@ -542,7 +567,13 @@ impl Mechanism for Growth {
                 let z = match shock {
                     Some((c, z)) if c == cell => z,
                     _ => {
-                        let z = harvest_at(sense.seed, cell as u32, sense.tick, self.harvest_correlation);
+                        let z = harvest_at(
+                            sense.seed,
+                            cell as u32,
+                            sense.tick,
+                            self.harvest_correlation,
+                            self.harvest_persistence,
+                        );
                         shock = Some((cell, z));
                         near.clear();
                         if self.sharing > 0.0 {
@@ -550,8 +581,13 @@ impl Mechanism for Growth {
                                 habitable_neighbors(sense, cell as u32)
                                     .filter(|&c| sense.cell_population[c as usize] > 0)
                                     .map(|c| {
-                                        let zc =
-                                            harvest_at(sense.seed, c, sense.tick, self.harvest_correlation);
+                                        let zc = harvest_at(
+                                            sense.seed,
+                                            c,
+                                            sense.tick,
+                                            self.harvest_correlation,
+                                            self.harvest_persistence,
+                                        );
                                         (sense.harvest_cv[c as usize], zc)
                                     }),
                             );
@@ -1032,6 +1068,7 @@ pub struct Dispersal {
     pub bad_years: f64,
     pub forage_risk_ratio: f64,
     pub harvest_correlation: f64,
+    pub harvest_persistence: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -1061,7 +1098,7 @@ impl Dispersal {
         if cv == 0.0 {
             return 1.0;
         }
-        let z = harvest_at(sense.seed, cell, sense.tick, self.harvest_correlation);
+        let z = harvest_at(sense.seed, cell, sense.tick, self.harvest_correlation, self.harvest_persistence);
         harvest_share(self.forage_risk_ratio, effort, cv, z)
     }
 
@@ -1189,6 +1226,7 @@ impl Dispersal {
             bad_years: p.bad_year_moves,
             forage_risk_ratio: p.forage_risk_ratio,
             harvest_correlation: p.harvest_correlation,
+            harvest_persistence: p.harvest_persistence,
             after: vec!["fission"],
         }
     }

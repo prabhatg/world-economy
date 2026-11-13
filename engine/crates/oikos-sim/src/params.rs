@@ -78,6 +78,7 @@ pub struct Params {
     pub harvest_cv: f64,
     pub forage_risk_ratio: f64,
     pub harvest_correlation: f64,
+    pub harvest_persistence: f64,
     pub storage_years: f64,
     pub storage_loss: f64,
     pub bad_year_moves: f64,
@@ -204,6 +205,7 @@ impl Params {
             harvest_cv: real("harvest_cv")?,
             forage_risk_ratio: real("forage_risk_ratio")?,
             harvest_correlation: real("harvest_correlation")?,
+            harvest_persistence: real("harvest_persistence")?,
             storage_years: real("storage_years")?,
             storage_loss: real("storage_loss")?,
             bad_year_moves: real("bad_year_moves")?,
@@ -473,6 +475,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("sharing_withdrawal", Restore::Value(0.0)),
     // #13: only closed-in land was owned.
     ("stored_wealth", Restore::Value(0.0)),
+    // #13: every year's harvest was its own.
+    ("harvest_persistence", Restore::Value(0.0)),
 ];
 
 impl Params {
