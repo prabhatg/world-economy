@@ -30,6 +30,14 @@
     it: suitability saturates in the cereal belt's core, where cultivation ignites.
     Delaying the onset to 10,500 BCE by fiat fits the first two radiocarbon eras but
     not the rest (ADR-0054), so onset timing is part of the gap, not all of it.
+    At today's calibrated defaults (ADR-0131's profile, three seeds) the onset is no
+    longer early: cultivation effort before 10,000 BCE is 0.12 against the onset record's
+    0.09 (ADR-0064), and radiocarbon fits through 8300 BCE. The gap now runs the other
+    way. Effort after 8800 BCE stays near 0.3 against the record's 0.62-0.64 (about 1.5
+    tolerances short), and rich stands lead poor ones by 0.21 against 0.62 after 7600
+    BCE, while domestic barley runs ahead in 9000-7000 BCE (0.33 and 0.59 against 0.14
+    and 0.34). So selection runs fast for an effort that stays too low: either effort
+    should keep rising where cereals pay, or the selection per unit of effort is too high.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
