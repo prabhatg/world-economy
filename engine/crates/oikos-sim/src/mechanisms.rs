@@ -1614,12 +1614,14 @@ impl Mechanism for Inundation {
 ///   hypothesis scales the target instead of adding to it: where suitability swings
 ///   from century to century, sowing does not pay, whatever the motive (the stable
 ///   Holocene climate made agriculture possible; Richerson, Boyd and Bettinger 2001).
-///   A fifth, *returns*, adds `return_weight` times the share by which a band's own
-///   fields outpay foraging ([`Cultivation::returns`]), which rises as its crop turns
-///   domestic: people put their work where it pays, a resource taking more of it as its
-///   return rises against the alternatives' (diet breadth and marginal value: Winterhalder
-///   and Kennett 2006; Gremillion, Barton and Piperno 2014). Like the others it counts
-///   only where the band's own cell can be sown (open question 24).
+///   A fifth, *returns*, adds `return_weight` times the share of a band's own fields'
+///   return owed to its crop's domestic traits ([`Cultivation::domestic_gain`]): people
+///   put their work where it pays, a resource taking more of it as its return rises
+///   against the alternatives' (diet breadth and marginal value: Winterhalder and Kennett
+///   2006; Gremillion, Barton and Piperno 2014), and cultivating wild cereals repaid an
+///   hour's work no better than foraging (Bowles 2011), so it is what domestic crops add
+///   that draws work. Like the others it counts only where the band's own cell can be
+///   sown (open question 24).
 /// - **Domestication.** Harvesting and resowing select for domestic traits
 ///   (non-shattering ears) at `selection` times effort, logistically in their share of
 ///   the sown crop (from at least the wild mutant frequency); gene flow from wild stands
@@ -1751,8 +1753,9 @@ impl Cultivation {
 
     /// The share of effort bands in a cell aim to spend cultivating: `people` against
     /// `forage` capacity, wild-cereal `suitability`, climate `stress`, climate
-    /// `variability`, which makes harvests unreliable whatever the motive, and the
-    /// `payoff` of the band's own fields ([`Cultivation::returns`]).
+    /// `variability`, which makes harvests unreliable whatever the motive, and the share
+    /// of its own fields' return owed to its crop's domestic traits, `gain`
+    /// ([`Cultivation::domestic_gain`]).
     pub fn target_effort(
         &self,
         people: u64,
@@ -1760,7 +1763,7 @@ impl Cultivation {
         suitability: f64,
         stress: f64,
         variability: f64,
-        payoff: f64,
+        gain: f64,
     ) -> f64 {
         if suitability <= 0.0 {
             return 0.0;
@@ -1769,8 +1772,8 @@ impl Cultivation {
         let mut drive = self.pressure_weight * pressure
             + self.stress_weight * stress
             + self.abundance_weight * suitability;
-        if self.return_weight != 0.0 && payoff > 1.0 {
-            drive += self.return_weight * (1.0 - 1.0 / payoff);
+        if self.return_weight != 0.0 {
+            drive += self.return_weight * gain;
         }
         let reliability = (1.0 - self.variability_weight * variability).clamp(0.0, 1.0);
         oikos_math::finite(drive * reliability).clamp(0.0, 1.0)
@@ -1797,18 +1800,20 @@ impl Cultivation {
     /// those it feeds foraging ([`crate::environment::farmed_capacity`]), from the cell's
     /// full-farming capacities `(farm, flood)` of rain-fed land and floodplain, its forager
     /// capacity and its people's sums of effort and of effort times domestic share.
-    pub fn payoff(&self, land: (f64, f64), forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
+    pub fn payoff(&self, (farm, flood): (f64, f64), forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
         let domestic = if effort_sum == 0 { 0.0 } else { crop_sum as f64 / effort_sum as f64 };
-        self.returns(land, forage, domestic)
-    }
-
-    /// The people a unit of effort feeds farming fields of `domestic` share against those
-    /// it feeds foraging, from full-farming capacities `(farm, flood)` of rain-fed land
-    /// and floodplain and the forager capacity `forage`: rain-fed land at the wild yield,
-    /// rising to full with the domestic share, and floodplain only with domestic crops.
-    pub fn returns(&self, (farm, flood): (f64, f64), forage: u64, domestic: f64) -> f64 {
         let w = self.wild_yield_ratio;
         oikos_math::finite((farm * (w + (1.0 - w) * domestic) + flood * domestic) / forage.max(1) as f64)
+    }
+
+    /// The share of what fields of full-farming capacities `(farm, flood)`, rain-fed land
+    /// and floodplain, yield with a crop of `domestic` share that its domestic traits add
+    /// over wild stands: rain-fed land yields the wild yield, rising to full with the
+    /// domestic share, and floodplain only domestic crops. 0 without fields.
+    pub fn domestic_gain(&self, (farm, flood): (f64, f64), domestic: f64) -> f64 {
+        let wild = farm * self.wild_yield_ratio;
+        let all = wild + (farm * (1.0 - self.wild_yield_ratio) + flood) * domestic;
+        if all > 0.0 { oikos_math::finite(1.0 - wild / all) } else { 0.0 }
     }
 
     /// The suitability a band with domestic share `domestic` sees in its land: wild
@@ -2077,11 +2082,10 @@ impl Mechanism for Cultivation {
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
-            let payoff = if self.return_weight == 0.0 {
-                1.0
+            let gain = if self.return_weight == 0.0 {
+                0.0
             } else {
-                let land = (sense.farm[cell], sense.flood[cell]);
-                self.returns(land, sense.forage_capacity[cell], Traits::share(traits.domestication))
+                self.domestic_gain((sense.farm[cell], sense.flood[cell]), Traits::share(traits.domestication))
             };
             let target = self.target_effort(
                 sense.population[cell],
@@ -2093,7 +2097,7 @@ impl Mechanism for Cultivation {
                 ),
                 sense.climate_stress[cell],
                 sense.climate_variability[cell],
-                payoff,
+                gain,
             );
             let herd_target = self.herding_target(
                 sense.range[cell],

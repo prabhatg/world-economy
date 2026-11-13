@@ -153,75 +153,57 @@ fn hypotheses_set_the_target_effort() {
     let c = |p: Params| Cultivation::from_params(&p);
     // Pressure: none up to `crowding` times forager capacity, full weight one capacity beyond.
     let pressure = c(Params { cultivation_crowding: 1.0, ..only(0.6, 0.0, 0.0) });
-    assert_eq!(pressure.target_effort(100, 100, 1.0, 0.0, 0.0, 1.0), 0.0);
-    assert!((pressure.target_effort(150, 100, 1.0, 0.0, 0.0, 1.0) - 0.3).abs() < 1e-12);
-    assert!((pressure.target_effort(400, 100, 1.0, 0.0, 0.0, 1.0) - 0.6).abs() < 1e-12);
+    assert_eq!(pressure.target_effort(100, 100, 1.0, 0.0, 0.0, 0.0), 0.0);
+    assert!((pressure.target_effort(150, 100, 1.0, 0.0, 0.0, 0.0) - 0.3).abs() < 1e-12);
+    assert!((pressure.target_effort(400, 100, 1.0, 0.0, 0.0, 0.0) - 0.6).abs() < 1e-12);
     // Stress: proportional to the decline of forager capacity, at any density.
     let stress = c(only(0.0, 2.0, 0.0));
-    assert!((stress.target_effort(1, 100, 1.0, 0.2, 0.0, 1.0) - 0.4).abs() < 1e-12);
+    assert!((stress.target_effort(1, 100, 1.0, 0.2, 0.0, 0.0) - 0.4).abs() < 1e-12);
     // Abundance: proportional to wild-cereal suitability, at any density.
     let abundance = c(only(0.0, 0.0, 0.5));
-    assert!((abundance.target_effort(1, 100, 0.8, 0.0, 0.0, 1.0) - 0.4).abs() < 1e-12);
+    assert!((abundance.target_effort(1, 100, 0.8, 0.0, 0.0, 0.0) - 0.4).abs() < 1e-12);
     // No wild cereals, nothing to cultivate; effort never exceeds everything.
     let all = c(only(1.0, 5.0, 1.0));
-    assert_eq!(all.target_effort(500, 100, 0.0, 0.5, 0.0, 1.0), 0.0);
-    assert_eq!(all.target_effort(500, 100, 1.0, 0.5, 0.0, 1.0), 1.0);
+    assert_eq!(all.target_effort(500, 100, 0.0, 0.5, 0.0, 0.0), 0.0);
+    assert_eq!(all.target_effort(500, 100, 1.0, 0.5, 0.0, 0.0), 1.0);
 }
 
 #[test]
 fn returns_draw_effort_toward_farming_that_pays() {
-    // A band weighs what a unit of effort feeds farming its own fields against foraging:
-    // `cultivation_return_weight` times the share by which farming outpays foraging.
+    // Cultivating wild cereals repaid an hour's work no better than foraging (Bowles
+    // 2011): what draws effort is the share of a field's return owed to its crop's
+    // domestic traits, `cultivation_return_weight` of it.
     let c = Cultivation::from_params(&Params { cultivation_return_weight: 0.5, ..only(0.0, 0.0, 0.0) });
-    assert_eq!(c.target_effort(1, 100, 1.0, 0.0, 0.0, 1.0), 0.0, "farming pays as foraging does");
-    assert_eq!(c.target_effort(1, 100, 1.0, 0.0, 0.0, 0.5), 0.0, "farming pays less");
-    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.0, 2.0) - 0.25).abs() < 1e-12, "twice: half its weight");
-    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.0, 4.0) - 0.375).abs() < 1e-12, "four times");
-    assert_eq!(c.target_effort(1, 100, 0.0, 0.0, 0.0, 4.0), 0.0, "nothing to sow");
+    assert_eq!(c.target_effort(1, 100, 1.0, 0.0, 0.0, 0.0), 0.0, "a wild crop draws nothing more");
+    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.0, 0.5) - 0.25).abs() < 1e-12, "half its return domestic");
+    assert_eq!(c.target_effort(1, 100, 0.0, 0.0, 0.0, 0.5), 0.0, "nothing to sow");
     let reliable = Cultivation::from_params(&Params {
         cultivation_return_weight: 0.5,
         cultivation_variability_weight: 2.0,
         ..only(0.0, 0.0, 0.0)
     });
-    assert!((reliable.target_effort(1, 100, 1.0, 0.0, 0.25, 2.0) - 0.125).abs() < 1e-12, "unreliable years");
-    // What a band's own fields return: rain-fed land at the wild yield, rising to full
-    // with the domestic share, and floodplain only with domestic crops.
+    assert!((reliable.target_effort(1, 100, 1.0, 0.0, 0.25, 0.5) - 0.125).abs() < 1e-12, "unreliable years");
+    // The share of a field's return owed to domestic traits: rain-fed land yields the wild
+    // yield, rising to full with the domestic share, and floodplain only domestic crops.
     let r = Cultivation::from_params(&Params { wild_yield_ratio: 0.6, ..only(0.0, 0.0, 0.0) });
-    assert!((r.returns((300.0, 0.0), 100, 0.0) - 1.8).abs() < 1e-12);
-    assert!((r.returns((300.0, 0.0), 100, 1.0) - 3.0).abs() < 1e-12);
-    assert!((r.returns((300.0, 100.0), 100, 0.5) - 2.9).abs() < 1e-12);
-}
-
-#[test]
-fn returns_raise_effort_as_the_crop_becomes_domestic() {
-    // Pressure and abundance alone hold farmers' effort below what their domestic crops
-    // would repay; weighing returns, bands whose own crop has become domestic aim higher
-    // (mean effort 0.88 against 0.40 after 3,000 years).
-    let h3 = h3_cells();
-    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
-    let run = |weight| {
-        let p =
-            Params { selection_coefficient: 0.02, cultivation_return_weight: weight, ..only(0.3, 0.0, 0.1) };
-        let mut w = world(&[&g, &c], 5, p);
-        w.run_years(3000, 3, 3000);
-        mean_effort(&w)
-    };
-    let (without, with) = (run(0.0), run(0.5));
-    assert!(with > without + 0.3, "returns {with}, without {without}");
+    assert_eq!(r.domestic_gain((300.0, 0.0), 0.0), 0.0);
+    assert!((r.domestic_gain((300.0, 0.0), 1.0) - 0.4).abs() < 1e-12);
+    assert!((r.domestic_gain((300.0, 100.0), 0.5) - (1.0 - 180.0 / 290.0)).abs() < 1e-12);
+    assert_eq!(r.domestic_gain((0.0, 0.0), 1.0), 0.0, "no fields");
+    assert_eq!(r.domestic_gain((0.0, 100.0), 0.5), 1.0, "a floodplain only domestic crops can sow");
 }
 
 #[test]
 fn returns_follow_the_domestic_crop() {
-    // Wild cereals sown repay nothing here (wild_yield_ratio 0): only the domestic share of
-    // a band's own crop makes its fields pay. Without selection the crop stays wild and
-    // weighing returns changes nobody's effort; with it, bands aim higher as it turns
-    // (mean effort 0.88 against 0.40 after 3,000 years).
+    // Without selection, and no domestic mutants to start from, the crop stays wild, and
+    // weighing returns changes nobody's effort; with selection, bands aim higher as it
+    // turns domestic (mean effort 0.64 against 0.40 after 3,000 years).
     let h3 = h3_cells();
     let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
     let run = |selection, weight| {
         let p = Params {
             selection_coefficient: selection,
-            wild_yield_ratio: 0.0,
+            domestic_wild_frequency: if selection == 0.0 { 0.0 } else { 0.001 },
             cultivation_return_weight: weight,
             ..only(0.3, 0.0, 0.1)
         };
@@ -230,9 +212,9 @@ fn returns_follow_the_domestic_crop() {
         assert!(mean_effort(&w) > 0.0, "the test must exercise cultivation");
         (mean_effort(&w), w.agent_slices().flat_map(|a| a.cultivation.to_vec()).collect::<Vec<_>>())
     };
-    assert_eq!(run(0.0, 0.5).1, run(0.0, 0.0).1, "a wild crop pays nothing to weigh");
-    let ((with, _), (without, _)) = (run(0.1, 0.5), run(0.1, 0.0));
-    assert!(with > without + 0.3, "returns {with}, without {without}");
+    assert_eq!(run(0.0, 0.5).1, run(0.0, 0.0).1, "a wild crop draws nothing more");
+    let ((with, _), (without, _)) = (run(0.02, 0.5), run(0.02, 0.0));
+    assert!(with > without + 0.15, "returns {with}, without {without}");
 }
 
 #[test]
@@ -816,11 +798,11 @@ fn variability_lowers_the_target_effort() {
     // only where harvests are reliable. Weight 0 switches it off.
     let p = Params { cultivation_variability_weight: 4.0, ..only(0.0, 0.0, 0.5) };
     let c = Cultivation::from_params(&p);
-    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.0, 1.0) - 0.5).abs() < 1e-12);
-    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.1, 1.0) - 0.3).abs() < 1e-12);
-    assert_eq!(c.target_effort(1, 100, 1.0, 0.0, 0.3, 1.0), 0.0, "too variable to sow at all");
+    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.0, 0.0) - 0.5).abs() < 1e-12);
+    assert!((c.target_effort(1, 100, 1.0, 0.0, 0.1, 0.0) - 0.3).abs() < 1e-12);
+    assert_eq!(c.target_effort(1, 100, 1.0, 0.0, 0.3, 0.0), 0.0, "too variable to sow at all");
     let off = Cultivation::from_params(&only(0.0, 0.0, 0.5));
-    assert_eq!(off.target_effort(1, 100, 1.0, 0.0, 0.3, 1.0), 0.5);
+    assert_eq!(off.target_effort(1, 100, 1.0, 0.0, 0.3, 0.0), 0.5);
 }
 
 /// Every century from 12,000 BCE, rain swings between 500 mm (suitability 1) and 275 mm
