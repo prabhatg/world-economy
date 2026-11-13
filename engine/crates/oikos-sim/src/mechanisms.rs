@@ -345,6 +345,15 @@ fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u
 /// withholds `sharing_withdrawal` of its sharing as far as its store and herds insure it
 /// ([`Growth::sharing_of`]), and household stores were kept from demands to share
 /// (Testart 1982; Bogaard et al. 2009).
+///
+/// Giving builds rank (#13; [`Growth::debts`]): households short in a bad year are fed
+/// by those with food to spare, and a gift binds the one who cannot return it (Mauss
+/// 1925; the norm of reciprocity, Gouldner 1960), so in years of real shortage the needy
+/// repay with labour, land and deference, and social storage turns into rank (Halstead
+/// and O'Shea 1982). A year's unmet need, after harvest, sharing and store, adds to a
+/// group's variance of log wealth, which [`Inequality`] carries on. Settled farmers,
+/// tied to their fields and stores, cannot walk away from what they owe as mobile
+/// foragers can (Woodburn 1982), so the debts scale with cultivation effort.
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -359,6 +368,7 @@ pub struct Growth {
     pub storage_loss: f64,
     pub sharing: f64,
     pub sharing_withdrawal: f64,
+    pub giving_rank: f64,
     /// Years per period, and the share of a store kept over one, at `storage_loss` a year.
     pub period_years: f64,
     pub store_kept: f64,
@@ -452,6 +462,7 @@ impl Growth {
             storage_loss: p.storage_loss,
             sharing: p.harvest_sharing,
             sharing_withdrawal: p.sharing_withdrawal,
+            giving_rank: p.giving_rank,
             period_years: p.period_ticks as f64 / TICKS_PER_YEAR as f64,
             // Exact at the yearly period; compounded over shorter or longer ones.
             store_kept: if p.period_ticks == TICKS_PER_YEAR {
@@ -511,6 +522,14 @@ impl Growth {
         }
         let insured = 1.0 - (1.0 - store_fill(store, self.storage_years)) * (1.0 - Traits::share(herding));
         self.sharing * (1.0 - self.sharing_withdrawal * insured)
+    }
+
+    /// The variance of log wealth a period short by `unmet` of its need adds to a group
+    /// at cultivation `effort`: `giving_rank` times the effort times the need squared,
+    /// since a deeper shortfall puts more households in debt, and deeper, times the years
+    /// the period lasts, so a year's shortfall costs the same however often growth runs.
+    pub fn debts(&self, effort: f64, unmet: f64) -> f64 {
+        self.giving_rank * effort * unmet * unmet * self.period_years
     }
 
     /// A store of `store` (fixed point, per person) held by `w` people, shared among the
@@ -617,6 +636,10 @@ impl Mechanism for Growth {
             } else {
                 k
             };
+            if self.giving_rank > 0.0 && effort > 0.0 && pop > k && pop > 0.0 {
+                let owed = self.debts(effort, 1.0 - k.max(0.0) / pop);
+                agents.inequality[i] = Inequality::stored(Traits::share(agents.inequality[i]) + owed);
+            }
             let draw = rng.block(agents.id[i].0, t, 0);
             let (born, died) = if net_only {
                 let net = if k > 0.0 { self.rate(effort) * (1.0 - pop / k) } else { -1.0 };
