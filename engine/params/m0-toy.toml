@@ -1103,6 +1103,20 @@ sources = [
   { citation = "Zeder, M.A. (2016). Domestication as a model system for niche construction theory. Evolutionary Ecology 30, 325-348.", doi = "10.1007/s10682-015-9801-8" },
 ]
 
+[params.cultivation_return_weight]
+group = "cultivation"
+unit = "1"
+description = "Returns hypothesis (open question 24): target cultivation effort per unit of the share by which a band's own fields outpay foraging, 1 - 1/payoff where the payoff is what a unit of effort feeds farming them against foraging (rising with the crop's domestic share); nothing where farming pays no better. 0: effort ignores what farming returns."
+kind = { type = "real", min = 0.0, max = 2.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 1.0 }
+status = "placeholder"
+note = "Off until profiled on M1 against the cultivation-effort records, which rise to 0.62-0.64 after 8800 BCE while the drivers of need and abundance hold the model near 0.3 (open question 24). People put effort where it pays: in diet-breadth and marginal-value models a resource takes more of the work as its return rises against the alternatives', and as non-shattering, larger-seeded crops repaid sowing better, farming took more of it (Winterhalder and Kennett 2006; Gremillion, Barton and Piperno 2014). A band judges its own fields."
+sources = [
+  { citation = "Winterhalder, B., Kennett, D.J. (2006). Behavioral ecology and the transition from hunting and gathering to agriculture. In Kennett, D.J., Winterhalder, B. (eds.), Behavioral Ecology and the Transition to Agriculture, 1-21. University of California Press." },
+  { citation = "Gremillion, K.J., Barton, L., Piperno, D.R. (2014). Particularism and the retreat from theory in the archaeology of agricultural origins. PNAS 111(17), 6171-6177." },
+]
+
 [params.cultivation_variability_weight]
 group = "cultivation"
 unit = "1/suitability per century"

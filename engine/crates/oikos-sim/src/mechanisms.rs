@@ -1614,6 +1614,12 @@ impl Mechanism for Inundation {
 ///   hypothesis scales the target instead of adding to it: where suitability swings
 ///   from century to century, sowing does not pay, whatever the motive (the stable
 ///   Holocene climate made agriculture possible; Richerson, Boyd and Bettinger 2001).
+///   A fifth, *returns*, adds `return_weight` times the share by which a band's own
+///   fields outpay foraging ([`Cultivation::returns`]), which rises as its crop turns
+///   domestic: people put their work where it pays, a resource taking more of it as its
+///   return rises against the alternatives' (diet breadth and marginal value: Winterhalder
+///   and Kennett 2006; Gremillion, Barton and Piperno 2014). Like the others it counts
+///   only where the band's own cell can be sown (open question 24).
 /// - **Domestication.** Harvesting and resowing select for domestic traits
 ///   (non-shattering ears) at `selection` times effort, logistically in their share of
 ///   the sown crop (from at least the wild mutant frequency); gene flow from wild stands
@@ -1686,6 +1692,7 @@ pub struct Cultivation {
     pub pressure_weight: f64,
     pub stress_weight: f64,
     pub abundance_weight: f64,
+    pub return_weight: f64,
     pub variability_weight: f64,
     pub adoption_rate: f64,
     pub innovation_share: f64,
@@ -1716,6 +1723,7 @@ impl Cultivation {
             pressure_weight: p.cultivation_pressure_weight,
             stress_weight: p.cultivation_stress_weight,
             abundance_weight: p.cultivation_abundance_weight,
+            return_weight: p.cultivation_return_weight,
             variability_weight: p.cultivation_variability_weight,
             adoption_rate: p.adoption_rate,
             innovation_share: p.innovation_share,
@@ -1742,8 +1750,9 @@ impl Cultivation {
     }
 
     /// The share of effort bands in a cell aim to spend cultivating: `people` against
-    /// `forage` capacity, wild-cereal `suitability`, climate `stress`, and climate
-    /// `variability`, which makes harvests unreliable whatever the motive.
+    /// `forage` capacity, wild-cereal `suitability`, climate `stress`, climate
+    /// `variability`, which makes harvests unreliable whatever the motive, and the
+    /// `payoff` of the band's own fields ([`Cultivation::returns`]).
     pub fn target_effort(
         &self,
         people: u64,
@@ -1751,14 +1760,18 @@ impl Cultivation {
         suitability: f64,
         stress: f64,
         variability: f64,
+        payoff: f64,
     ) -> f64 {
         if suitability <= 0.0 {
             return 0.0;
         }
         let pressure = self.pressure(people, forage);
-        let drive = self.pressure_weight * pressure
+        let mut drive = self.pressure_weight * pressure
             + self.stress_weight * stress
             + self.abundance_weight * suitability;
+        if self.return_weight != 0.0 && payoff > 1.0 {
+            drive += self.return_weight * (1.0 - 1.0 / payoff);
+        }
         let reliability = (1.0 - self.variability_weight * variability).clamp(0.0, 1.0);
         oikos_math::finite(drive * reliability).clamp(0.0, 1.0)
     }
@@ -1784,8 +1797,16 @@ impl Cultivation {
     /// those it feeds foraging ([`crate::environment::farmed_capacity`]), from the cell's
     /// full-farming capacities `(farm, flood)` of rain-fed land and floodplain, its forager
     /// capacity and its people's sums of effort and of effort times domestic share.
-    pub fn payoff(&self, (farm, flood): (f64, f64), forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
+    pub fn payoff(&self, land: (f64, f64), forage: u64, effort_sum: u64, crop_sum: u64) -> f64 {
         let domestic = if effort_sum == 0 { 0.0 } else { crop_sum as f64 / effort_sum as f64 };
+        self.returns(land, forage, domestic)
+    }
+
+    /// The people a unit of effort feeds farming fields of `domestic` share against those
+    /// it feeds foraging, from full-farming capacities `(farm, flood)` of rain-fed land
+    /// and floodplain and the forager capacity `forage`: rain-fed land at the wild yield,
+    /// rising to full with the domestic share, and floodplain only with domestic crops.
+    pub fn returns(&self, (farm, flood): (f64, f64), forage: u64, domestic: f64) -> f64 {
         let w = self.wild_yield_ratio;
         oikos_math::finite((farm * (w + (1.0 - w) * domestic) + flood * domestic) / forage.max(1) as f64)
     }
@@ -2056,6 +2077,12 @@ impl Mechanism for Cultivation {
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
+            let payoff = if self.return_weight == 0.0 {
+                1.0
+            } else {
+                let land = (sense.farm[cell], sense.flood[cell]);
+                self.returns(land, sense.forage_capacity[cell], Traits::share(traits.domestication))
+            };
             let target = self.target_effort(
                 sense.population[cell],
                 sense.forage_capacity[cell],
@@ -2066,6 +2093,7 @@ impl Mechanism for Cultivation {
                 ),
                 sense.climate_stress[cell],
                 sense.climate_variability[cell],
+                payoff,
             );
             let herd_target = self.herding_target(
                 sense.range[cell],

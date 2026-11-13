@@ -86,6 +86,7 @@ pub struct Params {
     pub sharing_withdrawal: f64,
     pub stored_wealth: f64,
     pub giving_rank: f64,
+    pub cultivation_return_weight: f64,
     pub emmer_selection_ratio: f64,
     pub einkorn_selection_ratio: f64,
     pub herd_wild_frequency: f64,
@@ -214,6 +215,7 @@ impl Params {
             sharing_withdrawal: real("sharing_withdrawal")?,
             stored_wealth: real("stored_wealth")?,
             giving_rank: real("giving_rank")?,
+            cultivation_return_weight: real("cultivation_return_weight")?,
             emmer_selection_ratio: real("emmer_selection_ratio")?,
             einkorn_selection_ratio: real("einkorn_selection_ratio")?,
             herd_wild_frequency: real("herd_wild_frequency")?,
@@ -481,6 +483,8 @@ pub const ADDED_SINCE_CHECKPOINTS: &[(&str, Restore)] = &[
     ("harvest_persistence", Restore::Value(0.0)),
     // #13: gifts bound nobody.
     ("giving_rank", Restore::Value(0.0)),
+    // q24: effort ignored what farming returns.
+    ("cultivation_return_weight", Restore::Value(0.0)),
 ];
 
 impl Params {
