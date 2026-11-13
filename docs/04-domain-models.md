@@ -148,7 +148,10 @@ enters the model, and the starting mechanisms.
   to go by the year's harvest rather than the land's mean keeps foragers on a margin
   bad years would empty, but empties Egypt's 6th-millennium deserts of herds, and with
   years independent a move buys little that `forage_risk_ratio` does not already stand
-  for. Groups share (ADR-0126): a group pools `harvest_sharing` (0.1) of its year's
+  for. Droughts can last (ADR-0129): `harvest_persistence` of a year's shock carries
+  into the next, so a run of dry years outlasts a store and this year's harvest
+  foretells the next. Kept at 0 (years independent), since the records do not tell it
+  apart; with it at 0.6 they still reject moving in bad years. Groups share (ADR-0126): a group pools `harvest_sharing` (0.1) of its year's
   harvest with the people of its neighboring cells, drawing on neighbors the year
   favoured and giving when they are short, as foragers' exchange partners (Wiessner
   1982) and early farmers' social storage (Halstead 1989) did. People with buffers of

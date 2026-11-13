@@ -357,8 +357,11 @@
     and spreading effort over crops and herds (Halstead and O'Shea 1989); which of them
     a record can tell apart is open. Storage is in (ADR-0123). Moving in bad years
     (ADR-0125) is rejected for now: judging where to go by the year's harvest empties
-    Egypt's 6th-millennium deserts of herds. Would it hold with droughts that last
-    several years, where a move pays off the next year too? Sharing between groups is in
+    Egypt's 6th-millennium deserts of herds, and droughts that last do not save it
+    (ADR-0129): with a year carrying 0.6 of its shock into the next, moving stops costing
+    foragers in a test world, but M1 still rejects it on the same record. How much a year
+    carries into the next the records do not tell (0, 0.3 and 0.6 all consistent); a
+    measured autocorrelation of the region's yearly rain or harvests would. Sharing between groups is in
     (ADR-0126), and stores and herds weaken it (ADR-0127, Cashdan 1985), by how much
     no record yet tells; whether giving builds rank (Halstead and O'Shea 1982) is open.
 

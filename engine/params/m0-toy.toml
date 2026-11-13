@@ -747,11 +747,12 @@ kind = { type = "real", min = 0.0, max = 0.9 }
 default = 0.0
 prior = { dist = "uniform", lo = 0.0, hi = 0.6 }
 status = "placeholder"
-note = "To be judged on M1 by profile. Multi-year droughts recur in the eastern Mediterranean's tree-ring records (Touchan et al. 2005; Cook et al. 2016), and a run of bad years, not one, is what outlasts stores and forces people to move (Halstead and O'Shea 1989). The prior's upper end keeps most of a year's harvest unforeseeable from the last."
+note = "A judgment, which the M1 records do not bound (ADR-0129; calibration/runs/m1/f13/profile-harvest-persistence.json, three seeds each): 0, 0.3 and 0.6 are all consistent (summaries -80.9, -81.3 and -81.4), apart by less than the seeds' spread, so years stay independent until a measured autocorrelation of the region's yearly rain or harvests sets it; a persistent shock also costs some 14 times the random draws. With it at 0.6 the records still reject moving in bad years (calibration/runs/m1/f13/profile-bad-year-moves-persistent.json). Multi-year droughts recur in the eastern Mediterranean's tree-ring records (Touchan et al. 2005; Cook et al. 2016), and a run of bad years, not one, is what outlasts stores and forces people to move (Halstead and O'Shea 1989). The prior's upper end keeps most of a year's harvest unforeseeable from the last."
 sources = [
   { citation = "Halstead, P., O'Shea, J. (eds.) (1989). Bad Year Economics: Cultural Responses to Risk and Uncertainty. Cambridge University Press." },
   { citation = "Touchan, R., Xoplaki, E., Funkhouser, G., Luterbacher, J., Hughes, M.K., Erkan, N., Akkemik, U., Stephan, J. (2005). Reconstructions of spring/summer precipitation for the Eastern Mediterranean from tree-ring widths and its connection to large-scale atmospheric circulation. Climate Dynamics 25, 75-98." },
   { citation = "Cook, B.I., Anchukaitis, K.J., Touchan, R., Meko, D.M., Cook, E.R. (2016). Spatiotemporal drought variability in the Mediterranean over the last 900 years. Journal of Geophysical Research: Atmospheres 121, 2060-2074.", doi = "10.1002/2015JD023929" },
+  { citation = "ManyWorlds M1 profiles of harvest_persistence, and of bad_year_moves with it at 0.6 (ADR-0129): calibration/runs/m1/f13/profile-harvest-persistence.json and profile-bad-year-moves-persistent.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
 ]
 
 [params.storage_years]
