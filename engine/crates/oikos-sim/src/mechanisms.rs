@@ -265,9 +265,22 @@ fn least_crowded_by(
     cells: impl IntoIterator<Item = u32>,
     capacity: impl Fn(u32) -> u64,
 ) -> Option<(u32, u64)> {
+    least_crowded_among(cells.into_iter().map(|c| (c, sense.population[c as usize], capacity(c))), false)
+}
+
+/// The least crowded of `(cell, people, capacity)` by N/K (the first on ties), and its
+/// capacity; `feeding` leaves out places that feed nobody, which compare as no more
+/// crowded than any other and, empty, as no less (#13).
+fn least_crowded_among(
+    cells: impl IntoIterator<Item = (u32, u64, u64)>,
+    feeding: bool,
+) -> Option<(u32, u64)> {
     let mut best: Option<(u32, u128, u128)> = None;
-    for c in cells {
-        let (n, k) = (sense.population[c as usize] as u128, capacity(c) as u128);
+    for (c, n, k) in cells {
+        if feeding && k == 0 {
+            continue;
+        }
+        let (n, k) = (n as u128, k as u128);
         if best.is_none_or(|(_, bn, bk)| n * bk < bn * k) {
             best = Some((c, n, k));
         }
@@ -318,6 +331,20 @@ fn habitable_away<'a>(sense: &'a Sense<'_>, cell: u32) -> impl Iterator<Item = u
 /// (Woodburn 1982; Testart 1982), which settled cultivators have, as their granaries and
 /// household stores show (Kuijt and Finlayson 2009; Bogaard et al. 2009), and mobile
 /// foragers mostly do not.
+///
+/// Groups share (#13; [`pooled_harvest`]): a group pools `sharing` of its year's harvest
+/// with the people of its neighboring cells (each cell's own people and harvest, whatever
+/// the catchments), living on the rest of its own and that share of the mean of theirs at
+/// its own practice, so it draws on neighbors the year favoured and gives in turn when
+/// they are short. Among foragers, partners in other camps share food and access to land
+/// in bad years (Wiessner 1982); among early farmers, households and villages exchange
+/// food and obligations against future need (Halstead 1989); transfers that follow need
+/// pool risk best where harvests are volatile (Aktipis et al. 2016). The pooling is in
+/// expectation: what a group draws in a year is not taken from a neighbor's people.
+/// People with buffers of their own lean on reciprocity less (Cashdan 1985): a group
+/// withholds `sharing_withdrawal` of its sharing as far as its store and herds insure it
+/// ([`Growth::sharing_of`]), and household stores were kept from demands to share
+/// (Testart 1982; Bogaard et al. 2009).
 #[derive(Clone, Debug)]
 pub struct Growth {
     pub period_ticks: u64,
@@ -327,8 +354,11 @@ pub struct Growth {
     pub sedentary_fertility: f64,
     pub forage_risk_ratio: f64,
     pub harvest_correlation: f64,
+    pub harvest_persistence: f64,
     pub storage_years: f64,
     pub storage_loss: f64,
+    pub sharing: f64,
+    pub sharing_withdrawal: f64,
     /// Years per period, and the share of a store kept over one, at `storage_loss` a year.
     pub period_years: f64,
     pub store_kept: f64,
@@ -337,23 +367,74 @@ pub struct Growth {
 /// A cell's harvest shock in simulated year `year` (#13): standard (mean 0, variance 1),
 /// the square root of `correlation` times the region's shock that year plus the square
 /// root of the rest times the cell's own, each a sum of four uniform draws scaled to unit
-/// variance (Irwin-Hall), so a drought strikes many cells at once. Years are independent.
-pub fn harvest_shock(seed: u64, cell: u32, year: u64, correlation: f64) -> f64 {
+/// variance (Irwin-Hall), so a drought strikes many cells at once.
+///
+/// Dry years come in runs (open question 44): with `persistence` above 0 the shock is a
+/// first-order autoregression of those yearly draws, the sum of each past year's times
+/// `persistence` to the power of its age, scaled back to unit variance and cut where the
+/// weights' squares fall below [`PERSISTENCE_TAIL`], so a year carries `persistence` of
+/// its shock into the next. Years before the run's start are drawn like any other.
+pub fn harvest_shock(seed: u64, cell: u32, year: u64, correlation: f64, persistence: f64) -> f64 {
     let rng = Philox4x32::new(seed, Stream::Harvest);
-    let standard = |subject: u64| {
+    let standard = |subject: u64, year: u64| {
         let sum: f64 = rng.block(subject, year, 0).iter().map(|&u| (u as f64 + 0.5) / 4_294_967_296.0).sum();
         (sum - 2.0) * 3f64.sqrt()
     };
-    let own = standard(cell as u64);
-    if correlation <= 0.0 {
+    let drawn = |year: u64| {
+        let own = standard(cell as u64, year);
+        if correlation <= 0.0 {
+            return own;
+        }
+        correlation.sqrt() * standard(u64::MAX, year) + (1.0 - correlation).sqrt() * own
+    };
+    if persistence <= 0.0 {
+        return drawn(year);
+    }
+    let (mut sum, mut norm, mut weight, mut age) = (0.0, 0.0, 1.0, 0u64);
+    while weight * weight >= PERSISTENCE_TAIL {
+        sum += weight * drawn(year.wrapping_sub(age));
+        norm += weight * weight;
+        weight *= persistence;
+        age += 1;
+    }
+    sum / norm.sqrt()
+}
+
+/// Squared weight below which a past year's draw is left out of a persistent shock: the
+/// years left out carry under a millionth of its variance.
+pub const PERSISTENCE_TAIL: f64 = 1e-6;
+
+/// The share of its cell's capacity a band at `effort` lives on in a year of `shock`, its
+/// cell's harvest spreading by `cell_cv` for a band cultivating fully: 1 + its spread,
+/// moving with its effort from `forage_risk_ratio` of the cell's to all of it, times the
+/// shock, at least 0 (#13).
+pub fn harvest_share(forage_risk_ratio: f64, effort: f64, cell_cv: f64, shock: f64) -> f64 {
+    let cv = cell_cv * (forage_risk_ratio + (1.0 - forage_risk_ratio) * effort);
+    (1.0 + cv * shock).max(0.0)
+}
+
+/// The share of its capacity a group lives on when it pools `sharing` of its year's
+/// harvest `own` with its neighbors', whose shares at its practice are `neighbors` (#13):
+/// the rest of its own and `sharing` of their mean; its own where nobody is near.
+pub fn pooled_harvest(own: f64, neighbors: &[f64], sharing: f64) -> f64 {
+    if sharing == 0.0 || neighbors.is_empty() {
         return own;
     }
-    correlation.sqrt() * standard(u64::MAX) + (1.0 - correlation).sqrt() * own
+    let mean = neighbors.iter().sum::<f64>() / neighbors.len() as f64;
+    // Exactly its own where the neighbors' years are its own.
+    own + sharing * (mean - own)
+}
+
+/// How full a store of `store` (years of need, fixed point) is, against the
+/// `storage_years` a fully cultivating group can keep: at most 1, and 0 where nobody
+/// stores.
+pub fn store_fill(store: u32, storage_years: f64) -> f64 {
+    if storage_years > 0.0 { (Traits::share(store) / storage_years).min(1.0) } else { 0.0 }
 }
 
 /// [`harvest_shock`] in the year of `tick`: one harvest a year, however often growth runs.
-pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64) -> f64 {
-    harvest_shock(seed, cell, tick.years(), correlation)
+pub fn harvest_at(seed: u64, cell: u32, tick: Tick, correlation: f64, persistence: f64) -> f64 {
+    harvest_shock(seed, cell, tick.years(), correlation, persistence)
 }
 
 impl Growth {
@@ -366,8 +447,11 @@ impl Growth {
             sedentary_fertility: p.sedentary_fertility,
             forage_risk_ratio: p.forage_risk_ratio,
             harvest_correlation: p.harvest_correlation,
+            harvest_persistence: p.harvest_persistence,
             storage_years: p.storage_years,
             storage_loss: p.storage_loss,
+            sharing: p.harvest_sharing,
+            sharing_withdrawal: p.sharing_withdrawal,
             period_years: p.period_ticks as f64 / TICKS_PER_YEAR as f64,
             // Exact at the yearly period; compounded over shorter or longer ones.
             store_kept: if p.period_ticks == TICKS_PER_YEAR {
@@ -417,6 +501,18 @@ impl Growth {
         (eaten, oikos_math::finite(kept * self.store_kept).max(0.0))
     }
 
+    /// The share of its harvest a group holding `store` (years of need, fixed point) and
+    /// spending `herding` of its effort herding pools with its neighbors: `sharing`, less
+    /// `sharing_withdrawal` of it times how far store and herds insure it together. A
+    /// store of `storage_years` insures fully, as does herding with all its effort.
+    pub fn sharing_of(&self, store: u32, herding: u32) -> f64 {
+        if self.sharing_withdrawal == 0.0 || (store == 0 && herding == 0) {
+            return self.sharing;
+        }
+        let insured = 1.0 - (1.0 - store_fill(store, self.storage_years)) * (1.0 - Traits::share(herding));
+        self.sharing * (1.0 - self.sharing_withdrawal * insured)
+    }
+
     /// A store of `store` (fixed point, per person) held by `w` people, shared among the
     /// `w_new` they become: births share it and the dead leave theirs (rounded down).
     pub fn shared(store: u32, w: u64, w_new: u64) -> u32 {
@@ -429,8 +525,7 @@ impl Growth {
     /// The share of its cell's capacity a band at `effort` lives on this year: 1 + its
     /// harvest's spread times the cell's `shock`, at least 0 (#13).
     pub fn harvest(&self, effort: f64, cell_cv: f64, shock: f64) -> f64 {
-        let cv = cell_cv * (self.forage_risk_ratio + (1.0 - self.forage_risk_ratio) * effort);
-        (1.0 + cv * shock).max(0.0)
+        harvest_share(self.forage_risk_ratio, effort, cell_cv, shock)
     }
 }
 
@@ -457,8 +552,10 @@ impl Mechanism for Growth {
         // Count in locals: writing shared stats per agent would cause cache-line traffic.
         let net_only = self.fertility == 0.0 && self.sedentary_fertility == 0.0;
         let (mut births, mut deaths) = (0, 0);
-        // Tiles are runs of whole cells: draw each cell's shock once.
+        // Tiles are runs of whole cells: draw each cell's shock, and its peopled neighbors'
+        // (spread, shock), once.
         let mut shock: Option<(usize, f64)> = None;
+        let (mut near, mut shares): (Vec<(f64, f64)>, Vec<f64>) = (Vec::new(), Vec::new());
         let risky = !sense.harvest_cv.is_empty();
         for i in tile {
             let cell = agents.cell[i] as usize;
@@ -466,16 +563,47 @@ impl Mechanism for Growth {
             let pop = sense.population[cell] as f64;
             let effort = Traits::share(agents.cultivation[i]);
             let cv = if risky { sense.harvest_cv[cell] } else { 0.0 };
-            let k = if cv > 0.0 {
+            let k = if cv > 0.0 || (risky && self.sharing > 0.0) {
                 let z = match shock {
                     Some((c, z)) if c == cell => z,
                     _ => {
-                        let z = harvest_at(sense.seed, cell as u32, sense.tick, self.harvest_correlation);
+                        let z = harvest_at(
+                            sense.seed,
+                            cell as u32,
+                            sense.tick,
+                            self.harvest_correlation,
+                            self.harvest_persistence,
+                        );
                         shock = Some((cell, z));
+                        near.clear();
+                        if self.sharing > 0.0 {
+                            near.extend(
+                                habitable_neighbors(sense, cell as u32)
+                                    .filter(|&c| sense.cell_population[c as usize] > 0)
+                                    .map(|c| {
+                                        let zc = harvest_at(
+                                            sense.seed,
+                                            c,
+                                            sense.tick,
+                                            self.harvest_correlation,
+                                            self.harvest_persistence,
+                                        );
+                                        (sense.harvest_cv[c as usize], zc)
+                                    }),
+                            );
+                        }
                         z
                     }
                 };
-                sense.capacity[cell] as f64 * self.harvest(effort, cv, z)
+                let own = self.harvest(effort, cv, z);
+                let share = if near.is_empty() {
+                    own
+                } else {
+                    shares.clear();
+                    shares.extend(near.iter().map(|&(cvc, zc)| self.harvest(effort, cvc, zc)));
+                    pooled_harvest(own, &shares, self.sharing_of(agents.store[i], agents.herding[i]))
+                };
+                if share == 1.0 { sense.capacity[cell] as f64 } else { sense.capacity[cell] as f64 * share }
             } else {
                 sense.capacity[cell] as f64
             };
@@ -914,6 +1042,20 @@ impl Mechanism for Fission {
 /// as will do (intervening opportunities, Stouffer 1940), and herders cross land that
 /// feeds them nothing to reach grazing beyond, as Egypt's desert groups moved 150-200 km
 /// between the oases and the Nile (Linseele et al. 2014). `reach_km` 0 switches it off.
+///
+/// People judge the land by the year they are living (#13): crowding, a neighbor's room
+/// and how crowded it is are reckoned on what the year's harvest feeds
+/// ([`harvest_share`]), as far as `bad_years` weighs ([`Dispersal::this_year`]), so a bad
+/// year crowds a cell and sends a group toward a neighbor the rain favoured. Moving is the
+/// first answer to a bad year (Halstead and O'Shea 1989): foragers leave camps whose
+/// returns have fallen and herders take their flocks to where the rain fell (Kelly 2013),
+/// and people weigh what they have just lived through heavily (Hertwig et al. 2004). The
+/// origin is judged at its people's mean cultivation effort, a neighbor at the group's.
+/// A group with food stored stays through a bad year ([`Dispersal::stays`]): it eats from
+/// its store, and its fields and stores tie it down. `bad_years` 0 judges by the mean,
+/// as the M1 records have it (ADR-0125): judging by the year empties Egypt's deserts of
+/// herds, and with years independent a move takes a group to land the next year treats
+/// as any other. Places that feed nobody are no destination.
 #[derive(Clone, Debug)]
 pub struct Dispersal {
     pub period_ticks: u64,
@@ -923,10 +1065,56 @@ pub struct Dispersal {
     pub reach_km: f64,
     /// (wild_yield_ratio, wild_herd_ratio), for [`Sense::capacity_joined`].
     pub yields: (f64, f64),
+    pub bad_years: f64,
+    pub forage_risk_ratio: f64,
+    pub harvest_correlation: f64,
+    pub harvest_persistence: f64,
     pub after: Vec<&'static str>,
 }
 
 impl Dispersal {
+    /// What a capacity of `k` feeds as people judge it in a year whose harvest feeds `share`
+    /// of it: `k` moved toward `k * share` as far as `bad_years` weighs.
+    pub fn this_year(&self, k: u64, share: f64) -> u64 {
+        if share == 1.0 || self.bad_years == 0.0 {
+            return k;
+        }
+        (k as f64 * (1.0 + self.bad_years * (share - 1.0))).max(0.0) as u64
+    }
+
+    /// Whether a group holding `store` stays in a year whose harvest feeds `share` of its
+    /// cell's capacity: it does in a bad year while it has food stored.
+    pub fn stays(store: u32, share: f64) -> bool {
+        store > 0 && share < 1.0
+    }
+
+    /// The share of its capacity `cell`'s harvest feeds this year for a band at `effort`
+    /// (1 without harvest risk, or where the year does not weigh).
+    fn share(&self, sense: &Sense<'_>, cell: u32, effort: f64) -> f64 {
+        if self.bad_years == 0.0 || sense.harvest_cv.is_empty() {
+            return 1.0;
+        }
+        let cv = sense.harvest_cv[cell as usize];
+        if cv == 0.0 {
+            return 1.0;
+        }
+        let z = harvest_at(sense.seed, cell, sense.tick, self.harvest_correlation, self.harvest_persistence);
+        harvest_share(self.forage_risk_ratio, effort, cv, z)
+    }
+
+    /// `cell`'s capacity as its people judge it this year, at their mean cultivation effort.
+    fn judged(&self, sense: &Sense<'_>, cell: u32) -> u64 {
+        let c = cell as usize;
+        let k = sense.capacity[c];
+        if self.bad_years == 0.0 || sense.harvest_cv.is_empty() {
+            return k;
+        }
+        let effort = match sense.population[c] {
+            0 => 0.0,
+            n => sense.effort_sum[c] as f64 / (n as f64 * SHARE_ONE as f64),
+        };
+        self.this_year(k, self.share(sense, cell, effort))
+    }
     /// The chance per period that a crowded cell of `own` people in a catchment of
     /// `catchment` buds off a group (#50): `probability` times its share of the catchment's
     /// people, so a catchment buds as often as a cell did.
@@ -940,18 +1128,24 @@ impl Dispersal {
         self.probability * (own as f64 / catchment as f64)
     }
 
-    /// A habitable cell at least `crowding` full (last step).
-    fn crowded(&self, sense: &Sense<'_>, cell: u32) -> bool {
-        let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
+    /// A habitable cell at least `crowding` full (people last step, capacity `k`).
+    fn crowded(&self, sense: &Sense<'_>, cell: u32, k: u64) -> bool {
+        let n = sense.population[cell as usize];
         sense.habitable[cell as usize] && n as f64 >= self.crowding * k as f64
     }
 
     /// The least crowded habitable neighbor of `cell` (beyond its catchment where they reach
     /// beyond cells, [`Catchments::away`]) by the capacities `capacity(c)`, if it is less
-    /// crowded than `cell`, and its capacity.
-    fn target(&self, sense: &Sense<'_>, cell: u32, capacity: impl Fn(u32) -> u64) -> Option<(u32, u64)> {
-        let (n, k) = (sense.population[cell as usize], sense.capacity[cell as usize]);
-        let (dest, kd) = least_crowded_by(sense, habitable_away(sense, cell), capacity)?;
+    /// crowded than `cell` at capacity `k`, and its capacity.
+    fn target(
+        &self,
+        sense: &Sense<'_>,
+        (cell, k): (u32, u64),
+        capacity: impl Fn(u32) -> u64,
+    ) -> Option<(u32, u64)> {
+        let n = sense.population[cell as usize];
+        let cells = habitable_away(sense, cell).map(|c| (c, sense.population[c as usize], capacity(c)));
+        let (dest, kd) = least_crowded_among(cells, true)?;
         let nd = sense.population[dest as usize];
         (nd as u128 * (k as u128) < n as u128 * kd as u128).then_some((dest, kd))
     }
@@ -965,18 +1159,19 @@ impl Dispersal {
         (self.reach_km / step_km + 0.5) as usize
     }
 
-    /// Where a group of `take` people leaving `cell` goes within `reach` steps over habitable
-    /// land, from catchment to neighboring catchment: the least crowded, by the capacities
-    /// `capacity(c)`, of the nearest ring's places less crowded than `cell` with room for
-    /// it. `search` holds the catchments seen and the rings, reused between groups.
+    /// Where a group of `take` people leaving `cell` (capacity `k`) goes within `reach` steps
+    /// over habitable land, from catchment to neighboring catchment: the least crowded, by
+    /// the capacities `capacity(c)`, of the nearest ring's places less crowded than `cell`
+    /// with room for it. `search` holds the catchments seen and the rings, reused between
+    /// groups.
     fn farther(
         &self,
         sense: &Sense<'_>,
-        (cell, reach, take): (u32, usize, u64),
+        (cell, k, reach, take): (u32, u64, usize, u64),
         capacity: impl Fn(u32) -> u64,
         search: &mut Search,
     ) -> Option<u32> {
-        let (n, k) = (sense.population[cell as usize] as u128, sense.capacity[cell as usize] as u128);
+        let (n, k) = (sense.population[cell as usize] as u128, k as u128);
         let trivial = sense.catchments.is_trivial();
         let key = |c: u32| if trivial { c } else { sense.catchments.of(c as usize) as u32 };
         let Search { seen, ring, next } = search;
@@ -1028,6 +1223,10 @@ impl Dispersal {
             fraction: p.dispersal_fraction,
             reach_km: p.herder_reach_km,
             yields: (p.wild_yield_ratio, p.wild_herd_ratio),
+            bad_years: p.bad_year_moves,
+            forage_risk_ratio: p.forage_risk_ratio,
+            harvest_correlation: p.harvest_correlation,
+            harvest_persistence: p.harvest_persistence,
             after: vec!["fission"],
         }
     }
@@ -1074,11 +1273,12 @@ impl Mechanism for Dispersal {
                 let c = cell as usize;
                 Probability::from_f64(self.chance(sense.cell_population[c], sense.population[c]))
             };
-            if self.crowded(sense, cell) && go.hit(rng.u32(cell as u64, t, 0, 0)) {
+            let k = self.judged(sense, cell);
+            if self.crowded(sense, cell, k) && go.hit(rng.u32(cell as u64, t, 0, 0)) {
                 // Without farming a neighbor's capacity is its residents' whoever joins them,
                 // so the target is the same for every band.
                 let residents =
-                    (!sense.farming).then(|| self.target(sense, cell, |c| sense.capacity[c as usize]));
+                    (!sense.farming).then(|| self.target(sense, (cell, k), |c| sense.capacity[c as usize]));
                 // The first band (canonical order) whose group has somewhere to go buds off.
                 for a in (residents != Some(None)).then_some(i..end).into_iter().flatten() {
                     let w = part.agents.weight[a];
@@ -1086,9 +1286,20 @@ impl Mechanism for Dispersal {
                     if take == 0 {
                         continue;
                     }
+                    let effort = Traits::share(part.agents.cultivation[a]);
+                    let store = part.agents.store[a];
+                    if store > 0
+                        && self.bad_years > 0.0
+                        && Self::stays(store, self.share(sense, cell, effort))
+                    {
+                        continue;
+                    }
+                    let year = |c: u32, kc: u64| self.this_year(kc, self.share(sense, c, effort));
                     let target = residents.unwrap_or_else(|| {
                         let traits = part.agents.traits(a);
-                        self.target(sense, cell, |c| sense.capacity_joined(c, take, &traits, self.yields))
+                        self.target(sense, (cell, k), |c| {
+                            year(c, sense.capacity_joined(c, take, &traits, self.yields))
+                        })
                     });
                     let near = target
                         .filter(|&(dest, kd)| take <= kd.saturating_sub(sense.population[dest as usize]))
@@ -1104,8 +1315,8 @@ impl Mechanism for Dispersal {
                             return None;
                         }
                         let traits = part.agents.traits(a);
-                        let capacity = |c: u32| sense.capacity_joined(c, take, &traits, self.yields);
-                        self.farther(sense, (cell, reach, take), capacity, &mut search)
+                        let capacity = |c: u32| year(c, sense.capacity_joined(c, take, &traits, self.yields));
+                        self.farther(sense, (cell, k, reach, take), capacity, &mut search)
                     });
                     if let Some(dest) = dest {
                         part.agents.weight[a] = w - take;
@@ -1978,6 +2189,9 @@ pub struct Inequality {
     /// The stored inequality of foragers that the update keeps exactly (most agents, most
     /// of the time), so they are skipped; None if rounding has no such fixed point.
     pub forager_fixed: Option<u32>,
+    /// Share of a full store owned like closed-in land, and the store that is full.
+    pub stored_wealth: f64,
+    pub storage_years: f64,
     pub after: Vec<&'static str>,
 }
 
@@ -2008,6 +2222,8 @@ impl Inequality {
             beta_lo,
             beta_hi,
             forager_fixed: None,
+            stored_wealth: p.stored_wealth,
+            storage_years: p.storage_years,
             after: vec!["cultivation"],
         };
         let fixed = Self::stored(m.stationary((0.0, 0.0)));
@@ -2063,6 +2279,20 @@ impl Inequality {
         added / (1.0 - kept)
     }
 
+    /// The share of a group's wealth that is owned and inherited, for a group at
+    /// cultivation `effort` on land `closed` in, its store `fill`ed that far: its farmland
+    /// where closed in (ADR-0074), and `stored_wealth` of the open rest as far as its
+    /// store is full (#13), since a store a household may keep is its own. Both are the
+    /// farming economy's: a group that has left farming lives by foragers' levelling
+    /// norms, which share out what it still holds (Woodburn 1982), so its store, which
+    /// rots away, is not owned.
+    pub fn owned(effort: f64, closed: f64, fill: f64, stored_wealth: f64) -> f64 {
+        if fill == 0.0 || stored_wealth == 0.0 {
+            return effort * closed;
+        }
+        effort * (closed + stored_wealth * fill * (1.0 - closed))
+    }
+
     /// How closed in a cell's land is, from its neighbors as (habitable, people's mean
     /// cultivation effort): the mean of their effort, uninhabitable neighbors (sea,
     /// desert) counting as closed. Open forager country is 0, a farmed landscape 1.
@@ -2108,6 +2338,7 @@ impl Mechanism for Inequality {
         let cultivation = &agents.cultivation[tile.clone()];
         let herding = &agents.herding[tile.clone()];
         let cells = &agents.cell[tile.clone()];
+        let stores = &agents.store[tile.clone()];
         let inequality = &mut agents.inequality[tile];
         for (k, v) in inequality.iter_mut().enumerate() {
             let c = cultivation[k];
@@ -2123,7 +2354,9 @@ impl Mechanism for Inequality {
                     _ => Self::closure_of(sense, cell),
                 };
                 closure = Some((cell, closed));
-                Traits::share(c) * closed
+                let fill =
+                    if self.stored_wealth > 0.0 { store_fill(stores[k], self.storage_years) } else { 0.0 };
+                Self::owned(Traits::share(c), closed, fill, self.stored_wealth)
             };
             *v = self.next_stored(*v, (owned, Traits::share(h)));
         }
@@ -2276,6 +2509,17 @@ mod tests {
             m.decide(&sense, &mut part, 0..len);
         }
         agents
+    }
+
+    #[test]
+    fn a_place_that_feeds_nobody_is_no_destination_and_hides_none() {
+        // A failed harvest leaves an empty neighbor feeding nobody (#13): 0 people of 0 is
+        // no less crowded than anywhere, so it must not stand first and hide the rest.
+        let ranked = |c: &[(u32, u64, u64)]| least_crowded_among(c.iter().copied(), true);
+        assert_eq!(ranked(&[(1, 0, 0), (2, 10, 100), (3, 50, 100)]), Some((2, 100)));
+        assert_eq!(ranked(&[(1, 0, 0)]), None, "nowhere to go");
+        assert_eq!(ranked(&[(1, 5, 0), (2, 10, 100)]), Some((2, 100)));
+        assert_eq!(least_crowded_among([(1, 0, 0), (2, 10, 100)], false), Some((1, 0)), "as fission ranks");
     }
 
     #[test]

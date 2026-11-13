@@ -87,6 +87,7 @@ fn world(seed: u64, farming: bool, precip: u16, cv: f64) -> (World, Vec<u8>, Vec
         forage_risk_ratio: 0.5,
         harvest_correlation: 0.3,
         storage_years: 0.0,
+        harvest_sharing: 0.0,
         ..Params::default()
     };
     let id = blake3::hash(&g).to_hex().to_string();
@@ -142,17 +143,18 @@ fn harvest_shocks_are_standard_and_share_the_regions_part() {
     // Mean 0 and variance 1, each cell's year the region's shock and its own.
     let n = 40_000u64;
     let (rho, seed) = (0.3, 7);
-    let a: Vec<f64> = (0..n).map(|t| harvest_shock(seed, 0, t, rho)).collect();
-    let b: Vec<f64> = (0..n).map(|t| harvest_shock(seed, 1, t, rho)).collect();
+    let a: Vec<f64> = (0..n).map(|t| harvest_shock(seed, 0, t, rho, 0.0)).collect();
+    let b: Vec<f64> = (0..n).map(|t| harvest_shock(seed, 1, t, rho, 0.0)).collect();
     let m = mean(&a);
     let var = a.iter().map(|x| (x - m) * (x - m)).sum::<f64>() / n as f64;
     assert!(m.abs() < 0.02, "mean {m}");
     assert!((var - 1.0).abs() < 0.03, "variance {var}");
     let cov = a.iter().zip(&b).map(|(x, y)| x * y).sum::<f64>() / n as f64;
     assert!((cov - rho).abs() < 0.03, "correlation {cov}");
-    assert_eq!(harvest_shock(seed, 5, 9, rho), harvest_shock(seed, 5, 9, rho), "deterministic");
-    let alone: Vec<f64> =
-        (0..2000).map(|t| harvest_shock(seed, 1, t, 0.0) * harvest_shock(seed, 2, t, 0.0)).collect();
+    assert_eq!(harvest_shock(seed, 5, 9, rho, 0.0), harvest_shock(seed, 5, 9, rho, 0.0), "deterministic");
+    let alone: Vec<f64> = (0..2000)
+        .map(|t| harvest_shock(seed, 1, t, 0.0, 0.0) * harvest_shock(seed, 2, t, 0.0, 0.0))
+        .collect();
     assert!(mean(&alone).abs() < 0.06, "independent cells");
 }
 
@@ -160,11 +162,11 @@ fn harvest_shocks_are_standard_and_share_the_regions_part() {
 fn a_year_has_one_harvest_whatever_the_growth_period() {
     // Growth may run more often than yearly (`period_ticks`): every step of a year sees
     // the year's harvest.
-    let at = |day| harvest_at(7, 3, Tick(day), 0.3);
+    let at = |day| harvest_at(7, 3, Tick(day), 0.3, 0.0);
     assert_eq!(at(0), at(364));
     assert_eq!(at(365), at(729));
     assert_ne!(at(364), at(365));
-    assert_eq!(at(365 * 40 + 30), harvest_shock(7, 3, 40, 0.3));
+    assert_eq!(at(365 * 40 + 30), harvest_shock(7, 3, 40, 0.3, 0.0));
 }
 
 #[test]

@@ -174,8 +174,9 @@
     apart; round 10's wave 4, the first judged on the Ginis, keeps that picture (its
     consistent worlds' Ginis 0.25-0.26 at every site, the wealth parameters spread over
     their priors). More sites with measured houses (Kohler and Smith 2018 list others outside the
-    supplement) would. The generation length (28 years, Fenner 2005) is to be checked
-    against the paper.
+    supplement) would. Owned stores (ADR-0128) move every site's Gini toward its record,
+    but by at most 0.01: they explain little of the rise. The generation length (28
+    years, Fenner 2005) is to be checked against the paper.
 35. How heavy was disease in Neolithic villages, and at what size did it persist
     (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
     and the mortality of the infected (0.005 a year) are judgments. The records bound the
@@ -354,8 +355,15 @@
     herders feel about a fifth of a farmer's swings, as if they moved to where the rain
     fell. The answers the literature describes are storage, sharing, moving in bad years
     and spreading effort over crops and herds (Halstead and O'Shea 1989); which of them
-    a record can tell apart is open. Storage is in (ADR-0123); sharing between groups and
-    moving in bad years are not.
+    a record can tell apart is open. Storage is in (ADR-0123). Moving in bad years
+    (ADR-0125) is rejected for now: judging where to go by the year's harvest empties
+    Egypt's 6th-millennium deserts of herds, and droughts that last do not save it
+    (ADR-0129): with a year carrying 0.6 of its shock into the next, moving stops costing
+    foragers in a test world, but M1 still rejects it on the same record. How much a year
+    carries into the next the records do not tell (0, 0.3 and 0.6 all consistent); a
+    measured autocorrelation of the region's yearly rain or harvests would. Sharing between groups is in
+    (ADR-0126), and stores and herds weaken it (ADR-0127, Cashdan 1985), by how much
+    no record yet tells; whether giving builds rank (Halstead and O'Shea 1982) is open.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

@@ -143,8 +143,23 @@ enters the model, and the starting mechanisms.
   year. Storing takes a delayed-return economy and norms that let a household keep its
   store against demands to share (Woodburn 1982; Testart 1982), which settled
   cultivators have, as granaries and household stores show (Kuijt and Finlayson 2009;
-  Bogaard et al. 2009), and mobile foragers mostly do not. Sharing between groups and
-  moving in bad years are still to come.
+  Bogaard et al. 2009), and mobile foragers mostly do not. Moving in bad years is a
+  hypothesis the records reject for now (ADR-0125, `bad_year_moves` 0): judging where
+  to go by the year's harvest rather than the land's mean keeps foragers on a margin
+  bad years would empty, but empties Egypt's 6th-millennium deserts of herds, and with
+  years independent a move buys little that `forage_risk_ratio` does not already stand
+  for. Droughts can last (ADR-0129): `harvest_persistence` of a year's shock carries
+  into the next, so a run of dry years outlasts a store and this year's harvest
+  foretells the next. Kept at 0 (years independent), since the records do not tell it
+  apart; with it at 0.6 they still reject moving in bad years. Groups share (ADR-0126): a group pools `harvest_sharing` (0.1) of its year's
+  harvest with the people of its neighboring cells, drawing on neighbors the year
+  favoured and giving when they are short, as foragers' exchange partners (Wiessner
+  1982) and early farmers' social storage (Halstead 1989) did. People with buffers of
+  their own lean on reciprocity less (Cashdan 1985): a group withholds
+  `sharing_withdrawal` (0.5, a judgment the records do not bound; ADR-0127) of its
+  sharing as far as its store and its herds insure it, so farmers with full stores
+  share less until a bad year empties them. Who shares with whom, and the obligations
+  and rank giving builds, are left out.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.
@@ -227,7 +242,10 @@ Not brain simulation. Agents implement validated regularities:
   about 0.48; Demsetz 1967, Carneiro 1970, Bowles and Choi 2013). Herds are wealth
   on open land too (#45): animals are owned, inherited and given as bridewealth, and
   drought, epizootics and raids shake herders' fortunes (pastoralists, about 0.42). The
-  three economies mix by a group's effort: foraging, cultivating owned land, herding. It feeds back on
+  three economies mix by a group's effort: foraging, cultivating owned land, herding.
+  Stores are wealth too (#13, ADR-0128): where norms let a household keep its store,
+  what it puts by is its own and inherited (Testart 1982; Bogaard et al. 2009), so a
+  full store makes `stored_wealth` (1) of a farming group's open land count as owned. It feeds back on
   nothing yet: status competition, patronage, inequality's effect on fertility, fission
   and conflict, and the spread between merged groups' mean wealth are left out.
 - **Polities:** chiefdoms → states → empires, with state capacity (taxation,
