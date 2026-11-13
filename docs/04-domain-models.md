@@ -158,8 +158,12 @@ enters the model, and the starting mechanisms.
   their own lean on reciprocity less (Cashdan 1985): a group withholds
   `sharing_withdrawal` (0.5, a judgment the records do not bound; ADR-0127) of its
   sharing as far as its store and its herds insure it, so farmers with full stores
-  share less until a bad year empties them. Who shares with whom, and the obligations
-  and rank giving builds, are left out.
+  share less until a bad year empties them. Giving builds rank (ADR-0131): a year's
+  unmet need, after harvest, sharing and store, binds the households fed by others, who
+  repay with labour, land and deference (Halstead and O'Shea 1982; Mauss 1925; Gouldner
+  1960), adding `giving_rank` (1, a judgment the records do not bound) times cultivation
+  effort times the need squared to a group's variance of log wealth; foragers, free to
+  walk away, owe nothing (Woodburn 1982). Who shares with whom is left out.
 - Kinship and marriage rules (emergent norms: endogamy, polygyny, dowry/brideprice).
 - Optional lightweight population genetics (lactase persistence, disease resistance,
   ancestry tracers) — chiefly as a **validation signal** against ancient DNA.

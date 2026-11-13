@@ -857,16 +857,17 @@ group = "social"
 unit = "1"
 description = "Variance of log wealth a year's unmet need adds, per unit of that need squared, among settled farmers (#13): households short in a bad year are fed by those with food to spare and repay what they cannot return with labour, land and deference, so social storage turns into rank. Scaled by cultivation effort; foragers owe nothing. 0: gifts bind nobody."
 kind = { type = "real", min = 0.0, max = 4.0 }
-default = 0.0
+default = 1.0
 prior = { dist = "uniform", lo = 0.0, hi = 2.0 }
 status = "placeholder"
-note = "Off until profiled on M1 against the house-size Ginis (Kohler et al. 2017). In years of real shortage the needy repay with labour and deference, and social storage turns into ranking (Halstead and O'Shea 1982); a gift binds the one who cannot return it (Mauss 1925; the norm of reciprocity, Gouldner 1960). Settled farmers, tied to their fields and stores, cannot walk away from what they owe as mobile foragers can (Woodburn 1982). The square: a deeper shortfall puts more households in debt, and deeper. The prior's upper end lets a famine of half the need add half a unit of log-wealth variance."
+note = "A judgment, which the M1 records do not bound (ADR-0131; calibration/runs/m1/f13/profile-giving-rank.json and profile-giving-rank-high.json, three seeds each): 0, 0.5, 1, 2, 3 and 4 are all consistent (summaries -80.9, -80.9, -80.8, -80.6, -80.5 and -80.4), better by a little in every seed as the value rises, since each unit lifts every site's house-size Gini by about 0.008 and the records' tolerances (0.07-0.15) reward any rise; Jerf el Ahmar's moves away from its 0.20. Giving lifts the level, not the rise from the PPNA to the Late Chalcolithic (open question 34). So 1, the middle of the prior. In years of real shortage the needy repay with labour and deference, and social storage turns into ranking (Halstead and O'Shea 1982); a gift binds the one who cannot return it (Mauss 1925; the norm of reciprocity, Gouldner 1960). Settled farmers, tied to their fields and stores, cannot walk away from what they owe as mobile foragers can (Woodburn 1982). The square: a deeper shortfall puts more households in debt, and deeper. The prior's upper end lets a famine of half the need add half a unit of log-wealth variance."
 sources = [
   { citation = "Halstead, P., O'Shea, J. (1982). A friend in need is a friend indeed: social storage and the origins of social ranking. In Renfrew, C., Shennan, S. (eds.), Ranking, Resource and Exchange, 92-99. Cambridge University Press." },
   { citation = "Mauss, M. (1925). Essai sur le don. L'Annee sociologique, nouvelle serie 1, 30-186." },
   { citation = "Gouldner, A.W. (1960). The norm of reciprocity: a preliminary statement. American Sociological Review 25(2), 161-178.", doi = "10.2307/2092623" },
   { citation = "Woodburn, J. (1982). Egalitarian societies. Man 17, 431-451.", doi = "10.2307/2801707" },
   { citation = "Kohler, T.A., Smith, M.E., Bogaard, A., et al. (2017). Greater post-Neolithic wealth disparities in Eurasia than in North America and Mesoamerica. Nature 551, 619-622.", doi = "10.1038/nature24646" },
+  { citation = "ManyWorlds M1 profiles of giving_rank at the calibrated defaults (ADR-0131): calibration/runs/m1/f13/profile-giving-rank.json and profile-giving-rank-high.json.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/f13" },
 ]
 
 [params.herd_wild_frequency]

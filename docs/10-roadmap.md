@@ -155,7 +155,7 @@ which stay; Egypt's crops now bound the pace of domestication from below. Hidden
 Harvests now differ from year to year (ADR-0122, #13), more where rain is scarce and for
 farmers than for foragers and herders, and farmers store food against bad years
 (ADR-0123) and share with their neighbors (ADR-0126), less when their own stores or
-herds insure them (ADR-0127), and their stores are owned wealth (ADR-0128); droughts may last (ADR-0129); moving in bad years is tested and
+herds insure them (ADR-0127), and their stores are owned wealth (ADR-0128) and giving in bad years builds rank (ADR-0131); droughts may last (ADR-0129); moving in bad years is tested and
 rejected by the records for now (ADR-0125). Round 16 (ADR-0130) finds no world with harvest
 risk and storage nearer the records than the calibrated defaults, which stay.
 What comes next for the model's fidelity, records first, is ordered in the

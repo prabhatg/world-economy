@@ -175,7 +175,11 @@
     consistent worlds' Ginis 0.25-0.26 at every site, the wealth parameters spread over
     their priors). More sites with measured houses (Kohler and Smith 2018 list others outside the
     supplement) would. Owned stores (ADR-0128) move every site's Gini toward its record,
-    but by at most 0.01: they explain little of the rise. The generation length (28
+    but by at most 0.01: they explain little of the rise. Rank built by giving (ADR-0131)
+    lifts every site's Gini alike, about 0.008 per unit of `giving_rank` (0.016 at 2),
+    Jerf el Ahmar's past its record too: it raises the level, not the rise. What would
+    make the rise is open: farmland closing in only later, larger and more integrated
+    settlements (Tell Brak), or herds as wealth. The generation length (28
     years, Fenner 2005) is to be checked against the paper.
 35. How heavy was disease in Neolithic villages, and at what size did it persist
     (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
@@ -363,7 +367,8 @@
     carries into the next the records do not tell (0, 0.3 and 0.6 all consistent); a
     measured autocorrelation of the region's yearly rain or harvests would. Sharing between groups is in
     (ADR-0126), and stores and herds weaken it (ADR-0127, Cashdan 1985), by how much
-    no record yet tells; whether giving builds rank (Halstead and O'Shea 1982) is open.
+    no record yet tells. Giving builds rank (ADR-0131, Halstead and O'Shea 1982), by how
+    much the house-size Ginis do not tell (open question 34).
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
