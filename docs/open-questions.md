@@ -385,6 +385,11 @@
     (ADR-0126), and stores and herds weaken it (ADR-0127, Cashdan 1985), by how much
     no record yet tells. Giving builds rank (ADR-0131, Halstead and O'Shea 1982), by how
     much the house-size Ginis do not tell (open question 34).
+45. Which psychological traits must be state, from when, and what judges them before
+    surveys (ADR-0133, #54)? Time preference, trust and kin loyalty are the first
+    candidates; before writing only behavior shows them, so a trait added early must
+    change something a record sees. Texts (what people valued and feared) and
+    institutions' records (Seshat) may judge them between the Neolithic and 1800.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

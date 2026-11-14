@@ -7,6 +7,7 @@
 | Health & longevity | HALE, child mortality, undernutrition, disease burden |
 | Material wellbeing | consumption per capita, poverty headcount (multiple lines), Gini/Palma, food & housing security |
 | Capabilities & freedom | schooling and learning, agency, political freedom, safety from violence, gender gaps |
+| Subjective & mental wellbeing | life satisfaction, positive and negative affect, mental health (Stiglitz, Sen and Fitoussi 2009); modern era only, where surveys measure it |
 | Sustainability | emissions, resource depletion, biodiversity/land integrity, welfare of future cohorts |
 
 - Distributional by default: "majority of humans" means we report medians, bottom-40%
@@ -79,3 +80,8 @@ informative results the project can produce.
 - Publish assumptions, priors and failure cases alongside every result.
 - Avoid targeting or profiling of real individuals; the 2026 twin uses synthetic
   populations statistically consistent with data, not real persons.
+
+## References
+
+- Stiglitz, J.E., Sen, A., Fitoussi, J.-P. (2009). *Report by the Commission on the
+  Measurement of Economic Performance and Social Progress.* Paris.

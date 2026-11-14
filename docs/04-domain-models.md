@@ -190,6 +190,36 @@ Not brain simulation. Agents implement validated regularities:
   shared across agents; parameters calibrated, priors from experimental literature
   (doc 7 covers LLM-assisted archetype design).
 
+**Psychology changes with history, and the model of it deepens toward the present**
+(ADR-0133). How people weigh the future, take risks, trust strangers, conform or
+follow their own judgment is not a human constant: it varies across populations and
+was shaped by the societies they lived in (Henrich, Heine and Norenzayan 2010;
+Muthukrishna, Henrich and Slingerland 2021). Societies whose crops repaid patience
+grew more patient people (Galor and Özak 2016); where the medieval Church broke up
+clans and cousin marriage, people grew more individualistic, less conformist and more
+trusting of strangers (Schulz et al. 2019). So:
+
+- **Traits are state, not constants.** Psychological traits that matter for the era
+  modelled (time preference, risk attitude, trust and impersonal prosociality,
+  conformity, kin loyalty) are carried per group like cultivation effort and wealth
+  inequality: passed on by social learning, moved by ecology, kinship, institutions,
+  markets and scarcity, and feeding back on choices. A parameter becomes a trait when a
+  later era needs it to change.
+- **Depth follows the record** (doc 15, principle 1). Before writing, psychology is
+  seen only through what people did: when they planted, settled, stored, shared, built
+  bigger houses. Texts add what people valued and feared; the modern era measures it
+  directly, in preference surveys across 76 countries (Falk et al. 2018), values surveys
+  and experiments. So the cognitive model is richest from 1800 on (M5), where those
+  records can judge it, and kept as simple as the evidence allows before.
+- **Scarcity shapes the mind** (Mani et al. 2013; Haushofer and Fehr 2014): poverty and
+  stress shorten horizons and narrow attention, which can keep people poor. For the
+  policy lab this feedback matters as much as any price.
+- **The evidence is WEIRD.** Most experiments are run on Western, educated,
+  industrialized, rich and democratic people (Henrich et al. 2010), and language models'
+  answers resemble theirs (Atari et al. 2023), so neither may be projected onto other
+  places or the past. Behavior models take a group's traits as inputs (doc 7 §7.2), and
+  are tested on held-out populations.
+
 ## 4.5 Economy
 
 - Production: foraging → horticulture → agriculture → pastoralism → crafts →
@@ -328,4 +358,6 @@ Not brain simulation. Agents implement validated regularities:
 
 Health & longevity · material wellbeing (consumption, poverty, inequality) ·
 capabilities & freedom (education, agency, violence, political freedom) ·
-sustainability (resource stocks, emissions, ecological integrity). See doc 6.
+subjective and mental wellbeing (life satisfaction, mental health; from the modern era,
+where surveys measure it) · sustainability (resource stocks, emissions, ecological
+integrity). See doc 6.

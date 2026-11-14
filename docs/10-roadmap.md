@@ -220,6 +220,8 @@ Work items are GitHub issues under the M1 milestone.
 - All continents at res 4; independent agricultural origins (Fertile Crescent, China,
   Mesoamerica, Andes, New Guinea, Sahel…) as validation; chiefdoms → early states;
   bronze, writing, cities, long-distance trade; Seshat validation.
+- Psychological traits as state (ADR-0133): the first traits that history changes
+  (time preference, kin loyalty and trust), with what moves them.
 
 ## M4 — 1 CE–1800
 - Empires, world religions, trade networks (Silk Road, Indian Ocean, Atlantic),
@@ -229,6 +231,10 @@ Work items are GitHub issues under the M1 milestone.
 ## M5 — 1800–2026 and the digital twin
 - Industrialization, demographic transition, nation-states, globalization, digital
   economy, AI. Dense assimilation; synthetic modern population; twin-2026 v1.
+- Modern psychology judged directly (ADR-0133, [#54](https://github.com/prabhatg/world-economy/issues/54)):
+  traits calibrated against preference and values surveys and experiments, the
+  psychology of scarcity, expectations and trust in institutions, and subjective
+  wellbeing as an outcome.
 - AI as a class of agents and capital (task-based production; ADR-0062); decision
   packs for optional LLM notable actors.
 - Multi-node scaling work (MPI, GPU kernels).

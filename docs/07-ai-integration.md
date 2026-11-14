@@ -54,6 +54,14 @@ and toxins shape cognitive development), not by simulating neurons.
   weights, int32 accumulation, fixed-point activations by table), which is exact on
   every CPU, GPU and the browser, so they obey the reproducibility contract (doc 3
   §3.5) and run on volunteer GPUs with hash validation.
+- **Behavior by era and population.** A behavior model learned from today's
+  experiments answers like the people in them, mostly Western, educated,
+  industrialized, rich and democratic (Henrich et al. 2010); language models do too
+  (Atari et al. 2023). So the policy network takes the group's psychological traits as
+  inputs (doc 4 §4.4: traits are state that history changes), its teacher is asked
+  across the range of populations that cross-cultural data cover, and it is tested on
+  held-out populations as well as held-out eras. Its depth grows toward the present,
+  where surveys and experiments can judge it (M5).
 - **Plural behavior.** Competing behavior models (rational choice, bounded
   rationality, a learned policy) are swappable mechanism modules judged by fit, like
   any competing theory (doc 1, principle 3).
@@ -142,8 +150,12 @@ narratives of one simulated world, not predictions.
 - Acemoglu, D., Restrepo, P. (2019). Automation and new tasks: how technology displaces
   and reinstates labor. *Journal of Economic Perspectives* 33(2), 3-30.
   doi:10.1257/jep.33.2.3
+- Atari, M., Xue, M.J., Park, P.S., Blasi, D.E., Henrich, J. (2023). Which humans?
+  PsyArXiv. doi:10.31234/osf.io/5b26t
 - Binz, M., Akata, E., Bethge, M., et al. (2025). A foundation model to predict and
   capture human cognition. *Nature* 644, 1002-1009. doi:10.1038/s41586-025-09215-4
+- Henrich, J., Heine, S.J., Norenzayan, A. (2010). The weirdest people in the world?
+  *Behavioral and Brain Sciences* 33, 61-83. doi:10.1017/S0140525X0999152X
 - Park, J.S., Zou, C.Q., Kamphorst, J., et al. (2024). LLM agents grounded in
   self-reports enable general-purpose simulation of individuals (first titled
   "Generative agent simulations of 1,000 people"). arXiv:2411.10109
