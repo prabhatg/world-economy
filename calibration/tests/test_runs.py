@@ -139,6 +139,12 @@ def test_a_later_wave_can_refocus_on_more_factors():
     assert cli.active_factors(doc, threshold=3, max_active=4) == [0, 2]
     assert cli.active_factors(doc, threshold=1, max_active=4) == [0, 2, 3]
     assert cli.active_factors(doc, threshold=1, max_active=2) == [0, 2], "the most influential first"
+    # A first wave may name factors the screening ranks low that a new mechanism needs seen.
+    factors = ["a", "b", "c", "d"]
+    assert cli.first_active(factors, doc, threshold=3, max_active=4, names=["b"]) == [0, 1, 2]
+    assert cli.first_active(factors, doc, threshold=3, max_active=4, names=[]) == [0, 2]
+    assert cli.first_active(factors, None, threshold=3, max_active=4, names=["b"]) == [0, 1, 2, 3], \
+        "without a screening every factor is active"
 
 
 def test_a_later_wave_can_activate_factors_by_name():

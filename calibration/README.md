@@ -79,6 +79,8 @@ emulators are rebuilt from there, exactly as the search left them (#32).
 A later wave appends parameters new to the registry as active factors; `--activate`
 also makes active a factor the earlier waves varied as noise, when a new mechanism makes
 it matter (ADR-0065). NROY points take such factors uniformly, as the earlier waves did.
+On a first wave `--activate` adds factors the screening ranks below `--max-active` that a
+new mechanism needs seen (round 17: `cultivation_return_weight`, ADR-0132).
 `--inactive` keeps parameters new to the registry as noise when no record of the wave
 sees them yet (`fertility` and `sedentary_fertility` until the juvenile-index record
 joins, ADR-0068).
