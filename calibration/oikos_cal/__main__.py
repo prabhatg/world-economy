@@ -191,8 +191,16 @@ def activate(factors, active, names):
     matter). NROY points still take them as earlier waves did, uniformly."""
     unknown = [n for n in names if n not in factors]
     if unknown:
-        raise SystemExit(f"--activate: {unknown} not a factor of the earlier waves; factors: {factors}")
+        raise SystemExit(f"--activate: {unknown} not a factor of the waves; factors: {factors}")
     return sorted(set(active) | {factors.index(n) for n in names})
+
+
+def first_active(factors, doc, threshold, max_active, names):
+    """The factors a first wave's emulators see: those screening `doc` chooses (every
+    factor without one), plus the factors `names`, which the screening may rank low
+    while a new mechanism needs them seen."""
+    active = active_factors(doc, threshold, max_active) if doc else list(range(len(factors)))
+    return activate(factors, active, names)
 
 
 def _fit_wave(doc, path=None, workers=1):
@@ -260,10 +268,9 @@ def wave(args):
             raise SystemExit(f"only {len(u)} NROY points found; the space is (nearly) ruled out")
     else:
         factors = screening.free_parameters(oikos.registry())
-        if args.screening:
-            active = active_factors(chosen_by, args.threshold, args.max_active)
-        else:
-            active = list(range(len(factors)))
+        active = first_active(factors, chosen_by, args.threshold, args.max_active, args.activate)
+        if args.activate:
+            print(f"activated: {args.activate}", file=sys.stderr)
         u = emulator.latin_hypercube(args.runs, len(factors), rng)
     number = len(previous) + 1
     params = [oikos.sample_params(dict(zip(factors, x))) for x in u]
@@ -528,7 +535,8 @@ def main(argv=None):
     w.add_argument("--screening", help="screening file choosing the emulators' active factors (else the last wave's)")
     w.add_argument("--threshold", type=float, default=0.5, help="active if max mu*/tol reaches this")
     w.add_argument("--max-active", type=int, default=10)
-    w.add_argument("--activate", nargs="*", default=[], help="factors earlier waves varied as noise to emulate now")
+    w.add_argument("--activate", nargs="*", default=[],
+                   help="factors to emulate now: earlier waves varied them as noise, or the screening ranks them low")
     w.add_argument("--inactive", nargs="*", default=[],
                    help="parameters new to the registry to sample as noise, not emulate (no record sees them yet)")
     w.add_argument("--seed", type=int, help="seed of the wave's points (default: its number)")
