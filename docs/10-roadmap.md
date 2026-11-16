@@ -159,6 +159,8 @@ herds insure them (ADR-0127), and their stores are owned wealth (ADR-0128) and g
 rejected by the records for now (ADR-0125). Round 16 (ADR-0130) finds no world with harvest
 risk and storage nearer the records than the calibrated defaults, which stay; nor does round 17
 (ADR-0134) with giving and the returns driver of cultivation effort (ADR-0132), which stays off.
+Both fail to find the small region the defaults lie in, which are consistent in every seed
+(open question 46).
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.

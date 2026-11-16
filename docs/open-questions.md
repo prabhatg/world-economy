@@ -399,6 +399,15 @@
     candidates; before writing only behavior shows them, so a trait added early must
     change something a record sees. Texts (what people valued and feared) and
     institutions' records (Seshat) may judge them between the Neolithic and 1800.
+46. How should history matching search a space whose consistent region is this small
+    (ADR-0134)? Rounds 16 and 17 find no consistent world in 1,652 and 981 runs, yet the
+    calibrated defaults, reached by profiles one parameter at a time, are consistent in
+    every seed, and the waves' emulators rule them out. Waves sample the factors they do
+    not emulate over the whole prior and treat them as noise (ADR-0052), discarding what
+    earlier rounds learned. Options: start a round from a prior narrowed around the
+    defaults; hold the unemulated factors at their defaults; put the defaults in the
+    design so the emulators see them; or more runs per wave. Which keeps the waves'
+    estimate of what the records allow honest is open.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?
