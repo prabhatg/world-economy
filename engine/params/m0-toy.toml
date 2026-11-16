@@ -1120,6 +1120,22 @@ sources = [
   { citation = "ManyWorlds M1 profiles of cultivation_return_weight and of selection_coefficient with it (ADR-0132): calibration/runs/m1/q24/.", url = "https://github.com/prabhatg/world-economy/tree/main/calibration/runs/m1/q24" },
 ]
 
+[params.cultivation_property_weight]
+group = "cultivation"
+unit = "1"
+description = "Property hypothesis (open question 24): a band's cultivation target keeps 1 - weight x (1 - closure) of itself, closure being how far the land around is farmed or uninhabitable (the measure by which farmland becomes owned, ADR-0074). 0: a sower keeps the harvest anywhere."
+kind = { type = "real", min = 0.0, max = 1.0 }
+default = 0.0
+prior = { dist = "uniform", lo = 0.0, hi = 0.9 }
+status = "placeholder"
+note = "Off until calibration weighs it; a hypothesis. Sowing pays its sower only if the claim to the harvest is secure: among immediate-return foragers food is shared on demand (Woodburn 1982; Peterson 1993), and pioneer farmers' crops could be taken by those who had not sown them, so farming and property in its products paid only where each was common (Bowles and Choi 2013). Household storage in Levantine villages is read as a move toward private claims on food (Flannery 2002, who warns against equating farming with private storage). The model takes how far the land around is farmed, or uninhabitable, as the proxy for how secure claims are; that farming neighbors respect claims, that sea and desert secure them, and the linear form are its assumptions. The weight lowers the effort a band aims at, not its harvest, and effort then feeds on itself, low where little draws it and rising steeply with the draw, which may let effort stay low before 10,000 BCE and rise later, as the onset record has it (open question 24). At 1 a first sower among foragers would aim at nothing and cultivation could never start there, so the prior stops at 0.9."
+sources = [
+  { citation = "Woodburn, J. (1982). Egalitarian societies. Man 17(3), 431-451.", doi = "10.2307/2801707" },
+  { citation = "Peterson, N. (1993). Demand sharing: reciprocity and the pressure for generosity among foragers. American Anthropologist 95(4), 860-874.", doi = "10.1525/aa.1993.95.4.02a00050" },
+  { citation = "Bowles, S., Choi, J.-K. (2013). Coevolution of farming and private property during the early Holocene. PNAS 110(22), 8830-8835.", doi = "10.1073/pnas.1212149110" },
+  { citation = "Flannery, K.V. (2002). The origins of the village revisited: from nuclear to extended households. American Antiquity 67(3), 417-433.", doi = "10.2307/1593820" },
+]
+
 [params.cultivation_variability_weight]
 group = "cultivation"
 unit = "1/suitability per century"

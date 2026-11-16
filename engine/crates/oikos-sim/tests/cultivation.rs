@@ -244,6 +244,91 @@ fn parameters_from_before_restore_without_returns() {
     assert_eq!(p.cultivation_return_weight, 0.0, "effort ignored what farming returns");
 }
 
+#[test]
+fn a_sower_keeps_more_of_the_harvest_where_the_land_around_is_farmed() {
+    // Sowing pays its sower only if the harvest is the sower's: foragers around share it
+    // out on demand or gather the stand, while farming neighbors hold fields of their own
+    // and respect the claim (Woodburn 1982; Bowles and Choi 2013). A target keeps
+    // 1 - weight x (1 - closure) of itself.
+    let c = Cultivation::from_params(&Params { cultivation_property_weight: 0.8, ..only(0.0, 0.0, 0.0) });
+    assert!((c.claim_security(0.0) - 0.2).abs() < 1e-12, "open forager country");
+    assert!((c.claim_security(0.5) - 0.6).abs() < 1e-12);
+    assert_eq!(c.claim_security(1.0), 1.0, "a farmed landscape");
+    let off = Cultivation::from_params(&only(0.0, 0.0, 0.0));
+    assert_eq!(off.claim_security(0.0), 1.0, "off: a sower keeps the harvest anywhere");
+}
+
+/// Mean effort after 3,000 years of abundance-driven cultivation at `abundance`, with
+/// `property` weighing what a sower keeps.
+fn effort_with_property(abundance: f64, property: f64) -> f64 {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let p = Params { cultivation_property_weight: property, ..only(0.0, 0.0, abundance) };
+    let mut w = world(&[&g, &c], 5, p);
+    w.run_years(3000, 3, 3000);
+    mean_effort(&w)
+}
+
+#[test]
+fn property_amplifies_what_draws_effort() {
+    // Where each sower keeps more as others sow, effort feeds on itself: it stays low where
+    // little draws it and rises steeply as the draw grows (a coordination of farming and
+    // property, Bowles and Choi 2013), so a doubled draw more than doubles effort.
+    let (low, high) = (effort_with_property(0.3, 0.0), effort_with_property(0.6, 0.0));
+    let (low_p, high_p) = (effort_with_property(0.3, 0.8), effort_with_property(0.6, 0.8));
+    assert!(low_p > 0.0, "the test must exercise cultivation");
+    assert!(low_p < low && high_p < high, "property only withholds: {low_p} {low}, {high_p} {high}");
+    assert!(high_p / low_p > 1.2 * high / low, "with property {low_p} -> {high_p}, without {low} -> {high}");
+}
+
+#[test]
+fn cultivation_starts_among_foragers_at_the_top_of_the_property_prior() {
+    // Nobody farms at first, so the land around a first sower is open; at weight 1 its
+    // target would be nothing and cultivation could never start there (an absorbing
+    // state), so the prior stops at 0.9, where a tenth of the draw remains.
+    let start = |property| {
+        let h3 = h3_cells();
+        let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+        let mut w =
+            world(&[&g, &c], 5, Params { cultivation_property_weight: property, ..only(0.0, 0.0, 0.6) });
+        w.run_years(1000, 3, 1000);
+        mean_effort(&w)
+    };
+    assert!(start(0.9) > 0.0, "a tenth of the draw starts cultivation");
+    let prior = &oikos_sim::params::registry().get("cultivation_property_weight").unwrap().prior;
+    assert!(
+        matches!(prior, oikos_params::Prior::Uniform { hi, .. } if *hi < 1.0),
+        "the prior stops short of the absorbing weight 1: {prior:?}"
+    );
+}
+
+#[test]
+fn property_is_partition_independent_and_restores() {
+    let h3 = h3_cells();
+    let (g, c) = (geometry_pack(&h3), climate_pack(&h3, &[-12_000], cereal_country));
+    let p = Params { cultivation_property_weight: 0.6, ..only(0.3, 0.0, 0.4) };
+    let run = |parts| {
+        let mut w = world(&[&g, &c], 9, p.clone());
+        w.run_years(1500, parts, 1500);
+        checkpoint::state_hash(&w)
+    };
+    assert_eq!(run(1), run(4));
+    let mut w = world(&[&g, &c], 9, p.clone());
+    w.run_years(777, 3, 777);
+    let mut restored = checkpoint::decode_with(&checkpoint::encode(&w), inputs(&[&g, &c])).unwrap();
+    restored.run_years(723, 2, 723);
+    assert_eq!(checkpoint::state_hash(&restored), run(1));
+}
+
+#[test]
+fn parameters_from_before_restore_without_property() {
+    let mut json: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_slice(&serde_json::to_vec(&Params::default()).unwrap()).unwrap();
+    assert!(json.remove("cultivation_property_weight").is_some());
+    let p = Params::from_checkpoint(&serde_json::to_vec(&json).unwrap()).unwrap();
+    assert_eq!(p.cultivation_property_weight, 0.0, "a sower kept the harvest anywhere");
+}
+
 /// Years of full-effort cultivation until half the crop is of the domestic type, from the
 /// wild mutant frequency and introgression `only` pins.
 fn years_to_half(selection: f64) -> u32 {

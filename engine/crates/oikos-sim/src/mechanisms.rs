@@ -1622,6 +1622,19 @@ impl Mechanism for Inundation {
 ///   hour's work no better than foraging (Bowles 2011), so it is what domestic crops add
 ///   that draws work. Like the others it counts only where the band's own cell can be
 ///   sown (open question 24).
+/// - **Property**, a hypothesis. Sowing pays its sower only if the claim to the harvest is
+///   secure. Among immediate-return foragers food is shared on demand (Woodburn 1982;
+///   Peterson 1993), and pioneer farmers' crops could be taken by those who had not sown
+///   them, so farming and property in its products paid only where each was common
+///   (Bowles and Choi 2013). The model takes how far the land around is farmed, or
+///   uninhabitable, as a proxy for how secure claims are: by `property_weight` the target
+///   keeps `1 - weight (1 - closure)` of itself, closure being the measure by which
+///   farmland becomes owned ([`Inequality::closure`], ADR-0074). That farming neighbors
+///   respect claims, that sea and desert secure them, and the linear form are the model's
+///   assumptions. It lowers the effort a band aims at, not what it harvests; effort then
+///   feeds on itself, low where little draws it and rising steeply as the draw grows
+///   (open question 24). At weight 1 a first sower among foragers would aim at nothing,
+///   so cultivation could never start there; the prior stops at 0.9. Off by default.
 /// - **Domestication.** Harvesting and resowing select for domestic traits
 ///   (non-shattering ears) at `selection` times effort, logistically in their share of
 ///   the sown crop (from at least the wild mutant frequency); gene flow from wild stands
@@ -1695,6 +1708,7 @@ pub struct Cultivation {
     pub stress_weight: f64,
     pub abundance_weight: f64,
     pub return_weight: f64,
+    pub property_weight: f64,
     pub variability_weight: f64,
     pub adoption_rate: f64,
     pub innovation_share: f64,
@@ -1726,6 +1740,7 @@ impl Cultivation {
             stress_weight: p.cultivation_stress_weight,
             abundance_weight: p.cultivation_abundance_weight,
             return_weight: p.cultivation_return_weight,
+            property_weight: p.cultivation_property_weight,
             variability_weight: p.cultivation_variability_weight,
             adoption_rate: p.adoption_rate,
             innovation_share: p.innovation_share,
@@ -1784,6 +1799,12 @@ impl Cultivation {
     pub fn pressure(&self, people: u64, forage: u64) -> f64 {
         let crowding = people as f64 / forage.max(1) as f64;
         oikos_math::finite(crowding - self.crowding).clamp(0.0, 1.0)
+    }
+
+    /// How secure a sower's claim to the harvest is where its land is `closure` closed in,
+    /// by the property hypothesis: the share of its target a band keeps (all of it, off).
+    pub fn claim_security(&self, closure: f64) -> f64 {
+        oikos_math::finite(1.0 - self.property_weight * (1.0 - closure)).clamp(0.0, 1.0)
     }
 
     /// Effort after one period of moving from `effort` toward `target`, for a band that
@@ -2079,6 +2100,7 @@ impl Mechanism for Cultivation {
         let mut herders: Option<(usize, Option<f64>)> = None; // likewise for herding
         let mut seeds: Option<(usize, Option<[f64; 3]>)> = None; // likewise for seed exchange
         let mut stock: Option<(usize, Option<f64>)> = None; // likewise for stock exchange
+        let mut closure: Option<(usize, f64)> = None; // likewise for property
         for i in tile {
             let cell = agents.cell[i] as usize;
             let traits = agents.traits(i);
@@ -2099,6 +2121,16 @@ impl Mechanism for Cultivation {
                 sense.climate_variability[cell],
                 gain,
             );
+            let target = if self.property_weight == 0.0 || target == 0.0 {
+                target
+            } else {
+                let closed = match closure {
+                    Some((at, closed)) if at == cell => closed,
+                    _ => Inequality::closure_of(sense, cell as u32),
+                };
+                closure = Some((cell, closed));
+                target * self.claim_security(closed)
+            };
             let herd_target = self.herding_target(
                 sense.range[cell],
                 sense.pasture[cell],
@@ -2360,7 +2392,7 @@ impl Inequality {
         if n == 0 { 1.0 } else { sum / n as f64 }
     }
 
-    fn closure_of(sense: &Sense<'_>, cell: u32) -> f64 {
+    pub(crate) fn closure_of(sense: &Sense<'_>, cell: u32) -> f64 {
         Self::closure(sense.catchments.away(sense.grid, cell as usize).iter().map(|&c| {
             let c = c as usize;
             let effort = match sense.population[c] {
