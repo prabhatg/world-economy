@@ -518,14 +518,17 @@ def report_wave(docs, paths=None, workers=1):
     y = np.array(doc["outputs"])[:, : len(ts)]
     u = np.array(doc["u"])
     print(f"wave {doc['wave']}: {len(u)} runs; active factors: {[doc['factors'][i] for i in doc['active']]}")
-    coverage = holdout_coverage(u, y, ts, doc["active"], workers)
+    try:
+        coverage = holdout_coverage(u, y, ts, doc["active"], workers)
+    except np.linalg.LinAlgError:  # too few runs for the factors (round 18's wave 3: 13 over 26)
+        coverage = None
     run_i = history.implausibility(y, 0.0, ts)
     gs = _groups(doc.get("groups"))
     run_g = np.stack([g.implausibility(y, 0.0, ts) for g in gs], axis=1) if gs else np.zeros((len(y), 0))
     print(f"{'target':36} {'observed':>9} {'tol':>6} {'runs in 3 tol':>13} {'emulator |z|<3':>14}")
     for j, t in enumerate(ts):
         print(f"{t.name:36} {t.observed:9.3f} {np.sqrt(t.variance + t.discrepancy):6.3f} "
-              f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {coverage[j]:14.2f}")
+              f"{(run_i[:, j] <= CUTOFF).mean():13.2f} {coverage[j] if coverage else np.nan:14.2f}")
     best = best_run(run_i)
     kept = consistent(doc)
     print(f"best run {best}: max implausibility {run_i[best].max():.2f} ({ts[int(run_i[best].argmax())].name}); "
@@ -534,7 +537,11 @@ def report_wave(docs, paths=None, workers=1):
         print(f"  group {k} ({len(g.indices)} targets, dof {g.dof}): cutoff {history.chi2_cutoff(g.dof):.1f}, "
               f"runs within {(run_g[:, k] <= history.chi2_cutoff(g.dof)).mean():.2f}, best {np.nanmin(run_g[:, k]):.1f}")
     print("  " + ", ".join(f"{k}={v:.4g}" for k, v in sorted(doc["params"][best].items())))
-    waves = [_fit_wave(d, p, workers) for d, p in zip(docs, paths or [None] * len(docs))]
+    try:
+        waves = [_fit_wave(d, p, workers) for d, p in zip(docs, paths or [None] * len(docs))]
+    except np.linalg.LinAlgError:
+        print(f"emulators cannot be fitted to {len(u)} runs over {len(doc['active'])} factors: no NROY after this wave")
+        return
     space = np.random.default_rng(1).random((200_000, len(doc["factors"])))
     ok = np.ones(len(space), dtype=bool)
     for w in waves:

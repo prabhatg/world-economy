@@ -317,3 +317,17 @@ def test_a_held_round_puts_the_factors_it_does_not_emulate_at_their_defaults():
     assert cli.held_factors(factors, active=[0, 2], previous=None) == ["b", "d"], "a first wave holds the rest"
     assert cli.held_factors(factors, active=[0, 2, 3], previous=["b", "d"]) == ["b"], "activated, no longer held"
     assert cli.held_factors(factors, active=[0, 2], previous=[]) == [], "a round that sampled them goes on doing so"
+
+
+def test_a_wave_too_small_to_emulate_is_still_reported_by_its_runs(capsys, monkeypatch):
+    doc = {**_wave_doc([[0.0, 0.0, -1, -1, 5], [0.4, 0.0, -1, -1, 5]], [{"x": 0.5}, {"x": 0.1}]),
+           "wave": 3, "u": [[0.5, 0.5, 0.5], [0.1, 0.5, 0.9]]}
+
+    def singular(*args, **kwargs):
+        raise np.linalg.LinAlgError("not positive definite")
+
+    monkeypatch.setattr(history.Wave, "fit", singular)
+    cli.report_wave([doc])
+    out = capsys.readouterr().out
+    assert "best run 0: max implausibility 0.00" in out
+    assert "emulators cannot be fitted to 2 runs over 2 factors" in out
