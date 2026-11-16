@@ -195,11 +195,22 @@ def activate(factors, active, names):
     return sorted(set(active) | {factors.index(n) for n in names})
 
 
+def screened(doc, factors, threshold, max_active):
+    """`active_factors` of screening `doc` as indices into `factors`: the screening chose
+    among its own factors, and parameters added to the registry since may sort between
+    them (files without the names screened `factors` themselves)."""
+    chosen = active_factors(doc, threshold, max_active)
+    if "factors" not in doc:
+        return chosen
+    names = [doc["factors"][i] for i in chosen]
+    return sorted(factors.index(n) for n in names if n in factors)
+
+
 def first_active(factors, doc, threshold, max_active, names):
     """The factors a first wave's emulators see: those screening `doc` chooses (every
     factor without one), plus the factors `names`, which the screening may rank low
     while a new mechanism needs them seen."""
-    active = active_factors(doc, threshold, max_active) if doc else list(range(len(factors)))
+    active = screened(doc, factors, threshold, max_active) if doc else list(range(len(factors)))
     return activate(factors, active, names)
 
 
@@ -271,9 +282,9 @@ def wave(args):
     rng = np.random.default_rng(seed)
     if previous:
         factors, active = previous[-1]["factors"], previous[-1]["active"]
-        if args.screening:  # refocus: later emulators may see more factors than earlier ones
-            active = active_factors(chosen_by, args.threshold, args.max_active)
         factors, new = extend_factors(factors, screening.free_parameters(oikos.registry()), args.inactive)
+        if args.screening:  # refocus: later emulators may see more factors than earlier ones
+            active = screened(chosen_by, factors, args.threshold, args.max_active)
         active = activate(factors, sorted(set(active) | set(new)), args.activate)
         if args.activate:
             print(f"activated: {args.activate}", file=sys.stderr)

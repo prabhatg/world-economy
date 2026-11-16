@@ -145,6 +145,13 @@ def test_a_later_wave_can_refocus_on_more_factors():
     assert cli.first_active(factors, doc, threshold=3, max_active=4, names=[]) == [0, 2]
     assert cli.first_active(factors, None, threshold=3, max_active=4, names=["b"]) == [0, 1, 2, 3], \
         "without a screening every factor is active"
+    # The screening's choice is of its own factors: a parameter added to the registry since
+    # (sorting between them) must not shift it onto others.
+    named = {**doc, "factors": ["a", "c", "d", "e"]}
+    factors = ["a", "b", "c", "d", "e"]
+    assert cli.first_active(factors, named, threshold=3, max_active=4, names=[]) == [0, 3], "a and d"
+    assert cli.first_active(factors, named, threshold=3, max_active=4, names=["b"]) == [0, 1, 3]
+    assert cli.screened(named, factors, threshold=3, max_active=4) == [0, 3]
 
 
 def test_a_later_wave_can_activate_factors_by_name():
