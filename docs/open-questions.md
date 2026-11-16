@@ -44,8 +44,12 @@
     barley fits every era. But at today's other defaults it moves records the calibration
     had fit, Egypt's 6th-millennium herds (0.26 against 1) and crops (0.6 against 0) and
     the Levant's radiocarbon quartiles some 1,400 years late, and the wheats lag
-    (einkorn after 8000 BCE 0.27 against 0.81). Whether any world fits them all is for a
-    calibration round with the driver and the wheats' selection ratios free.
+    (einkorn after 8000 BCE 0.27 against 0.81). Round 17 (ADR-0134), with the driver, selection
+    and the wheats' ratios free, finds no world that fits them all: the records leave the
+    weight unbounded, and in the worlds they keep (selection near 0.0056) it barely moves
+    late effort, which stays near 0.3. The effort record's tolerance (sd about 0.2) lets
+    that pass, so late effort is a tension, not a failure; a tighter record of effort
+    after 8800 BCE would decide it.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
@@ -195,8 +199,13 @@
     lifts every site's Gini alike, about 0.008 per unit of `giving_rank` (0.016 at 2),
     Jerf el Ahmar's past its record too: it raises the level, not the rise. What would
     make the rise is open: farmland closing in only later, larger and more integrated
-    settlements (Tell Brak), or herds as wealth. The generation length (28
-    years, Fenner 2005) is to be checked against the paper.
+    settlements (Tell Brak), or herds as wealth. More farming effort would: at the
+    calibrated defaults the returns driver (ADR-0132) raises late effort and the Ginis
+    with it (weight 1: 0.23, 0.34, 0.31, 0.34, 0.33 against 0.20-0.36), but in round 17's
+    plausible worlds (ADR-0134) it does not, and every site's Gini stays near 0.29; the
+    records' tolerances (0.07-0.15) let that pass. The generation length, 28 years, is
+    Fenner's (2005) for hunter-gatherers, 28.6 (women 25.6, men 31.5; nation states 29.1),
+    as reproduced in Langergraber et al. (2012, Table 1).
 35. How heavy was disease in Neolithic villages, and at what size did it persist
     (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
     and the mortality of the infected (0.005 a year) are judgments. The records bound the
