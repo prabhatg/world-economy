@@ -81,6 +81,11 @@ also makes active a factor the earlier waves varied as noise, when a new mechani
 it matter (ADR-0065). NROY points take such factors uniformly, as the earlier waves did.
 On a first wave `--activate` adds factors the screening ranks below `--max-active` that a
 new mechanism needs seen (round 17: `cultivation_return_weight`, ADR-0132).
+`--hold` on a round's first wave holds every factor its emulators do not see at its
+registry default instead of sampling it over its prior (ADR-0135, open question 46): the
+round then asks what the records allow of the emulated factors with the rest where
+profiles and earlier rounds put them, as a profile does for one. Later waves of the round
+hold them too (the file records `held`), except a factor `--activate` adds.
 `--inactive` keeps parameters new to the registry as noise when no record of the wave
 sees them yet (`fertility` and `sedentary_fertility` until the juvenile-index record
 joins, ADR-0068).

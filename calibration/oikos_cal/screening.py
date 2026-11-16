@@ -22,6 +22,25 @@ def free_parameters(registry):
     return sorted(k for k, p in registry["params"].items() if p["prior"]["dist"] != "fixed")
 
 
+def default_unit(registry, names):
+    """Where each parameter's registry default sits in the unit cube, as sampling maps it:
+    linearly for a uniform prior, by its logarithm for a log-uniform one."""
+    out = []
+    for name in names:
+        p = registry["params"][name]
+        prior, x = p["prior"], p["default"]
+        if prior["dist"] == "uniform":
+            u = (x - prior["lo"]) / (prior["hi"] - prior["lo"])
+        elif prior["dist"] == "log_uniform":
+            u = (np.log(x) - np.log(prior["lo"])) / (np.log(prior["hi"]) - np.log(prior["lo"]))
+        else:
+            raise ValueError(f"{name}: no unit-cube default for a {prior['dist']} prior")
+        if not 0.0 <= u <= 1.0:
+            raise ValueError(f"{name}: default {x} lies outside its prior {prior}")
+        out.append(float(u))
+    return out
+
+
 def morris(k, trajectories, levels=4, rng=None):
     """Points [trajectory, step, factor] in the unit cube: k + 1 steps per trajectory."""
     if levels % 2:

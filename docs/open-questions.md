@@ -407,7 +407,8 @@
     earlier rounds learned. Options: start a round from a prior narrowed around the
     defaults; hold the unemulated factors at their defaults; put the defaults in the
     design so the emulators see them; or more runs per wave. Which keeps the waves'
-    estimate of what the records allow honest is open.
+    estimate of what the records allow honest is open. Holding them is now an option
+    (`wave --hold`, ADR-0135), tried in round 18.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

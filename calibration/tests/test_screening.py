@@ -56,3 +56,13 @@ def test_elementary_effects_leave_out_steps_of_failed_runs():
     e = screening.elementary_effects(d, y)
     assert e.mu_star == pytest.approx([3, 1, 0]) and e.mu == pytest.approx([3, -1, 0])
     assert e.sigma == pytest.approx([0, 0, 0], abs=1e-12)
+
+
+def test_defaults_sit_in_the_unit_cube_as_sampling_maps_it():
+    reg = registry()
+    for name, default in {"a": 0.1 ** 0.5, "b": 0.25, "d": 2.5}.items():
+        reg["params"][name]["default"] = default
+    assert screening.default_unit(reg, ["a", "b", "d"]) == pytest.approx([0.5, 0.25, 0.5])
+    reg["params"]["d"]["default"] = 3.5
+    with pytest.raises(ValueError, match="d"):
+        screening.default_unit(reg, ["d"])

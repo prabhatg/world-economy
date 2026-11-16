@@ -306,3 +306,14 @@ def test_a_profile_refuses_the_parameters_that_split_the_onset_record(tmp_path, 
     for argv in (["profile", "cereal_precip_full", "800"], ["profile", "seed_exchange", "0.3", "--set", "cereal_temp_min=2"]):
         with pytest.raises(SystemExit, match="cereal"):
             cli.main(argv + ["--out", str(tmp_path / "p.json")])
+
+
+def test_a_held_round_puts_the_factors_it_does_not_emulate_at_their_defaults():
+    u = np.full((3, 4), 0.9)
+    held = cli.hold(u, [0.1, 0.2, 0.3, 0.4], [1, 3])
+    assert held[:, [1, 3]].tolist() == [[0.2, 0.4]] * 3 and (held[:, [0, 2]] == 0.9).all()
+    assert (u == 0.9).all(), "the points drawn are left as they were"
+    factors = ["a", "b", "c", "d"]
+    assert cli.held_factors(factors, active=[0, 2], previous=None) == ["b", "d"], "a first wave holds the rest"
+    assert cli.held_factors(factors, active=[0, 2, 3], previous=["b", "d"]) == ["b"], "activated, no longer held"
+    assert cli.held_factors(factors, active=[0, 2], previous=[]) == [], "a round that sampled them goes on doing so"

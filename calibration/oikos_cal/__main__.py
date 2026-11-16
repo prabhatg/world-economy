@@ -203,6 +203,24 @@ def first_active(factors, doc, threshold, max_active, names):
     return activate(factors, active, names)
 
 
+def hold(u, u0, held):
+    """`u` with the columns `held` set to `u0`'s: points at the defaults in those factors."""
+    u = np.array(u, dtype=float)
+    u[:, held] = np.asarray(u0, dtype=float)[held]
+    return u
+
+
+def held_factors(factors, active, previous):
+    """The factors a held round keeps at their defaults (#13, open question 46): on its
+    first wave (`previous` None) every factor its emulators do not see, as profiles hold
+    every parameter but one; on a later wave those the round held before and has not
+    since activated. Profiles and earlier rounds calibrated them, so sampling them over
+    the whole prior throws that away and makes the emulators' noise."""
+    if previous is None:
+        return [f for i, f in enumerate(factors) if i not in set(active)]
+    return [f for f in previous if factors.index(f) not in set(active)]
+
+
 def _fit_wave(doc, path=None, workers=1):
     """A wave file's emulators. Searching for their hyperparameters is the costly part of
     a later wave (#32), so they are kept in emulators/ beside the file, with a key of the
@@ -261,6 +279,10 @@ def wave(args):
             print(f"activated: {args.activate}", file=sys.stderr)
         if new:
             print(f"new factors, active in this wave: {[factors[i] for i in new]}", file=sys.stderr)
+        held_round = previous[-1].get("hold", False)
+        if args.hold and not held_round:
+            raise SystemExit("--hold starts with a round's first wave; the waves continued sampled every factor")
+        held = held_factors(factors, active, previous[-1]["held"]) if held_round else []
         waves = [_fit_wave(d, p, args.workers) for d, p in zip(previous, args.previous)]
         u, kept = history.nroy(waves, len(factors), args.runs, rng)
         print(f"NROY after {len(waves)} waves: {kept:.4f} of the space", file=sys.stderr)
@@ -271,7 +293,15 @@ def wave(args):
         active = first_active(factors, chosen_by, args.threshold, args.max_active, args.activate)
         if args.activate:
             print(f"activated: {args.activate}", file=sys.stderr)
+        held_round = args.hold
+        held = held_factors(factors, active, None) if held_round else []
         u = emulator.latin_hypercube(args.runs, len(factors), rng)
+    if held:
+        at = [factors.index(f) for f in held]
+        u0 = np.zeros(len(factors))
+        u0[at] = screening.default_unit(oikos.registry(), held)
+        u = hold(u, u0, at)
+        print(f"held at their defaults: {len(held)} factors", file=sys.stderr)
     number = len(previous) + 1
     params = [oikos.sample_params(dict(zip(factors, x))) for x in u]
     seeds = [1000 * number + i for i in range(len(u))]
@@ -279,7 +309,8 @@ def wave(args):
     out = _run(list(zip(params, seeds)), args.workers, leave, args.coordinator, args.reduced)
     doc = {"command": "wave", "wave": number, "revision": _revision(), "seed": seed, "sites": SITES,
            "left_out": leave, "factors": factors,
-           "active": active, "u": u.tolist(), "params": params, "seeds": seeds, "names": names,
+           "active": active, "hold": held_round, "held": held, "u": u.tolist(), "params": params,
+           "seeds": seeds, "names": names,
            "outputs": out.tolist(), "targets": _targets_json(ts), "groups": _groups_json(groups),
            "previous": [str(p) for p in args.previous]}
     _write(args.out, doc)
@@ -539,6 +570,8 @@ def main(argv=None):
                    help="factors to emulate now: earlier waves varied them as noise, or the screening ranks them low")
     w.add_argument("--inactive", nargs="*", default=[],
                    help="parameters new to the registry to sample as noise, not emulate (no record sees them yet)")
+    w.add_argument("--hold", action="store_true",
+                   help="hold the factors not emulated at their defaults, from a round's first wave on")
     w.add_argument("--seed", type=int, help="seed of the wave's points (default: its number)")
     w.add_argument("--workers", type=int, default=workers)
     w.add_argument("--leave-out", nargs="*", help=LEAVE_OUT)
