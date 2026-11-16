@@ -426,7 +426,10 @@ def _assignment(text):
     name, _, value = text.partition("=")
     if not name or not value:
         raise SystemExit(f"--set takes name=value, got {text!r}")
-    return name, float(value)
+    try:
+        return name, int(value)  # the registry refuses 7659.0 for an integer parameter
+    except ValueError:
+        return name, float(value)
 
 
 def profile(args):

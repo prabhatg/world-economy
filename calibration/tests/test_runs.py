@@ -331,3 +331,10 @@ def test_a_wave_too_small_to_emulate_is_still_reported_by_its_runs(capsys, monke
     out = capsys.readouterr().out
     assert "best run 0: max implausibility 0.00" in out
     assert "emulators cannot be fitted to 2 runs over 2 factors" in out
+
+
+def test_a_profile_holds_an_integer_parameter_as_an_integer():
+    # wave files record integer parameters (humid_period_end_bp) as integers; --set must pass them on so
+    assert cli._assignment("humid_period_end_bp=7659") == ("humid_period_end_bp", 7659)
+    assert isinstance(cli._assignment("humid_period_end_bp=7659")[1], int)
+    assert cli._assignment("harvest_cv=0.3") == ("harvest_cv", 0.3)
