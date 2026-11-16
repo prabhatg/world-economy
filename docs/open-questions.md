@@ -49,7 +49,12 @@
     weight unbounded, and in the worlds they keep (selection near 0.0056) it barely moves
     late effort, which stays near 0.3. The effort record's tolerance (sd about 0.2) lets
     that pass, so late effort is a tension, not a failure; a tighter record of effort
-    after 8800 BCE would decide it.
+    after 8800 BCE would decide it. Round 18 (ADR-0136), the other factors held at their
+    defaults, finds a world consistent in its own seed with the driver strongly on (weight
+    0.85, selection 0.0036): late effort 0.55 and 0.58, but effort before 10,000 BCE 0.35,
+    since it needs cultivation_abundance_weight at twice its default, which raises early
+    effort too; lowered, late effort falls back and late domestication lags. What lets
+    effort rise after domestication and not before is open.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
@@ -205,7 +210,9 @@
     plausible worlds (ADR-0134) it does not, and every site's Gini stays near 0.29; the
     records' tolerances (0.07-0.15) let that pass. The generation length, 28 years, is
     Fenner's (2005) for hunter-gatherers, 28.6 (women 25.6, men 31.5; nation states 29.1),
-    as reproduced in Langergraber et al. (2012, Table 1).
+    as reproduced in Langergraber et al. (2012, Table 1). Round 18's world with more late
+    effort (ADR-0136) makes the Ginis rise (0.25 at Jerf el Ahmar, 0.31-0.33 later), but it
+    is consistent in one seed of three.
 35. How heavy was disease in Neolithic villages, and at what size did it persist
     (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
     and the mortality of the infected (0.005 a year) are judgments. The records bound the
@@ -407,8 +414,12 @@
     earlier rounds learned. Options: start a round from a prior narrowed around the
     defaults; hold the unemulated factors at their defaults; put the defaults in the
     design so the emulators see them; or more runs per wave. Which keeps the waves'
-    estimate of what the records allow honest is open. Holding them is now an option
-    (`wave --hold`, ADR-0135), tried in round 18.
+    estimate of what the records allow honest is open. Holding them (`wave --hold`,
+    ADR-0135) helps: round 18 finds a consistent world, where rounds 16 and 17 found
+    none, and halves the records a world fails, but wave 1's emulator, fitted over the
+    emulated factors' whole priors, still rules the defaults out, and two waves leave 13
+    points (ADR-0136). A prior narrowed around the defaults, or letting a later wave's
+    emulators replace an earlier one's where they fit the region better, are still open.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

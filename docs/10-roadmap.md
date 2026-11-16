@@ -160,7 +160,9 @@ rejected by the records for now (ADR-0125). Round 16 (ADR-0130) finds no world w
 risk and storage nearer the records than the calibrated defaults, which stay; nor does round 17
 (ADR-0134) with giving and the returns driver of cultivation effort (ADR-0132), which stays off.
 Both fail to find the small region the defaults lie in, which are consistent in every seed
-(open question 46).
+(open question 46). Round 18 (ADR-0136) holds the unemulated factors at their defaults
+(ADR-0135) and finds a world with the returns driver on, more late effort and rising house
+Ginis, consistent in one seed of three; the defaults stay.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
