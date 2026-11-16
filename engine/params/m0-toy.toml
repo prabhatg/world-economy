@@ -327,10 +327,11 @@ description = "Length of a generation, over which wealth_transmission and the sh
 kind = { type = "real", min = 10.0, max = 50.0 }
 default = 28.0
 prior = { dist = "uniform", lo = 20.0, hi = 35.0 }
-status = "placeholder"
-note = "A human generation of about 25-32 years, women's shorter than men's; the cross-cultural estimates of Fenner (2005) are to be checked against the paper. Inequality approaches its level within a few decades, far faster than the records resolve, so little depends on it."
+status = "literature"
+note = "Fenner's (2005) cross-cultural mean generation interval of hunter-gatherers, 28.6 years over both sexes (women 25.6, men 31.5; 157 societies), against 29.1 in nation states, as reproduced in Langergraber et al. (2012, Table 1); the paper itself is not read. Inequality approaches its level within a few decades, far faster than the records resolve, so little depends on it."
 sources = [
   { citation = "Fenner, J. N. (2005). Cross-cultural estimation of the human generation interval for use in genetics-based population divergence studies. American Journal of Physical Anthropology 128, 415-423.", doi = "10.1002/ajpa.20188" },
+  { citation = "Langergraber, K. E., Prüfer, K., Rowney, C., et al. (2012). Generation times in wild chimpanzees and gorillas suggest earlier divergence times in great ape and human evolution. Proceedings of the National Academy of Sciences 109, 15716-15721.", doi = "10.1073/pnas.1211740109" },
 ]
 
 [params.fission_probability]
