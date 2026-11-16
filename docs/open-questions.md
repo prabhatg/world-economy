@@ -53,7 +53,13 @@
     defaults, finds a world consistent in its own seed with the driver strongly on (weight
     0.85, selection 0.0036): late effort 0.55 and 0.58, but effort before 10,000 BCE 0.35,
     since it needs cultivation_abundance_weight at twice its default, which raises early
-    effort too; lowered, late effort falls back and late domestication lags. What lets
+    effort too; lowered, late effort falls back and late domestication lags. Nor does the
+    stable-climate gate separate them: at run 283's other values a variability weight of 13
+    instead of 4.8 lowers effort before 10,000 BCE only from 0.35 to 0.29 and late effort
+    from 0.59 to 0.54 (`q24/profile-variability-run283.json`, none consistent in every
+    seed; Egypt's 6th-millennium crops fail). The world reaches all four early phases, so
+    the early effort is its own, not filled in from later ones (0.19-0.26 at Abu Hureyra's
+    Epipalaeolithic, 0.45-0.48 at Mureybet and Iraq ed-Dubb; defaults 0-0.36). What lets
     effort rise after domestication and not before is open.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
