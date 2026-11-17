@@ -59,8 +59,16 @@
     from 0.59 to 0.54 (`q24/profile-variability-run283.json`, none consistent in every
     seed; Egypt's 6th-millennium crops fail). The world reaches all four early phases, so
     the early effort is its own, not filled in from later ones (0.19-0.26 at Abu Hureyra's
-    Epipalaeolithic, 0.45-0.48 at Mureybet and Iraq ed-Dubb; defaults 0-0.36). What lets
-    effort rise after domestication and not before is open.
+    Epipalaeolithic, 0.45-0.48 at Mureybet and Iraq ed-Dubb; defaults 0-0.36). A property
+    hypothesis does separate them (ADR-0137): a band aims at less where the land around is
+    still foraged and the harvest could be taken. At weight 0.9, with the abundance weight
+    at 0.9 and selection 0.0045-0.006, effort runs 0.01, 0.41, 0.64 and 0.50 by era and
+    domestication fits, but Upper Mesopotamia's radiocarbon comes later still and Egypt's
+    6th-millennium herds fall short. Round 19 (ADR-0138), with the weight free, finds a
+    world consistent in two seeds of three that fits with almost no effort (0.03 in
+    10,000-8,800 BCE), a selection coefficient 16 times the default doing the
+    domestication. Whether effort rose after domestication, and not before, because claims
+    became secure is open until effort is judged more tightly.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
@@ -218,7 +226,8 @@
     Fenner's (2005) for hunter-gatherers, 28.6 (women 25.6, men 31.5; nation states 29.1),
     as reproduced in Langergraber et al. (2012, Table 1). Round 18's world with more late
     effort (ADR-0136) makes the Ginis rise (0.25 at Jerf el Ahmar, 0.31-0.33 later), but it
-    is consistent in one seed of three.
+    is consistent in one seed of three. Round 19's (ADR-0138) has almost no effort, yet its
+    Ginis rise too (0.18 at Jerf el Ahmar, 0.26-0.29 later); it holds in two seeds of three.
 35. How heavy was disease in Neolithic villages, and at what size did it persist
     (ADR-0075; #42)? The critical size (50 sedentary people), foragers' relative contact (0.4)
     and the mortality of the infected (0.005 a year) are judgments. The records bound the
@@ -426,6 +435,8 @@
     emulated factors' whole priors, still rules the defaults out, and two waves leave 13
     points (ADR-0136). A prior narrowed around the defaults, or letting a later wave's
     emulators replace an earlier one's where they fit the region better, are still open.
+    Round 19 (ADR-0138), held again, keeps more of the space (NROY 0.0107 after wave 2)
+    and its third wave finds a consistent world, which holds in two seeds of three.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

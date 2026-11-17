@@ -162,7 +162,9 @@ risk and storage nearer the records than the calibrated defaults, which stay; no
 Both fail to find the small region the defaults lie in, which are consistent in every seed
 (open question 46). Round 18 (ADR-0136) holds the unemulated factors at their defaults
 (ADR-0135) and finds a world with the returns driver on, more late effort and rising house
-Ginis, consistent in one seed of three; the defaults stay.
+Ginis, consistent in one seed of three; the defaults stay. Round 19 (ADR-0138) adds the
+property hypothesis of cultivation effort (ADR-0137) and finds a world consistent in two
+seeds of three that fits with almost no cultivation effort; the defaults stay.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
