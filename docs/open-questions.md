@@ -67,8 +67,11 @@
     6th-millennium herds fall short. Round 19 (ADR-0138), with the weight free, finds a
     world consistent in two seeds of three that fits with almost no effort (0.03 in
     10,000-8,800 BCE), a selection coefficient 16 times the default doing the
-    domestication. Whether effort rose after domestication, and not before, because claims
-    became secure is open until effort is judged more tightly.
+    domestication. Domestication gains at selection times effort, so the rachis records see
+    only the product, and the onset record's tolerance is its own bootstrap over too few
+    phases (sd 0.18-0.26 an era) to split them. Whether effort rose after domestication, and
+    not before, because claims became secure is open until a second record judges effort
+    (fidelity plan F16, #55).
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap
