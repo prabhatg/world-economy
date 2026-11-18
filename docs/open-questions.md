@@ -71,7 +71,11 @@
     only the product, and the onset record's tolerance is its own bootstrap over too few
     phases (sd 0.18-0.26 an era) to split them. Whether effort rose after domestication, and
     not before, because claims became secure is open until a second record judges effort
-    (fidelity plan F16, #55).
+    (fidelity plan F16, #55). Maeda et al.'s (2016) cereal shares at 46 more site phases
+    narrow the onset record (ADR-0139; 10,000-8,800 BCE sd 0.16 against 0.27), and the
+    defaults fit it, but round 19's world still passes: every era is read over an anchor,
+    a share of a farming world, whose uncertainty lets a world low in every era pass at
+    once. A record of effort not read against such an anchor, or a tighter anchor, would.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap

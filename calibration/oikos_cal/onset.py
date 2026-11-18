@@ -27,6 +27,12 @@ take the mean effort of the phases it reached, so every world is judged on the s
 phases. Phases with fewer than `min_items` items (Wallace et al. analyse samples of 50
 or more) are dropped.
 
+Records of several sources pool (`Operator.pooled`, ADR-0139): each phase's share is read
+against its own source's anchor, since sources count remains differently (Maeda et al.
+2016 count cereal grain and chaff among all charred remains), and a bootstrap draws a
+source's sites whole, each with its phases and anchor phases, which share its recovery
+and reporting.
+
 Phases can be split by how well wild cereals grew around them (`suitability`, the
 engine's wild-cereal suitability of their cells and centuries; #36): learning that
 copies what visibly pays should start cultivation in the richest stands, and
@@ -38,29 +44,39 @@ import numpy as np
 
 from .radiocarbon import Window
 
-__all__ = ["Operator", "ANCHOR_PERIOD", "CEREAL", "cereal_suitability", "suitability"]
+__all__ = ["Operator", "ANCHOR_PERIOD", "ANCHOR_YEAR", "CEREAL", "cereal_suitability", "suitability"]
 
 CEREAL = ("cereal_precip_min", "cereal_precip_full", "cereal_precip_wet", "cereal_precip_max", "cereal_temp_min",
           "cereal_temp_full")
 
 ANCHOR_PERIOD = "PPNC/PN"
+# A record without periods (`oikos_data.cereals`) is anchored on its phases from the
+# Pottery Neolithic's start; the database's own anchor phases run from 7300 to 5000 BC.
+ANCHOR_YEAR = -7000
 
 
 class Operator:
     def __init__(self, table, cells, window: Window, rings=1, min_items=50):
         """`table`: columns as `oikos_data.archaeobotany` (h3, period, start_year,
-        end_year, crop, items); `cells`: H3 ids of the world's cells, ascending."""
+        end_year, crop, items; without period, phases from `ANCHOR_YEAR` anchor it);
+        `cells`: H3 ids of the world's cells, ascending."""
         self.window = window
         cells = np.asarray(cells, dtype=np.uint64)
         crop, items = (np.asarray(table[c], dtype=float) for c in ("crop", "items"))
         big = items >= min_items
-        anchor = big & (np.asarray(table["period"]) == ANCHOR_PERIOD)
+        if "period" in table:
+            anchor = big & (np.asarray(table["period"]) == ANCHOR_PERIOD)
+        else:
+            mid = (np.asarray(table["start_year"], dtype=float) + np.asarray(table["end_year"], dtype=float)) / 2
+            anchor = big & (mid >= ANCHOR_YEAR)
         if not anchor.any():
             raise ValueError(f"no {ANCHOR_PERIOD} phases with {min_items} items or more to anchor a farming world")
         self.anchors = crop[anchor] / items[anchor]
         self.farming_share = float(self.anchors.mean())
+        self.anchor_sets, self.farming = [self.anchors], np.array([self.farming_share])
+        self.anchor_sites = [np.asarray(table["site"], dtype=object)[anchor]]
         lo = window.first + 100 * np.arange(window.centuries)
-        self.k, self.n, self.mid, self.near, self.weight, self.names = [], [], [], [], [], []
+        self.k, self.n, self.mid, self.near, self.weight, self.names, self.sites = [], [], [], [], [], [], []
         for i in np.flatnonzero(big & ~anchor):
             start, end = float(table["start_year"][i]), float(table["end_year"][i])
             w = np.clip(np.minimum(end, lo + 100) - np.maximum(start, lo), 0, None) / 100
@@ -75,7 +91,58 @@ class Operator:
             self.near.append(pos[cells[pos] == disk])
             self.weight.append(w)
             self.names.append(table["phase"][i])
+            self.sites.append(table["site"][i])
         self.k, self.n, self.mid = (np.array(x) for x in (self.k, self.n, self.mid))
+        self.sites = np.array(self.sites, dtype=object)
+        self.source = np.zeros(len(self.k), dtype=int)
+
+    @classmethod
+    def pooled(cls, ops):
+        """One record of several sources' phases (#55): each phase's share is read against
+        its own source's anchor (`implied`), since sources count remains differently, and
+        resampled within its source (`resample`)."""
+        if len({op.window for op in ops}) != 1:
+            raise ValueError("pooled sources must share a window")
+        if any(len(op.anchor_sets) > 1 for op in ops):
+            raise ValueError("a pooled record is not pooled again: pool its sources once")
+        out = cls.__new__(cls)
+        out.window = ops[0].window
+        out.k, out.n, out.mid = (np.concatenate([getattr(op, a) for op in ops]) for a in ("k", "n", "mid"))
+        out.near, out.weight, out.names = ([x for op in ops for x in getattr(op, a)] for a in ("near", "weight", "names"))
+        out.sites = np.concatenate([op.sites for op in ops])
+        out.anchor_sites = [a for op in ops for a in op.anchor_sites]
+        out.source = np.concatenate([np.full(len(op.k), i) for i, op in enumerate(ops)]).astype(int)
+        out.anchor_sets = [a for op in ops for a in op.anchor_sets]
+        out.farming = np.concatenate([op.farming for op in ops])
+        return out
+
+    def implied(self):
+        """The effort each phase implies: its share over its source's farming share."""
+        return self.k / self.n / self.farming[self.source]
+
+    def resample(self, rng, replicates):
+        """Bootstrap replicates of the record: (phase indices, the effort they imply).
+        Sites are drawn with replacement within each source, each bringing all its
+        phases and its anchor phases, since a site's phases share its recovery and
+        reporting; a replicate whose source draws no anchor implies NaN."""
+        share = self.k / self.n
+        sources = []
+        for s, (values, where) in enumerate(zip(self.anchor_sets, self.anchor_sites)):
+            mine = np.flatnonzero(self.source == s)
+            names = sorted(set(self.sites[mine]) | set(where))
+            index = {x: i for i, x in enumerate(names)}
+            sources.append((mine, np.array([index[x] for x in self.sites[mine]], dtype=int), values,
+                            np.array([index[x] for x in where], dtype=int),
+                            rng.integers(0, len(names), size=(replicates, len(names)))))
+        for r in range(replicates):
+            picks, scale = [], np.empty(len(sources))
+            for s, (mine, at, values, anchor_at, draws) in enumerate(sources):
+                times = np.bincount(draws[r], minlength=draws.shape[1])
+                picks.append(np.repeat(mine, times[at]))
+                drawn = np.repeat(values, times[anchor_at])
+                scale[s] = drawn.mean() if len(drawn) else np.nan
+            p = np.concatenate(picks)
+            yield p, share[p] / scale[self.source[p]]
 
     def cells(self):
         """The cell sets it reads (`zones`, #47)."""

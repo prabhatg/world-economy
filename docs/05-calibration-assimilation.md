@@ -116,7 +116,10 @@ diets, so the share of a farming world is anchored on the record's Pottery Neoli
 phases, and an era's mean share over that anchor is the effort the record implies; both
 simplifications make the test lenient. Phases vary too much at the same level of
 farming to score one by one, so only four era means are targets (split at 10,000, 8,800
-and 7,600 BCE). Before 10,000 BCE the record implies an effort of 0.09.
+and 7,600 BCE). Before 10,000 BCE the record implies an effort of 0.09. Since ADR-0139
+the phases also include Maeda et al.'s (2016) cereal shares at the sites the database
+lacks (`data/oikos_data/cereals.py`), each read against its own source's anchor, and the
+bootstrap draws sites whole within each source.
 
 **Implemented (juvenile-index operator, ADR-0068):** `juvenile.Operator` reads the
 juvenile index of a cemetery (15p5, the share of 5-19 year olds among the dead over 5;

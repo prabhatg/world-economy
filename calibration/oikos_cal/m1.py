@@ -26,7 +26,9 @@ zones of relative distance to the two source groups before and after 6,900 BCE (
 of the PPNB), judged together; discrepancy 0.1 on each. Onset eras are the cultivation
 effort the plant remains imply (crop share over the Pottery Neolithic anchor) in four
 eras split at 10,000, 8,800 and 7,600 BCE, judged together; discrepancy 0.1 on each, as
-on the domestic share (the anchor's uncertainty is in the bootstrap variance). House
+on the domestic share (the anchor's uncertainty is in the bootstrap variance). The
+phases are the Origins of agriculture database's and Maeda et al.'s (2016) at the sites
+it lacks (#55), each read against its own source's anchor and resampled within it. House
 Ginis are each site's, judged one by one with the sampling variance of its few houses;
 discrepancy 0.05 on each (house size as a proxy of wealth, and its elasticity).
 Village sizes are each survey era's mean log site area in people, at 121 people per
@@ -93,7 +95,7 @@ import h3
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, egypt, fauna, lesions as lesions_record, pack, rachis, wheats as wild_wheats
+from oikos_data import DATA, archaeobotany, cereals, egypt, fauna, lesions as lesions_record, pack, rachis, wheats as wild_wheats
 from oikos_data import inequality as inequality_pipeline
 from oikos_data import region as regions
 from oikos_data import obsidian as obsidian_pipeline
@@ -297,8 +299,11 @@ class Problem:
                                           min_artefacts=OBSIDIAN_MIN_ARTEFACTS,
                                           joined=obsidian.joined(habitable(self.cells, region), reach))
         phases = pq.read_table(io.BytesIO(archaeobotany.build_crop_table(r))).to_pydict()
-        self.onset = onset.Operator(phases, self.cells, self.radiocarbon.settings.true, rings=rings,
-                                    min_items=ONSET_MIN_ITEMS)
+        more = pq.read_table(io.BytesIO(cereals.build_table(r, offline=True))).to_pydict()
+        more["crop"] = more.pop("cereal")
+        self.onset = onset.Operator.pooled(
+            [onset.Operator(t, self.cells, self.radiocarbon.settings.true, rings=rings, min_items=ONSET_MIN_ITEMS)
+             for t in (phases, more)])
         self.stands = stands(self.onset, region)
         periods, skeletons, _ = lesions_record.load()
         self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true, rings=rings)

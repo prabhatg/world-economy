@@ -67,6 +67,11 @@ and Access (checked 2026-10-31): research use with acknowledgement, no sale, and
 data or anything derived from it given only to registered users. ADS serves it to
 browsers only, so it is downloaded by hand, and its phase table is built in memory and
 never committed or packed.
+Cereal shares at the site phases that database lacks come from Maeda et al. (2016,
+Quaternary Science Reviews 145: 226-237, CC BY, checked 2026-11-17; ADR-0139, #55):
+Tables S1 (dates) and S5 (cereal and total counts of charred remains) of its
+supplementary data, fetched from the publisher and checked by SHA-256; sites are located
+by p3k14c or published coordinates. Derived tables share its license.
 House-size Gini coefficients come from Supplementary Table 2 of Kohler et al. (2017,
 Nature 551: 619-622, doi:10.1038/nature24646; ADR-0074): 63 sites worldwide, five of them
 in the M1 region. The author manuscript's supplement at Europe PMC (PMC5714260) carries no

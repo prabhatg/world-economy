@@ -1,0 +1,55 @@
+# Cereal shares of charred plant remains at dated site phases of the Fertile Crescent,
+# about 12,000 to 5,000 cal BC: how far people relied on cereals before and after
+# domestication.
+dataset = "maeda2016-cereals"
+title = "Narrowing the harvest: Increasing sickle investment and the rise of domesticated cereal agriculture in the Fertile Crescent: Supplementary Tables S1 and S5"
+version = "Quaternary Science Reviews 145: 226-237 (2016), supplementary data"
+homepage = "https://doi.org/10.1016/j.quascirev.2016.05.032"
+citation = "Maeda, O., Lucas, L., Silva, F., Tanno, K.-I., Fuller, D.Q. (2016). Narrowing the harvest: Increasing sickle investment and the rise of domesticated cereal agriculture in the Fertile Crescent. Quaternary Science Reviews 145: 226-237. https://doi.org/10.1016/j.quascirev.2016.05.032"
+doi = "10.1016/j.quascirev.2016.05.032"
+notes = """
+Word documents in the article's supplementary data, fetched from the publisher's file
+server and checked by SHA-256. Table S1 dates each site phase by the 1-sigma range of its
+summed calibrated radiocarbon dates (IntCal13, OxCal 3.10), or the authors' estimate from
+its material culture; Table S5 counts its identified charred remains: wheat, barley and
+other cereals (grain and chaff, wild or domestic), other crops, other, and the total
+(NISP), with the cereal percentage and the primary archaeobotanical source. Table S3
+(sickle blades) and S4 (rachises) are not used. The tables give no coordinates: sites
+are located by their radiocarbon samples in p3k14c, or their published coordinates
+(oikos_data.cereals.SITES). The primary studies are to be cited with the phases they give.
+"""
+
+[license]
+# The article and its supplementary data are open access under CC BY 4.0 (the article's
+# own notice and Crossref's licence record, read 2026-11-17).
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains cereal counts and dates from Maeda et al. (2016), Quaternary Science Reviews 145: 226-237, https://doi.org/10.1016/j.quascirev.2016.05.032, and the archaeobotanical studies it compiles (CC BY); located on H3 cells by ManyWorlds."
+verified = "2026-11-17"
+
+[access]
+kind = "publisher_supplement"
+url = "https://ars.els-cdn.com/content/image/"
+
+[access.members.chronology]
+file = "1-s2.0-S0277379116301780-mmc1.docx"
+sha256 = "8ce29a088d22f3fe6a85bdd2d345adfc3128e259e6e1c69e1d319bc1eb78b67b"
+
+[access.members.shares]
+file = "1-s2.0-S0277379116301780-mmc5.docx"
+sha256 = "6cd10dde208cc20c1eedbc9c5f1764a25b5922cdec32ad57cde53e54ea4fdeac"
+
+[coverage]
+spatial = "The Fertile Crescent: Levant, Upper Mesopotamia, the Zagros, Cyprus and central Anatolia"
+temporal = "about 12,000 to 5,000 cal BC"
+
+[[variables]]
+name = "cereal"
+unit = "count"
+description = "Identified charred remains of wheats, barley and other cereals (grain and chaff, wild or domestic) in the phase's assemblages"
+
+[[variables]]
+name = "items"
+unit = "count"
+description = "All identified charred plant remains in the phase's assemblages (NISP)"

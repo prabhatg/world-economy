@@ -331,24 +331,21 @@ class ObsidianZones:
 class OnsetEras:
     def __init__(self, op, edges=(-10_000, -8_800, -7_600), discrepancy_sd=0.1, replicates=2000, rng=None):
         """Eras of `op` (`onset.Operator`) between calendar-year `edges` (ascending), by a
-        phase's midpoint: the cultivation effort the record implies, the era's mean crop
-        share (each phase once) over the anchor's, with a bootstrap covariance that
-        resamples the era phases and the anchor phases; every era needs phases."""
+        phase's midpoint: the cultivation effort the record implies, the era's mean of each
+        phase's crop share over its source's anchor (each phase once), with a bootstrap
+        covariance that resamples the phases and the anchor phases within each source
+        (`onset.Operator.resample`); every era needs phases."""
         self.op, self.edges = op, np.asarray(edges, dtype=float)
         self.era = np.searchsorted(self.edges, op.mid, side="right")
         n = len(self.edges) + 1
         if empty := sorted(set(range(n)) - set(self.era.tolist())):
             raise ValueError(f"no phases in onset era {empty[0]} (eras split at {list(edges)})")
         rng = rng or np.random.default_rng(0)
-        share = op.k / op.n
-        pick = rng.integers(0, len(share), size=(replicates, len(share)))
-        anchor = rng.integers(0, len(op.anchors), size=(replicates, len(op.anchors)))
-        boot = np.array([self._summary(share[p], self.era[p], strict=False) / op.anchors[a].mean()
-                         for p, a in zip(pick, anchor)])
+        boot = np.array([self._summary(v, self.era[p], strict=False) for p, v in op.resample(rng, replicates)])
         self.covariance = np.cov(boot[np.isfinite(boot).all(axis=1)], rowvar=False)
         bounds = [f"before {-edges[0]:g} BCE", *(f"{-a:g}-{-b:g} BCE" for a, b in zip(edges, edges[1:])),
                   f"after {-edges[-1]:g} BCE"]
-        z = self._summary(share) / op.farming_share
+        z = self._summary(op.implied())
         self.targets = [_target(f"cultivation effort implied {b}", z[j], self.covariance[j, j], discrepancy_sd**2)
                         for j, b in enumerate(bounds)]
 
@@ -382,13 +379,9 @@ class OnsetContrasts:
                 if (k := int(np.sum(m & (self.era == e)))) < min_phases:
                     raise ValueError(f"{stand} stands {b} has {k} phases; a contrast needs {min_phases}")
         rng = rng or np.random.default_rng(0)
-        share = op.k / op.n
-        pick = rng.integers(0, len(share), size=(replicates, len(share)))
-        anchor = rng.integers(0, len(op.anchors), size=(replicates, len(op.anchors)))
-        boot = np.array([self._summary(share[p], self.era[p], self.rich[p]) / op.anchors[a].mean()
-                         for p, a in zip(pick, anchor)])
+        boot = np.array([self._summary(v, self.era[p], self.rich[p]) for p, v in op.resample(rng, replicates)])
         self.covariance = np.atleast_2d(np.cov(boot[np.isfinite(boot).all(axis=1)], rowvar=False))
-        z = self._summary(share) / op.farming_share
+        z = self._summary(op.implied())
         self.targets = [_target(f"cultivation effort rich minus poor stands {b}", z[e], self.covariance[e, e],
                                 discrepancy_sd**2) for e, b in enumerate(bounds)]
 

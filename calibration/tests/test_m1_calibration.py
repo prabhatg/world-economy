@@ -44,7 +44,9 @@ def test_the_record_summaries(problem):
     assert problem.obsidian.isolated == 5, "the Cypriot contexts: obsidian crossed the sea by boat"
     on = [t for t in problem.targets if t.name.startswith("cultivation effort implied")]
     assert len(on) == 4 and problem.groups[4].indices == list(range(36, 40)) and problem.groups[4].dof == 4
-    assert 0.3 < problem.onset.farming_share < 0.7, "Pottery Neolithic phases anchor a farming world"
+    assert all(0.3 < f < 0.7 for f in problem.onset.farming), "Pottery Neolithic phases anchor a farming world"
+    assert len(problem.onset.farming) == 2 and (problem.onset.source == 1).sum() >= 20, \
+        "Maeda et al. 2016's phases at sites the database lacks join the record (#55)"
     assert on[0].observed < 0.2 < 0.5 < on[3].observed, "little planting before 10,000 BCE, much by the late PPNB"
     vs = [t for t in problem.targets if t.name.startswith("village size")]
     assert len(vs) == 14 and vs[0].name == "village size anatolia 6500-6000 BCE"

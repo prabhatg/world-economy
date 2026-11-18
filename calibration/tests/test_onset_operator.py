@@ -13,7 +13,7 @@ from oikos_cal.radiocarbon import Window
 
 WINDOW = Window(-12000, -5000)  # 70 centuries
 RES = 5
-SITES = {"a": (35.87, 38.40), "b": (36.40, 38.22), "c": (33.0, 36.0)}
+SITES = {"a": (35.87, 38.40), "b": (36.40, 38.22), "c": (33.0, 36.0), "d": (37.0, 40.0), "e": (34.0, 37.0)}
 
 
 def cell(lat, lng):
@@ -34,7 +34,8 @@ def table(*phases):
     return rows
 
 
-ANCHORS = [("a", -5600, -5500, "PPNC/PN", 60, 100), ("b", -5800, -5400, "PPNC/PN", 40, 100)]  # s_PN = 0.5
+# At sites of their own: a bootstrap draws sites whole, anchors with their site's phases.
+ANCHORS = [("d", -5600, -5500, "PPNC/PN", 60, 100), ("e", -5800, -5400, "PPNC/PN", 40, 100)]  # s_PN = 0.5
 
 
 def activity(people=None, cultivators=None):
@@ -87,7 +88,7 @@ def test_eras_give_the_effort_the_record_implies_with_the_anchor_in_their_varian
                                           "cultivation effort implied after 8800 BCE"]
     assert [t.observed for t in e.targets] == pytest.approx([0.1, 0.6, 0.8]), "era mean share over the anchor 0.5"
     assert all(t.discrepancy == pytest.approx(0.04) for t in e.targets)
-    assert all(t.variance > 0 for t in e.targets), "identical phases still vary with the anchor (0.4 and 0.6)"
+    assert all(t.variance > 1e-4 for t in e.targets), "identical phases still vary with the anchor (0.4 and 0.6)"
     g = e.group(first=7)
     assert g.indices == [7, 8, 9] and g.dof == 3
     # A world whose people put in exactly the effort the record implies reproduces it.
@@ -114,3 +115,64 @@ def test_an_era_without_phases_is_an_error():
     op = onset.Operator(table(*ANCHORS, ("a", -11100, -10100, "Pre-PPNA", 5, 100)), CELLS, WINDOW, rings=0)
     with pytest.raises(ValueError, match="no phases"):
         targets.OnsetEras(op, edges=(-10000,))
+
+
+def test_a_record_without_periods_is_anchored_on_its_phases_from_7000_bc():
+    # Maeda et al. (2016) give dates, not periods; the Pottery Neolithic begins about
+    # 7000 BC, and the database's own anchor phases run from 7300 to 5000 BC.
+    rows = table(("d", -6900, -6500, "", 30, 100), ("e", -6200, -5800, "", 20, 100), ("c", -9500, -9000, "", 5, 100))
+    del rows["period"]
+    op = onset.Operator(rows, CELLS, WINDOW, rings=0)
+    assert op.farming_share == pytest.approx(0.25)
+    assert list(op.k) == [5]
+
+
+def pooled_eras(crops=(5, 10), **kw):
+    first = onset.Operator(table(*ROWS), CELLS, WINDOW, rings=0)  # anchor 0.5
+    rows = table(("d", -6900, -6500, "", 30, 100), ("e", -6200, -5800, "", 20, 100),  # anchor 0.25
+                 *[("c", -9400, -9000, "", k, 100) for k in crops])
+    del rows["period"]
+    second = onset.Operator(rows, CELLS, WINDOW, rings=0)
+    op = onset.Operator.pooled([first, second])
+    return first, second, op, targets.OnsetEras(op, edges=(-10000, -8800), rng=np.random.default_rng(0), **kw)
+
+
+def test_pooled_sources_read_each_phase_against_its_own_anchor():
+    first, second, op, e = pooled_eras()
+    assert len(op.k) == len(first.k) + len(second.k) and list(op.source) == [0] * len(first.k) + [1, 1]
+    assert op.implied()[-2:] == pytest.approx([0.2, 0.4]), "shares 0.05 and 0.1 over the anchor 0.25"
+    # 10000-8800 BCE: three phases at 0.3/0.5 = 0.6 and two at 0.2 and 0.4, each phase once.
+    assert e.targets[1].observed == pytest.approx((3 * 0.6 + 0.2 + 0.4) / 5)
+    assert e.targets[0].observed == pytest.approx(0.1) and e.targets[2].observed == pytest.approx(0.8)
+    people = np.ones((len(CELLS), WINDOW.centuries))
+    cultivators = np.zeros_like(people)
+    cultivators[at("b")], cultivators[at("c")] = 0.6, 0.3
+    assert e.model(activity(people, cultivators))[1] == pytest.approx((3 * 0.6 + 2 * 0.3) / 5)
+
+
+def test_pooling_resamples_within_each_source_so_a_second_source_narrows_an_era():
+    _, _, _, pooled = pooled_eras(crops=(15, 15))  # implying 0.6, as the first source's phases
+    alone = eras(ROWS, edges=(-10000, -8800))[1]
+    assert pooled.targets[1].variance < alone.targets[1].variance
+
+
+def test_pooling_one_source_changes_nothing():
+    op = onset.Operator(table(*ROWS), CELLS, WINDOW, rings=0)
+    one = targets.OnsetEras(onset.Operator.pooled([op]), edges=(-10000, -8800), rng=np.random.default_rng(0))
+    alone = targets.OnsetEras(op, edges=(-10000, -8800), rng=np.random.default_rng(0))
+    assert [t.observed for t in one.targets] == pytest.approx([t.observed for t in alone.targets])
+    assert one.covariance == pytest.approx(alone.covariance)
+
+
+def test_phases_of_one_site_are_resampled_together_with_its_anchor_phases():
+    # Phases of a site share its recovery and reporting, so a bootstrap draws sites whole.
+    rows = [*ANCHORS] + [("a", -11100, -10100, "Pre-PPNA", 5, 100)] * 2 + [("c", -9500, -8900, "PPNA", 30, 100)]
+    op = onset.Operator(table(*rows), CELLS, WINDOW, rings=0)
+    for p, _ in op.resample(np.random.default_rng(1), 200):
+        assert np.sum(np.isin(p, [0, 1])) % 2 == 0, "site a's two phases come together or not at all"
+
+
+def test_a_pooled_record_is_not_pooled_again():
+    op = onset.Operator(table(*ROWS), CELLS, WINDOW, rings=0)
+    with pytest.raises(ValueError, match="pooled"):
+        onset.Operator.pooled([onset.Operator.pooled([op, op])])
