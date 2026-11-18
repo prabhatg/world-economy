@@ -119,7 +119,9 @@ farming to score one by one, so only four era means are targets (split at 10,000
 and 7,600 BCE). Before 10,000 BCE the record implies an effort of 0.09. Since ADR-0139
 the phases also include Maeda et al.'s (2016) cereal shares at the sites the database
 lacks (`data/oikos_data/cereals.py`), each read against its own source's anchor, and the
-bootstrap draws sites whole within each source.
+bootstrap draws sites whole within each source. Every anchor phase counts, however few
+crops it burnt: dung-fuel and steppe sites read near zero among the targets too
+(ADR-0140).
 
 **Implemented (juvenile-index operator, ADR-0068):** `juvenile.Operator` reads the
 juvenile index of a cemetery (15p5, the share of 5-19 year olds among the dead over 5;

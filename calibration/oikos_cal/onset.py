@@ -33,6 +33,10 @@ against its own source's anchor, since sources count remains differently (Maeda 
 source's sites whole, each with its phases and anchor phases, which share its recovery
 and reporting.
 
+Every anchor phase counts, however few crops it burnt (ADR-0140): Çatalhöyük burnt dung
+and El Kowm lay in the steppe, and target phases mix the same kinds of sites, so an anchor
+of crop-waste villages alone would be selected on its outcome and read every era low.
+
 Phases can be split by how well wild cereals grew around them (`suitability`, the
 engine's wild-cereal suitability of their cells and centuries; #36): learning that
 copies what visibly pays should start cultivation in the richest stands, and

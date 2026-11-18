@@ -76,6 +76,9 @@
     defaults fit it, but round 19's world still passes: every era is read over an anchor,
     a share of a farming world, whose uncertainty lets a world low in every era pass at
     once. A record of effort not read against such an anchor, or a tighter anchor, would.
+    Leaving the near-zero dung-fuel and steppe phases out of the anchor would narrow it but
+    not rule that world out (ADR-0140; statistic 9.0 against 14.86), and would select the
+    anchor on its outcome, so they stay.
 25. What the radiocarbon rise measures (ADR-0050): binned, taphonomy-corrected date
     mass in M1 rises about fifteenfold from 11,500 to 6,000 BCE and falls after; the
     default world's activity rises about threefold and keeps rising. Is the gap

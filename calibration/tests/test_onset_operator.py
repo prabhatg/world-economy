@@ -61,6 +61,14 @@ def test_pottery_neolithic_phases_anchor_the_share_of_a_farming_world():
     assert op.mid[0] == -11050
 
 
+def test_an_anchor_phase_counts_however_few_crops_it_burnt():
+    # ADR-0140: dung-fuel and steppe sites read near 0 among the targets too, so dropping
+    # them from the anchor alone would select it on its outcome.
+    dung = ("c", -6500, -6000, "PPNC/PN", 0, 10_000)
+    op = onset.Operator(table(*ANCHORS, dung, ("a", -11100, -11000, "Pre-PPNA", 4, 100)), CELLS, WINDOW, rings=0)
+    assert op.farming_share == pytest.approx(1 / 3)
+
+
 def test_the_model_effort_is_the_people_weighted_cultivation_over_the_phase():
     op = onset.Operator(table(*ANCHORS, ("a", -11000, -10000, "Pre-PPNA", 4, 100), ("c", -9000, -8000, "PPNA", 3, 100)),
                         CELLS, WINDOW, rings=0)
