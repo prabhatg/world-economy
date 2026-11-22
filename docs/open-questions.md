@@ -78,7 +78,10 @@
     once. A record of effort not read against such an anchor, or a tighter anchor, would.
     Round 20 (ADR-0141) finds consistent worlds across the range: effort 0.19-0.44 with a
     high property weight and slow selection, 0.04-0.36 with a low weight and selection
-    near the default, and 0.71 with slow selection in two seeds of three.
+    near the default, and 0.71 with slow selection in two seeds of three. Run 189 with
+    faster wheats (einkorn ratio 1.2, emmer 1.1) ties the defaults (summary -79.1 against
+    -79.5; ADR-0142) with the property weight on, more effort and house Ginis that rise
+    as the record's do: the summaries cannot yet choose between the two worlds.
     Leaving the near-zero dung-fuel and steppe phases out of the anchor would narrow it but
     not rule that world out (ADR-0140; statistic 9.0 against 14.86), and would select the
     anchor on its outcome, so they stay.
