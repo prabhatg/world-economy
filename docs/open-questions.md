@@ -76,6 +76,9 @@
     defaults fit it, but round 19's world still passes: every era is read over an anchor,
     a share of a farming world, whose uncertainty lets a world low in every era pass at
     once. A record of effort not read against such an anchor, or a tighter anchor, would.
+    Round 20 (ADR-0141) finds consistent worlds across the range: effort 0.19-0.44 with a
+    high property weight and slow selection, 0.04-0.36 with a low weight and selection
+    near the default, and 0.71 with slow selection in two seeds of three.
     Leaving the near-zero dung-fuel and steppe phases out of the anchor would narrow it but
     not rule that world out (ADR-0140; statistic 9.0 against 14.86), and would select the
     anchor on its outcome, so they stay.
@@ -447,6 +450,8 @@
     emulators replace an earlier one's where they fit the region better, are still open.
     Round 19 (ADR-0138), held again, keeps more of the space (NROY 0.0107 after wave 2)
     and its third wave finds a consistent world, which holds in two seeds of three.
+    Round 20 (ADR-0141), against the pooled onset record, ends with three worlds
+    consistent in every seed, though less close to the records than the defaults.
 
 ## Policy lab
 6. Default welfare weightings to show (if any) beyond Pareto fronts?

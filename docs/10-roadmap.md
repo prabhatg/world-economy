@@ -164,7 +164,10 @@ Both fail to find the small region the defaults lie in, which are consistent in 
 (ADR-0135) and finds a world with the returns driver on, more late effort and rising house
 Ginis, consistent in one seed of three; the defaults stay. Round 19 (ADR-0138) adds the
 property hypothesis of cultivation effort (ADR-0137) and finds a world consistent in two
-seeds of three that fits with almost no cultivation effort; the defaults stay.
+seeds of three that fits with almost no cultivation effort; the defaults stay. Round 20
+(ADR-0141), against the pooled onset record, finds three worlds consistent in every seed,
+with high and with low property weights, none as close to the records as the defaults,
+which stay.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
