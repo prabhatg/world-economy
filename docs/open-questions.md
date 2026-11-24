@@ -82,6 +82,18 @@
     faster wheats (einkorn ratio 1.2, emmer 1.1) ties the defaults (summary -79.1 against
     -79.5; ADR-0142) with the property weight on, more effort and house Ginis that rise
     as the record's do: the summaries cannot yet choose between the two worlds.
+    Why (round 20's 900 runs, ADR-0142): early and late effort move together (correlation
+    0.8 in every band of the property weight; late = 0.65 early + 0.17), and the property
+    and abundance weights trade off (more property needs more abundance for the same
+    effort), so run 189 sits on a ridge, not a tipping point. Only 11 runs show the
+    record's rise (effort 0.12 or less before 10,000 BCE, 0.45 or more after 7600 BCE);
+    they lean on the returns driver (median weight 0.77 against 0.50 over all runs), and
+    all but run 221 fail other records: 9 grow crops in Egypt by 6200-5000 BCE, where
+    the record has none, and most domesticate barley by 9000-8000 BCE (0.41-0.97 against
+    0.14), as selection runs at selection times effort. So the onset record's effort,
+    barley's slow domestication and Egypt's late farming pull against each other in the
+    model: low selection per unit of effort reconciles the first two, and then the wheats
+    need ratios above barley's (ADR-0142: einkorn 1.2, emmer 1.1) to domesticate on time.
     Leaving the near-zero dung-fuel and steppe phases out of the anchor would narrow it but
     not rule that world out (ADR-0140; statistic 9.0 against 14.86), and would select the
     anchor on its outcome, so they stay.
