@@ -37,6 +37,12 @@ Every anchor phase counts, however few crops it burnt (ADR-0140): Çatalhöyük 
 and El Kowm lay in the steppe, and target phases mix the same kinds of sites, so an anchor
 of crop-waste villages alone would be selected on its outcome and read every era low.
 
+Sickle blades among a phase's flint tools (`oikos_data.sickles`, ADR-0143) read the same
+way: a share, anchored on the Pottery Neolithic phases, whose era means over the anchor
+imply an effort. They record harvesting, not burning, so they are a second record of
+effort beside the crops (#55); judged only before 8800 BCE, since sickles also follow
+domestication, being needed most once ears stop shattering.
+
 Phases can be split by how well wild cereals grew around them (`suitability`, the
 engine's wild-cereal suitability of their cells and centuries; #36): learning that
 copies what visibly pays should start cultivation in the richest stands, and
@@ -62,11 +68,15 @@ ANCHOR_YEAR = -7000
 class Operator:
     def __init__(self, table, cells, window: Window, rings=1, min_items=50):
         """`table`: columns as `oikos_data.archaeobotany` (h3, period, start_year,
-        end_year, crop, items; without period, phases from `ANCHOR_YEAR` anchor it);
-        `cells`: H3 ids of the world's cells, ascending."""
+        end_year, crop, items; without period, phases from `ANCHOR_YEAR` anchor it), or
+        a `share` in place of crop and items (`oikos_data.sickles`, read as a share of
+        one item); `cells`: H3 ids of the world's cells, ascending."""
         self.window = window
         cells = np.asarray(cells, dtype=np.uint64)
-        crop, items = (np.asarray(table[c], dtype=float) for c in ("crop", "items"))
+        if "share" in table:
+            crop, items = np.asarray(table["share"], dtype=float), np.ones(len(table["share"]))
+        else:
+            crop, items = (np.asarray(table[c], dtype=float) for c in ("crop", "items"))
         big = items >= min_items
         if "period" in table:
             anchor = big & (np.asarray(table["period"]) == ANCHOR_PERIOD)

@@ -1,0 +1,43 @@
+# Sickle blades as a share of all flint tools at dated site phases of the Fertile Crescent,
+# about 12,000 to 5,000 cal BC: how far people harvested cereals.
+dataset = "maeda2016-sickles"
+title = "Narrowing the harvest: Increasing sickle investment and the rise of domesticated cereal agriculture in the Fertile Crescent: Supplementary Table S3"
+version = "Quaternary Science Reviews 145: 226-237 (2016), supplementary data"
+homepage = "https://doi.org/10.1016/j.quascirev.2016.05.032"
+citation = "Maeda, O., Lucas, L., Silva, F., Tanno, K.-I., Fuller, D.Q. (2016). Narrowing the harvest: Increasing sickle investment and the rise of domesticated cereal agriculture in the Fertile Crescent. Quaternary Science Reviews 145: 226-237. https://doi.org/10.1016/j.quascirev.2016.05.032"
+doi = "10.1016/j.quascirev.2016.05.032"
+notes = """
+A Word document in the article's supplementary data, fetched from the publisher's file
+server and checked by SHA-256 (the same supplement as maeda2016-cereals). Table S3 gives
+277 site phases by sickle-blade group and region: the phase's median age (cal BC), its
+sickle blades as a percentage of all flint tools (a value, a range, or a word such as
+"rare"), and the primary lithic source. Obsidian tools are not counted. No coordinates:
+judged phases are located by their radiocarbon samples in p3k14c or published coordinates
+(oikos_data.sickles.SITES). The primary studies are to be cited with the phases they give.
+"""
+
+[license]
+# The article and its supplementary data are open access under CC BY 4.0 (the article's
+# own notice and Crossref's licence record, read 2026-11-17).
+id = "CC-BY-4.0"
+url = "https://creativecommons.org/licenses/by/4.0/"
+derived_redistribution = true
+attribution = "Contains sickle-blade shares and dates from Maeda et al. (2016), Quaternary Science Reviews 145: 226-237, https://doi.org/10.1016/j.quascirev.2016.05.032, and the lithic studies it compiles (CC BY); located on H3 cells by ManyWorlds."
+verified = "2026-11-26"
+
+[access]
+kind = "publisher_supplement"
+url = "https://ars.els-cdn.com/content/image/"
+
+[access.members.sickles]
+file = "1-s2.0-S0277379116301780-mmc3.docx"
+sha256 = "624abfb7e2258a3372a25f0e018e95d28aaf6325db6f2125ae49a07c966c1887"
+
+[coverage]
+spatial = "The Fertile Crescent: Levant, Upper Mesopotamia, the Zagros and Cyprus"
+temporal = "about 12,000 to 5,000 cal BC"
+
+[[variables]]
+name = "share"
+unit = "fraction"
+description = "Sickle blades among all flint tools of the phase (a stated range's midpoint)"

@@ -94,6 +94,10 @@
     barley's slow domestication and Egypt's late farming pull against each other in the
     model: low selection per unit of effort reconciles the first two, and then the wheats
     need ratios above barley's (ADR-0142: einkorn 1.2, emmer 1.1) to domesticate on time.
+    A second record of effort, sickle blades among flint tools (ADR-0143), agrees with the
+    crop shares before 8,800 BCE (0.09 and 0.29 against 0.075 and 0.385) at less than half
+    their uncertainty in the PPNA, and rules out run 221's effort of 0.71 there: high early
+    effort with slow selection is closed, while the defaults and run 189 stay consistent.
     Leaving the near-zero dung-fuel and steppe phases out of the anchor would narrow it but
     not rule that world out (ADR-0140; statistic 9.0 against 14.86), and would select the
     anchor on its outcome, so they stay.

@@ -121,7 +121,11 @@ the phases also include Maeda et al.'s (2016) cereal shares at the sites the dat
 lacks (`data/oikos_data/cereals.py`), each read against its own source's anchor, and the
 bootstrap draws sites whole within each source. Every anchor phase counts, however few
 crops it burnt: dung-fuel and steppe sites read near zero among the targets too
-(ADR-0140).
+(ADR-0140). Sickle blades among the flint tools of dated phases (Maeda et al. 2016
+Table S3; `data/oikos_data/sickles.py`, ADR-0143) are read the same way, anchored on
+their own Pottery Neolithic phases, as a second record of effort apart from what people
+burnt: two era means before and after 10,000 BCE, phases to 8,800 BCE only, since
+sickles also follow domestication (they are needed most once ears stop shattering).
 
 **Implemented (juvenile-index operator, ADR-0068):** `juvenile.Operator` reads the
 juvenile index of a cemetery (15p5, the share of 5-19 year olds among the dead over 5;

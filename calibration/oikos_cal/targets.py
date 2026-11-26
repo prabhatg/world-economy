@@ -329,12 +329,14 @@ class ObsidianZones:
 
 
 class OnsetEras:
-    def __init__(self, op, edges=(-10_000, -8_800, -7_600), discrepancy_sd=0.1, replicates=2000, rng=None):
+    def __init__(self, op, edges=(-10_000, -8_800, -7_600), discrepancy_sd=0.1, replicates=2000, rng=None,
+                 label="cultivation effort implied"):
         """Eras of `op` (`onset.Operator`) between calendar-year `edges` (ascending), by a
         phase's midpoint: the cultivation effort the record implies, the era's mean of each
         phase's crop share over its source's anchor (each phase once), with a bootstrap
         covariance that resamples the phases and the anchor phases within each source
-        (`onset.Operator.resample`); every era needs phases."""
+        (`onset.Operator.resample`); every era needs phases. Targets are named `label`
+        and the era."""
         self.op, self.edges = op, np.asarray(edges, dtype=float)
         self.era = np.searchsorted(self.edges, op.mid, side="right")
         n = len(self.edges) + 1
@@ -346,7 +348,7 @@ class OnsetEras:
         bounds = [f"before {-edges[0]:g} BCE", *(f"{-a:g}-{-b:g} BCE" for a, b in zip(edges, edges[1:])),
                   f"after {-edges[-1]:g} BCE"]
         z = self._summary(op.implied())
-        self.targets = [_target(f"cultivation effort implied {b}", z[j], self.covariance[j, j], discrepancy_sd**2)
+        self.targets = [_target(f"{label} {b}", z[j], self.covariance[j, j], discrepancy_sd**2)
                         for j, b in enumerate(bounds)]
 
     def _summary(self, values, era=None, strict=True):

@@ -9,7 +9,7 @@ region needs into a cache outside the repository and aggregate it to H3 cells.
 |---|---|
 | `regions/*.toml` | Regions: resolution and the rule selecting cells (M1: [m1-swasia](regions/m1-swasia.toml), ADR-0040; the same box at resolution 6, [m1-swasia-r6](regions/m1-swasia-r6.toml), ADR-0111) |
 | `manifests/*.toml` | One per dataset: version, license (incl. whether derived data may be redistributed, and when that was checked), citation, access, coverage, variables and units |
-| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid`, `lesions`, `fauna`, `caprines`, `bedrock`, `cereals` |
+| `oikos_data/` | Python package: `pack` (writer/reader, same format as `oikos-io::pack`), `region`, `geometry`, `manifest`, `raster` (cached COG overview and strip-window reads), `terrain`, `climate`, `coastline`, `vector` (verified downloads, cached bbox reads), `hydrology`, `soils`, `radiocarbon`, `rachis`, `sites`, `obsidian`, `archaeobotany`, `inequality`, `humid`, `lesions`, `fauna`, `caprines`, `bedrock`, `cereals`, `sickles` |
 | `packs.lock.json` | Id (BLAKE3) of every pack and observation table we build; rebuilds must match (like the engine's golden file) |
 | `locks/<dataset>.json` | Fingerprint of every input tile a pack was built from, so changed upstream data is caught |
 | `build/` | Built packs (not committed) |
@@ -37,6 +37,7 @@ python -m oikos_data build bedrock m1-swasia               # SoilGrids250m 2017 
 python -m oikos_data build climate_anomaly m1-swasia       # NGRIP 20-year d18O (60 kB) -> decadal anomaly pack
 python -m oikos_data build wild_wheats m1-swasia           # GBIF wild emmer and einkorn records (~7k, API) -> range pack
 python -m oikos_data build cereals m1-swasia               # Maeda et al. 2016 cereal shares by site phase -> table
+python -m oikos_data build sickles m1-swasia               # Maeda et al. 2016 sickle-blade shares by site phase -> table
 python -m oikos_data check                        # rebuild every locked pack, compare ids
 pytest tests
 ../engine/target/release/oikos pack build/m1-swasia.geometry.oikospack   # inspect
@@ -95,6 +96,7 @@ Observation tables (Parquet, locked like packs; docs/05 §5.1):
 | `obsidian_assemblages` | one per sourced site context in the region with a dated ASPRO period: context id, site, location, cell, period and its start and end calendar years ("a or b" spans both), artefacts per traced source group and from other sources, characterization study | DObsiSS 2.0, Zenodo 55848 (CC BY-SA 4.0; shared under the same license) |
 | `fauna` | one per dated faunal assemblage in the region with sheep or goat measured: site, phase, start and end year, location, cell; for sheep (`ovis_*`) and goat (`capra_*`) the mean log size index with sd and count, and the juvenile share with its count and basis (fusion or teeth) | Arbuckle et al. 2014 (PLoS ONE, CC BY) Tables S1, S3, S4, via Europe PMC's supplement archive; sites located by p3k14c (`fauna.SITES`) |
 | `cereals` | one per dated site phase in the region that the Origins of agriculture database does not record: phase, site, start and end year, location, cell; cereal remains (wheats, barley, other cereals; grain and chaff, wild or domestic) and all identified charred remains (#55) | Maeda et al. 2016 (Quaternary Science Reviews, CC BY) Tables S1 and S5, from the publisher's supplement; sites located by p3k14c (`cereals.SITES`) |
+| `sickles` | one per site phase with a stated share: phase, site, start and end year (five centuries around the median age), sickle blades as a share of all flint tools; phases before 8,800 BCE located (cell), Pottery Neolithic anchor phases from 7,000 BCE unlocated (#55, ADR-0143) | Maeda et al. 2016 (Quaternary Science Reviews, CC BY) Table S3, from the publisher's supplement; sites located by p3k14c (`sickles.SITES`) |
 
 Rules:
 

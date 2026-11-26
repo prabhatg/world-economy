@@ -184,3 +184,18 @@ def test_a_pooled_record_is_not_pooled_again():
     op = onset.Operator(table(*ROWS), CELLS, WINDOW, rings=0)
     with pytest.raises(ValueError, match="pooled"):
         onset.Operator.pooled([onset.Operator.pooled([op, op])])
+
+
+def test_a_record_of_shares_reads_like_one_of_counts():
+    # Sickle blades among flint tools (ADR-0143) come as shares, without counts.
+    rows = table(("d", -6900, -6500, "", 0, 0), ("e", -6200, -5800, "", 0, 0), ("a", -11100, -10900, "", 0, 0),
+                 ("c", -9500, -9000, "", 0, 0))
+    del rows["period"], rows["crop"], rows["items"]
+    rows["share"] = [0.12, 0.08, 0.01, 0.03]
+    op = onset.Operator(rows, CELLS, WINDOW, rings=0, min_items=0)
+    assert op.farming_share == pytest.approx(0.1)
+    assert op.implied() == pytest.approx([0.1, 0.3])
+    e = targets.OnsetEras(op, edges=(-10_000,), label="cultivation effort implied by sickles",
+                          rng=np.random.default_rng(0))
+    assert [t.name for t in e.targets] == ["cultivation effort implied by sickles before 10000 BCE",
+                                          "cultivation effort implied by sickles after 10000 BCE"]

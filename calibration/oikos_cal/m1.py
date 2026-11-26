@@ -74,6 +74,12 @@ show cultivated crops grown there, against the probability that each shows some,
 the domestic share of the cereals discarded around it (`crops.Operator`); judged
 together, discrepancy 0.1 on each.
 
+The sickle eras (#55, ADR-0143) are the cultivation effort that sickle blades among the
+flint tools imply before and after 10,000 BCE, phases to 8,800 BCE only, against the
+same people-weighted effort as the onset eras (`onset.Operator` on `oikos_data.sickles`):
+a record of harvesting, apart from what people burnt. Judged together, discrepancy 0.1
+on each, as on the onset eras.
+
 The house-size Ginis are judged since the maintainer's decision of 2026-11-03 (#43);
 round 10's first waves left them out (ADR-0077).
 
@@ -95,7 +101,7 @@ import h3
 import numpy as np
 import pyarrow.parquet as pq
 
-from oikos_data import DATA, archaeobotany, cereals, egypt, fauna, lesions as lesions_record, pack, rachis, wheats as wild_wheats
+from oikos_data import DATA, archaeobotany, cereals, egypt, fauna, lesions as lesions_record, pack, rachis, sickles, wheats as wild_wheats
 from oikos_data import inequality as inequality_pipeline
 from oikos_data import region as regions
 from oikos_data import obsidian as obsidian_pipeline
@@ -114,7 +120,7 @@ PACKS = ("geometry", "climate", "coastline", "hydrology", "obsidian", "humid_per
 END = -3_000
 DISCREPANCY = {"radiocarbon": 0.25, "domestication": 0.1, "sites": 0.25, "obsidian": 0.1, "onset": 0.1,
                "villages": 0.25, "subregions": 300.0, "contrasts": 0.1, "inequality": 0.05, "lesions": 0.1, "herds": 0.015,
-               "stock": 0.1, "crops": 0.1}
+               "stock": 0.1, "crops": 0.1, "sickles": 0.1}
 VILLAGE_DENSITY = 121.0  # people per hectare: geometric mean of 50 and 294
 VILLAGE_DENSITY_SD = 0.45  # log scale: 50-294 as a 95% range
 RADIOCARBON_ERAS = 10  # 800 years each: the peak and the fall after 5,900 BCE are resolved
@@ -157,6 +163,7 @@ OBSIDIAN_ERA = -6_900
 OBSIDIAN_MIN_ARTEFACTS = 3
 ONSET_EDGES = (-10_000, -8_800, -7_600)  # Late Epipalaeolithic, PPNA, Early-Middle PPNB, Late PPNB
 ONSET_MIN_ITEMS = 50
+SICKLE_EDGES = (-10_000,)  # the Late Epipalaeolithic and the PPNA; its phases end at 8,800 BCE
 WHEATS = ("emmer", "einkorn")
 # Villages the model cannot farm yet: oases of the Syrian steppe, watered by springs the
 # hydrology packs lack, whose crops most likely came domestic from farming kin and
@@ -305,6 +312,8 @@ class Problem:
             [onset.Operator(t, self.cells, self.radiocarbon.settings.true, rings=rings, min_items=ONSET_MIN_ITEMS)
              for t in (phases, more)])
         self.stands = stands(self.onset, region)
+        blades = pq.read_table(io.BytesIO(sickles.build_table(r, offline=True))).to_pydict()
+        self.sickles = onset.Operator(blades, self.cells, self.radiocarbon.settings.true, rings=rings, min_items=0)
         periods, skeletons, _ = lesions_record.load()
         self.lesions = lesions.Operator(periods, skeletons, self.cells, self.radiocarbon.settings.true, rings=rings)
         assemblages = pq.read_table(io.BytesIO(fauna.build_table(r, offline=True))).to_pydict()
@@ -344,6 +353,8 @@ class Problem:
         self.eras.append(targets.AssemblageShares(self.stock, discrepancy_sd=DISCREPANCY["stock"]))
         self.eras.append(targets.AssemblageShares(self.crops, discrepancy_sd=DISCREPANCY["crops"]))
         egypt_era = len(self.eras) - 2
+        self.eras.append(targets.OnsetEras(self.sickles, edges=SICKLE_EDGES, discrepancy_sd=DISCREPANCY["sickles"],
+                                           rng=np.random.default_rng(0), label="cultivation effort implied by sickles"))
         if self.inequality is not None:
             self.eras.append(targets.HouseGinis(self.inequality, discrepancy_sd=DISCREPANCY["inequality"]))
         self.targets = [t for e in self.eras for t in e.targets]
@@ -352,7 +363,8 @@ class Problem:
                        self.eras[4].group(first[4]), self.eras[5].group(first[5]), self.eras[6].group(first[6]),
                        self.eras[7].group(first[7]), self.eras[9].group(first[9]),
                        self.eras[egypt_era].group(first[egypt_era]),
-                       self.eras[egypt_era + 1].group(first[egypt_era + 1])]
+                       self.eras[egypt_era + 1].group(first[egypt_era + 1]),
+                       self.eras[egypt_era + 2].group(first[egypt_era + 2])]
         self.names = [t.name for t in self.targets] + DIAGNOSTICS
 
     def zones(self):
@@ -361,7 +373,7 @@ class Problem:
         if getattr(self, "_zones", None) is not None:
             return self._zones
         ops = [self.domestication, self.sites, self.villages, self.obsidian, self.onset, self.lesions, self.herds,
-               *self.wheats, self.stock, self.crops]
+               *self.wheats, self.stock, self.crops, self.sickles]
         if self.inequality is not None:
             ops.append(self.inequality)
         sets = [np.arange(len(self.cells))] + [s for op in ops for s in op.cells()]

@@ -114,6 +114,9 @@ in the credit manifest of each result. Datasets surveyed so far are listed in
   Fertile Crescent, Quaternary Science Reviews 145: 226-237,
   doi:10.1016/j.quascirev.2016.05.032 (CC BY 4.0), and the archaeobotanical studies it
   compiles (the table's `reference` column).
+- **Sickle blades by site phase** (second record of cultivation effort): the same paper's
+  Table S3 (CC BY 4.0), and the lithic studies it compiles (the table's `reference`
+  column).
 - **Origins of agriculture archaeobotanical database** (cultivation-onset record):
   Wallace, M., Livarda, A., Charles, M. & Jones, G. (2018), York: Archaeology Data Service
   (distributor), doi:10.5284/1046750, used under the ADS Terms of Use and Access; funded

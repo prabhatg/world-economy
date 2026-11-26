@@ -167,7 +167,8 @@ property hypothesis of cultivation effort (ADR-0137) and finds a world consisten
 seeds of three that fits with almost no cultivation effort; the defaults stay. Round 20
 (ADR-0141), against the pooled onset record, finds three worlds consistent in every seed,
 with high and with low property weights, none as close to the records as the defaults,
-which stay.
+which stay. Sickle blades among flint tools join as a second record of effort, judged
+before 8,800 BCE (ADR-0143); they rule out round 20's high-effort world.
 What comes next for the model's fidelity, records first, is ordered in the
 [model fidelity plan](15-model-fidelity.md).
 Work items are GitHub issues under the M1 milestone.
